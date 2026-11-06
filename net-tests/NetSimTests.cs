@@ -157,6 +157,50 @@ public sealed class NetSimTests
     }
 
     [Fact]
+    public void IdlePlayers_UnderAttack_DoNotCorrectEverySnapshot()
+    {
+        var world = World.Arena();
+        var network = new SimNetwork(3, 80, 8, 2);
+        var server = new GameServer(network.Connect(0), world, new ServerOptions { EnemyCount = 4, Seed = 3 });
+        var client = new ClientPrediction(network.Connect(1), world);
+        for (var tick = 0; tick < 180 * Tuning.TickRate; tick++)
+        {
+            network.Advance(1000.0 / Tuning.TickRate);
+            server.Step();
+            client.Step(0, 0, Buttons.None);
+        }
+
+        _output.WriteLine($"idle: corrections {client.Stats.Corrections} of {client.Stats.Snapshots} snapshots, " +
+                          $"hits {server.Stats.PlayerHits}, pos {client.State.Position}, server {server.GetPlayer(1)!.Value.Position}");
+        Assert.InRange(client.Stats.Corrections, 0, server.Stats.PlayerHits * 2 + 5);
+    }
+
+    [Fact]
+    public void Surrounded_PlayerStaysInControl()
+    {
+        var world = World.Arena();
+        var network = new SimNetwork(4, 80, 8, 2);
+        var server = new GameServer(network.Connect(0), world, new ServerOptions { EnemyCount = 4, Seed = 4 });
+        var client = new ClientPrediction(network.Connect(1), world);
+        var stunned = 0;
+        const int ticks = 120 * Tuning.TickRate;
+        for (var tick = 0; tick < ticks; tick++)
+        {
+            network.Advance(1000.0 / Tuning.TickRate);
+            server.Step();
+            client.Step(0, 0, Buttons.None);
+            if (server.GetPlayer(1)?.StunTicks > 0)
+            {
+                stunned++;
+            }
+        }
+
+        _output.WriteLine($"stunned {100.0 * stunned / ticks:F1} % of the time, hits {server.Stats.PlayerHits}");
+        Assert.True(server.Stats.PlayerHits > 100, "Enemies must keep hitting, or nothing is tested.");
+        Assert.InRange(stunned, 0, ticks / 8);
+    }
+
+    [Fact]
     public void SameSeed_GivesSameRun()
     {
         var first = Run(rtt: 80, jitter: 8, loss: 2, enemies: 4);

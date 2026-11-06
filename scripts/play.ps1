@@ -3,7 +3,8 @@
 # With -Capture <folder> a bot plays, saves frames, prints a STATS line and quits.
 param(
     [string]$ServerHost = "127.0.0.1",
-    [string]$Capture = ""
+    [string]$Capture = "",
+    [int]$CaptureFrames = 8
 )
 
 $ErrorActionPreference = "Stop"
@@ -21,12 +22,12 @@ $server = $null
 if ($ServerHost -eq "127.0.0.1") {
     dotnet build (Join-Path $root "server") -v q
     if ($LASTEXITCODE -ne 0) { throw "The server did not build." }
-    $server = Start-Process (Join-Path $root "server\bin\Debug\net8.0\Server.exe") -PassThru -WindowStyle Hidden
+    $server = Start-Process (Join-Path $root "server\bin\Debug\net8.0\Server.exe") -PassThru -WindowStyle Hidden -RedirectStandardOutput (Join-Path $root "export\previews\server.log")
 }
 
 try {
     $arguments = @("--path", (Join-Path $root "client"), "--", $ServerHost, "7777")
-    if ($Capture) { $arguments += $Capture }
+    if ($Capture) { $arguments += @($Capture, $CaptureFrames) }
     & $godot @arguments
 }
 finally {

@@ -27,8 +27,11 @@ public static class Tuning
     public const float EnemyReach = 1.1f;
     public const byte EnemyCooldownTicks = 45;
     public const short EnemyDamage = 5;
-    public const byte StunTicks = 14;
-    public const float Knockback = 8f;
+    public const byte StunTicks = 8;
+
+    /// <summary>Time after a stun in which hits still hurt but cannot stun, so enemies cannot chain it.</summary>
+    public const byte StunImmunityTicks = 90;
+    public const float Knockback = 6f;
     public static readonly Vector3 PlayerHalfSize = new(0.4f, 0.9f, 0.4f);
 }
 
@@ -61,6 +64,7 @@ public struct PlayerState
     public byte DashCooldown;
     public byte AttackCooldown;
     public byte StunTicks;
+    public byte StunImmunity;
     public short Health;
 
     public static PlayerState Spawn(Vector3 position) =>
@@ -114,6 +118,11 @@ public static class Movement
             state.StunTicks--;
             wish = Vector2.Zero;
             buttons = Buttons.None;
+        }
+
+        if (state.StunImmunity > 0)
+        {
+            state.StunImmunity--;
         }
 
         if (state.DashCooldown > 0)

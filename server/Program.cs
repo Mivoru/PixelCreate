@@ -13,6 +13,12 @@ var nextTick = clock.Elapsed;
 while (true)
 {
     server.Step();
+    if (server.Tick % (uint)(Tuning.TickRate * 10) == 0)
+    {
+        var stats = server.Stats;
+        Console.WriteLine($"tick {server.Tick}: missed inputs {stats.MissedInputs}, hits {stats.PlayerHits}, kills {stats.EnemiesKilled}");
+    }
+
     nextTick += tickLength;
     var wait = nextTick - clock.Elapsed;
     if (wait > TimeSpan.Zero)

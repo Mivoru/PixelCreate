@@ -167,6 +167,6 @@ public sealed class ClientPrediction
     }
 
     private static bool SameDiscreteState(in PlayerState a, in PlayerState b) =>
-        a.StunTicks == b.StunTicks && a.DashTicks == b.DashTicks && a.DashCooldown == b.DashCooldown &&
+        a.StunTicks == b.StunTicks && a.StunImmunity == b.StunImmunity && a.DashTicks == b.DashTicks && a.DashCooldown == b.DashCooldown &&
         a.AttackCooldown == b.AttackCooldown && a.Health == b.Health;
 }

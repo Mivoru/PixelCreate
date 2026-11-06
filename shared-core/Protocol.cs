@@ -157,6 +157,7 @@ public static class Protocol
         writer.Write(state.DashCooldown);
         writer.Write(state.AttackCooldown);
         writer.Write(state.StunTicks);
+        writer.Write(state.StunImmunity);
         writer.Write(state.Health);
     }
 
@@ -170,6 +171,7 @@ public static class Protocol
         DashCooldown = reader.ReadByte(),
         AttackCooldown = reader.ReadByte(),
         StunTicks = reader.ReadByte(),
+        StunImmunity = reader.ReadByte(),
         Health = reader.ReadInt16(),
     };
 }

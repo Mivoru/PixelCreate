@@ -36,9 +36,11 @@ public sealed class PixelStage
             TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
             ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
             StretchMode = TextureRect.StretchModeEnum.Scale,
+            MouseFilter = Control.MouseFilterEnum.Ignore,
         };
         parent.AddChild(screen);
-        screen.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+        // SetAnchorsPreset alone keeps the old size, which is zero here.
+        screen.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
 
         View.AddChild(BuildEnvironment());
         View.AddChild(new DirectionalLight3D

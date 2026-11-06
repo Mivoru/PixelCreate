@@ -209,9 +209,14 @@ public sealed class GameServer
         {
             enemy.Cooldown = Tuning.EnemyCooldownTicks;
             var push = toTarget == Vector3.Zero ? Vector3.UnitX : Vector3.Normalize(toTarget);
-            target.State.StunTicks = Tuning.StunTicks;
-            target.State.Velocity += push * Tuning.Knockback;
             target.State.Health -= Tuning.EnemyDamage;
+            if (target.State.StunImmunity == 0)
+            {
+                target.State.StunTicks = Tuning.StunTicks;
+                target.State.StunImmunity = Tuning.StunImmunityTicks;
+                target.State.Velocity += push * Tuning.Knockback;
+            }
+
             Stats.PlayerHits++;
         }
     }

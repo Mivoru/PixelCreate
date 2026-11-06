@@ -20,7 +20,7 @@ public partial class GameClient : Node
     private const float CameraHeight = 2.6f;
     private const float MouseSensitivity = 0.0035f;
     private const float RemoteSmoothing = 18f;
-    private const int CaptureFrames = 8;
+    private int _captureFrames = 8;
     private const int CaptureEveryTicks = 45;
 
     private readonly Dictionary<int, Node3D> _remotePlayers = new();
@@ -36,6 +36,8 @@ public partial class GameClient : Node
     private double _clock;
     private string? _captureDir;
     private int _captured;
+    private float _maxHeight;
+    private float _travelled;
     private readonly Random _botRandom = new(5);
 
     public override void _Ready()
@@ -44,6 +46,7 @@ public partial class GameClient : Node
         var host = args.ElementAtOrDefault(0) ?? "127.0.0.1";
         var port = int.Parse(args.ElementAtOrDefault(1) ?? "7777");
         _captureDir = args.ElementAtOrDefault(2);
+        _captureFrames = int.Parse(args.ElementAtOrDefault(3) ?? "8");
 
         var world = World.Arena();
         _stage = new PixelStage(this);
@@ -92,6 +95,8 @@ public partial class GameClient : Node
             _shownBefore = _shownNow;
             _client.Step(x, z, buttons);
             _shownNow = ToGodot(_client.ShownPosition);
+            _maxHeight = Mathf.Max(_maxHeight, _client.State.Position.Y);
+            _travelled += _shownBefore.DistanceTo(_shownNow);
             if (_captureDir is not null && _client.Tick % CaptureEveryTicks == 0)
             {
                 Capture();
@@ -118,6 +123,20 @@ public partial class GameClient : Node
 
     private (sbyte X, sbyte Z, Buttons Buttons) BotInput()
     {
+        var mode = OS.GetEnvironment("PIXEL_BOT");
+        if (mode == "idle")
+        {
+            return (0, 0, Buttons.None);
+        }
+
+        if (mode == "keys")
+        {
+            // Press real key events, so this checks the same path as a person at the keyboard.
+            PressKey(Key.W, true);
+            PressKey(Key.Space, _client.Tick % 40 < 2);
+            return ReadInput();
+        }
+
         if (_client.Tick % 60 == 0)
         {
             _yaw += (float)(_botRandom.NextDouble() - 0.5) * 2f;
@@ -127,6 +146,11 @@ public partial class GameClient : Node
         if (_botRandom.Next(80) == 0) buttons |= Buttons.Jump;
         if (_botRandom.Next(120) == 0) buttons |= Buttons.Dash;
         return ToMove(0, 1, buttons);
+    }
+
+    private static void PressKey(Key key, bool pressed)
+    {
+        Input.ParseInputEvent(new InputEventKey { Keycode = key, PhysicalKeycode = key, Pressed = pressed });
     }
 
     /// <summary>Turns input relative to the camera into world directions.</summary>
@@ -194,15 +218,21 @@ public partial class GameClient : Node
     private void Capture()
     {
         _stage.View.GetTexture().GetImage().SavePng($"{_captureDir}/arena-{_captured}.png");
-        if (++_captured < CaptureFrames)
+        GetViewport().GetTexture().GetImage().SavePng($"{_captureDir}/window-{_captured}.png");
+        if (++_captured < _captureFrames)
         {
             return;
         }
 
+        var window = GetViewport().GetTexture().GetImage();
+        var view = _stage.View.GetTexture().GetImage();
+        var middle = window.GetPixel(window.GetWidth() / 2, window.GetHeight() / 2);
+        var source = view.GetPixel(view.GetWidth() / 2, view.GetHeight() / 2);
         var stats = _client.Stats;
         GD.Print($"STATS snapshots={stats.Snapshots} corrections={stats.Corrections} " +
                  $"maxError={stats.MaxError:F3} buffered={_client.Latest?.BufferedInputs} " +
-                 $"tickScale={_client.TickScale:F3} enemies={_enemies.Count} hp={_client.State.Health}");
+                 $"tickScale={_client.TickScale:F3} enemies={_enemies.Count} hp={_client.State.Health} " +
+                 $"windowShowsView={middle.IsEqualApprox(source)} maxHeight={_maxHeight:F2} travelled={_travelled:F0}");
         GetTree().Quit();
     }
 
