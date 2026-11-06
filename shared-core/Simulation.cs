@@ -7,6 +7,9 @@ public static class Tuning
 {
     public const int TickRate = 60;
     public const float TickSeconds = 1f / TickRate;
+
+    /// <summary>Ticks of input the server holds per player, to absorb jitter and short loss.</summary>
+    public const int InputBufferTicks = 3;
     public const float MoveSpeed = 7f;
     public const float GroundAcceleration = 60f;
     public const float AirAcceleration = 20f;

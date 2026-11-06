@@ -4,4 +4,8 @@
     <EnableDynamicLoading>true</EnableDynamicLoading>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\shared-core\SharedCore.csproj" />
+    <ProjectReference Include="..\transport\Transport.csproj" />
+  </ItemGroup>
 </Project>

@@ -60,6 +60,9 @@ public sealed class UdpTransport : ITransport, IDisposable
 
     public bool IsConnected => _peers.Count > 0;
 
+    /// <summary>Processes network events without taking any packet from the inbox.</summary>
+    public void Poll() => _manager.PollEvents();
+
     public void Send(int peer, byte[] data)
     {
         if (_peers.TryGetValue(peer, out var target))

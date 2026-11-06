@@ -20,6 +20,9 @@ public sealed class Snapshot
 
     /// <summary>The newest client tick that is included in <see cref="Self"/>.</summary>
     public uint AckTick;
+
+    /// <summary>Inputs the server holds for this client. The client runs faster or slower to keep it steady.</summary>
+    public byte BufferedInputs;
     public PlayerState Self;
     public RemotePlayer[] Others = Array.Empty<RemotePlayer>();
     public EnemyView[] Enemies = Array.Empty<EnemyView>();
@@ -84,6 +87,7 @@ public static class Protocol
         writer.Write(snapshot.ServerTick);
         writer.Write(snapshot.YourId);
         writer.Write(snapshot.AckTick);
+        writer.Write(snapshot.BufferedInputs);
         WriteState(writer, snapshot.Self);
         writer.Write((byte)snapshot.Others.Length);
         foreach (var other in snapshot.Others)
@@ -116,6 +120,7 @@ public static class Protocol
         snapshot.ServerTick = reader.ReadUInt32();
         snapshot.YourId = reader.ReadInt32();
         snapshot.AckTick = reader.ReadUInt32();
+        snapshot.BufferedInputs = reader.ReadByte();
         snapshot.Self = ReadState(reader);
         snapshot.Others = new RemotePlayer[reader.ReadByte()];
         for (var i = 0; i < snapshot.Others.Length; i++)

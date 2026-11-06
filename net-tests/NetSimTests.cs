@@ -34,7 +34,7 @@ public sealed class Bot
     }
 }
 
-public sealed record SimResult(ClientStats[] Clients, ServerStats Server, float[] FinalGaps, long Sent, long Lost);
+public sealed record SimResult(ClientStats[] Clients, ServerStats Server, float[] FinalGaps, long Sent, long Lost, int[] Buffered);
 
 public sealed class NetSimTests
 {
@@ -46,13 +46,14 @@ public sealed class NetSimTests
 
     public NetSimTests(ITestOutputHelper output) => _output = output;
 
-    private SimResult Run(double rtt, double jitter, double loss, int enemies, int seed = 7)
+    private SimResult Run(double rtt, double jitter, double loss, int enemies, int seed = 7, float drift = 1f, bool clockSync = false)
     {
         var world = World.Arena();
         var network = new SimNetwork(seed, rtt, jitter, loss);
         var server = new GameServer(network.Connect(0), world, new ServerOptions { EnemyCount = enemies, Seed = seed });
         var clients = new[] { new ClientPrediction(network.Connect(1), world), new ClientPrediction(network.Connect(2), world) };
         var bots = new[] { new Bot(seed + 1), new Bot(seed + 2) };
+        var clocks = new float[clients.Length];
 
         for (var tick = 0; tick < Seconds * Tuning.TickRate; tick++)
         {
@@ -60,10 +61,19 @@ public sealed class NetSimTests
             server.Step();
             for (var i = 0; i < clients.Length; i++)
             {
-                var (x, z, buttons) = bots[i].Next();
-                clients[i].Step(x, z, buttons);
+                // A client clock that runs at `drift` times the speed of the server clock.
+                clocks[i] += drift;
+                var length = clockSync ? clients[i].TickScale : 1f;
+                while (clocks[i] >= length)
+                {
+                    clocks[i] -= length;
+                    var (x, z, buttons) = bots[i].Next();
+                    clients[i].Step(x, z, buttons);
+                }
             }
         }
+
+        var buffered = clients.Select(c => (int)c.Latest!.BufferedInputs).ToArray();
 
         // Stand still until everything in flight has landed, then the two sides must agree.
         server.EnemiesFrozen = true;
@@ -78,7 +88,7 @@ public sealed class NetSimTests
         }
 
         var gaps = clients.Select((c, i) => Vector3.Distance(c.State.Position, server.GetPlayer(i + 1)!.Value.Position)).ToArray();
-        var result = new SimResult(clients.Select(c => c.Stats).ToArray(), server.Stats, gaps, network.Sent, network.Lost);
+        var result = new SimResult(clients.Select(c => c.Stats).ToArray(), server.Stats, gaps, network.Sent, network.Lost, buffered);
         foreach (var (stats, i) in result.Clients.Select((s, i) => (s, i)))
         {
             _output.WriteLine($"client {i}: corrections {stats.Corrections}, resimulated {stats.ResimulatedTicks}, " +
@@ -125,6 +135,25 @@ public sealed class NetSimTests
         var result = Run(rtt: 200, jitter: 30, loss: 20, enemies: 4);
         Assert.True(result.Server.MissedInputs > 0, "This network must be bad enough to lose inputs.");
         Assert.All(result.FinalGaps, gap => Assert.InRange(gap, 0f, 0.001f));
+    }
+
+    [Theory]
+    [InlineData(1.005f)]
+    [InlineData(0.995f)]
+    public void ClockDrift_IsAbsorbedByClockSync(float drift)
+    {
+        var result = Run(rtt: 80, jitter: 8, loss: 2, enemies: 0, drift: drift, clockSync: true);
+        _output.WriteLine($"buffered inputs at the end: {string.Join(", ", result.Buffered)}");
+        Assert.All(result.Buffered, count => Assert.InRange(count, 1, 6));
+        Assert.InRange(result.Server.MissedInputs, 0, 10);
+    }
+
+    [Fact]
+    public void ClockDrift_WithoutClockSync_DelayGrows()
+    {
+        var result = Run(rtt: 80, jitter: 8, loss: 2, enemies: 0, drift: 1.005f);
+        _output.WriteLine($"buffered inputs at the end: {string.Join(", ", result.Buffered)}");
+        Assert.All(result.Buffered, count => Assert.True(count > 20));
     }
 
     [Fact]

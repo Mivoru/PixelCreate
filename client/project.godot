@@ -2,7 +2,7 @@ config_version=5
 
 [application]
 config/name="PixelCreate"
-run/main_scene="res://scenes/pixel_test.tscn"
+run/main_scene="res://scenes/arena.tscn"
 config/features=PackedStringArray("4.7", "C#", "Forward Plus")
 
 [display]

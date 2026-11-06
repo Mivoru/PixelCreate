@@ -10,8 +10,7 @@ public sealed class ServerOptions
     /// <summary>Server ticks between snapshots to each client.</summary>
     public int SnapshotInterval { get; init; } = 2;
 
-    /// <summary>Ticks of input held back per player, to absorb jitter and short loss.</summary>
-    public int InputBufferTicks { get; init; } = 3;
+    public int InputBufferTicks { get; init; } = Tuning.InputBufferTicks;
 }
 
 public sealed class ServerStats
@@ -235,6 +234,7 @@ public sealed class GameServer
                 ServerTick = Tick,
                 YourId = player.Id,
                 AckTick = player.NextTick - 1,
+                BufferedInputs = (byte)Math.Min(player.Inputs.Count, byte.MaxValue),
                 Self = player.State,
                 Others = _players.Values.Where(p => p.Id != player.Id)
                     .Select(p => new RemotePlayer(p.Id, p.State.Position)).ToArray(),

@@ -28,6 +28,10 @@ public sealed class ClientPrediction
     /// <summary>Share of a correction that stays hidden after each tick.</summary>
     private const float SmoothingDecay = 0.85f;
 
+    /// <summary>Change of tick length per input of difference from the target buffer.</summary>
+    private const float ClockGain = 0.01f;
+    private const float MaxClockChange = 0.03f;
+
     private readonly ITransport _transport;
     private readonly World _world;
     private readonly InputCmd[] _inputs = new InputCmd[HistorySize];
@@ -40,6 +44,12 @@ public sealed class ClientPrediction
     public PlayerState State;
     public Snapshot? Latest { get; private set; }
     public ClientStats Stats { get; } = new();
+
+    /// <summary>
+    /// Multiply the tick length by this. Clocks drift apart, so the client slows down when the
+    /// server holds too many of its inputs, and speeds up when it holds too few.
+    /// </summary>
+    public float TickScale { get; private set; } = 1f;
 
     /// <summary>Where to draw the player: corrections fade in instead of jumping.</summary>
     public Vector3 ShownPosition => State.Position + _visualOffset;
@@ -99,6 +109,8 @@ public sealed class ClientPrediction
         if (Latest is null || snapshot.ServerTick > Latest.ServerTick)
         {
             Latest = snapshot;
+            var surplus = snapshot.BufferedInputs - Tuning.InputBufferTicks;
+            TickScale = 1f + Math.Clamp(surplus * ClockGain, -MaxClockChange, MaxClockChange);
         }
 
         // Snapshots can arrive out of order. Only a newer acknowledgement says anything new.

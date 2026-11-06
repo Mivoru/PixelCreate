@@ -30,7 +30,9 @@ Rules:
 - Every value that affects movement lives in `PlayerState`, and client and server both call
   `Movement.Step`. An ability the client cannot predict must correct through a snapshot.
 - Blender: `D:\Program\Blender Foundation\Blender 5.2\blender.exe -b --factory-startup -P <script>`.
-- Render check: run the Godot console executable with `--path client -- <folder>` to save frames.
+- Play: `bash scripts/play.sh` starts a local server and the client.
+- Live check: start `server/bin/Debug/net8.0/Server.exe`, then run the Godot console executable with
+  `--path client -- 127.0.0.1 7777 <folder>`. A bot plays, saves frames and prints a `STATS` line.
 
 ## Which tool to draw with
 
