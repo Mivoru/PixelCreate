@@ -35,11 +35,21 @@ class ComposeTests(unittest.TestCase):
     def test_sprite_lands_at_position_and_holds(self):
         scene = Image.new("RGBA", (8, 8), BLUE)
         dot = Image.new("RGBA", (1, 1), RED)
-        frames = compose(scene, [dot], [(-1, 0), (3, 2)], hold=2)
+        frames = compose([scene], [dot], [(-1, 0), (3, 2)], hold=2)
         self.assertEqual(len(frames), 4)
         self.assertEqual(frames[1].getpixel((3, 2)), RED)
         self.assertEqual(frames[0].getpixel((0, 0)), BLUE)
         self.assertEqual(frames[3].getpixel((3, 2)), RED)
+
+    def test_alternate_state_then_sprite_leaves(self):
+        closed = Image.new("RGBA", (4, 4), BLUE)
+        opened = Image.new("RGBA", (4, 4), (0, 200, 0, 255))
+        dot = Image.new("RGBA", (1, 1), RED)
+        frames = compose([closed, opened], [dot], [(1, 1)], loop=1, stand=1, inside=1, after=1)
+        self.assertEqual([f.getpixel((0, 0)) for f in frames],
+                         [BLUE, (0, 200, 0, 255), (0, 200, 0, 255), BLUE])
+        self.assertEqual(frames[1].getpixel((1, 1)), RED)
+        self.assertEqual(frames[2].getpixel((1, 1)), (0, 200, 0, 255))
 
 
 class LintTests(unittest.TestCase):
