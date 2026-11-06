@@ -13,10 +13,10 @@ public readonly record struct MotionState(
 /// </summary>
 public sealed class PlayerRig
 {
-    private const int JointCount = 14;
+    private const int JointCount = 15;
     private const int Lean = 0, Twist = 1, Bob = 2, Head = 3;
     private const int ThighL = 4, ThighR = 5, ShinL = 6, ShinR = 7;
-    private const int ArmL = 8, ArmR = 9, ArmRSide = 10, ForearmL = 11, ForearmR = 12, SwordTilt = 13;
+    private const int ArmL = 8, ArmR = 9, ArmRSide = 10, ForearmL = 11, ForearmR = 12, SwordTilt = 13, SwordYaw = 14;
 
     private readonly float[] _pose = new float[JointCount];
     private readonly float[] _target = new float[JointCount];
@@ -27,9 +27,23 @@ public sealed class PlayerRig
     private readonly Node3D _armL = new(), _armR = new(), _forearmL = new(), _forearmR = new();
     private readonly Node3D _sword = new();
     private readonly MeshInstance3D _slash;
+    private readonly ShaderMaterial _slashMaterial;
+    private readonly CpuParticles3D _sparks;
+    private readonly CpuParticles3D _wind;
     private float _phase;
+    private float _lastStride;
+    private bool _footDown;
+    private int _lastAttackTick = -1;
 
     public Node3D Root { get; } = new();
+
+    /// <summary>True once for each step that lands. Reading it clears it.</summary>
+    public bool TakeFootDown()
+    {
+        var down = _footDown;
+        _footDown = false;
+        return down;
+    }
 
     public bool SwordVisible
     {
@@ -73,14 +87,62 @@ public sealed class PlayerRig
         _sword.AddChild(Part(new BoxMesh { Size = new Vector3(0.1f, 0.04f, 0.9f) }, new Color("c28569"), new Vector3(0, 0, -0.58f)));
         _sword.AddChild(Part(new BoxMesh { Size = new Vector3(0.05f, 0.05f, 0.9f) }, new Color("e4a672"), new Vector3(-0.025f, 0.005f, -0.58f)));
 
-        _slash = BuildSlash();
+        _slashMaterial = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/slash.gdshader") };
+        _slash = new MeshInstance3D
+        {
+            Mesh = BuildSlashMesh(),
+            Position = new Vector3(0, 1.15f, 0),
+            Visible = false,
+            MaterialOverride = _slashMaterial,
+        };
         Root.AddChild(_slash);
+
+        _sparks = new CpuParticles3D
+        {
+            Emitting = false,
+            OneShot = true,
+            Explosiveness = 0.85f,
+            Amount = 26,
+            Lifetime = 0.42f,
+            Direction = Vector3.Forward,
+            Spread = 55f,
+            InitialVelocityMin = 3f,
+            InitialVelocityMax = 9f,
+            Gravity = new Vector3(0, -7f, 0),
+            ScaleAmountMin = 0.4f,
+            ScaleAmountMax = 1.2f,
+            Mesh = new BoxMesh { Size = Vector3.One * 0.06f },
+            MaterialOverride = Flat(new Color("fee761")),
+            Position = new Vector3(0, 1.15f, -1.7f),
+        };
+        Root.AddChild(_sparks);
+
+        _wind = new CpuParticles3D
+        {
+            Emitting = false,
+            Amount = 34,
+            Lifetime = 0.3f,
+            Direction = Vector3.Back,
+            Spread = 16f,
+            InitialVelocityMin = 5f,
+            InitialVelocityMax = 11f,
+            Gravity = Vector3.Zero,
+            EmissionShape = CpuParticles3D.EmissionShapeEnum.Box,
+            EmissionBoxExtents = new Vector3(0.45f, 0.85f, 0.2f),
+            Mesh = new BoxMesh { Size = new Vector3(0.03f, 0.03f, 0.55f) },
+            MaterialOverride = Flat(new Color("dff6f5")),
+            Position = new Vector3(0, 0.95f, 0.2f),
+            LocalCoords = false,
+        };
+        Root.AddChild(_wind);
     }
 
     /// <summary>Moves the rig towards the pose for this state. Call it once a frame.</summary>
     public void Animate(in MotionState state, float delta)
     {
         System.Array.Clear(_target);
+        CarrySword(0f);
+        _wind.Emitting = state.Dashing;
         var blend = 12f;
         if (state.Dashing)
         {
@@ -98,6 +160,9 @@ public sealed class PlayerRig
             var running = state.Speed > Tuning.MoveSpeed * 0.7f;
             _phase += delta * (running ? 13.5f : 9f) * Mathf.Clamp(state.Speed / Tuning.MoveSpeed, 0.5f, 1.2f);
             if (running) RunPose(); else WalkPose();
+            var stride = Mathf.Floor(_phase / Mathf.Pi);
+            _footDown |= stride != _lastStride && state.Grounded;
+            _lastStride = stride;
         }
         else
         {
@@ -112,6 +177,8 @@ public sealed class PlayerRig
             blend = 34f;
         }
 
+        _lastAttackTick = state.Attack == AttackKind.None ? -1 : state.AttackTick;
+
         var weight = 1f - Mathf.Exp(-blend * delta);
         for (var i = 0; i < JointCount; i++)
         {
@@ -121,15 +188,22 @@ public sealed class PlayerRig
         Apply();
     }
 
+    /// <summary>The ready grip: the hand out from the hip and the blade angled forward and away from the body.</summary>
+    private void CarrySword(float swing)
+    {
+        _target[ArmR] = 0.2f + swing;
+        _target[ArmRSide] = 0.42f;
+        _target[ForearmR] = -0.75f;
+        _target[SwordTilt] = -0.55f;
+        _target[SwordYaw] = -0.55f;
+    }
+
     private void IdlePose()
     {
         var breath = Mathf.Sin(_phase);
         _target[Bob] = breath * 0.012f;
         _target[ArmL] = 0.05f;
-        _target[ArmR] = 0.25f;
-        _target[ForearmR] = -0.55f;
         _target[ForearmL] = -0.15f;
-        _target[SwordTilt] = 0.5f;
         _target[Lean] = 0.03f + breath * 0.01f;
     }
 
@@ -142,10 +216,8 @@ public sealed class PlayerRig
         _target[ShinL] = Mathf.Max(0, lift) * 0.8f + 0.1f;
         _target[ShinR] = Mathf.Max(0, -lift) * 0.8f + 0.1f;
         _target[ArmL] = -swing * 0.5f;
-        _target[ArmR] = swing * 0.25f + 0.25f;
+        CarrySword(swing * 0.12f);
         _target[ForearmL] = -0.3f;
-        _target[ForearmR] = -0.6f;
-        _target[SwordTilt] = 0.5f;
         _target[Lean] = 0.08f;
         _target[Twist] = swing * 0.1f;
         _target[Bob] = Mathf.Abs(lift) * 0.05f - 0.03f;
@@ -160,10 +232,13 @@ public sealed class PlayerRig
         _target[ShinL] = Mathf.Max(0, lift) * 1.5f + 0.25f;
         _target[ShinR] = Mathf.Max(0, -lift) * 1.5f + 0.25f;
         _target[ArmL] = -swing * 0.95f;
-        _target[ArmR] = swing * 0.4f + 0.9f;
         _target[ForearmL] = -1.2f;
-        _target[ForearmR] = -0.4f;
-        _target[SwordTilt] = 1.4f;
+        // A running sword arm stays low and trails the blade behind, clear of the legs.
+        _target[ArmR] = -0.35f + swing * 0.14f;
+        _target[ArmRSide] = 0.5f;
+        _target[ForearmR] = -0.5f;
+        _target[SwordTilt] = 2.5f;
+        _target[SwordYaw] = 0.45f;
         _target[Lean] = 0.36f;
         _target[Twist] = swing * 0.18f;
         _target[Bob] = Mathf.Abs(lift) * 0.09f - 0.08f;
@@ -177,10 +252,12 @@ public sealed class PlayerRig
         _target[ThighR] = 0.9f;
         _target[ShinL] = 0.5f;
         _target[ShinR] = 1.1f;
-        _target[ArmL] = 1.2f;
-        _target[ArmR] = 1.3f;
+        _target[ArmL] = -0.9f;
+        _target[ArmR] = -0.9f;
+        _target[ArmRSide] = 0.6f;
         _target[ForearmR] = -0.2f;
-        _target[SwordTilt] = 1.5f;
+        _target[SwordTilt] = 2.7f;
+        _target[SwordYaw] = 0.3f;
         _target[Bob] = -0.2f;
         _target[Head] = -0.6f;
     }
@@ -193,11 +270,9 @@ public sealed class PlayerRig
         _target[ShinL] = rising ? 1.1f : 0.4f;
         _target[ShinR] = rising ? 0.5f : 0.7f;
         _target[ArmL] = rising ? -0.5f : 0.1f;
-        _target[ArmR] = rising ? 0.7f : 0.4f;
-        _target[ArmRSide] = 0.35f;
+        _target[ArmR] = rising ? 0.5f : 0.2f;
+        _target[ArmRSide] = 0.6f;
         _target[ForearmL] = -0.5f;
-        _target[ForearmR] = -0.6f;
-        _target[SwordTilt] = 0.5f;
         _target[Lean] = rising ? 0.12f : -0.05f;
     }
 
@@ -216,6 +291,7 @@ public sealed class PlayerRig
         _target[ArmRSide] = swung ? -0.7f : 0.55f;
         _target[ForearmR] = swung ? -0.15f : -1.1f;
         _target[SwordTilt] = swung ? 0.0f : 1.25f;
+        _target[SwordYaw] = 0f;
         _target[ArmL] = swung ? -0.6f : 0.45f;
         _target[ForearmL] = -0.6f;
         _target[ThighL] = heavy ? -0.6f : -0.3f;
@@ -224,13 +300,26 @@ public sealed class PlayerRig
         _target[ShinR] = 0.5f;
         _target[Bob] = heavy && swung ? -0.14f : -0.05f;
 
-        var showSlash = tick >= attack.HitAt - 3 && tick <= attack.HitAt + 4;
-        _slash.Visible = showSlash;
-        if (showSlash)
+        // The head of the slash races along the arc, then the tail catches up and it dissolves.
+        var first = attack.HitAt - 4;
+        var length = heavy ? 13f : 10f;
+        var progress = (tick - first) / length;
+        _slash.Visible = progress is >= 0f and <= 1.6f;
+        if (_slash.Visible)
         {
-            var progress = (tick - attack.HitAt + 3) / 7f;
-            _slash.Rotation = new Vector3(heavy ? 0.5f : 0f, 1.1f - progress * 2.2f, heavy ? 0.9f : 0.15f);
-            _slash.Scale = Vector3.One * (heavy ? 1.3f : 1f);
+            _slashMaterial.SetShaderParameter("head", Mathf.Min(progress * 1.5f, 1.8f));
+            _slashMaterial.SetShaderParameter("strength", progress < 1f ? 1f : 2.6f - progress * 1.6f);
+            _slashMaterial.SetShaderParameter("inner_color", new Color(heavy ? "f77622" : "feae34"));
+            _slashMaterial.SetShaderParameter("tip_color", new Color(heavy ? "fee761" : "ffffff"));
+            _slash.Rotation = new Vector3(heavy ? 0.35f : 0.05f, 0f, heavy ? 0.85f : 0.2f);
+            _slash.Scale = Vector3.One * (heavy ? 1.25f : 1f);
+        }
+
+        if (tick >= attack.HitAt && _lastAttackTick < attack.HitAt)
+        {
+            _sparks.Amount = heavy ? 42 : 24;
+            _sparks.Restart();
+            _sparks.Emitting = true;
         }
     }
 
@@ -247,7 +336,7 @@ public sealed class PlayerRig
         _armR.Rotation = new Vector3(_pose[ArmR], 0, -0.08f - _pose[ArmRSide]);
         _forearmL.Rotation = new Vector3(-_pose[ForearmL], 0, 0);
         _forearmR.Rotation = new Vector3(-_pose[ForearmR], 0, 0);
-        _sword.Rotation = new Vector3(_pose[SwordTilt], 0, 0);
+        _sword.Rotation = new Vector3(_pose[SwordTilt], _pose[SwordYaw], 0);
     }
 
     private void BuildLeg(Node3D thigh, Node3D shin, float x, Color cloth, Color boot)
@@ -272,6 +361,15 @@ public sealed class PlayerRig
         forearm.AddChild(Part(new SphereMesh { Radius = 0.075f, Height = 0.15f, RadialSegments = 6, Rings = 3 }, skin, new Vector3(0, -0.29f, 0)));
     }
 
+    /// <summary>A solid colour without the outline the post pass would draw around small pieces.</summary>
+    private static ShaderMaterial Flat(Color color)
+    {
+        var material = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/stipple.gdshader") };
+        material.SetShaderParameter("color", color);
+        material.SetShaderParameter("strength", 1f);
+        return material;
+    }
+
     private static MeshInstance3D Part(Mesh mesh, Color color, Vector3 position) => new()
     {
         Mesh = mesh,
@@ -279,39 +377,37 @@ public sealed class PlayerRig
         MaterialOverride = new StandardMaterial3D { AlbedoColor = color, Roughness = 1 },
     };
 
-    /// <summary>A flat crescent that shows the path of the blade for a few frames.</summary>
-    private static MeshInstance3D BuildSlash()
+    /// <summary>The swing as a flat band: U runs along the swing, V from the player to the blade tip.</summary>
+    private static ArrayMesh BuildSlashMesh()
     {
         var surface = new SurfaceTool();
         surface.Begin(Mesh.PrimitiveType.Triangles);
-        const int steps = 10;
+        const int steps = 16;
+        const float reach = 2.5f;
         for (var i = 0; i < steps; i++)
         {
-            var a = Mathf.Lerp(-1.1f, 1.1f, i / (float)steps);
-            var b = Mathf.Lerp(-1.1f, 1.1f, (i + 1) / (float)steps);
-            var inner = 1.1f + Mathf.Sin(i / (float)steps * Mathf.Pi) * 0.5f;
-            var innerNext = 1.1f + Mathf.Sin((i + 1) / (float)steps * Mathf.Pi) * 0.5f;
-            var p0 = new Vector3(Mathf.Sin(a) * 2.2f, 0, -Mathf.Cos(a) * 2.2f);
-            var p1 = new Vector3(Mathf.Sin(b) * 2.2f, 0, -Mathf.Cos(b) * 2.2f);
-            var q0 = new Vector3(Mathf.Sin(a) * inner, 0, -Mathf.Cos(a) * inner);
-            var q1 = new Vector3(Mathf.Sin(b) * innerNext, 0, -Mathf.Cos(b) * innerNext);
-            foreach (var vertex in new[] { p0, p1, q0, q0, p1, q1 })
-            {
-                surface.AddVertex(vertex);
-            }
+            var u0 = i / (float)steps;
+            var u1 = (i + 1) / (float)steps;
+            var a = Mathf.Lerp(-1.25f, 1.25f, u0);
+            var b = Mathf.Lerp(-1.25f, 1.25f, u1);
+            var p0 = new Vector3(Mathf.Sin(a) * reach, 0, -Mathf.Cos(a) * reach);
+            var p1 = new Vector3(Mathf.Sin(b) * reach, 0, -Mathf.Cos(b) * reach);
+            var q0 = p0 * 0.28f;
+            var q1 = p1 * 0.28f;
+            AddSlashVertex(surface, p0, u0, 1f);
+            AddSlashVertex(surface, p1, u1, 1f);
+            AddSlashVertex(surface, q0, u0, 0f);
+            AddSlashVertex(surface, q0, u0, 0f);
+            AddSlashVertex(surface, p1, u1, 1f);
+            AddSlashVertex(surface, q1, u1, 0f);
         }
 
-        return new MeshInstance3D
-        {
-            Mesh = surface.Commit(),
-            Position = new Vector3(0, 1.15f, 0),
-            Visible = false,
-            MaterialOverride = new StandardMaterial3D
-            {
-                AlbedoColor = new Color("fee761"),
-                ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
-                CullMode = BaseMaterial3D.CullModeEnum.Disabled,
-            },
-        };
+        return surface.Commit();
+    }
+
+    private static void AddSlashVertex(SurfaceTool surface, Vector3 position, float u, float v)
+    {
+        surface.SetUV(new Vector2(u, v));
+        surface.AddVertex(position);
     }
 }

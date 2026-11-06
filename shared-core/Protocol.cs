@@ -13,7 +13,7 @@ public readonly record struct RemotePlayer(int Id, Vector3 Position, Vector3 Vel
 
 public readonly record struct EnemyView(
     int Id, byte Type, byte Level, Vector3 Position, float Facing, short Health, short MaxHealth,
-    EnemyAction Action, byte HitFlash);
+    EnemyAction Action, byte HitFlash, Vector3 LeapTarget, bool Fighting);
 
 public readonly record struct SpitView(int Id, Vector3 Position);
 
@@ -28,6 +28,13 @@ public sealed class Snapshot
     /// <summary>Inputs the server holds for this client. The client runs faster or slower to keep it steady.</summary>
     public byte BufferedInputs;
     public PlayerState Self;
+    public byte Level = 1;
+    public int Xp;
+    public int XpToNext;
+    public short MaxHealth = Tuning.PlayerHealth;
+
+    /// <summary>Counts attacks avoided with a dash, so the client can show each one.</summary>
+    public byte Dodges;
     public RemotePlayer[] Others = Array.Empty<RemotePlayer>();
     public EnemyView[] Enemies = Array.Empty<EnemyView>();
     public SpitView[] Spits = Array.Empty<SpitView>();
@@ -97,6 +104,11 @@ public static class Protocol
         writer.Write(snapshot.AckTick);
         writer.Write(snapshot.BufferedInputs);
         WriteState(writer, snapshot.Self);
+        writer.Write(snapshot.Level);
+        writer.Write(snapshot.Xp);
+        writer.Write(snapshot.XpToNext);
+        writer.Write(snapshot.MaxHealth);
+        writer.Write(snapshot.Dodges);
         writer.Write((byte)snapshot.Others.Length);
         foreach (var other in snapshot.Others)
         {
@@ -120,6 +132,8 @@ public static class Protocol
             writer.Write(enemy.MaxHealth);
             writer.Write((byte)enemy.Action);
             writer.Write(enemy.HitFlash);
+            WriteVector(writer, enemy.LeapTarget);
+            writer.Write(enemy.Fighting);
         }
 
         writer.Write((byte)snapshot.Spits.Length);
@@ -147,6 +161,11 @@ public static class Protocol
         snapshot.AckTick = reader.ReadUInt32();
         snapshot.BufferedInputs = reader.ReadByte();
         snapshot.Self = ReadState(reader);
+        snapshot.Level = reader.ReadByte();
+        snapshot.Xp = reader.ReadInt32();
+        snapshot.XpToNext = reader.ReadInt32();
+        snapshot.MaxHealth = reader.ReadInt16();
+        snapshot.Dodges = reader.ReadByte();
         snapshot.Others = new RemotePlayer[reader.ReadByte()];
         for (var i = 0; i < snapshot.Others.Length; i++)
         {
@@ -158,7 +177,8 @@ public static class Protocol
         for (var i = 0; i < snapshot.Enemies.Length; i++)
         {
             snapshot.Enemies[i] = new EnemyView(reader.ReadInt32(), reader.ReadByte(), reader.ReadByte(), ReadVector(reader),
-                reader.ReadSingle(), reader.ReadInt16(), reader.ReadInt16(), (EnemyAction)reader.ReadByte(), reader.ReadByte());
+                reader.ReadSingle(), reader.ReadInt16(), reader.ReadInt16(), (EnemyAction)reader.ReadByte(), reader.ReadByte(),
+                ReadVector(reader), reader.ReadBoolean());
         }
 
         snapshot.Spits = new SpitView[reader.ReadByte()];

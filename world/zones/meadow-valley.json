@@ -22,9 +22,11 @@
     { "width": 2.5, "points": [[-2, 8], [-9, 6], [-18, 2], [-29, -4], [-42, -14]] }
   ],
   "enemies": [
-    { "x": -30, "z": 28, "radius": 16, "count": 6 },
-    { "x": 34, "z": 10, "radius": 16, "count": 6 },
-    { "x": -6, "z": -36, "radius": 18, "count": 8 }
+    { "x": -24, "z": 26, "radius": 11, "count": 5, "minLevel": 1, "maxLevel": 1, "respawnTicks": 900 },
+    { "x": 30, "z": 14, "radius": 12, "count": 5, "minLevel": 1, "maxLevel": 2, "respawnTicks": 900 },
+    { "x": -38, "z": -18, "radius": 13, "count": 6, "minLevel": 2, "maxLevel": 3, "respawnTicks": 1200 },
+    { "x": 2, "z": -52, "radius": 15, "count": 7, "minLevel": 3, "maxLevel": 4, "respawnTicks": 1200 },
+    { "x": 36, "z": -44, "radius": 5, "count": 1, "minLevel": 4, "maxLevel": 4, "respawnTicks": 7200, "rare": true }
   ],
   "props": [
     { "model": "cottage", "x": 10, "z": 2 },

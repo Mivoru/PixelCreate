@@ -112,6 +112,9 @@ public sealed class ClientPrediction
         if (Latest is null || snapshot.ServerTick > Latest.ServerTick)
         {
             Latest = snapshot;
+
+            // Only the server changes health, so it needs no prediction and no correction.
+            State.Health = snapshot.Self.Health;
             var surplus = snapshot.BufferedInputs - Tuning.InputBufferTicks;
             TickScale = 1f + Math.Clamp(surplus * ClockGain, -MaxClockChange, MaxClockChange);
         }
@@ -174,6 +177,6 @@ public sealed class ClientPrediction
 
     private static bool SameDiscreteState(in PlayerState a, in PlayerState b) =>
         a.SlowTicks == b.SlowTicks && a.DashTicks == b.DashTicks && a.DashCooldown == b.DashCooldown &&
-        a.Attack == b.Attack && a.AttackTick == b.AttackTick && a.Health == b.Health &&
+        a.Attack == b.Attack && a.AttackTick == b.AttackTick &&
         MathF.Abs(a.Stamina - b.Stamina) < 0.01f;
 }

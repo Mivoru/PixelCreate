@@ -38,6 +38,9 @@ Rules:
   runtimes in shared code, such as casting a negative float to an unsigned integer. A live run with
   many corrections and no hits means client and server simulate differently.
 - All game text is English. Enemy types live in `world/enemies.json`; items are a local UI model for now.
+- Sound effects come from ElevenLabs: `python asset-pipeline/generate_sounds.py` (cached, keys stay outside the repo).
+- A snapshot must fit one UDP packet, so the server sends each player only nearby enemies.
+- Pose check: run the Godot console executable with `--path client res://scenes/pose_test.tscn -- <folder>`.
 - Regenerate textures, palette and UI font with `python asset-pipeline/generate_textures.py`.
 - Zones live in `world/zones/*.json`: the layout is authored, the scattered detail comes from the seed.
 - Blender: `D:\Program\Blender Foundation\Blender 5.2\blender.exe -b --factory-startup -P <script>`.

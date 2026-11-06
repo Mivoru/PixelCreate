@@ -21,7 +21,6 @@ public static class Tuning
     public const byte DashTicks = 9;
     public const byte DashCooldownTicks = 45;
     public const short PlayerHealth = 100;
-    public const byte PlayerLevel = 2;
 
     public const float MaxStamina = 100f;
     public const float StaminaRegenPerTick = 24f / TickRate;
@@ -101,10 +100,10 @@ public struct PlayerState
     public byte AttackAim;
     public short Health;
 
-    public static PlayerState Spawn(Vector3 position) => new()
+    public static PlayerState Spawn(Vector3 position, short health = Tuning.PlayerHealth) => new()
     {
         Position = position,
-        Health = Tuning.PlayerHealth,
+        Health = health,
         Stamina = Tuning.MaxStamina,
         Grounded = true,
     };

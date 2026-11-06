@@ -23,8 +23,8 @@
   {
     "id": "rare_slime",
     "name": "Rare Slime",
-    "minLevel": 4,
-    "maxLevel": 4,
+    "minLevel": 1,
+    "maxLevel": 60,
     "health": 70,
     "healthPerLevel": 15,
     "speed": 4.4,
@@ -39,6 +39,6 @@
     "spitRange": 14,
     "spitDamage": 8,
     "spitCooldownTicks": 120,
-    "rareChance": 0.12
+    "rareChance": 0.03
   }
 ]

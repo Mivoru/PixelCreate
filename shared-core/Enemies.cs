@@ -22,7 +22,9 @@ public sealed record EnemyDef(
     }
 }
 
-public readonly record struct EnemySpawn(Vector3 Center, float Radius, int Count);
+/// <summary>A camp: a place enemies live, return to and respawn at. A rare camp holds only rare enemies.</summary>
+public readonly record struct EnemySpawn(
+    Vector3 Center, float Radius, int Count, int MinLevel = 1, int MaxLevel = 3, int RespawnTicks = 240, bool Rare = false);
 
 public enum EnemyAction : byte
 {
@@ -49,15 +51,33 @@ public static class ThreatRules
         enemyLevel > playerLevel ? Threat.Strong : enemyLevel < playerLevel ? Threat.Weak : Threat.Even;
 }
 
-/// <summary>One enemy on the server. It hops, leaps at players, splashes on landing and may spit.</summary>
+/// <summary>A player as an enemy sees it.</summary>
+public readonly record struct Target(int Id, Vector3 Position, Vector3 Velocity);
+
+/// <summary>What an enemy asks the game to do.</summary>
+public interface IEnemyEvents
+{
+    void Splash(Enemy enemy);
+    void Spit(Enemy enemy, Target target);
+
+    /// <summary>The enemy has noticed a player; its neighbours join in.</summary>
+    void CallForHelp(Enemy enemy, int targetId);
+}
+
+/// <summary>
+/// One enemy on the server. It wanders its camp, chases what it notices, leaps with a warning circle
+/// and splashes on landing. Pulled too far from home it gives up, returns and heals.
+/// </summary>
 public sealed class Enemy
 {
-    private const int WindupTicks = 26;
-    private const int SpitWindupTicks = 20;
+    private const int WindupTicks = 34;
+    private const int SpitWindupTicks = 26;
     private const int SplatTicks = 26;
-    private const int DeadTicks = 240;
     private const int LeapAirTicks = 34;
     private const float HopSpeed = 5.5f;
+    private const float LeashExtra = 16f;
+    private const float LeapLead = 0.3f;
+    private const float ReturnSpeedFactor = 1.8f;
 
     public required int Id;
     public required byte Type;
@@ -65,6 +85,7 @@ public sealed class Enemy
     public byte Level;
     public Vector3 Position;
     public Vector3 Velocity;
+    public Vector3 LeapTarget;
     public short Health;
     public EnemyAction Action;
     public int ActionTicks;
@@ -73,16 +94,24 @@ public sealed class Enemy
     public byte HitFlash;
     public float Facing;
 
+    /// <summary>The player this enemy is after, or -1.</summary>
+    public int TargetId = -1;
+
+    /// <summary>The first player to hit this enemy gets the experience for it.</summary>
+    public int TaggedBy = -1;
+
+    public bool Returning;
+
     public EnemyDef Def => EnemyDef.All[Type];
-    public int MaxHealth => Def.Health + Def.HealthPerLevel * (Level - Def.MinLevel);
+    public int MaxHealth => Def.Health + Def.HealthPerLevel * (Level - 1);
     public bool Alive => Action != EnemyAction.Dead;
 
     public void Reset(Random random, World world)
     {
-        var rare = EnemyDef.All.FirstOrDefault(d => d.RareChance > 0);
-        var chosen = rare is not null && random.NextDouble() < rare.RareChance ? rare : EnemyDef.All[0];
-        Type = (byte)IndexOf(chosen);
-        Level = (byte)random.Next(chosen.MinLevel, chosen.MaxLevel + 1);
+        var rare = EnemyDef.All.First(d => d.RareChance > 0);
+        var chosen = Home.Rare || random.NextDouble() < rare.RareChance ? rare : EnemyDef.All[0];
+        Type = (byte)EnemyDef.All.ToList().IndexOf(chosen);
+        Level = (byte)(chosen == rare ? Home.MaxLevel + 1 : random.Next(Home.MinLevel, Home.MaxLevel + 1));
         var angle = (float)(random.NextDouble() * Math.Tau);
         var reach = (float)random.NextDouble() * Home.Radius;
         var spot = Home.Center + new Vector3(MathF.Cos(angle) * reach, 0, MathF.Sin(angle) * reach);
@@ -94,20 +123,12 @@ public sealed class Enemy
         ActionTicks = random.Next(10, 60);
         LeapCooldown = 60;
         SpitCooldown = 60;
+        TargetId = -1;
+        TaggedBy = -1;
+        Returning = false;
     }
 
-    private static int IndexOf(EnemyDef def)
-    {
-        for (var i = 0; i < EnemyDef.All.Count; i++)
-        {
-            if (EnemyDef.All[i] == def) return i;
-        }
-
-        return 0;
-    }
-
-    /// <summary>Advances the enemy and reports what it did through the callbacks.</summary>
-    public void Step(World world, Random random, Vector3? target, Action<Enemy> splash, Action<Enemy, Vector3> spit)
+    public void Step(World world, Random random, IReadOnlyList<Target> targets, IEnemyEvents events)
     {
         if (HitFlash > 0) HitFlash--;
         if (LeapCooldown > 0) LeapCooldown--;
@@ -124,10 +145,11 @@ public sealed class Enemy
 
                 return;
             case EnemyAction.Idle:
-                Velocity *= 0.8f;
+                Velocity.X *= 0.8f;
+                Velocity.Z *= 0.8f;
                 if (ActionTicks <= 0)
                 {
-                    Decide(world, random, target);
+                    Decide(world, random, targets, events);
                 }
 
                 break;
@@ -135,7 +157,7 @@ public sealed class Enemy
                 Velocity = Vector3.Zero;
                 if (ActionTicks <= 0)
                 {
-                    Launch(world, target);
+                    Launch();
                 }
 
                 break;
@@ -143,9 +165,9 @@ public sealed class Enemy
                 Velocity = Vector3.Zero;
                 if (ActionTicks <= 0)
                 {
-                    if (target is { } aim)
+                    if (FindTarget(targets) is { } aim)
                     {
-                        spit(this, aim);
+                        events.Spit(this, aim);
                     }
 
                     ToIdle(random);
@@ -162,15 +184,25 @@ public sealed class Enemy
                 break;
         }
 
-        Fall(world, random, splash);
+        Fall(world, random, events);
     }
 
-    public void TakeHit(short damage, Vector3 from)
+    /// <summary>Takes damage from a player. Returns true when this hit kills the enemy.</summary>
+    public bool TakeHit(short damage, Vector3 from, int attackerId = -1)
     {
+        if (TaggedBy < 0)
+        {
+            TaggedBy = attackerId;
+        }
+
+        if (attackerId >= 0 && !Returning)
+        {
+            TargetId = attackerId;
+        }
+
         Health -= damage;
         HitFlash = 10;
-        var away = Position - from;
-        away.Y = 0;
+        var away = Flat(Position - from);
         if (away != Vector3.Zero)
         {
             Velocity += Vector3.Normalize(away) * 5f + Vector3.UnitY * 3f;
@@ -181,78 +213,173 @@ public sealed class Enemy
             Action = EnemyAction.Hop;
         }
 
-        if (Health <= 0)
+        if (Health > 0)
         {
-            Action = EnemyAction.Dead;
-            ActionTicks = DeadTicks;
-            Velocity = Vector3.Zero;
+            return false;
         }
+
+        Action = EnemyAction.Dead;
+        ActionTicks = Home.RespawnTicks;
+        Velocity = Vector3.Zero;
+        return true;
+    }
+
+    private Target? FindTarget(IReadOnlyList<Target> targets)
+    {
+        foreach (var target in targets)
+        {
+            if (target.Id == TargetId)
+            {
+                return target;
+            }
+        }
+
+        return null;
     }
 
     private void ToIdle(Random random)
     {
         Action = EnemyAction.Idle;
-        ActionTicks = random.Next(8, Def.HopTicks);
+        ActionTicks = TargetId >= 0 || Returning ? random.Next(6, 18) : random.Next(Def.HopTicks, Def.HopTicks * 4);
     }
 
-    private void Decide(World world, Random random, Vector3? target)
+    private void Decide(World world, Random random, IReadOnlyList<Target> targets, IEnemyEvents events)
     {
-        if (target is { } aim && Vector3.Distance(aim, Position) < Def.AggroRange)
+        var homeDistance = Flat(Home.Center - Position).Length();
+        if (Returning)
         {
-            var distance = Vector3.Distance(aim, Position);
-            Face(aim);
-            if (distance < Def.LeapRange && LeapCooldown == 0)
+            if (homeDistance < Home.Radius * 0.6f)
             {
-                Action = EnemyAction.Windup;
-                ActionTicks = WindupTicks;
-                LeapCooldown = Def.LeapCooldownTicks;
+                Returning = false;
+                Health = (short)MaxHealth;
+                TaggedBy = -1;
+                ToIdle(random);
                 return;
             }
 
-            if (Def.SpitRange > 0 && distance < Def.SpitRange && SpitCooldown == 0)
-            {
-                Action = EnemyAction.Spit;
-                ActionTicks = SpitWindupTicks;
-                SpitCooldown = Def.SpitCooldownTicks;
-                return;
-            }
-
-            Hop(world, Vector3.Normalize(Flat(aim - Position)));
+            Hop(world, random, Home.Center - Position, ReturnSpeedFactor);
             return;
         }
 
-        var toHome = Flat(Home.Center - Position);
-        var drift = toHome.Length() > Home.Radius ? Vector3.Normalize(toHome)
-            : new Vector3((float)random.NextDouble() - 0.5f, 0, (float)random.NextDouble() - 0.5f);
-        if (drift == Vector3.Zero)
+        if (TargetId >= 0 && (FindTarget(targets) is null || homeDistance > Home.Radius + LeashExtra))
+        {
+            TargetId = -1;
+            Returning = homeDistance > Home.Radius;
+            ToIdle(random);
+            return;
+        }
+
+        if (TargetId < 0)
+        {
+            Notice(targets, events);
+        }
+
+        if (FindTarget(targets) is { } target)
+        {
+            Fight(world, random, target, events);
+            return;
+        }
+
+        // Wander around the camp, and drift back towards the middle near its edge.
+        if (homeDistance > Home.Radius)
+        {
+            Hop(world, random, Home.Center - Position, 1f);
+        }
+        else if (random.Next(3) == 0)
+        {
+            ToIdle(random);
+        }
+        else
+        {
+            var angle = (float)(random.NextDouble() * Math.Tau);
+            Hop(world, random, new Vector3(MathF.Cos(angle), 0, MathF.Sin(angle)), 0.6f);
+        }
+    }
+
+    private void Notice(IReadOnlyList<Target> targets, IEnemyEvents events)
+    {
+        var nearest = Def.AggroRange;
+        foreach (var target in targets)
+        {
+            var distance = Vector3.Distance(target.Position, Position);
+            if (distance < nearest)
+            {
+                nearest = distance;
+                TargetId = target.Id;
+            }
+        }
+
+        if (TargetId >= 0)
+        {
+            events.CallForHelp(this, TargetId);
+        }
+    }
+
+    private void Fight(World world, Random random, Target target, IEnemyEvents events)
+    {
+        var distance = Vector3.Distance(target.Position, Position);
+        Face(target.Position);
+        if (distance < Def.LeapRange && LeapCooldown == 0)
+        {
+            Action = EnemyAction.Windup;
+            ActionTicks = WindupTicks;
+            LeapCooldown = Def.LeapCooldownTicks + random.Next(60);
+            LeapTarget = target.Position + Flat(target.Velocity) * LeapLead;
+            LeapTarget.Y = world.GroundHeight(LeapTarget.X, LeapTarget.Z);
+            return;
+        }
+
+        if (Def.SpitRange > 0 && distance < Def.SpitRange && SpitCooldown == 0)
+        {
+            Action = EnemyAction.Spit;
+            ActionTicks = SpitWindupTicks;
+            SpitCooldown = Def.SpitCooldownTicks;
+            return;
+        }
+
+        // A spitter keeps its distance; a plain slime closes in.
+        var toward = target.Position - Position;
+        Hop(world, random, Def.SpitRange > 0 && distance < Def.LeapRange * 0.6f ? -toward : toward, 1f);
+    }
+
+    /// <summary>Hops in a direction, turning aside when something stands in the way.</summary>
+    private void Hop(World world, Random random, Vector3 direction, float speedFactor)
+    {
+        var flat = Flat(direction);
+        if (flat == Vector3.Zero)
         {
             ToIdle(random);
             return;
         }
 
-        Hop(world, Vector3.Normalize(drift));
-    }
-
-    private void Hop(World world, Vector3 direction)
-    {
-        if (float.IsNaN(direction.X))
-        {
-            direction = Vector3.UnitX;
-        }
-
-        Facing = MathF.Atan2(-direction.X, -direction.Z);
+        var heading = Steer(world, Vector3.Normalize(flat));
+        Facing = MathF.Atan2(-heading.X, -heading.Z);
         Action = EnemyAction.Hop;
         ActionTicks = Def.HopTicks;
-        Velocity = direction * Def.Speed + Vector3.UnitY * HopSpeed;
+        Velocity = heading * (Def.Speed * speedFactor) + Vector3.UnitY * HopSpeed;
     }
 
-    private void Launch(World world, Vector3? target)
+    private Vector3 Steer(World world, Vector3 heading)
     {
-        var aim = target ?? Position;
-        Face(aim);
+        foreach (var turn in new[] { 0f, 0.6f, -0.6f, 1.2f, -1.2f, 1.9f, -1.9f })
+        {
+            var rotated = Vector3.Transform(heading, Matrix4x4.CreateRotationY(turn));
+            var ahead = Position + rotated * 1.6f;
+            ahead.Y = world.GroundHeight(ahead.X, ahead.Z) + 0.6f;
+            if (!world.IsBlocked(ahead))
+            {
+                return rotated;
+            }
+        }
+
+        return heading;
+    }
+
+    private void Launch()
+    {
+        Face(LeapTarget);
         var air = LeapAirTicks * Tuning.TickSeconds;
-        var flat = Flat(aim - Position);
-        Velocity = flat / air;
+        Velocity = Flat(LeapTarget - Position) / air;
         Velocity.Y = Tuning.Gravity * air / 2f;
         Action = EnemyAction.Leap;
         ActionTicks = LeapAirTicks * 2;
@@ -269,11 +396,11 @@ public sealed class Enemy
 
     private static Vector3 Flat(Vector3 value) => value with { Y = 0 };
 
-    private void Fall(World world, Random random, Action<Enemy> splash)
+    private void Fall(World world, Random random, IEnemyEvents events)
     {
         var next = Position + Flat(Velocity) * Tuning.TickSeconds;
-        var probe = next + Vector3.UnitY * 0.6f;
-        if (world.IsBlocked(probe) && next.Y >= world.GroundHeight(next.X, next.Z) - 0.05f)
+        var probe = next with { Y = MathF.Max(Position.Y, world.GroundHeight(next.X, next.Z)) + 0.6f };
+        if (world.IsBlocked(probe))
         {
             Velocity.X = 0;
             Velocity.Z = 0;
@@ -300,7 +427,7 @@ public sealed class Enemy
         {
             Action = EnemyAction.Splat;
             ActionTicks = SplatTicks;
-            splash(this);
+            events.Splash(this);
         }
         else if (Action == EnemyAction.Hop)
         {

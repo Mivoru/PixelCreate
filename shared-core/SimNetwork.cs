@@ -34,6 +34,8 @@ public sealed class SimNetwork
         }
     }
 
+    private const int MaxPacketSize = 1000;
+
     private readonly Random _random;
     private readonly double _oneWayMs;
     private readonly double _jitterMs;
@@ -72,6 +74,12 @@ public sealed class SimNetwork
 
     private void Enqueue(int from, int to, byte[] data)
     {
+        // Real UDP refuses larger unreliable packets, so the simulation must refuse them too.
+        if (data.Length > MaxPacketSize)
+        {
+            throw new InvalidOperationException($"A packet of {data.Length} bytes does not fit in one datagram.");
+        }
+
         Sent++;
         if (_random.NextDouble() < _lossChance)
         {

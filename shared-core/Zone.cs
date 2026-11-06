@@ -64,7 +64,8 @@ public sealed class Zone
 
     private sealed record ScatterData(string Model, int Count, float[] Area, float MinScale, float MaxScale, float Spacing);
 
-    private sealed record EnemySpawnData(float X, float Z, float Radius, int Count);
+    private sealed record EnemySpawnData(
+        float X, float Z, float Radius, int Count, int MinLevel = 1, int MaxLevel = 3, int RespawnTicks = 900, bool Rare = false);
 
     private sealed record ZoneData(
         string Name, float Size, int Cells, int Seed, float[] Spawn, HillData[] Hills, PathData[] Paths,
@@ -109,7 +110,7 @@ public sealed class Zone
         Props = props;
         var spawn = new Vector3(data.Spawn[0], terrain.At(data.Spawn[0], data.Spawn[1]), data.Spawn[1]);
         var enemySpawns = (data.Enemies ?? Array.Empty<EnemySpawnData>())
-            .Select(e => new EnemySpawn(new Vector3(e.X, terrain.At(e.X, e.Z), e.Z), e.Radius, e.Count)).ToArray();
+            .Select(e => new EnemySpawn(new Vector3(e.X, terrain.At(e.X, e.Z), e.Z), e.Radius, e.Count, e.MinLevel, e.MaxLevel, e.RespawnTicks, e.Rare)).ToArray();
         World = new World(BuildBoxes(props, data.Size), terrain, spawn, enemySpawns);
     }
 

@@ -276,9 +276,10 @@ public sealed class EnemyTests
     public void RareSlimes_Spit()
     {
         var network = new SimNetwork(1, 0, 0, 0);
-        var server = new GameServer(network.Connect(0), new World(Array.Empty<Aabb>()), new ServerOptions { EnemyCount = 40, Seed = 3 });
-        var client = new ClientPrediction(network.Connect(1), new World(Array.Empty<Aabb>()));
-        Assert.Contains(server.Enemies, e => e.Def.Id == "rare_slime");
+        var world = new World(Array.Empty<Aabb>(), null, Vector3.Zero, new[] { new EnemySpawn(new Vector3(0, 0, 9), 2f, 3, 1, 1, 900, true) });
+        var server = new GameServer(network.Connect(0), world, new ServerOptions { Seed = 3 });
+        var client = new ClientPrediction(network.Connect(1), world);
+        Assert.All(server.Enemies, e => Assert.Equal("rare_slime", e.Def.Id));
         Play(server, client, network, 60 * 30);
         Assert.True(server.Stats.Spits > 0, "Rare slimes must spit.");
     }
@@ -313,6 +314,153 @@ public sealed class EnemyTests
         Play(server, client, network, 300);
         Assert.True(enemy.Alive);
         Assert.Equal(enemy.MaxHealth, enemy.Health);
+    }
+
+    private static (GameServer Server, ClientPrediction Client, SimNetwork Network) StartCamp(EnemySpawn camp)
+    {
+        var network = new SimNetwork(1, 0, 0, 0);
+        var world = new World(Array.Empty<Aabb>(), null, Vector3.Zero, new[] { camp });
+        var server = new GameServer(network.Connect(0), world, new ServerOptions { Seed = 5 });
+        var client = new ClientPrediction(network.Connect(1), world);
+        return (server, client, network);
+    }
+
+    [Fact]
+    public void Kills_GiveXpAndLevelsRaiseHealthAndDamage()
+    {
+        var (server, client, network) = Start();
+        Play(server, client, network, 30);
+        Assert.Equal(1, server.GetLevel(1));
+
+        server.AwardXp(1, Progression.XpToNext(1) + 5);
+        Assert.Equal(2, server.GetLevel(1));
+        Assert.Equal(5, server.GetXp(1));
+        Assert.Equal(Progression.MaxHealth(2), server.GetPlayer(1)!.Value.Health);
+        Assert.True(Progression.MaxHealth(2) > Progression.MaxHealth(1));
+        Assert.True(Progression.DamageScale(2) > Progression.DamageScale(1));
+
+        Play(server, client, network, 10);
+        Assert.Equal(2, client.Latest!.Level);
+    }
+
+    [Fact]
+    public void KillXp_FallsForEnemiesFarBelowThePlayer()
+    {
+        Assert.True(Progression.KillXp(5, 5, false) > Progression.KillXp(1, 5, false));
+        Assert.True(Progression.KillXp(5, 5, true) > Progression.KillXp(5, 5, false));
+        Assert.True(Progression.KillXp(1, 60, false) > 0);
+    }
+
+    [Fact]
+    public void KillingBlow_GivesXpToThePlayer()
+    {
+        var (server, client, network) = Start();
+        Play(server, client, network, 60);
+        server.EnemiesFrozen = true;
+        var enemy = server.Enemies[0];
+        enemy.Health = 1;
+        enemy.Position = server.GetPlayer(1)!.Value.Position + new Vector3(0, 0, -2);
+        Play(server, client, network, 30, Buttons.Light);
+        Assert.False(enemy.Alive);
+        Assert.True(server.GetXp(1) > 0 || server.GetLevel(1) > 1);
+    }
+
+    [Fact]
+    public void PulledEnemy_LeashesHomeAndHeals()
+    {
+        var camp = new EnemySpawn(new Vector3(100, 0, 0), 5f, 1, 1, 1);
+        var (server, client, network) = StartCamp(camp);
+        Play(server, client, network, 30);
+        var enemy = server.Enemies[0];
+        enemy.TakeHit(5, Vector3.Zero, 1);
+        enemy.Position = new Vector3(40, 0, 0);
+        Play(server, client, network, 60 * 60);
+        Assert.False(enemy.Returning);
+        Assert.Equal(-1, enemy.TargetId);
+        Assert.Equal(enemy.MaxHealth, enemy.Health);
+        Assert.True(Vector3.Distance(enemy.Position, camp.Center) < camp.Radius + 3f);
+    }
+
+    [Fact]
+    public void HittingOneSlime_PullsItsNeighbours()
+    {
+        var camp = new EnemySpawn(new Vector3(0, 0, 60), 3f, 4, 1, 1);
+        var (server, client, network) = StartCamp(camp);
+        Play(server, client, network, 30);
+        var player = server.GetPlayer(1)!.Value;
+        server.EnemiesFrozen = true;
+        server.Enemies[0].Position = player.Position + new Vector3(0, 0, -2);
+        foreach (var other in server.Enemies.Skip(1))
+        {
+            other.Position = player.Position + new Vector3(3, 0, -3);
+        }
+
+        Play(server, client, network, 30, Buttons.Light);
+        Assert.All(server.Enemies, e => Assert.Equal(1, e.TargetId));
+    }
+
+    [Fact]
+    public void RareCamp_HoldsARareSlime()
+    {
+        var (server, _, _) = StartCamp(new EnemySpawn(new Vector3(50, 0, 0), 4f, 1, 4, 4, 900, true));
+        Assert.Equal("rare_slime", server.Enemies[0].Def.Id);
+        Assert.Equal(5, server.Enemies[0].Level);
+    }
+
+    [Fact]
+    public void Dash_AvoidsASplash()
+    {
+        var (server, client, network) = Start();
+        Play(server, client, network, 30);
+        var enemy = server.Enemies[0];
+        enemy.Position = server.GetPlayer(1)!.Value.Position;
+        var health = server.GetPlayer(1)!.Value.Health;
+        server.EnemiesFrozen = true;
+
+        for (var i = 0; i < 6; i++)
+        {
+            network.Advance(1000.0 / Tuning.TickRate);
+            server.Step();
+            client.Step(127, 0, Buttons.Dash);
+        }
+
+        Assert.True(server.GetPlayer(1)!.Value.DashTicks > 0);
+        ((IEnemyEvents)server).Splash(enemy);
+        Assert.Equal(health, server.GetPlayer(1)!.Value.Health);
+        Assert.Equal(1, server.Stats.Dodges);
+    }
+
+    [Fact]
+    public void ManyEnemies_FitInOnePacket()
+    {
+        var network = new SimNetwork(1, 0, 0, 0);
+        var world = new World(Array.Empty<Aabb>(), null, Vector3.Zero, new[] { new EnemySpawn(Vector3.Zero, 20f, 60) });
+        var server = new GameServer(network.Connect(0), world, new ServerOptions());
+        var clients = new[] { new ClientPrediction(network.Connect(1), world), new ClientPrediction(network.Connect(2), world) };
+        for (var i = 0; i < 300; i++)
+        {
+            network.Advance(1000.0 / Tuning.TickRate);
+            server.Step();
+            foreach (var client in clients)
+            {
+                client.Step(0, 0, Buttons.None);
+            }
+        }
+
+        Assert.All(clients, c => Assert.InRange(c.Latest!.Enemies.Length, 1, 14));
+    }
+
+    [Fact]
+    public void Slimes_SteerAroundObstacles()
+    {
+        var wall = new Aabb(new Vector3(-2, 0, 4), new Vector3(2, 3, 5));
+        var network = new SimNetwork(1, 0, 0, 0);
+        var camp = new EnemySpawn(new Vector3(0, 0, 12), 1f, 1, 1, 1);
+        var world = new World(new[] { wall }, null, Vector3.Zero, new[] { camp });
+        var server = new GameServer(network.Connect(0), world, new ServerOptions { Seed = 8 });
+        var client = new ClientPrediction(network.Connect(1), world);
+        Play(server, client, network, 60 * 20);
+        Assert.True(server.Stats.PlayerHits > 0 || server.Enemies[0].Position.Z < 4f, "The slime must get around the wall.");
     }
 
     [Theory]
@@ -560,7 +708,7 @@ public sealed class MovementTests
             AckTick = 5,
             Self = PlayerState.Spawn(new Vector3(1, 2, 3)),
             Others = new[] { new RemotePlayer(1, Vector3.One, Vector3.UnitX, 9, AttackKind.Heavy, 3) },
-            Enemies = new[] { new EnemyView(4, 1, 3, Vector3.UnitZ, 1.5f, 30, 40, EnemyAction.Leap, 2) },
+            Enemies = new[] { new EnemyView(4, 1, 3, Vector3.UnitZ, 1.5f, 30, 40, EnemyAction.Leap, 2, Vector3.UnitX, true) },
             Spits = new[] { new SpitView(7, Vector3.UnitY) },
         };
         Assert.True(Protocol.TryDecodeSnapshot(Protocol.EncodeSnapshot(snapshot), out var decoded));

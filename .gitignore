@@ -5,3 +5,4 @@ export/previews/
 .godot/
 bin/
 obj/
+.sound-cache/

@@ -33,11 +33,27 @@ public partial class Hud : Control
     private float _shownStamina = 1f;
     private float _time;
     private Item? _held;
+    private float _shownXp;
+    private float _bannerTime;
+    private string _banner = "";
+    private Color _bannerColor = Colors.White;
+
+    private sealed class FloatingText
+    {
+        public required string Text;
+        public required Vector3 Position;
+        public required Color Color;
+        public float Age;
+    }
+
+    private readonly List<FloatingText> _floating = new();
 
     public Inventory Items { get; } = new();
     public bool InventoryOpen { get; private set; }
     public PlayerState Player { get; set; }
     public Snapshot? Snapshot { get; set; }
+
+    public int Level => Snapshot?.Level ?? 1;
     public Camera3D? Camera { get; set; }
     public string Notice { get; set; } = "";
 
@@ -54,6 +70,18 @@ public partial class Hud : Control
         Size = new Vector2(PixelStage.RenderSize.X, PixelStage.RenderSize.Y);
     }
 
+    /// <summary>Shows a line of text in the world that rises and fades.</summary>
+    public void AddFloating(string text, Vector3 position, Color color) =>
+        _floating.Add(new FloatingText { Text = text, Position = position, Color = color });
+
+    /// <summary>Shows a large message across the top of the screen for a few seconds.</summary>
+    public void ShowBanner(string text, Color color)
+    {
+        _banner = text;
+        _bannerColor = color;
+        _bannerTime = 3f;
+    }
+
     public void ToggleInventory()
     {
         InventoryOpen = !InventoryOpen;
@@ -64,7 +92,17 @@ public partial class Hud : Control
     {
         var d = (float)delta;
         _time += d;
-        var health = Mathf.Clamp(Player.Health / (float)Tuning.PlayerHealth, 0f, 1f);
+        var maxHealth = Snapshot?.MaxHealth ?? Tuning.PlayerHealth;
+        var health = Mathf.Clamp(Player.Health / (float)maxHealth, 0f, 1f);
+        var xp = Snapshot is { XpToNext: > 0 } current ? current.Xp / (float)current.XpToNext : 0f;
+        _shownXp = xp < _shownXp ? xp : Mathf.Lerp(_shownXp, xp, 1f - Mathf.Exp(-8f * d));
+        _bannerTime = Mathf.Max(0f, _bannerTime - d);
+        foreach (var text in _floating)
+        {
+            text.Age += d;
+        }
+
+        _floating.RemoveAll(t => t.Age > 1.1f);
         var stamina = Mathf.Clamp(Player.Stamina / Tuning.MaxStamina, 0f, 1f);
         _shownHealth = Mathf.Lerp(_shownHealth, health, 1f - Mathf.Exp(-16f * d));
         _shownStamina = Mathf.Lerp(_shownStamina, stamina, 1f - Mathf.Exp(-22f * d));
@@ -78,6 +116,7 @@ public partial class Hud : Control
     {
         _slots.Clear();
         DrawNametags();
+        DrawFloating();
         DrawStatus();
         DrawHotbar();
         if (InventoryOpen)
@@ -149,19 +188,50 @@ public partial class Hud : Control
     private void DrawStatus()
     {
         DrawPanel(new Rect2(6, 6, 134, 36));
-        DrawString(_font, new Vector2(11, 16), $"Wanderer   Lv {Tuning.PlayerLevel}", HorizontalAlignment.Left, -1, 11, Text);
+        DrawString(_font, new Vector2(11, 16), $"Wanderer   Lv {Level}", HorizontalAlignment.Left, -1, 11, Text);
         DrawBar(new Rect2(11, 19, 124, 9), _shownHealth, _ghostHealth, HealthColor, HealthDark,
-                $"{Math.Max(Player.Health, (short)0)} / {Tuning.PlayerHealth}", Player.Health < 30);
+                $"{Math.Max(Player.Health, (short)0)} / {Snapshot?.MaxHealth ?? Tuning.PlayerHealth}", _shownHealth < 0.3f);
         DrawBar(new Rect2(11, 30, 124, 7), _shownStamina, _shownStamina, StaminaColor, StaminaDark, "", Player.Stamina < 15f);
         if (Player.SlowTicks > 0)
         {
-            DrawPanel(new Rect2(6, 45, 62, 13));
-            DrawString(_font, new Vector2(11, 55), $"Slowed {Player.SlowTicks / 60f:F1}s", HorizontalAlignment.Left, -1, 11, new Color("8fe05a"));
+            var label = $"Slowed {Player.SlowTicks / 60f:F1}s";
+            var width = _font.GetStringSize(label, HorizontalAlignment.Left, -1, 11).X;
+            DrawPanel(new Rect2(6, 45, width + 12, 14));
+            DrawString(_font, new Vector2(12, 55), label, HorizontalAlignment.Left, -1, 11, new Color("8fe05a"));
         }
 
         if (Notice.Length > 0)
         {
             DrawString(_font, new Vector2(6, 354), Notice, HorizontalAlignment.Left, -1, 11, Text);
+        }
+
+        if (_bannerTime > 0f)
+        {
+            var size = _font.GetStringSize(_banner, HorizontalAlignment.Left, -1, 22);
+            var at = new Vector2((Size.X - size.X) / 2f, 62f - Mathf.Min(_bannerTime - 2.7f, 0f) * 0f);
+            DrawString(_font, at + Vector2.One, _banner, HorizontalAlignment.Left, -1, 22, Ink);
+            DrawString(_font, at, _banner, HorizontalAlignment.Left, -1, 22, _bannerColor);
+        }
+    }
+
+    private void DrawFloating()
+    {
+        if (Camera is null)
+        {
+            return;
+        }
+
+        foreach (var text in _floating)
+        {
+            var world = text.Position + Vector3.Up * (text.Age * 1.1f);
+            if (Camera.IsPositionBehind(world))
+            {
+                continue;
+            }
+
+            var at = Camera.UnprojectPosition(world);
+            var width = _font.GetStringSize(text.Text, HorizontalAlignment.Left, -1, 11).X;
+            DrawOutlined(text.Text, new Vector2(at.X - width / 2f, at.Y), text.Color);
         }
     }
 
@@ -200,8 +270,13 @@ public partial class Hud : Control
     {
         var width = Inventory.HotbarSlots * (Slot + 2) + 6;
         var left = (Size.X - width) / 2f;
-        var top = Size.Y - Slot - 12f;
+        var top = Size.Y - Slot - 16f;
         DrawPanel(new Rect2(left, top, width, Slot + 8));
+        var xpBar = new Rect2(left, top + Slot + 10, width, 3);
+        DrawRect(xpBar.Grow(1), Ink);
+        DrawRect(xpBar, new Color("3e2731"));
+        DrawRect(new Rect2(xpBar.Position, xpBar.Size.X * _shownXp, xpBar.Size.Y), new Color("feae34"));
+        DrawRect(new Rect2(xpBar.Position, xpBar.Size.X * _shownXp, 1), new Color("fee761"));
         for (var i = 0; i < Inventory.HotbarSlots; i++)
         {
             var rect = new Rect2(left + 4 + i * (Slot + 2), top + 4, Slot, Slot);
@@ -328,7 +403,7 @@ public partial class Hud : Control
     private void DrawTag(Vector2 at, in EnemyView enemy, EnemyDef def)
     {
         var rare = def.RareChance > 0;
-        var threat = ThreatRules.Compare(enemy.Level, Tuning.PlayerLevel);
+        var threat = ThreatRules.Compare(enemy.Level, Level);
         var color = threat switch
         {
             Threat.Strong => new Color("e43b44"),
@@ -350,6 +425,11 @@ public partial class Hud : Control
         }
 
         DrawOutlined(label, new Vector2(left, at.Y), color);
+        if (enemy.Fighting)
+        {
+            DrawOutlined("!", new Vector2(left - 7, at.Y), new Color("feae34"));
+        }
+
         if (enemy.Health < enemy.MaxHealth)
         {
             var bar = new Rect2(at.X - 14, at.Y + 3, 28, 2);

@@ -22,15 +22,27 @@ public sealed class ServerStats
     public long EnemyHits;
     public long Splashes;
     public long Spits;
+    public long Dodges;
+    public long LevelUps;
 }
 
 /// <summary>The authoritative game. It owns every player and enemy, and knows nothing about rendering.</summary>
-public sealed class GameServer
+public sealed class GameServer : IEnemyEvents
 {
     private const float SpitSpeed = 13f;
     private const float SpitHitRadius = 0.9f;
     private const int SpitLifeTicks = 150;
     private const float SplashPush = 4f;
+
+    /// <summary>A player hears only about nearby enemies, which keeps a snapshot inside one UDP packet.</summary>
+    private const float InterestRange = 70f;
+    private const int MaxEnemiesPerSnapshot = 14;
+    private const int MaxSpitsPerSnapshot = 8;
+    private const float SpitSplashRadius = 1.8f;
+    private const float SpitLead = 0.6f;
+    private const float HelpRadius = 9f;
+    private const uint RegenDelayTicks = 300;
+    private const uint RegenIntervalTicks = 20;
 
     private sealed class Player
     {
@@ -40,6 +52,10 @@ public sealed class GameServer
         public uint NextTick;
         public int WaitTicks;
         public InputCmd LastInput;
+        public byte Level = 1;
+        public int Xp;
+        public uint LastHurtTick;
+        public byte Dodges;
     }
 
     private sealed class Spit
@@ -90,6 +106,24 @@ public sealed class GameServer
 
     public PlayerState? GetPlayer(int id) => _players.TryGetValue(id, out var player) ? player.State : null;
 
+    public int GetLevel(int id) => _players[id].Level;
+
+    public int GetXp(int id) => _players[id].Xp;
+
+    /// <summary>Gives a player experience and raises the level as often as it allows.</summary>
+    public void AwardXp(int id, int amount)
+    {
+        var player = _players[id];
+        player.Xp += amount;
+        while (player.Level < Progression.MaxLevel && player.Xp >= Progression.XpToNext(player.Level))
+        {
+            player.Xp -= Progression.XpToNext(player.Level);
+            player.Level++;
+            player.State.Health = Progression.MaxHealth(player.Level);
+            Stats.LevelUps++;
+        }
+    }
+
     public void Step()
     {
         Tick++;
@@ -108,9 +142,11 @@ public sealed class GameServer
 
         if (!EnemiesFrozen)
         {
+            var targets = _players.Values.OrderBy(p => p.Id)
+                .Select(p => new Target(p.Id, p.State.Position, p.State.Velocity)).ToArray();
             foreach (var enemy in _enemies)
             {
-                enemy.Step(_world, _random, NearestPlayer(enemy.Position), Splash, ShootSpit);
+                enemy.Step(_world, _random, targets, this);
             }
 
             StepSpits();
@@ -178,10 +214,32 @@ public sealed class GameServer
             Strike(player, landed);
         }
 
+        var maxHealth = Progression.MaxHealth(player.Level);
         if (player.State.Health <= 0)
         {
-            player.State = PlayerState.Spawn(_world.Spawn);
+            player.State = PlayerState.Spawn(_world.Spawn, maxHealth);
         }
+        else if (Tick - player.LastHurtTick > RegenDelayTicks && Tick % RegenIntervalTicks == 0 && player.State.Health < maxHealth)
+        {
+            player.State.Health++;
+        }
+    }
+
+    /// <summary>Hurts a player, unless a dash avoids it. Returns true when the attack connects.</summary>
+    private bool Hurt(Player player, short damage, byte slowTicks)
+    {
+        if (player.State.DashTicks > 0)
+        {
+            player.Dodges++;
+            Stats.Dodges++;
+            return false;
+        }
+
+        player.State.Health -= damage;
+        player.State.SlowTicks = slowTicks;
+        player.LastHurtTick = Tick;
+        Stats.PlayerHits++;
+        return true;
     }
 
     private void Strike(Player player, AttackKind kind)
@@ -205,33 +263,34 @@ public sealed class GameServer
                 continue;
             }
 
-            enemy.TakeHit(attack.Damage, player.State.Position);
+            var damage = (short)MathF.Round(attack.Damage * Progression.DamageScale(player.Level));
+            var killed = enemy.TakeHit(damage, player.State.Position, player.Id);
             Stats.EnemyHits++;
-            if (!enemy.Alive)
+            CallForHelp(enemy, player.Id);
+            if (killed)
             {
                 Stats.EnemiesKilled++;
+                var winner = _players.ContainsKey(enemy.TaggedBy) ? enemy.TaggedBy : player.Id;
+                AwardXp(winner, Progression.KillXp(enemy.Level, _players[winner].Level, enemy.Def.RareChance > 0));
             }
         }
     }
 
-    private Vector3? NearestPlayer(Vector3 from)
+    void IEnemyEvents.CallForHelp(Enemy enemy, int targetId) => CallForHelp(enemy, targetId);
+
+    private void CallForHelp(Enemy enemy, int targetId)
     {
-        Vector3? nearest = null;
-        var best = float.MaxValue;
-        foreach (var player in _players.Values.OrderBy(p => p.Id))
+        foreach (var other in _enemies)
         {
-            var distance = Vector3.Distance(player.State.Position, from);
-            if (distance < best)
+            if (other.Alive && other.TargetId < 0 && !other.Returning && other.Home == enemy.Home &&
+                Vector3.Distance(other.Position, enemy.Position) < HelpRadius)
             {
-                best = distance;
-                nearest = player.State.Position;
+                other.TargetId = targetId;
             }
         }
-
-        return nearest;
     }
 
-    private void Splash(Enemy enemy)
+    void IEnemyEvents.Splash(Enemy enemy)
     {
         Stats.Splashes++;
         foreach (var player in _players.Values)
@@ -242,24 +301,28 @@ public sealed class GameServer
                 continue;
             }
 
-            player.State.Health -= enemy.Def.SplashDamage;
-            player.State.SlowTicks = enemy.Def.SlowTicks;
+            if (!Hurt(player, enemy.Def.SplashDamage, enemy.Def.SlowTicks))
+            {
+                continue;
+            }
+
             away.Y = 0;
             if (away != Vector3.Zero)
             {
                 player.State.Velocity += Vector3.Normalize(away) * SplashPush;
             }
-
-            Stats.PlayerHits++;
         }
     }
 
-    private void ShootSpit(Enemy enemy, Vector3 target)
+    void IEnemyEvents.Spit(Enemy enemy, Target target)
     {
         Stats.Spits++;
-        var start = enemy.Position + Vector3.UnitY * 0.5f;
-        var aim = target + Vector3.UnitY * 1f - start;
-        var flight = aim.Length() / SpitSpeed;
+        var start = enemy.Position + Vector3.UnitY * 0.7f;
+        var flight = Vector3.Distance(target.Position, start) / SpitSpeed;
+
+        // Aim where the player is heading, but not all the way, so moving still helps.
+        var lead = target.Velocity with { Y = 0 } * flight * SpitLead;
+        var aim = target.Position + lead + Vector3.UnitY * 0.9f - start;
         var velocity = aim / flight;
         velocity.Y += Tuning.Gravity * 0.25f * flight;
         _spits.Add(new Spit
@@ -280,20 +343,16 @@ public sealed class GameServer
             spit.Velocity.Y -= Tuning.Gravity * 0.5f * Tuning.TickSeconds;
             spit.Position += spit.Velocity * Tuning.TickSeconds;
             spit.Life--;
+            var struck = _world.IsBlocked(spit.Position);
             foreach (var player in _players.Values)
             {
                 var chest = player.State.Position + Vector3.UnitY;
-                if (Vector3.Distance(chest, spit.Position) < SpitHitRadius)
-                {
-                    player.State.Health -= spit.Damage;
-                    player.State.SlowTicks = spit.SlowTicks;
-                    spit.Life = 0;
-                    Stats.PlayerHits++;
-                }
+                struck |= Vector3.Distance(chest, spit.Position) < SpitHitRadius;
             }
 
-            if (_world.IsBlocked(spit.Position))
+            if (struck)
             {
+                SpitSplash(spit);
                 spit.Life = 0;
             }
         }
@@ -301,13 +360,32 @@ public sealed class GameServer
         _spits.RemoveAll(s => s.Life <= 0);
     }
 
-    private void SendSnapshots()
+    /// <summary>A spit bursts on impact, so a near miss on the ground still catches the player.</summary>
+    private void SpitSplash(Spit spit)
     {
-        var enemies = _enemies.Select(e => new EnemyView(
-            e.Id, e.Type, e.Level, e.Position, e.Facing, e.Health, (short)e.MaxHealth, e.Action, e.HitFlash)).ToArray();
-        var spits = _spits.Select(s => new SpitView(s.Id, s.Position)).ToArray();
         foreach (var player in _players.Values)
         {
+            var chest = player.State.Position + Vector3.UnitY;
+            if (Vector3.Distance(chest, spit.Position) < SpitSplashRadius)
+            {
+                Hurt(player, spit.Damage, spit.SlowTicks);
+            }
+        }
+    }
+
+    private void SendSnapshots()
+    {
+        foreach (var player in _players.Values)
+        {
+            var origin = player.State.Position;
+            var enemies = _enemies
+                .Where(e => Vector3.Distance(e.Position, origin) < InterestRange)
+                .OrderBy(e => Vector3.Distance(e.Position, origin))
+                .Take(MaxEnemiesPerSnapshot)
+                .Select(e => new EnemyView(e.Id, e.Type, e.Level, e.Position, e.Facing, e.Health, (short)e.MaxHealth,
+                    e.Action, e.HitFlash, e.LeapTarget, e.TargetId >= 0)).ToArray();
+            var spits = _spits.OrderBy(s => Vector3.Distance(s.Position, origin)).Take(MaxSpitsPerSnapshot)
+                .Select(s => new SpitView(s.Id, s.Position)).ToArray();
             var snapshot = new Snapshot
             {
                 ServerTick = Tick,
@@ -315,6 +393,11 @@ public sealed class GameServer
                 AckTick = player.NextTick - 1,
                 BufferedInputs = (byte)Math.Min(player.Inputs.Count, byte.MaxValue),
                 Self = player.State,
+                Level = player.Level,
+                Xp = player.Xp,
+                XpToNext = Progression.XpToNext(player.Level),
+                MaxHealth = Progression.MaxHealth(player.Level),
+                Dodges = player.Dodges,
                 Others = _players.Values.Where(p => p.Id != player.Id)
                     .Select(p => new RemotePlayer(p.Id, p.State.Position, p.State.Velocity, p.State.AttackAim, p.State.Attack, p.State.AttackTick)).ToArray(),
                 Enemies = enemies,

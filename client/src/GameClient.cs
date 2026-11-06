@@ -33,6 +33,15 @@ public partial class GameClient : Node
     private ClientPrediction _client = null!;
     private PlayerRig _player = null!;
     private Hud _hud = null!;
+    private Sfx _sfx = null!;
+    private Fx _fx = null!;
+    private PlayerState _last;
+    private byte _lastLevel = 1;
+    private byte _lastDodges;
+    private int _lastXp;
+    private bool _rareSeen;
+    private float _ghostClock;
+    private readonly Dictionary<int, Vector3> _spitPositions = new();
     private World _world = null!;
     private Vector3 _shownBefore;
     private Vector3 _shownNow;
@@ -61,6 +70,10 @@ public partial class GameClient : Node
         _stage.View.AddChild(ZoneView.Build(zone));
         _player = new PlayerRig(new Color("0099db"));
         _stage.View.AddChild(_player.Root);
+        _sfx = new Sfx(_stage.View);
+        var effects = new Node3D();
+        _stage.View.AddChild(effects);
+        _fx = new Fx(effects);
 
         _hud = new Hud { Camera = _stage.Camera };
         AddChild(_hud);
@@ -85,6 +98,10 @@ public partial class GameClient : Node
             if (key.Keycode == Key.Escape)
             {
                 GetTree().Quit();
+            }
+            else if (key.Keycode == Key.M)
+            {
+                _sfx.Muted = !_sfx.Muted;
             }
             else if (key.Keycode == Key.I || key.Keycode == Key.Tab)
             {
@@ -129,9 +146,95 @@ public partial class GameClient : Node
         var shown = _shownBefore.Lerp(_shownNow, (float)(_clock / tickLength));
         DrawPlayer(shown, d);
         DrawSnapshot(d);
+        PlayerEvents(shown, d);
+        _fx.Update(d);
         PlaceCamera(shown);
         _hud.Player = _client.State;
         _hud.Snapshot = _client.Latest;
+    }
+
+    /// <summary>Turns changes in the player state into sounds and effects.</summary>
+    private void PlayerEvents(Vector3 shown, float delta)
+    {
+        var now = _client.State;
+        var chest = shown + Vector3.Up;
+        if (_player.TakeFootDown())
+        {
+            _sfx.Play($"step_{Random.Shared.Next(1, 5)}", shown, -6f);
+        }
+
+        if (now.DashTicks > 0 && _last.DashTicks == 0)
+        {
+            _sfx.Play("dash", chest);
+            _fx.Burst(shown + Vector3.Up * 0.1f, new Color("c0cbdc"), 12, 3f, 0.35f, 0.1f, -2f, 80f);
+        }
+
+        if (now.DashTicks > 0)
+        {
+            _ghostClock -= delta;
+            if (_ghostClock <= 0f)
+            {
+                _ghostClock = 0.035f;
+                _fx.Fade(new CapsuleMesh { Radius = 0.3f, Height = 1.8f, RadialSegments = 8, Rings = 3 },
+                         shown + Vector3.Up * 0.95f, Vector3.Zero, new Color("2ce8f5"), 0.28f, 0.55f);
+            }
+        }
+
+        if (_last.Grounded && !now.Grounded && now.Velocity.Y > 1f)
+        {
+            _sfx.Play("jump", shown);
+        }
+        else if (!_last.Grounded && now.Grounded)
+        {
+            _sfx.Play("land", shown);
+            _fx.Burst(shown + Vector3.Up * 0.05f, new Color("b8a58a"), 8, 2.5f, 0.3f, 0.07f, -6f, 85f);
+        }
+
+        if (now.Attack != AttackKind.None && now.AttackTick < _last.AttackTick | now.Attack != _last.Attack)
+        {
+            _sfx.Play(now.Attack == AttackKind.Heavy ? "swing_heavy" : "swing_light", chest);
+        }
+
+        if (now.Health < _last.Health && _last.Health > 0)
+        {
+            _sfx.Play("hurt", chest);
+            _hud.AddFloating($"-{_last.Health - now.Health}", chest + Vector3.Up, new Color("e43b44"));
+        }
+
+        _last = now;
+        if (_client.Latest is not { } snapshot)
+        {
+            return;
+        }
+
+        if (snapshot.Dodges != _lastDodges)
+        {
+            _lastDodges = snapshot.Dodges;
+            _sfx.Play("dodge", chest);
+            _hud.AddFloating("Dodged!", chest + Vector3.Up, new Color("2ce8f5"));
+        }
+
+        if (snapshot.Level > _lastLevel)
+        {
+            _lastLevel = snapshot.Level;
+            _lastXp = snapshot.Xp;
+            _sfx.Play("level_up", chest);
+            _fx.LevelUp(shown);
+            _hud.ShowBanner($"Level Up!  Lv {snapshot.Level}", new Color("fee761"));
+        }
+        else if (snapshot.Xp > _lastXp)
+        {
+            _hud.AddFloating($"+{snapshot.Xp - _lastXp} XP", chest + Vector3.Up * 1.4f, new Color("feae34"));
+            _lastXp = snapshot.Xp;
+        }
+
+        var rareAlive = snapshot.Enemies.Any(e => e.Action != EnemyAction.Dead && EnemyDef.All[e.Type].RareChance > 0);
+        if (rareAlive && !_rareSeen)
+        {
+            _hud.ShowBanner("A Rare Slime has appeared!", new Color("f6757a"));
+        }
+
+        _rareSeen = rareAlive;
     }
 
     private byte AimByte() => (byte)Mathf.PosMod(Mathf.Round(_yaw / Mathf.Tau * 256f), 256f);
@@ -253,17 +356,33 @@ public partial class GameClient : Node
         {
             if (!_slimes.TryGetValue(enemy.Id, out var slime))
             {
-                slime = new SlimeView();
+                slime = new SlimeView(_fx);
                 _slimes.Add(enemy.Id, slime);
                 _stage.View.AddChild(slime.Root);
+                _stage.View.AddChild(slime.Warning);
             }
 
             var target = ToGodot(enemy.Position);
             var position = slime.Root.Position;
             // A respawn is a jump across the map, not a move.
             position = position.DistanceTo(target) > 6f ? target : position.Lerp(target, blend);
-            slime.Update(enemy, position, delta);
+            slime.Update(enemy, position, delta, _sfx);
             _hud.EnemyPositions[enemy.Id] = position;
+            if (slime.DamageTaken > 0)
+            {
+                var heavy = _client.State.Attack == AttackKind.Heavy;
+                _sfx.Play(heavy ? "hit_heavy" : "hit", position + Vector3.Up);
+                _hud.AddFloating(slime.DamageTaken.ToString(), position + Vector3.Up * 1.6f, heavy ? new Color("feae34") : Colors.White);
+                _fx.Burst(position + Vector3.Up * 0.6f, new Color(enemy.Type == 1 ? "f6757a" : "63c74d"), heavy ? 22 : 12, 6f, 0.5f, 0.09f);
+            }
+        }
+
+        // Enemies outside the player's area are not in the snapshot, so they must not linger on screen.
+        var near = snapshot.Enemies.Select(e => e.Id).ToHashSet();
+        foreach (var (id, slime) in _slimes)
+        {
+            slime.Root.Visible &= near.Contains(id);
+            slime.Warning.Visible &= near.Contains(id);
         }
 
         DrawSpits(snapshot, blend);
@@ -277,24 +396,61 @@ public partial class GameClient : Node
             alive.Add(spit.Id);
             if (!_spits.TryGetValue(spit.Id, out var ball))
             {
-                ball = new MeshInstance3D
-                {
-                    Mesh = new SphereMesh { Radius = 0.22f, Height = 0.44f, RadialSegments = 8, Rings = 4 },
-                    MaterialOverride = new StandardMaterial3D { AlbedoColor = new Color("f6757a"), EmissionEnabled = true, Emission = new Color("b55088") },
-                    Position = ToGodot(spit.Position),
-                };
+                ball = BuildSpit(ToGodot(spit.Position));
                 _spits.Add(spit.Id, ball);
                 _stage.View.AddChild(ball);
+                _sfx.Play("slime_spit", ball.Position);
             }
 
             ball.Position = ball.Position.Lerp(ToGodot(spit.Position), blend);
+            ball.Rotation += new Vector3(0.2f, 0.3f, 0f);
+            _spitPositions[spit.Id] = ball.Position;
         }
 
         foreach (var id in _spits.Keys.Where(id => !alive.Contains(id)).ToList())
         {
+            var last = _spitPositions[id];
+            var ground = _world.GroundHeight(last.X, last.Z);
+            var pink = new Color("f6757a");
+            _sfx.Play("spit_splash", last);
+            _fx.Burst(last, pink, 26, 7f, 0.6f, 0.11f);
+            _fx.Burst(last, new Color("b55088"), 14, 4f, 0.5f, 0.08f);
+            _fx.Puddle(new Vector3(last.X, ground, last.Z), new Color("b55088"), 1.6f, 1.6f);
             _spits[id].QueueFree();
             _spits.Remove(id);
+            _spitPositions.Remove(id);
         }
+    }
+
+    /// <summary>A wet ball of slime that sheds drops along its path.</summary>
+    private static MeshInstance3D BuildSpit(Vector3 position)
+    {
+        var material = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/slime.gdshader") };
+        material.SetShaderParameter("body", new Color("b55088"));
+        material.SetShaderParameter("rim", new Color("fbb9b7"));
+        material.SetShaderParameter("core", new Color("68386c"));
+        material.SetShaderParameter("glow", 0.5f);
+        material.SetShaderParameter("wobble", 0.05f);
+        var ball = new MeshInstance3D
+        {
+            Mesh = new SphereMesh { Radius = 0.3f, Height = 0.6f, RadialSegments = 10, Rings = 6 },
+            MaterialOverride = material,
+            Position = position,
+        };
+        ball.AddChild(new CpuParticles3D
+        {
+            Amount = 26,
+            Lifetime = 0.45f,
+            LocalCoords = false,
+            Spread = 180f,
+            InitialVelocityMax = 1f,
+            Gravity = new Vector3(0, -9f, 0),
+            ScaleAmountMin = 0.5f,
+            ScaleAmountMax = 1.2f,
+            Mesh = new SphereMesh { Radius = 0.07f, Height = 0.14f, RadialSegments = 5, Rings = 3 },
+            MaterialOverride = new StandardMaterial3D { AlbedoColor = new Color("f6757a"), Roughness = 0.3f },
+        });
+        return ball;
     }
 
     private void PlaceCamera(Vector3 shown)
@@ -332,7 +488,7 @@ public partial class GameClient : Node
         GD.Print($"STATS snapshots={stats.Snapshots} corrections={stats.Corrections} " +
                  $"maxError={stats.MaxError:F3} buffered={_client.Latest?.BufferedInputs} " +
                  $"tickScale={_client.TickScale:F3} enemies={enemies.Length} rare={enemies.Count(e => e.Type == 1)} " +
-                 $"fps={Engine.GetFramesPerSecond()} hp={_client.State.Health} stamina={_client.State.Stamina:F0} maxHeight={_maxHeight:F2} travelled={_travelled:F0}");
+                 $"fps={Engine.GetFramesPerSecond()} sounds={_sfx.Played} level={_client.Latest?.Level} xp={_client.Latest?.Xp} hp={_client.State.Health} stamina={_client.State.Stamina:F0} maxHeight={_maxHeight:F2} travelled={_travelled:F0}");
         GetTree().Quit();
     }
 

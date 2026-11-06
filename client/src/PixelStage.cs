@@ -19,6 +19,7 @@ public sealed class PixelStage
             OwnWorld3D = true,
             Msaa3D = Viewport.Msaa.Disabled,
             RenderTargetUpdateMode = SubViewport.UpdateMode.Always,
+            AudioListenerEnable3D = true,
         };
         parent.AddChild(View);
 
