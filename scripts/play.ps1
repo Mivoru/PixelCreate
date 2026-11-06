@@ -9,8 +9,9 @@ param(
 $ErrorActionPreference = "Stop"
 $root = Split-Path $PSScriptRoot -Parent
 $folder = "GodotEngine.GodotEngine.Mono_Microsoft.Winget.Source_8wekyb3d8bbwe\Godot_v4.7.2-stable_mono_win64"
-$exe = if ($Capture) { "Godot_v4.7.2-stable_mono_win64_console.exe" } else { "Godot_v4.7.2-stable_mono_win64.exe" }
-$godot = Join-Path $env:LOCALAPPDATA "Microsoft\WinGet\Packages\$folder\$exe"
+# The console build matters: PowerShell does not wait for a GUI program, so the script would
+# reach "finally" at once and stop the server while the game is starting.
+$godot = Join-Path $env:LOCALAPPDATA "Microsoft\WinGet\Packages\$folder\Godot_v4.7.2-stable_mono_win64_console.exe"
 if ($env:GODOT) { $godot = $env:GODOT }
 
 dotnet build (Join-Path $root "client") -v q
