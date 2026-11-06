@@ -5,9 +5,10 @@ render_mode unshaded, cull_disabled, depth_draw_never, depth_test_disabled, fog_
 uniform sampler2D screen_tex : hint_screen_texture, repeat_disable, filter_nearest;
 uniform sampler2D depth_tex : hint_depth_texture, repeat_disable, filter_nearest;
 uniform sampler2D normal_tex : hint_normal_roughness_texture, repeat_disable, filter_nearest;
-uniform vec3 palette[32];
+uniform vec3 palette[128];
+uniform int palette_size = 32;
 uniform vec3 outline_color;
-uniform float dither_amount = 0.05;
+uniform float dither_amount = 0.03;
 uniform float normal_threshold = 0.75;
 
 const float BAYER[16] = float[16](0.0, 8.0, 2.0, 10.0, 12.0, 4.0, 14.0, 6.0,
@@ -37,6 +38,7 @@ void fragment() {
 	vec3 normal = texture(normal_tex, SCREEN_UV).xyz * 2.0 - 1.0;
 
 	float depth_edge = 0.0;
+	float normal_gap = 0.0;
 	float normal_edge = 0.0;
 	for (int i = 0; i < 4; i++) {
 		vec2 uv = SCREEN_UV + offsets[i];
@@ -44,19 +46,21 @@ void fragment() {
 		// Only the nearer pixel draws the line, so the outline stays 1 px wide.
 		depth_edge = max(depth_edge, step(depth * 0.04 + 0.08, other - depth));
 		vec3 other_normal = texture(normal_tex, uv).xyz * 2.0 - 1.0;
-		normal_edge = max(normal_edge, step(dot(normal, other_normal), normal_threshold));
+		float facing = dot(normal, other_normal);
+		normal_edge = max(normal_edge, step(facing, normal_threshold));
+		normal_gap = max(normal_gap, step(facing, 0.97));
 	}
 
 	vec3 color = to_srgb(texture(screen_tex, SCREEN_UV).rgb);
 	if (depth < 1000.0) {
-		color *= 1.0 + normal_edge * 0.3;
+		color *= 1.0 + normal_edge * 0.14;
 	}
 	ivec2 cell = ivec2(FRAGCOORD.xy) % 4;
 	color += (BAYER[cell.y * 4 + cell.x] / 16.0 - 0.5) * dither_amount;
 
 	vec3 best = palette[0];
 	float best_distance = 1000.0;
-	for (int i = 0; i < 32; i++) {
+	for (int i = 0; i < palette_size; i++) {
 		vec3 delta = color - palette[i];
 		float distance_squared = dot(delta, delta);
 		if (distance_squared < best_distance) {
@@ -64,7 +68,8 @@ void fragment() {
 			best = palette[i];
 		}
 	}
-	if (depth_edge > 0.5 && depth < 1000.0) {
+	// Grass shares the normal of the ground, so a depth step alone draws no line around a blade.
+	if (depth_edge > 0.5 && normal_gap > 0.5 && depth < 1000.0) {
 		best = outline_color;
 	}
 	ALBEDO = to_linear(best);

@@ -9,9 +9,13 @@ public interface ITransport
     bool TryReceive(out int peer, out byte[] data);
 }
 
-public readonly record struct RemotePlayer(int Id, Vector3 Position);
+public readonly record struct RemotePlayer(int Id, Vector3 Position, Vector3 Velocity, byte Aim, AttackKind Attack, byte AttackTick);
 
-public readonly record struct EnemyView(int Id, Vector3 Position, short Health);
+public readonly record struct EnemyView(
+    int Id, byte Type, byte Level, Vector3 Position, float Facing, short Health, short MaxHealth,
+    EnemyAction Action, byte HitFlash);
+
+public readonly record struct SpitView(int Id, Vector3 Position);
 
 public sealed class Snapshot
 {
@@ -26,6 +30,7 @@ public sealed class Snapshot
     public PlayerState Self;
     public RemotePlayer[] Others = Array.Empty<RemotePlayer>();
     public EnemyView[] Enemies = Array.Empty<EnemyView>();
+    public SpitView[] Spits = Array.Empty<SpitView>();
 }
 
 /// <summary>Binary encoding of the two packets the game sends.</summary>
@@ -36,6 +41,7 @@ public static class Protocol
 
     private const byte InputPacket = 1;
     private const byte SnapshotPacket = 2;
+    private const int InputSize = 8;
 
     public static byte[] EncodeInputs(ReadOnlySpan<InputCmd> commands)
     {
@@ -49,6 +55,7 @@ public static class Protocol
             writer.Write(command.MoveX);
             writer.Write(command.MoveZ);
             writer.Write((byte)command.Buttons);
+            writer.Write(command.Aim);
         }
 
         writer.Flush();
@@ -58,7 +65,7 @@ public static class Protocol
     public static bool TryDecodeInputs(byte[] data, out InputCmd[] commands)
     {
         commands = Array.Empty<InputCmd>();
-        if (data.Length < 2 || data[0] != InputPacket || data.Length != 2 + data[1] * 7)
+        if (data.Length < 2 || data[0] != InputPacket || data.Length != 2 + data[1] * InputSize)
         {
             return false;
         }
@@ -73,6 +80,7 @@ public static class Protocol
                 MoveX = reader.ReadSByte(),
                 MoveZ = reader.ReadSByte(),
                 Buttons = (Buttons)reader.ReadByte(),
+                Aim = reader.ReadByte(),
             };
         }
 
@@ -94,14 +102,31 @@ public static class Protocol
         {
             writer.Write(other.Id);
             WriteVector(writer, other.Position);
+            WriteVector(writer, other.Velocity);
+            writer.Write(other.Aim);
+            writer.Write((byte)other.Attack);
+            writer.Write(other.AttackTick);
         }
 
         writer.Write((byte)snapshot.Enemies.Length);
         foreach (var enemy in snapshot.Enemies)
         {
             writer.Write(enemy.Id);
+            writer.Write(enemy.Type);
+            writer.Write(enemy.Level);
             WriteVector(writer, enemy.Position);
+            writer.Write(enemy.Facing);
             writer.Write(enemy.Health);
+            writer.Write(enemy.MaxHealth);
+            writer.Write((byte)enemy.Action);
+            writer.Write(enemy.HitFlash);
+        }
+
+        writer.Write((byte)snapshot.Spits.Length);
+        foreach (var spit in snapshot.Spits)
+        {
+            writer.Write(spit.Id);
+            WriteVector(writer, spit.Position);
         }
 
         writer.Flush();
@@ -125,13 +150,21 @@ public static class Protocol
         snapshot.Others = new RemotePlayer[reader.ReadByte()];
         for (var i = 0; i < snapshot.Others.Length; i++)
         {
-            snapshot.Others[i] = new RemotePlayer(reader.ReadInt32(), ReadVector(reader));
+            snapshot.Others[i] = new RemotePlayer(reader.ReadInt32(), ReadVector(reader), ReadVector(reader),
+                reader.ReadByte(), (AttackKind)reader.ReadByte(), reader.ReadByte());
         }
 
         snapshot.Enemies = new EnemyView[reader.ReadByte()];
         for (var i = 0; i < snapshot.Enemies.Length; i++)
         {
-            snapshot.Enemies[i] = new EnemyView(reader.ReadInt32(), ReadVector(reader), reader.ReadInt16());
+            snapshot.Enemies[i] = new EnemyView(reader.ReadInt32(), reader.ReadByte(), reader.ReadByte(), ReadVector(reader),
+                reader.ReadSingle(), reader.ReadInt16(), reader.ReadInt16(), (EnemyAction)reader.ReadByte(), reader.ReadByte());
+        }
+
+        snapshot.Spits = new SpitView[reader.ReadByte()];
+        for (var i = 0; i < snapshot.Spits.Length; i++)
+        {
+            snapshot.Spits[i] = new SpitView(reader.ReadInt32(), ReadVector(reader));
         }
 
         return true;
@@ -152,12 +185,15 @@ public static class Protocol
         WriteVector(writer, state.Position);
         WriteVector(writer, state.Velocity);
         WriteVector(writer, state.DashDirection);
+        writer.Write(state.Stamina);
         writer.Write(state.Grounded);
         writer.Write(state.DashTicks);
         writer.Write(state.DashCooldown);
-        writer.Write(state.AttackCooldown);
-        writer.Write(state.StunTicks);
-        writer.Write(state.StunImmunity);
+        writer.Write(state.StaminaDelay);
+        writer.Write(state.SlowTicks);
+        writer.Write((byte)state.Attack);
+        writer.Write(state.AttackTick);
+        writer.Write(state.AttackAim);
         writer.Write(state.Health);
     }
 
@@ -166,12 +202,15 @@ public static class Protocol
         Position = ReadVector(reader),
         Velocity = ReadVector(reader),
         DashDirection = ReadVector(reader),
+        Stamina = reader.ReadSingle(),
         Grounded = reader.ReadBoolean(),
         DashTicks = reader.ReadByte(),
         DashCooldown = reader.ReadByte(),
-        AttackCooldown = reader.ReadByte(),
-        StunTicks = reader.ReadByte(),
-        StunImmunity = reader.ReadByte(),
+        StaminaDelay = reader.ReadByte(),
+        SlowTicks = reader.ReadByte(),
+        Attack = (AttackKind)reader.ReadByte(),
+        AttackTick = reader.ReadByte(),
+        AttackAim = reader.ReadByte(),
         Health = reader.ReadInt16(),
     };
 }

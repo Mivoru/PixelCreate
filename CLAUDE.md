@@ -37,6 +37,8 @@ Rules:
 - The Godot client can run on a newer .NET than the server. Avoid behaviour that differs between
   runtimes in shared code, such as casting a negative float to an unsigned integer. A live run with
   many corrections and no hits means client and server simulate differently.
+- All game text is English. Enemy types live in `world/enemies.json`; items are a local UI model for now.
+- Regenerate textures, palette and UI font with `python asset-pipeline/generate_textures.py`.
 - Zones live in `world/zones/*.json`: the layout is authored, the scattered detail comes from the seed.
 - Blender: `D:\Program\Blender Foundation\Blender 5.2\blender.exe -b --factory-startup -P <script>`.
 - Play: `powershell -ExecutionPolicy Bypass -File scripts/play.ps1` starts a local server and the client.

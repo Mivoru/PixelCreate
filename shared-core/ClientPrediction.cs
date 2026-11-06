@@ -31,6 +31,7 @@ public sealed class ClientPrediction
     /// <summary>Change of tick length per input of difference from the target buffer.</summary>
     private const float ClockGain = 0.01f;
     private const float MaxClockChange = 0.03f;
+    private const float MaxSmoothedCorrection = 8f;
 
     private readonly ITransport _transport;
     private readonly World _world;
@@ -39,6 +40,7 @@ public sealed class ClientPrediction
     private uint _lastAck;
     private bool _spawned;
     private Vector3 _visualOffset;
+    private bool _teleported;
 
     public uint Tick { get; private set; }
     public PlayerState State;
@@ -61,7 +63,7 @@ public sealed class ClientPrediction
     }
 
     /// <summary>Runs one client tick: reads snapshots, predicts this input and sends it.</summary>
-    public void Step(sbyte moveX, sbyte moveZ, Buttons buttons)
+    public void Step(sbyte moveX, sbyte moveZ, Buttons buttons, byte aim = 0)
     {
         var shownBefore = ShownPosition;
         var wasSpawned = _spawned;
@@ -74,7 +76,7 @@ public sealed class ClientPrediction
         }
 
         Tick++;
-        var command = new InputCmd { Tick = Tick, MoveX = moveX, MoveZ = moveZ, Buttons = buttons };
+        var command = new InputCmd { Tick = Tick, MoveX = moveX, MoveZ = moveZ, Buttons = buttons, Aim = aim };
         _inputs[Tick % HistorySize] = command;
         if (_spawned)
         {
@@ -83,11 +85,12 @@ public sealed class ClientPrediction
 
         _states[Tick % HistorySize] = State;
         _visualOffset *= SmoothingDecay;
-        if (wasSpawned)
+        if (wasSpawned && !_teleported)
         {
             Stats.MaxShownStep = MathF.Max(Stats.MaxShownStep, Vector3.Distance(shownBefore, ShownPosition));
         }
 
+        _teleported = false;
         Send();
     }
 
@@ -161,12 +164,16 @@ public sealed class ClientPrediction
         if (counted)
         {
             Stats.Corrections++;
-            _visualOffset += before - State.Position;
+            // A respawn is a real jump. Fading it would drag the player across the world.
+            var moved = before - State.Position;
+            _teleported = moved.Length() > MaxSmoothedCorrection;
+            _visualOffset = _teleported ? Vector3.Zero : _visualOffset + moved;
             Stats.MaxVisibleSnap = MathF.Max(Stats.MaxVisibleSnap, Vector3.Distance(before, State.Position));
         }
     }
 
     private static bool SameDiscreteState(in PlayerState a, in PlayerState b) =>
-        a.StunTicks == b.StunTicks && a.StunImmunity == b.StunImmunity && a.DashTicks == b.DashTicks && a.DashCooldown == b.DashCooldown &&
-        a.AttackCooldown == b.AttackCooldown && a.Health == b.Health;
+        a.SlowTicks == b.SlowTicks && a.DashTicks == b.DashTicks && a.DashCooldown == b.DashCooldown &&
+        a.Attack == b.Attack && a.AttackTick == b.AttackTick && a.Health == b.Health &&
+        MathF.Abs(a.Stamina - b.Stamina) < 0.01f;
 }

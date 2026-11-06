@@ -64,9 +64,11 @@ public sealed class Zone
 
     private sealed record ScatterData(string Model, int Count, float[] Area, float MinScale, float MaxScale, float Spacing);
 
+    private sealed record EnemySpawnData(float X, float Z, float Radius, int Count);
+
     private sealed record ZoneData(
         string Name, float Size, int Cells, int Seed, float[] Spawn, HillData[] Hills, PathData[] Paths,
-        PropData[] Props, ScatterData[] Scatter);
+        PropData[] Props, ScatterData[] Scatter, EnemySpawnData[]? Enemies);
 
     /// <summary>Half width, half depth and height of each model's collision at scale 1.</summary>
     private static readonly Dictionary<string, Vector3> Collision = new()
@@ -106,7 +108,9 @@ public sealed class Zone
 
         Props = props;
         var spawn = new Vector3(data.Spawn[0], terrain.At(data.Spawn[0], data.Spawn[1]), data.Spawn[1]);
-        World = new World(BuildBoxes(props, data.Size), terrain, spawn);
+        var enemySpawns = (data.Enemies ?? Array.Empty<EnemySpawnData>())
+            .Select(e => new EnemySpawn(new Vector3(e.X, terrain.At(e.X, e.Z), e.Z), e.Radius, e.Count)).ToArray();
+        World = new World(BuildBoxes(props, data.Size), terrain, spawn, enemySpawns);
     }
 
     public static Zone Load(string name)

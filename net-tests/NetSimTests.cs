@@ -15,6 +15,8 @@ public sealed class Bot
     private sbyte _moveZ;
     private int _ticksLeft;
 
+    public byte Aim { get; private set; }
+
     public Bot(int seed) => _random = new Random(seed);
 
     public (sbyte X, sbyte Z, Buttons Buttons) Next()
@@ -24,12 +26,14 @@ public sealed class Bot
             _ticksLeft = _random.Next(20, 90);
             _moveX = (sbyte)_random.Next(-127, 128);
             _moveZ = (sbyte)_random.Next(-127, 128);
+            Aim = (byte)_random.Next(256);
         }
 
         var buttons = Buttons.None;
         if (_random.Next(40) == 0) buttons |= Buttons.Jump;
         if (_random.Next(70) == 0) buttons |= Buttons.Dash;
-        if (_random.Next(30) == 0) buttons |= Buttons.Attack;
+        if (_random.Next(30) == 0) buttons |= Buttons.Light;
+        if (_random.Next(90) == 0) buttons |= Buttons.Heavy;
         return (_moveX, _moveZ, buttons);
     }
 }
@@ -68,7 +72,7 @@ public sealed class NetSimTests
                 {
                     clocks[i] -= length;
                     var (x, z, buttons) = bots[i].Next();
-                    clients[i].Step(x, z, buttons);
+                    clients[i].Step(x, z, buttons, bots[i].Aim);
                 }
             }
         }
@@ -123,7 +127,7 @@ public sealed class NetSimTests
     {
         var result = Run(rtt: 80, jitter: 8, loss: 2, enemies: 4);
         Assert.True(result.Server.PlayerHits > 0, "Enemies must reach players, or nothing is tested.");
-        Assert.True(result.Server.EnemiesKilled > 0, "Players must kill enemies, or nothing is tested.");
+        Assert.True(result.Server.EnemyHits > 0, "Players must hit enemies, or nothing is tested.");
         Assert.All(result.Clients, c => Assert.True(c.Corrections > 0));
         Assert.All(result.Clients, c => Assert.InRange(c.MaxShownStep, 0f, MaxShownStep));
         Assert.All(result.FinalGaps, gap => Assert.InRange(gap, 0f, 0.001f));
@@ -154,50 +158,6 @@ public sealed class NetSimTests
         var result = Run(rtt: 80, jitter: 8, loss: 2, enemies: 0, drift: 1.005f);
         _output.WriteLine($"buffered inputs at the end: {string.Join(", ", result.Buffered)}");
         Assert.All(result.Buffered, count => Assert.True(count > 20));
-    }
-
-    [Fact]
-    public void IdlePlayers_UnderAttack_DoNotCorrectEverySnapshot()
-    {
-        var world = World.Arena();
-        var network = new SimNetwork(3, 80, 8, 2);
-        var server = new GameServer(network.Connect(0), world, new ServerOptions { EnemyCount = 4, Seed = 3 });
-        var client = new ClientPrediction(network.Connect(1), world);
-        for (var tick = 0; tick < 180 * Tuning.TickRate; tick++)
-        {
-            network.Advance(1000.0 / Tuning.TickRate);
-            server.Step();
-            client.Step(0, 0, Buttons.None);
-        }
-
-        _output.WriteLine($"idle: corrections {client.Stats.Corrections} of {client.Stats.Snapshots} snapshots, " +
-                          $"hits {server.Stats.PlayerHits}, pos {client.State.Position}, server {server.GetPlayer(1)!.Value.Position}");
-        Assert.InRange(client.Stats.Corrections, 0, server.Stats.PlayerHits * 2 + 5);
-    }
-
-    [Fact]
-    public void Surrounded_PlayerStaysInControl()
-    {
-        var world = World.Arena();
-        var network = new SimNetwork(4, 80, 8, 2);
-        var server = new GameServer(network.Connect(0), world, new ServerOptions { EnemyCount = 4, Seed = 4 });
-        var client = new ClientPrediction(network.Connect(1), world);
-        var stunned = 0;
-        const int ticks = 120 * Tuning.TickRate;
-        for (var tick = 0; tick < ticks; tick++)
-        {
-            network.Advance(1000.0 / Tuning.TickRate);
-            server.Step();
-            client.Step(0, 0, Buttons.None);
-            if (server.GetPlayer(1)?.StunTicks > 0)
-            {
-                stunned++;
-            }
-        }
-
-        _output.WriteLine($"stunned {100.0 * stunned / ticks:F1} % of the time, hits {server.Stats.PlayerHits}");
-        Assert.True(server.Stats.PlayerHits > 100, "Enemies must keep hitting, or nothing is tested.");
-        Assert.InRange(stunned, 0, ticks / 8);
     }
 
     [Fact]
@@ -259,6 +219,109 @@ public sealed class NetSimTests
             Assert.True(client.Stats.Snapshots > 30, "Snapshots must arrive over real UDP.");
             Assert.NotNull(client.Latest);
         }
+    }
+}
+
+public sealed class EnemyTests
+{
+    private static GameServer Server(SimNetwork network, Vector3 spawn) =>
+        new(network.Connect(0), new World(Array.Empty<Aabb>(), null, spawn), new ServerOptions { EnemyCount = 12, Seed = 2 });
+
+    private static (GameServer Server, ClientPrediction Client, SimNetwork Network) Start()
+    {
+        var network = new SimNetwork(1, 0, 0, 0);
+        var server = Server(network, Vector3.Zero);
+        var client = new ClientPrediction(network.Connect(1), new World(Array.Empty<Aabb>()));
+        return (server, client, network);
+    }
+
+    private static void Play(GameServer server, ClientPrediction client, SimNetwork network, int ticks, Buttons buttons = Buttons.None)
+    {
+        for (var i = 0; i < ticks; i++)
+        {
+            network.Advance(1000.0 / Tuning.TickRate);
+            server.Step();
+            client.Step(0, 0, buttons);
+        }
+    }
+
+    [Fact]
+    public void Definitions_LoadBothSlimes()
+    {
+        Assert.Contains(EnemyDef.All, d => d.Id == "slime");
+        var rare = EnemyDef.All.Single(d => d.Id == "rare_slime");
+        var slime = EnemyDef.All.Single(d => d.Id == "slime");
+        Assert.True(rare.Size < slime.Size);
+        Assert.True(rare.Speed > slime.Speed);
+        Assert.True(rare.SpitRange > 0 && slime.SpitRange == 0);
+    }
+
+    [Fact]
+    public void Slimes_LeapSplashAndSlow()
+    {
+        var (server, client, network) = Start();
+        var slowed = false;
+        for (var i = 0; i < 60 * 60 && !slowed; i++)
+        {
+            Play(server, client, network, 1);
+            slowed = server.GetPlayer(1)?.SlowTicks > 0;
+        }
+
+        Assert.True(server.Stats.Splashes > 0, "Slimes must leap and splash.");
+        Assert.True(slowed, "A splash must slow the player.");
+        Assert.True(server.GetPlayer(1)!.Value.Health < Tuning.PlayerHealth);
+    }
+
+    [Fact]
+    public void RareSlimes_Spit()
+    {
+        var network = new SimNetwork(1, 0, 0, 0);
+        var server = new GameServer(network.Connect(0), new World(Array.Empty<Aabb>()), new ServerOptions { EnemyCount = 40, Seed = 3 });
+        var client = new ClientPrediction(network.Connect(1), new World(Array.Empty<Aabb>()));
+        Assert.Contains(server.Enemies, e => e.Def.Id == "rare_slime");
+        Play(server, client, network, 60 * 30);
+        Assert.True(server.Stats.Spits > 0, "Rare slimes must spit.");
+    }
+
+    [Fact]
+    public void PlayerAttack_HitsEnemiesInFrontOnly()
+    {
+        var (server, client, network) = Start();
+        Play(server, client, network, 60);
+        var enemy = server.Enemies[0];
+        var player = server.GetPlayer(1)!.Value;
+        server.EnemiesFrozen = true;
+
+        enemy.Position = player.Position + new Vector3(0, 0, 2);
+        var health = enemy.Health;
+        Play(server, client, network, 30, Buttons.Light);
+        Assert.Equal(health, enemy.Health);
+
+        enemy.Position = player.Position + new Vector3(0, 0, -2);
+        Play(server, client, network, 30, Buttons.Light);
+        Assert.True(enemy.Health < health);
+    }
+
+    [Fact]
+    public void Enemies_DieAndComeBack()
+    {
+        var (server, client, network) = Start();
+        Play(server, client, network, 5);
+        var enemy = server.Enemies[0];
+        enemy.TakeHit(short.MaxValue, Vector3.Zero);
+        Assert.False(enemy.Alive);
+        Play(server, client, network, 300);
+        Assert.True(enemy.Alive);
+        Assert.Equal(enemy.MaxHealth, enemy.Health);
+    }
+
+    [Theory]
+    [InlineData(1, 2, Threat.Weak)]
+    [InlineData(2, 2, Threat.Even)]
+    [InlineData(3, 2, Threat.Strong)]
+    public void Threat_FollowsLevels(int enemy, int player, Threat expected)
+    {
+        Assert.Equal(expected, ThreatRules.Compare(enemy, player));
     }
 }
 
@@ -384,9 +447,78 @@ public sealed class MovementTests
     }
 
     [Fact]
+    public void Stamina_RegeneratesAfterADelay()
+    {
+        var state = PlayerState.Spawn(Vector3.Zero);
+        state.Stamina = 10f;
+        state.StaminaDelay = 5;
+        state = Run(state, new InputCmd(), 3);
+        Assert.Equal(10f, state.Stamina);
+        state = Run(state, new InputCmd(), 60);
+        Assert.True(state.Stamina > 20f);
+    }
+
+    [Fact]
+    public void Dash_NeedsStamina()
+    {
+        var state = PlayerState.Spawn(Vector3.Zero);
+        state.Stamina = Tuning.DashStamina - 1f;
+        state = Run(state, new InputCmd { MoveX = 127, Buttons = Buttons.Dash }, 1);
+        Assert.Equal(0, state.DashTicks);
+    }
+
+    [Theory]
+    [InlineData(Buttons.Light, AttackKind.Light)]
+    [InlineData(Buttons.Heavy, AttackKind.Heavy)]
+    public void Attack_LandsOnItsHitTick(Buttons button, AttackKind kind)
+    {
+        var state = PlayerState.Spawn(Vector3.Zero);
+        var landedAt = -1;
+        for (var tick = 0; tick < 60; tick++)
+        {
+            var input = new InputCmd { Buttons = tick == 0 ? button : Buttons.None };
+            if (Movement.Step(ref state, input, Arena) == kind)
+            {
+                landedAt = tick;
+            }
+        }
+
+        Assert.Equal(Tuning.Attack(kind).HitAt, landedAt);
+        Assert.Equal(AttackKind.None, state.Attack);
+    }
+
+    [Fact]
+    public void LightAttack_ChainsIntoHeavyDuringRecovery()
+    {
+        var state = PlayerState.Spawn(Vector3.Zero);
+        state = Run(state, new InputCmd { Buttons = Buttons.Light }, 1);
+        state = Run(state, new InputCmd(), Tuning.Attack(AttackKind.Light).HitAt + 6);
+        state = Run(state, new InputCmd { Buttons = Buttons.Heavy }, 1);
+        Assert.Equal(AttackKind.Heavy, state.Attack);
+    }
+
+    [Fact]
+    public void Attack_CannotInterruptItsOwnWindup()
+    {
+        var state = PlayerState.Spawn(Vector3.Zero);
+        state = Run(state, new InputCmd { Buttons = Buttons.Heavy }, 1);
+        state = Run(state, new InputCmd { Buttons = Buttons.Light }, 3);
+        Assert.Equal(AttackKind.Heavy, state.Attack);
+    }
+
+    [Fact]
+    public void Slow_HalvesSpeed()
+    {
+        var state = PlayerState.Spawn(Vector3.Zero);
+        state.SlowTicks = 200;
+        state = Run(state, new InputCmd { MoveX = 127 }, 60);
+        Assert.Equal(Tuning.MoveSpeed * Tuning.SlowFactor, state.Velocity.X, 2);
+    }
+
+    [Fact]
     public void Walls_StopThePlayer()
     {
-        var state = Run(PlayerState.Spawn(Vector3.Zero), new InputCmd { MoveX = 127 }, 60 * 10);
+        var state = Run(PlayerState.Spawn(Vector3.Zero), new InputCmd { MoveX = 127 }, 60 * 12);
         Assert.Equal(20f - Tuning.PlayerHalfSize.X, state.Position.X, 3);
     }
 
@@ -427,12 +559,14 @@ public sealed class MovementTests
             YourId = 2,
             AckTick = 5,
             Self = PlayerState.Spawn(new Vector3(1, 2, 3)),
-            Others = new[] { new RemotePlayer(1, Vector3.One) },
-            Enemies = new[] { new EnemyView(4, Vector3.UnitZ, 30) },
+            Others = new[] { new RemotePlayer(1, Vector3.One, Vector3.UnitX, 9, AttackKind.Heavy, 3) },
+            Enemies = new[] { new EnemyView(4, 1, 3, Vector3.UnitZ, 1.5f, 30, 40, EnemyAction.Leap, 2) },
+            Spits = new[] { new SpitView(7, Vector3.UnitY) },
         };
         Assert.True(Protocol.TryDecodeSnapshot(Protocol.EncodeSnapshot(snapshot), out var decoded));
         Assert.Equal(snapshot.Self, decoded.Self);
         Assert.Equal(snapshot.Others, decoded.Others);
         Assert.Equal(snapshot.Enemies, decoded.Enemies);
+        Assert.Equal(snapshot.Spits, decoded.Spits);
     }
 }

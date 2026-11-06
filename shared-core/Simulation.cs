@@ -10,28 +10,25 @@ public static class Tuning
 
     /// <summary>Ticks of input the server holds per player, to absorb jitter and short loss.</summary>
     public const int InputBufferTicks = 3;
-    public const float MoveSpeed = 7f;
+
+    public const float MoveSpeed = 9f;
+    public const float SlowFactor = 0.5f;
     public const float GroundAcceleration = 60f;
     public const float AirAcceleration = 20f;
     public const float Gravity = 24f;
     public const float JumpSpeed = 9f;
     public const float DashSpeed = 20f;
     public const byte DashTicks = 9;
-    public const byte DashCooldownTicks = 60;
-    public const byte AttackCooldownTicks = 24;
-    public const float AttackRange = 2.6f;
-    public const short AttackDamage = 25;
+    public const byte DashCooldownTicks = 45;
     public const short PlayerHealth = 100;
-    public const short EnemyHealth = 50;
-    public const float EnemySpeed = 3f;
-    public const float EnemyReach = 1.1f;
-    public const byte EnemyCooldownTicks = 45;
-    public const short EnemyDamage = 5;
-    public const byte StunTicks = 8;
+    public const byte PlayerLevel = 2;
 
-    /// <summary>Time after a stun in which hits still hurt but cannot stun, so enemies cannot chain it.</summary>
-    public const byte StunImmunityTicks = 90;
-    public const float Knockback = 6f;
+    public const float MaxStamina = 100f;
+    public const float StaminaRegenPerTick = 24f / TickRate;
+    public const byte StaminaRegenDelayTicks = 40;
+    public const float DashStamina = 22f;
+    public const float JumpStamina = 8f;
+
     public static readonly Vector3 PlayerHalfSize = new(0.4f, 0.9f, 0.4f);
 
     /// <summary>Rise per metre that a player can still walk up.</summary>
@@ -42,7 +39,28 @@ public static class Tuning
 
     /// <summary>Largest drop that keeps a walking player on the ground instead of falling.</summary>
     public const float GroundSnap = 0.35f;
+
+    public static AttackDef Attack(AttackKind kind) => kind == AttackKind.Heavy ? HeavyAttack : LightAttack;
+
+    private static readonly AttackDef LightAttack = new(22, 9, 15, 2.8f, 0.3f, 8f, 0.55f);
+    private static readonly AttackDef HeavyAttack = new(46, 26, 40, 3.3f, 0.1f, 25f, 0.25f);
 }
+
+public enum AttackKind : byte
+{
+    None = 0,
+    Light = 1,
+    Heavy = 2,
+}
+
+/// <param name="Total">Length of the attack in ticks.</param>
+/// <param name="HitAt">Tick of the attack on which the blow lands.</param>
+/// <param name="Damage">Damage of the wooden sword.</param>
+/// <param name="Range">Reach in metres.</param>
+/// <param name="MinDot">Smallest cosine of the angle to the target: lower is a wider swing.</param>
+/// <param name="Stamina">Stamina the attack costs.</param>
+/// <param name="MoveScale">Share of normal speed while attacking.</param>
+public sealed record AttackDef(int Total, int HitAt, short Damage, float Range, float MinDot, float Stamina, float MoveScale);
 
 [Flags]
 public enum Buttons : byte
@@ -50,7 +68,8 @@ public enum Buttons : byte
     None = 0,
     Jump = 1,
     Dash = 2,
-    Attack = 4,
+    Light = 4,
+    Heavy = 8,
 }
 
 /// <summary>One tick of player input. Stored quantized, so both sides simulate the same values.</summary>
@@ -60,6 +79,9 @@ public struct InputCmd
     public sbyte MoveX;
     public sbyte MoveZ;
     public Buttons Buttons;
+
+    /// <summary>Where the player aims, in 256ths of a full turn.</summary>
+    public byte Aim;
 }
 
 /// <summary>Everything that decides how a player moves next. Position is the centre of the feet.</summary>
@@ -68,16 +90,24 @@ public struct PlayerState
     public Vector3 Position;
     public Vector3 Velocity;
     public Vector3 DashDirection;
+    public float Stamina;
     public bool Grounded;
     public byte DashTicks;
     public byte DashCooldown;
-    public byte AttackCooldown;
-    public byte StunTicks;
-    public byte StunImmunity;
+    public byte StaminaDelay;
+    public byte SlowTicks;
+    public AttackKind Attack;
+    public byte AttackTick;
+    public byte AttackAim;
     public short Health;
 
-    public static PlayerState Spawn(Vector3 position) =>
-        new() { Position = position, Health = Tuning.PlayerHealth, Grounded = true };
+    public static PlayerState Spawn(Vector3 position) => new()
+    {
+        Position = position,
+        Health = Tuning.PlayerHealth,
+        Stamina = Tuning.MaxStamina,
+        Grounded = true,
+    };
 }
 
 public readonly record struct Aabb(Vector3 Min, Vector3 Max);
@@ -88,12 +118,15 @@ public sealed class World
     public IReadOnlyList<Aabb> Boxes { get; }
     public HeightField? Terrain { get; }
     public Vector3 Spawn { get; }
+    public IReadOnlyList<EnemySpawn> EnemySpawns { get; }
 
-    public World(IReadOnlyList<Aabb> boxes, HeightField? terrain = null, Vector3 spawn = default)
+    public World(IReadOnlyList<Aabb> boxes, HeightField? terrain = null, Vector3 spawn = default,
+                 IReadOnlyList<EnemySpawn>? enemySpawns = null)
     {
         Boxes = boxes;
         Terrain = terrain;
         Spawn = spawn;
+        EnemySpawns = enemySpawns ?? Array.Empty<EnemySpawn>();
     }
 
     public float GroundHeight(float x, float z) => Terrain?.At(x, z) ?? 0f;
@@ -115,7 +148,7 @@ public sealed class World
         return false;
     }
 
-    /// <summary>True when a point is under the ground or inside a box. The camera uses this.</summary>
+    /// <summary>True when a point is under the ground or inside a box.</summary>
     public bool IsBlocked(Vector3 point)
     {
         if (point.Y < GroundHeight(point.X, point.Z) + 0.2f)
@@ -158,8 +191,15 @@ public sealed class World
 
 public static class Movement
 {
-    /// <summary>Advances one player by one tick. Returns true when an attack starts on this tick.</summary>
-    public static bool Step(ref PlayerState state, in InputCmd input, World world)
+    /// <summary>Unit vector for an aim value. Aim 0 looks along -Z, the way a Godot camera does.</summary>
+    public static Vector3 AimDirection(byte aim)
+    {
+        var angle = aim / 256f * MathF.Tau;
+        return new Vector3(-MathF.Sin(angle), 0, -MathF.Cos(angle));
+    }
+
+    /// <summary>Advances one player by one tick. Returns the attack whose blow lands on this tick.</summary>
+    public static AttackKind Step(ref PlayerState state, in InputCmd input, World world)
     {
         var wish = new Vector2(input.MoveX, input.MoveZ) / 127f;
         if (wish.LengthSquared() > 1f)
@@ -167,42 +207,16 @@ public static class Movement
             wish = Vector2.Normalize(wish);
         }
 
-        var buttons = input.Buttons;
-        if (state.StunTicks > 0)
-        {
-            state.StunTicks--;
-            wish = Vector2.Zero;
-            buttons = Buttons.None;
-        }
+        if (state.DashCooldown > 0) state.DashCooldown--;
+        if (state.SlowTicks > 0) state.SlowTicks--;
+        if (state.StaminaDelay > 0) state.StaminaDelay--;
 
-        if (state.StunImmunity > 0)
-        {
-            state.StunImmunity--;
-        }
+        var landed = StepAttack(ref state, input);
+        StepDash(ref state, input, wish);
 
-        if (state.DashCooldown > 0)
+        if (state.StaminaDelay == 0)
         {
-            state.DashCooldown--;
-        }
-
-        if (state.AttackCooldown > 0)
-        {
-            state.AttackCooldown--;
-        }
-
-        var attacked = false;
-        if (buttons.HasFlag(Buttons.Attack) && state.AttackCooldown == 0)
-        {
-            state.AttackCooldown = Tuning.AttackCooldownTicks;
-            attacked = true;
-        }
-
-        if (buttons.HasFlag(Buttons.Dash) && state.DashCooldown == 0 && wish != Vector2.Zero)
-        {
-            var direction = Vector2.Normalize(wish);
-            state.DashDirection = new Vector3(direction.X, 0, direction.Y);
-            state.DashTicks = Tuning.DashTicks;
-            state.DashCooldown = Tuning.DashCooldownTicks;
+            state.Stamina = MathF.Min(Tuning.MaxStamina, state.Stamina + Tuning.StaminaRegenPerTick);
         }
 
         if (state.DashTicks > 0)
@@ -216,9 +230,10 @@ public static class Movement
             Accelerate(ref state, wish);
         }
 
-        if (buttons.HasFlag(Buttons.Jump) && state.Grounded)
+        if (input.Buttons.HasFlag(Buttons.Jump) && state.Grounded && state.Stamina >= Tuning.JumpStamina)
         {
             state.Velocity.Y = Tuning.JumpSpeed;
+            Spend(ref state, Tuning.JumpStamina);
         }
 
         state.Velocity.Y -= Tuning.Gravity * Tuning.TickSeconds;
@@ -228,13 +243,101 @@ public static class Movement
         MoveAxis(ref state, world, 2, state.Velocity.Z * Tuning.TickSeconds);
         MoveAxis(ref state, world, 1, state.Velocity.Y * Tuning.TickSeconds);
         LandOnGround(ref state, world, wasGrounded);
-        return attacked;
+        return landed;
+    }
+
+    private static void Spend(ref PlayerState state, float amount)
+    {
+        state.Stamina = MathF.Max(0f, state.Stamina - amount);
+        state.StaminaDelay = Tuning.StaminaRegenDelayTicks;
+    }
+
+    private static AttackKind StepAttack(ref PlayerState state, in InputCmd input)
+    {
+        var landed = AttackKind.None;
+        if (state.Attack != AttackKind.None)
+        {
+            var current = Tuning.Attack(state.Attack);
+            state.AttackTick++;
+            if (state.AttackTick == current.HitAt)
+            {
+                landed = state.Attack;
+            }
+
+            if (state.AttackTick >= current.Total)
+            {
+                state.Attack = AttackKind.None;
+                state.AttackTick = 0;
+            }
+        }
+
+        var wanted = input.Buttons.HasFlag(Buttons.Heavy) ? AttackKind.Heavy
+            : input.Buttons.HasFlag(Buttons.Light) ? AttackKind.Light : AttackKind.None;
+        if (wanted == AttackKind.None || !CanStartAttack(state))
+        {
+            return landed;
+        }
+
+        var next = Tuning.Attack(wanted);
+        if (state.Stamina >= next.Stamina)
+        {
+            state.Attack = wanted;
+            state.AttackTick = 0;
+            state.AttackAim = input.Aim;
+            Spend(ref state, next.Stamina);
+        }
+
+        return landed;
+    }
+
+    /// <summary>An attack can follow another once the blow has landed and the swing is recovering.</summary>
+    private static bool CanStartAttack(in PlayerState state)
+    {
+        if (state.Attack == AttackKind.None)
+        {
+            return true;
+        }
+
+        return state.AttackTick > Tuning.Attack(state.Attack).HitAt + 5;
+    }
+
+    private static void StepDash(ref PlayerState state, in InputCmd input, Vector2 wish)
+    {
+        if (!input.Buttons.HasFlag(Buttons.Dash) || state.DashCooldown > 0 || state.Stamina < Tuning.DashStamina)
+        {
+            return;
+        }
+
+        var direction = wish != Vector2.Zero ? Vector2.Normalize(wish) : Vector2.Zero;
+        if (direction == Vector2.Zero)
+        {
+            var aim = AimDirection(input.Aim);
+            direction = new Vector2(aim.X, aim.Z);
+        }
+
+        state.DashDirection = new Vector3(direction.X, 0, direction.Y);
+        state.DashTicks = Tuning.DashTicks;
+        state.DashCooldown = Tuning.DashCooldownTicks;
+        state.Attack = AttackKind.None;
+        state.AttackTick = 0;
+        Spend(ref state, Tuning.DashStamina);
     }
 
     private static void Accelerate(ref PlayerState state, Vector2 wish)
     {
+        var speed = Tuning.MoveSpeed;
+        if (state.SlowTicks > 0)
+        {
+            speed *= Tuning.SlowFactor;
+        }
+
+        if (state.Attack != AttackKind.None)
+        {
+            speed *= Tuning.Attack(state.Attack).MoveScale;
+        }
+
         var current = new Vector2(state.Velocity.X, state.Velocity.Z);
-        var change = wish * Tuning.MoveSpeed - current;
+        var change = wish * speed - current;
         var limit = (state.Grounded ? Tuning.GroundAcceleration : Tuning.AirAcceleration) * Tuning.TickSeconds;
         if (change.LengthSquared() > limit * limit)
         {

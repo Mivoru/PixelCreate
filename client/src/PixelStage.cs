@@ -6,15 +6,7 @@ namespace PixelCreate;
 /// <summary>A low-resolution 3D view scaled up by a whole number, with the pixel post shader.</summary>
 public sealed class PixelStage
 {
-    public static readonly Vector2I RenderSize = new(480, 270);
-
-    private static readonly string[] Palette =
-    {
-        "be4a2f", "d77643", "ead4aa", "e4a672", "b86f50", "733e39", "3e2731", "a22633",
-        "e43b44", "f77622", "feae34", "fee761", "63c74d", "3e8948", "265c42", "193c3e",
-        "124e89", "0099db", "2ce8f5", "ffffff", "c0cbdc", "8b9bb4", "5a6988", "3a4466",
-        "262b44", "181425", "ff0044", "68386c", "b55088", "f6757a", "e8b796", "c28569",
-    };
+    public static readonly Vector2I RenderSize = new(640, 360);
 
     public SubViewport View { get; }
     public Camera3D Camera { get; }
@@ -45,13 +37,13 @@ public sealed class PixelStage
         View.AddChild(BuildEnvironment());
         View.AddChild(new DirectionalLight3D
         {
-            RotationDegrees = new Vector3(-48, -55, 0),
-            LightColor = new Color("fee3b0"),
-            LightEnergy = 1.2f,
+            RotationDegrees = new Vector3(-42, -50, 0),
+            LightColor = new Color("fff3df"),
+            LightEnergy = 1.25f,
             ShadowEnabled = true,
         });
 
-        Camera = new Camera3D { Fov = 55, Far = 200 };
+        Camera = new Camera3D { Fov = 58, Far = 260 };
         View.AddChild(Camera);
         Camera.AddChild(BuildPostQuad());
     }
@@ -72,7 +64,14 @@ public sealed class PixelStage
                 BackgroundMode = Godot.Environment.BGMode.Sky,
                 Sky = new Sky { SkyMaterial = sky },
                 AmbientLightSource = Godot.Environment.AmbientSource.Sky,
-                AmbientLightEnergy = 1.3f,
+                AmbientLightEnergy = 1.7f,
+                FogEnabled = true,
+                FogLightColor = new Color("c7b6c9"),
+                FogDensity = 0.0025f,
+                FogSkyAffect = 0f,
+                SsaoEnabled = true,
+                SsaoRadius = 1.4f,
+                SsaoIntensity = 0.8f,
                 TonemapMode = Godot.Environment.ToneMapper.Linear,
             },
         };
@@ -81,8 +80,9 @@ public sealed class PixelStage
     private static MeshInstance3D BuildPostQuad()
     {
         var material = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/pixel_post.gdshader") };
-        var colors = Palette.Select(hex => new Color(hex)).Select(c => new Vector3(c.R, c.G, c.B)).ToArray();
+        var colors = PaletteData.Colors.Select(hex => new Color(hex)).Select(c => new Vector3(c.R, c.G, c.B)).ToArray();
         material.SetShaderParameter("palette", colors);
+        material.SetShaderParameter("palette_size", colors.Length);
         material.SetShaderParameter("outline_color", new Vector3(0x18, 0x14, 0x25) / 255f);
         return new MeshInstance3D
         {

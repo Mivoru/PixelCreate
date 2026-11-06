@@ -8,5 +8,6 @@
   </PropertyGroup>
   <ItemGroup>
     <EmbeddedResource Include="..\world\zones\*.json" LogicalName="zones.%(Filename)" />
+    <EmbeddedResource Include="..\world\enemies.json" LogicalName="enemies" />
   </ItemGroup>
 </Project>

@@ -1,0 +1,360 @@
+using System;
+using System.Collections.Generic;
+using Godot;
+using PixelCreate.Core;
+
+namespace PixelCreate;
+
+/// <summary>
+/// The game interface, drawn in the same 640 x 360 pixels as the world and scaled up with it.
+/// All text is English.
+/// </summary>
+public partial class Hud : Control
+{
+    private const int Scale2 = 2;
+    private const int Slot = 22;
+    private const float TagRange = 34f;
+
+    private static readonly Color Panel = new("262b44");
+    private static readonly Color PanelLight = new("3a4466");
+    private static readonly Color Edge = new("8b9bb4");
+    private static readonly Color Ink = new("181425");
+    private static readonly Color Text = new("ead4aa");
+    private static readonly Color HealthColor = new("e43b44");
+    private static readonly Color HealthDark = new("a22633");
+    private static readonly Color StaminaColor = new("63c74d");
+    private static readonly Color StaminaDark = new("3e8948");
+
+    private readonly Dictionary<string, Texture2D> _icons = new();
+    private readonly List<(Rect2 Rect, SlotRef Slot)> _slots = new();
+    private Font _font = null!;
+    private float _shownHealth = 1f;
+    private float _ghostHealth = 1f;
+    private float _shownStamina = 1f;
+    private float _time;
+    private Item? _held;
+
+    public Inventory Items { get; } = new();
+    public bool InventoryOpen { get; private set; }
+    public PlayerState Player { get; set; }
+    public Snapshot? Snapshot { get; set; }
+    public Camera3D? Camera { get; set; }
+    public string Notice { get; set; } = "";
+
+    /// <summary>World positions shown this frame, by enemy id, so tags follow the drawn enemies.</summary>
+    public Dictionary<int, Vector3> EnemyPositions { get; } = new();
+
+    public override void _Ready()
+    {
+        _font = GD.Load<Font>("res://assets/ui/pixel_font.fnt");
+        _icons["wooden_sword"] = GD.Load<Texture2D>("res://assets/ui/wooden_sword.png");
+        TextureFilter = TextureFilterEnum.Nearest;
+        MouseFilter = MouseFilterEnum.Stop;
+        Scale = Vector2.One * Scale2;
+        Size = new Vector2(PixelStage.RenderSize.X, PixelStage.RenderSize.Y);
+    }
+
+    public void ToggleInventory()
+    {
+        InventoryOpen = !InventoryOpen;
+        Input.MouseMode = InventoryOpen ? Input.MouseModeEnum.Visible : Input.MouseModeEnum.Captured;
+    }
+
+    public override void _Process(double delta)
+    {
+        var d = (float)delta;
+        _time += d;
+        var health = Mathf.Clamp(Player.Health / (float)Tuning.PlayerHealth, 0f, 1f);
+        var stamina = Mathf.Clamp(Player.Stamina / Tuning.MaxStamina, 0f, 1f);
+        _shownHealth = Mathf.Lerp(_shownHealth, health, 1f - Mathf.Exp(-16f * d));
+        _shownStamina = Mathf.Lerp(_shownStamina, stamina, 1f - Mathf.Exp(-22f * d));
+
+        // The pale part of the bar shows the damage just taken, then drains away.
+        _ghostHealth = health > _ghostHealth ? health : Mathf.MoveToward(_ghostHealth, health, d * 0.35f);
+        QueueRedraw();
+    }
+
+    public override void _Draw()
+    {
+        _slots.Clear();
+        DrawNametags();
+        DrawStatus();
+        DrawHotbar();
+        if (InventoryOpen)
+        {
+            DrawInventory();
+        }
+
+        if (_held is not null)
+        {
+            DrawTextureRect(_icons[_held.Icon], new Rect2(GetLocalMousePosition() - new Vector2(8, 8), 16, 16), false);
+        }
+    }
+
+    public override void _GuiInput(InputEvent @event)
+    {
+        if (!InventoryOpen || @event is not InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left } click)
+        {
+            return;
+        }
+
+        var point = click.Position;
+        foreach (var (rect, slot) in _slots)
+        {
+            if (rect.HasPoint(point))
+            {
+                Exchange(slot);
+                return;
+            }
+        }
+    }
+
+    public void SelectHotbar(int index) => Items.SelectedHotbar = index;
+
+    private void Exchange(SlotRef slot)
+    {
+        var current = Read(slot);
+        if (_held is not null && slot.Equip != EquipSlot.None && _held.Slot != slot.Equip)
+        {
+            return;
+        }
+
+        Write(slot, _held);
+        _held = current;
+    }
+
+    private Item? Read(SlotRef slot) => slot.Area switch
+    {
+        "bag" => Items.Bag[slot.Index],
+        "hotbar" => Items.Hotbar[slot.Index],
+        _ => Items.Equipped[slot.Equip],
+    };
+
+    private void Write(SlotRef slot, Item? item)
+    {
+        switch (slot.Area)
+        {
+            case "bag":
+                Items.Bag[slot.Index] = item;
+                break;
+            case "hotbar":
+                Items.Hotbar[slot.Index] = item;
+                break;
+            default:
+                Items.Equipped[slot.Equip] = item;
+                break;
+        }
+    }
+
+    private void DrawStatus()
+    {
+        DrawPanel(new Rect2(6, 6, 134, 36));
+        DrawString(_font, new Vector2(11, 16), $"Wanderer   Lv {Tuning.PlayerLevel}", HorizontalAlignment.Left, -1, 11, Text);
+        DrawBar(new Rect2(11, 19, 124, 9), _shownHealth, _ghostHealth, HealthColor, HealthDark,
+                $"{Math.Max(Player.Health, (short)0)} / {Tuning.PlayerHealth}", Player.Health < 30);
+        DrawBar(new Rect2(11, 30, 124, 7), _shownStamina, _shownStamina, StaminaColor, StaminaDark, "", Player.Stamina < 15f);
+        if (Player.SlowTicks > 0)
+        {
+            DrawPanel(new Rect2(6, 45, 62, 13));
+            DrawString(_font, new Vector2(11, 55), $"Slowed {Player.SlowTicks / 60f:F1}s", HorizontalAlignment.Left, -1, 11, new Color("8fe05a"));
+        }
+
+        if (Notice.Length > 0)
+        {
+            DrawString(_font, new Vector2(6, 354), Notice, HorizontalAlignment.Left, -1, 11, Text);
+        }
+    }
+
+    private void DrawBar(Rect2 rect, float value, float ghost, Color color, Color dark, string label, bool warn)
+    {
+        DrawRect(rect.Grow(1), Ink);
+        DrawRect(rect, new Color("3e2731"));
+        var ghostRect = new Rect2(rect.Position, rect.Size.X * ghost, rect.Size.Y);
+        DrawRect(ghostRect, new Color("feae34"));
+        var fill = new Rect2(rect.Position, rect.Size.X * value, rect.Size.Y);
+        DrawRect(fill, dark);
+        DrawRect(new Rect2(fill.Position, fill.Size.X, Mathf.Ceil(rect.Size.Y * 0.6f)), color);
+
+        // A band of light runs along the bar; it speeds up when the value is low.
+        var sweep = Mathf.PosMod(_time * (warn ? 160f : 46f), rect.Size.X + 60f) - 30f;
+        var shine = rect.Position.X + sweep;
+        var left = Mathf.Max(shine, rect.Position.X);
+        var right = Mathf.Min(shine + 7f, rect.Position.X + fill.Size.X);
+        if (right > left)
+        {
+            DrawRect(new Rect2(left, rect.Position.Y, right - left, 2), new Color(1, 1, 1, 0.75f));
+        }
+
+        if (warn && Mathf.Sin(_time * 10f) > 0)
+        {
+            DrawRect(rect.Grow(1), new Color("fee761"), false);
+        }
+
+        if (label.Length > 0)
+        {
+            DrawOutlined(label, new Vector2(rect.Position.X + rect.Size.X / 2 - label.Length * 2.6f, rect.End.Y - 1), Colors.White);
+        }
+    }
+
+    private void DrawHotbar()
+    {
+        var width = Inventory.HotbarSlots * (Slot + 2) + 6;
+        var left = (Size.X - width) / 2f;
+        var top = Size.Y - Slot - 12f;
+        DrawPanel(new Rect2(left, top, width, Slot + 8));
+        for (var i = 0; i < Inventory.HotbarSlots; i++)
+        {
+            var rect = new Rect2(left + 4 + i * (Slot + 2), top + 4, Slot, Slot);
+            DrawSlot(rect, Items.Hotbar[i], new SlotRef("hotbar", i));
+            if (i == Items.SelectedHotbar)
+            {
+                var pulse = 0.65f + Mathf.Sin(_time * 5f) * 0.35f;
+                DrawRect(rect.Grow(1), new Color("fee761", pulse), false);
+            }
+
+            DrawOutlined((i + 1).ToString(), rect.Position + new Vector2(2, 9), Text);
+        }
+    }
+
+    private void DrawInventory()
+    {
+        var window = new Rect2(150, 54, 340, 196);
+        DrawPanel(window);
+        DrawString(_font, window.Position + new Vector2(10, 13), "Equipment", HorizontalAlignment.Left, -1, 11, Text);
+        DrawString(_font, window.Position + new Vector2(180, 13), "Inventory", HorizontalAlignment.Left, -1, 11, Text);
+
+        var equip = new (EquipSlot Slot, string Label, int X, int Y)[]
+        {
+            (EquipSlot.Head, "Head", 62, 22),
+            (EquipSlot.Chest, "Chest", 62, 56),
+            (EquipSlot.Legs, "Legs", 62, 90),
+            (EquipSlot.Boots, "Boots", 62, 124),
+            (EquipSlot.Weapon, "Weapon", 16, 56),
+            (EquipSlot.Ring, "Ring", 108, 56),
+        };
+        foreach (var (slot, label, x, y) in equip)
+        {
+            var rect = new Rect2(window.Position + new Vector2(x, y), Slot, Slot);
+            DrawSlot(rect, Items.Equipped[slot], new SlotRef("equip", 0, slot));
+            DrawString(_font, rect.Position + new Vector2(-3, Slot + 10), label, HorizontalAlignment.Left, -1, 11, Edge);
+        }
+
+        for (var i = 0; i < Inventory.BagSlots; i++)
+        {
+            var rect = new Rect2(window.Position + new Vector2(180 + i % 5 * (Slot + 8), 22 + i / 5 * (Slot + 8)), Slot, Slot);
+            DrawSlot(rect, Items.Bag[i], new SlotRef("bag", i));
+        }
+
+        DrawTooltip(window);
+    }
+
+    private void DrawTooltip(Rect2 window)
+    {
+        var mouse = GetLocalMousePosition();
+        foreach (var (rect, slot) in _slots)
+        {
+            if (rect.HasPoint(mouse) && Read(slot) is { } item)
+            {
+                var position = window.Position + new Vector2(10, window.Size.Y - 30);
+                DrawString(_font, position, item.Name, HorizontalAlignment.Left, -1, 11, new Color("fee761"));
+                DrawString(_font, position + new Vector2(0, 12), item.Description, HorizontalAlignment.Left, -1, 11, Text);
+                return;
+            }
+        }
+
+        DrawString(_font, window.Position + new Vector2(10, window.Size.Y - 8), "Click to pick up and place items.  [I] closes.", HorizontalAlignment.Left, -1, 11, Edge);
+    }
+
+    private void DrawSlot(Rect2 rect, Item? item, SlotRef slot)
+    {
+        _slots.Add((rect, slot));
+        DrawRect(rect, Ink);
+        DrawRect(rect.Grow(-1), PanelLight);
+        DrawRect(new Rect2(rect.Position + Vector2.One, rect.Size.X - 2, 1), Panel);
+        if (rect.HasPoint(GetLocalMousePosition()) && InventoryOpen)
+        {
+            DrawRect(rect, Text, false);
+        }
+
+        if (item is not null)
+        {
+            DrawTextureRect(_icons[item.Icon], new Rect2(rect.Position + new Vector2(3, 3), 16, 16), false);
+        }
+    }
+
+    private void DrawPanel(Rect2 rect)
+    {
+        DrawRect(rect.Grow(1), Ink);
+        DrawRect(rect, Panel);
+        DrawRect(new Rect2(rect.Position, rect.Size.X, 1), Edge);
+        DrawRect(new Rect2(rect.Position, 1, rect.Size.Y), PanelLight);
+    }
+
+    private void DrawOutlined(string text, Vector2 position, Color color)
+    {
+        foreach (var offset in new[] { Vector2.Left, Vector2.Right, Vector2.Up, Vector2.Down })
+        {
+            DrawString(_font, position + offset, text, HorizontalAlignment.Left, -1, 11, Ink);
+        }
+
+        DrawString(_font, position, text, HorizontalAlignment.Left, -1, 11, color);
+    }
+
+    private void DrawNametags()
+    {
+        if (Snapshot is null || Camera is null)
+        {
+            return;
+        }
+
+        foreach (var enemy in Snapshot.Enemies)
+        {
+            if (enemy.Action == EnemyAction.Dead || !EnemyPositions.TryGetValue(enemy.Id, out var position))
+            {
+                continue;
+            }
+
+            var def = EnemyDef.All[enemy.Type];
+            var head = position + Vector3.Up * (def.Size * 1.5f + 0.25f);
+            if (Camera.IsPositionBehind(head) || Camera.GlobalPosition.DistanceTo(head) > TagRange)
+            {
+                continue;
+            }
+
+            DrawTag(Camera.UnprojectPosition(head), enemy, def);
+        }
+    }
+
+    private void DrawTag(Vector2 at, in EnemyView enemy, EnemyDef def)
+    {
+        var rare = def.RareChance > 0;
+        var threat = ThreatRules.Compare(enemy.Level, Tuning.PlayerLevel);
+        var color = threat switch
+        {
+            Threat.Strong => new Color("e43b44"),
+            Threat.Weak => new Color("63c74d"),
+            _ => Colors.White,
+        };
+        var label = $"Lv {enemy.Level} {def.Name}";
+        var width = _font.GetStringSize(label, HorizontalAlignment.Left, -1, 11).X;
+        var left = at.X - width / 2f;
+
+        if (rare)
+        {
+            // Rare enemies get a moving glow behind the tag, and sparks that run around it.
+            var pulse = 0.5f + Mathf.Sin(_time * 6f) * 0.5f;
+            DrawRect(new Rect2(left - 3, at.Y - 11, width + 6, 13), new Color("b55088", 0.35f + pulse * 0.3f));
+            var runner = Mathf.PosMod(_time * 60f, width + 6f);
+            DrawRect(new Rect2(left - 3 + runner, at.Y - 11, 3, 1), new Color("fee761"));
+            DrawRect(new Rect2(left + width + 3 - runner - 3, at.Y + 1, 3, 1), new Color("fee761"));
+        }
+
+        DrawOutlined(label, new Vector2(left, at.Y), color);
+        if (enemy.Health < enemy.MaxHealth)
+        {
+            var bar = new Rect2(at.X - 14, at.Y + 3, 28, 2);
+            DrawRect(bar.Grow(1), Ink);
+            DrawRect(new Rect2(bar.Position, bar.Size.X * enemy.Health / enemy.MaxHealth, bar.Size.Y), HealthColor);
+        }
+    }
+}
