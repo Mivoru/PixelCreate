@@ -33,6 +33,15 @@ public static class Tuning
     public const byte StunImmunityTicks = 90;
     public const float Knockback = 6f;
     public static readonly Vector3 PlayerHalfSize = new(0.4f, 0.9f, 0.4f);
+
+    /// <summary>Rise per metre that a player can still walk up.</summary>
+    public const float MaxSlope = 1.2f;
+
+    /// <summary>How far above the feet the ground can be before it blocks like a wall.</summary>
+    public const float StepHeight = 0.4f;
+
+    /// <summary>Largest drop that keeps a walking player on the ground instead of falling.</summary>
+    public const float GroundSnap = 0.35f;
 }
 
 [Flags]
@@ -73,12 +82,58 @@ public struct PlayerState
 
 public readonly record struct Aabb(Vector3 Min, Vector3 Max);
 
-/// <summary>Static collision geometry. The floor is the plane y = 0.</summary>
+/// <summary>Static collision geometry: boxes, and terrain or the plane y = 0 as the ground.</summary>
 public sealed class World
 {
     public IReadOnlyList<Aabb> Boxes { get; }
+    public HeightField? Terrain { get; }
+    public Vector3 Spawn { get; }
 
-    public World(IReadOnlyList<Aabb> boxes) => Boxes = boxes;
+    public World(IReadOnlyList<Aabb> boxes, HeightField? terrain = null, Vector3 spawn = default)
+    {
+        Boxes = boxes;
+        Terrain = terrain;
+        Spawn = spawn;
+    }
+
+    public float GroundHeight(float x, float z) => Terrain?.At(x, z) ?? 0f;
+
+    /// <summary>True when a player standing at this position would be inside a box.</summary>
+    public bool OverlapsPlayer(Vector3 position)
+    {
+        var half = Tuning.PlayerHalfSize;
+        foreach (var box in Boxes)
+        {
+            if (position.X - half.X < box.Max.X && position.X + half.X > box.Min.X &&
+                position.Y < box.Max.Y && position.Y + half.Y * 2 > box.Min.Y &&
+                position.Z - half.Z < box.Max.Z && position.Z + half.Z > box.Min.Z)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>True when a point is under the ground or inside a box. The camera uses this.</summary>
+    public bool IsBlocked(Vector3 point)
+    {
+        if (point.Y < GroundHeight(point.X, point.Z) + 0.2f)
+        {
+            return true;
+        }
+
+        foreach (var box in Boxes)
+        {
+            if (point.X > box.Min.X && point.X < box.Max.X && point.Y > box.Min.Y && point.Y < box.Max.Y &&
+                point.Z > box.Min.Z && point.Z < box.Max.Z)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     /// <summary>A walled 40 x 40 m arena with four pillars.</summary>
     public static World Arena()
@@ -167,10 +222,12 @@ public static class Movement
         }
 
         state.Velocity.Y -= Tuning.Gravity * Tuning.TickSeconds;
+        var wasGrounded = state.Grounded && state.Velocity.Y <= 0;
         state.Grounded = false;
         MoveAxis(ref state, world, 0, state.Velocity.X * Tuning.TickSeconds);
         MoveAxis(ref state, world, 2, state.Velocity.Z * Tuning.TickSeconds);
         MoveAxis(ref state, world, 1, state.Velocity.Y * Tuning.TickSeconds);
+        LandOnGround(ref state, world, wasGrounded);
         return attacked;
     }
 
@@ -204,6 +261,13 @@ public static class Movement
                 continue;
             }
 
+            // A deep overlap did not come from this move. Pushing it out would be a teleport.
+            var depth = delta > 0 ? max[axis] - box.Min[axis] : box.Max[axis] - min[axis];
+            if (depth > MathF.Abs(delta) + 0.01f)
+            {
+                continue;
+            }
+
             var bottom = axis == 1 ? 0f : half[axis];
             var top = axis == 1 ? half.Y * 2 : half[axis];
             position[axis] = delta > 0 ? box.Min[axis] - top : box.Max[axis] + bottom;
@@ -215,13 +279,37 @@ public static class Movement
             max[axis] = position[axis] + top;
         }
 
-        if (axis == 1 && position.Y <= 0)
+        if (axis != 1 && IsTooSteep(state, world, position, delta))
         {
-            position.Y = 0;
-            state.Velocity.Y = 0;
-            state.Grounded = true;
+            position[axis] = state.Position[axis];
+            var velocity = state.Velocity;
+            velocity[axis] = 0;
+            state.Velocity = velocity;
         }
 
         state.Position = position;
+    }
+
+    private static bool IsTooSteep(in PlayerState state, World world, Vector3 next, float delta)
+    {
+        var groundNow = world.GroundHeight(state.Position.X, state.Position.Z);
+        var groundNext = world.GroundHeight(next.X, next.Z);
+        var onGround = state.Position.Y <= groundNow + 0.05f;
+        return groundNext > state.Position.Y + Tuning.StepHeight ||
+               (onGround && groundNext - groundNow > MathF.Abs(delta) * Tuning.MaxSlope);
+    }
+
+    private static void LandOnGround(ref PlayerState state, World world, bool wasGrounded)
+    {
+        var ground = world.GroundHeight(state.Position.X, state.Position.Z);
+        var height = state.Position.Y - ground;
+        var snap = wasGrounded && !state.Grounded && height < Tuning.GroundSnap &&
+                   !world.OverlapsPlayer(state.Position with { Y = ground });
+        if (height <= 0 || snap)
+        {
+            state.Position.Y = ground;
+            state.Velocity.Y = 0;
+            state.Grounded = true;
+        }
     }
 }

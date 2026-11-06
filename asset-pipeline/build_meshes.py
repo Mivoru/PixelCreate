@@ -1,7 +1,7 @@
 """Build low-poly game assets with headless Blender.
 
 Usage: blender -b --factory-startup -P asset-pipeline/build_meshes.py
-Writes client/assets/village.glb. Colours come from the Endesga 32 palette.
+Writes one .glb per model into client/assets. Colours come from the Endesga 32 palette.
 """
 import math
 import random
@@ -10,7 +10,7 @@ from pathlib import Path
 import bmesh
 import bpy
 
-OUT = Path(__file__).resolve().parent.parent / "client" / "assets" / "village.glb"
+OUT = Path(__file__).resolve().parent.parent / "client" / "assets"
 
 COLORS = {
     "grass": "3E8948", "grass_dark": "265C42", "leaf": "63C74D", "path": "D77643",
@@ -114,10 +114,18 @@ def tree(prefix, x, y, scale, seed):
     blob(f"{prefix}_c", (x + 0.9 * scale, y - 0.5 * scale, 4.0 * scale), 1.1 * scale, "leaf", seed + 2)
 
 
-def main():
+def start_scene():
     bpy.ops.wm.read_factory_settings(use_empty=True)
+    MATERIALS.clear()
     MATERIALS.update({name: make_material(name, value) for name, value in COLORS.items()})
 
+
+def export(name):
+    OUT.mkdir(parents=True, exist_ok=True)
+    bpy.ops.export_scene.gltf(filepath=str(OUT / f"{name}.glb"), export_format="GLB", export_apply=True)
+
+
+def village():
     ground()
     cottage()
     box("path", (0, -7.6, 0.06), (1.7, 11, 0.12), "path")
@@ -137,8 +145,26 @@ def main():
     box("head", (1.6, -4.4, 1.6), (0.46, 0.46, 0.46), "skin")
     box("hat", (1.6, -4.4, 1.9), (0.84, 0.84, 0.1), "hat")
 
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    bpy.ops.export_scene.gltf(filepath=str(OUT), export_format="GLB", export_apply=True)
+
+def rock():
+    blob("rock", (0, 0, 0.2), 0.6, "stone_dark", 5, 0.7, 1)
 
 
-main()
+def bush():
+    blob("bush", (0, 0, 0.35), 0.6, "grass_dark", 8, 0.7, 1)
+    blob("bush_top", (0.1, 0.1, 0.55), 0.35, "leaf", 9, 0.8, 1)
+
+
+MODELS = {
+    "village": village,
+    "cottage": cottage,
+    "tree_a": lambda: tree("a", 0, 0, 1.0, 11),
+    "tree_b": lambda: tree("b", 0, 0, 1.0, 21),
+    "rock": rock,
+    "bush": bush,
+}
+
+for model_name, build in MODELS.items():
+    start_scene()
+    build()
+    export(model_name)

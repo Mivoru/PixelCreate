@@ -17,7 +17,9 @@ namespace PixelCreate;
 public partial class GameClient : Node
 {
     private const float CameraDistance = 6.5f;
-    private const float CameraHeight = 2.6f;
+    private const float CameraStep = 0.25f;
+    private const float MinPitch = -1.1f;
+    private const float MaxPitch = 0.35f;
     private const float MouseSensitivity = 0.0035f;
     private const float RemoteSmoothing = 18f;
     private int _captureFrames = 8;
@@ -33,6 +35,8 @@ public partial class GameClient : Node
     private Vector3 _shownBefore;
     private Vector3 _shownNow;
     private float _yaw;
+    private float _pitch = -0.35f;
+    private World _world = null!;
     private double _clock;
     private string? _captureDir;
     private int _captured;
@@ -48,9 +52,10 @@ public partial class GameClient : Node
         _captureDir = args.ElementAtOrDefault(2);
         _captureFrames = int.Parse(args.ElementAtOrDefault(3) ?? "8");
 
-        var world = World.Arena();
+        var zone = Zone.Load("meadow-valley");
+        _world = zone.World;
         _stage = new PixelStage(this);
-        _stage.View.AddChild(ArenaView.Build(world));
+        _stage.View.AddChild(ZoneView.Build(zone));
         _player = ArenaView.BuildPlayer(new Color("0099db"));
         _stage.View.AddChild(_player);
 
@@ -58,7 +63,7 @@ public partial class GameClient : Node
         AddChild(_status);
 
         _transport = UdpTransport.Connect(host, port);
-        _client = new ClientPrediction(_transport, world);
+        _client = new ClientPrediction(_transport, _world);
         if (_captureDir is null)
         {
             Input.MouseMode = Input.MouseModeEnum.Captured;
@@ -70,6 +75,7 @@ public partial class GameClient : Node
         if (@event is InputEventMouseMotion motion)
         {
             _yaw -= motion.Relative.X * MouseSensitivity;
+            _pitch = Mathf.Clamp(_pitch - motion.Relative.Y * MouseSensitivity, MinPitch, MaxPitch);
         }
         else if (@event is InputEventKey { Keycode: Key.Escape, Pressed: true })
         {
@@ -210,9 +216,24 @@ public partial class GameClient : Node
 
     private void PlaceCamera(Vector3 shown)
     {
-        var behind = new Vector3(Mathf.Sin(_yaw), 0, Mathf.Cos(_yaw)) * CameraDistance;
-        var target = shown + new Vector3(0, 1.4f, 0);
-        _stage.Camera.LookAtFromPosition(target + behind + new Vector3(0, CameraHeight, 0), target);
+        var target = shown + new Vector3(0, 1.6f, 0);
+        var flat = Mathf.Cos(_pitch);
+        var back = new Vector3(Mathf.Sin(_yaw) * flat, -Mathf.Sin(_pitch), Mathf.Cos(_yaw) * flat);
+
+        // Walk out from the player and stop before the first thing in the way.
+        var distance = CameraStep;
+        while (distance < CameraDistance)
+        {
+            var next = target + back * (distance + CameraStep);
+            if (_world.IsBlocked(new System.Numerics.Vector3(next.X, next.Y, next.Z)))
+            {
+                break;
+            }
+
+            distance += CameraStep;
+        }
+
+        _stage.Camera.LookAtFromPosition(target + back * distance, target);
     }
 
     private void Capture()

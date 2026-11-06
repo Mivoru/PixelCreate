@@ -6,4 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="..\world\zones\*.json" LogicalName="zones.%(Filename)" />
+  </ItemGroup>
 </Project>

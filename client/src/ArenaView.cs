@@ -1,25 +1,10 @@
 using Godot;
-using PixelCreate.Core;
 
 namespace PixelCreate;
 
-/// <summary>Builds what the player sees. The arena comes from the same data as its collision.</summary>
+/// <summary>Placeholder figures for players and enemies.</summary>
 public static class ArenaView
 {
-    public static Node3D Build(World world)
-    {
-        var root = new Node3D { Name = "Arena" };
-        root.AddChild(Box(new Vector3(0, -0.5f, 0), new Vector3(44, 1, 44), new Color("3e8948")));
-        foreach (var box in world.Boxes)
-        {
-            var min = new Vector3(box.Min.X, box.Min.Y, box.Min.Z);
-            var max = new Vector3(box.Max.X, box.Max.Y, box.Max.Z);
-            root.AddChild(Box((min + max) / 2, max - min, new Color("8b9bb4")));
-        }
-
-        return root;
-    }
-
     /// <summary>A figure 1.8 m tall with its origin at the feet. The hat brim shows which way it faces.</summary>
     public static Node3D BuildPlayer(Color tunic)
     {

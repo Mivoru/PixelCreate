@@ -46,9 +46,9 @@ public sealed class NetSimTests
 
     public NetSimTests(ITestOutputHelper output) => _output = output;
 
-    private SimResult Run(double rtt, double jitter, double loss, int enemies, int seed = 7, float drift = 1f, bool clockSync = false)
+    private SimResult Run(double rtt, double jitter, double loss, int enemies, int seed = 7, float drift = 1f, bool clockSync = false, World? map = null)
     {
-        var world = World.Arena();
+        var world = map ?? World.Arena();
         var network = new SimNetwork(seed, rtt, jitter, loss);
         var server = new GameServer(network.Connect(0), world, new ServerOptions { EnemyCount = enemies, Seed = seed });
         var clients = new[] { new ClientPrediction(network.Connect(1), world), new ClientPrediction(network.Connect(2), world) };
@@ -201,6 +201,15 @@ public sealed class NetSimTests
     }
 
     [Fact]
+    public void Zone_80msRtt_2PercentLoss_CorrectsAndConverges()
+    {
+        var result = Run(rtt: 80, jitter: 8, loss: 2, enemies: 4, map: Zone.Load("meadow-valley").World);
+        Assert.True(result.Server.PlayerHits > 0, "Enemies must reach players, or nothing is tested.");
+        Assert.All(result.Clients, c => Assert.InRange(c.MaxShownStep, 0f, MaxShownStep));
+        Assert.All(result.FinalGaps, gap => Assert.InRange(gap, 0f, 0.001f));
+    }
+
+    [Fact]
     public void SameSeed_GivesSameRun()
     {
         var first = Run(rtt: 80, jitter: 8, loss: 2, enemies: 4);
@@ -250,6 +259,106 @@ public sealed class NetSimTests
             Assert.True(client.Stats.Snapshots > 30, "Snapshots must arrive over real UDP.");
             Assert.NotNull(client.Latest);
         }
+    }
+}
+
+public sealed class ZoneTests
+{
+    private static readonly Zone Valley = Zone.Load("meadow-valley");
+
+    private static PlayerState Walk(World world, Vector3 start, sbyte x, sbyte z, int ticks)
+    {
+        var state = PlayerState.Spawn(start with { Y = world.GroundHeight(start.X, start.Z) });
+        var input = new InputCmd { MoveX = x, MoveZ = z };
+        for (var i = 0; i < ticks; i++)
+        {
+            Movement.Step(ref state, input, world);
+        }
+
+        return state;
+    }
+
+    [Fact]
+    public void Loading_IsDeterministic()
+    {
+        var other = Zone.Load("meadow-valley");
+        Assert.Equal(Valley.Props, other.Props);
+        Assert.Equal(Valley.World.GroundHeight(13.3f, -41.2f), other.World.GroundHeight(13.3f, -41.2f));
+        Assert.True(Valley.Props.Count > 50, "The zone must have generated detail.");
+    }
+
+    [Fact]
+    public void Walking_FollowsTheTerrain()
+    {
+        var hills = new HeightField(40f, 40, (x, z) => x * 0.5f);
+        var world = new World(Array.Empty<Aabb>(), hills);
+        var state = Walk(world, new Vector3(-10, 0, 0), 127, 0, 60);
+        Assert.True(state.Position.X > -5f, "The player must climb a gentle slope.");
+        Assert.Equal(world.GroundHeight(state.Position.X, state.Position.Z), state.Position.Y, 2);
+        Assert.True(state.Grounded);
+
+        var back = Walk(world, new Vector3(10, 0, 0), -127, 0, 60);
+        Assert.Equal(world.GroundHeight(back.Position.X, back.Position.Z), back.Position.Y, 1);
+    }
+
+    [Fact]
+    public void Cliff_BlocksWalking()
+    {
+        var cliff = new HeightField(40f, 80, (x, z) => x > 5f ? (x - 5f) * 4f : 0f);
+        var world = new World(Array.Empty<Aabb>(), cliff);
+        var state = Walk(world, Vector3.Zero, 127, 0, 180);
+        Assert.InRange(state.Position.X, 3f, 6.5f);
+    }
+
+    [Fact]
+    public void Props_BlockWalking()
+    {
+        var cottage = Valley.Props.First(p => p.Model == "cottage");
+        var state = Walk(Valley.World, cottage.Position + new Vector3(0, 0, 12), 0, -127, 240);
+        Assert.True(state.Position.Z > cottage.Position.Z + 2f, "The player must stop at the wall.");
+    }
+
+    [Fact]
+    public void Edge_KeepsThePlayerInTheZone()
+    {
+        var state = Walk(Valley.World, Valley.World.Spawn, 127, 0, 60 * 30);
+        Assert.True(state.Position.X < Valley.Size / 2);
+    }
+
+    [Fact]
+    public void Bots_NeverTeleport()
+    {
+        var world = Valley.World;
+        for (var seed = 0; seed < 8; seed++)
+        {
+            var bot = new Bot(seed);
+            var state = PlayerState.Spawn(world.Spawn);
+            for (var tick = 0; tick < 60 * 300; tick++)
+            {
+                var before = state;
+                var (x, z, buttons) = bot.Next();
+                var input = new InputCmd { MoveX = x, MoveZ = z, Buttons = buttons };
+                Movement.Step(ref state, input, world);
+                var step = Vector3.Distance(before.Position, state.Position);
+                Assert.True(step < 0.6f, $"seed {seed} tick {tick}: moved {step:F2} m from {before.Position} to {state.Position}");
+            }
+        }
+    }
+
+    [Fact]
+    public void StartingInsideABox_DoesNotThrowThePlayerOut()
+    {
+        var world = new World(new[] { new Aabb(new Vector3(-1, 0, -1), new Vector3(1, 2, 1)) });
+        var state = PlayerState.Spawn(new Vector3(0, 0.5f, 0));
+        Movement.Step(ref state, new InputCmd { MoveX = 127 }, world);
+        Assert.InRange(state.Position.X, 0f, 0.2f);
+    }
+
+    [Fact]
+    public void Spawn_IsFree()
+    {
+        var spawn = Valley.World.Spawn;
+        Assert.False(Valley.World.IsBlocked(spawn + new Vector3(0, 1, 0)));
     }
 }
 

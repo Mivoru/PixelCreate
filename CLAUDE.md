@@ -34,6 +34,10 @@ Rules:
   `Movement.Step` and collision against `World`.
 - Every value that affects movement lives in `PlayerState`, and client and server both call
   `Movement.Step`. An ability the client cannot predict must correct through a snapshot.
+- The Godot client can run on a newer .NET than the server. Avoid behaviour that differs between
+  runtimes in shared code, such as casting a negative float to an unsigned integer. A live run with
+  many corrections and no hits means client and server simulate differently.
+- Zones live in `world/zones/*.json`: the layout is authored, the scattered detail comes from the seed.
 - Blender: `D:\Program\Blender Foundation\Blender 5.2\blender.exe -b --factory-startup -P <script>`.
 - Play: `powershell -ExecutionPolicy Bypass -File scripts/play.ps1` starts a local server and the client.
 - Live check: add `-Capture <folder>` to that command. A bot plays, saves frames and prints a `STATS` line.

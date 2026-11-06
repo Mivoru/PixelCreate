@@ -107,7 +107,8 @@ public sealed class GameServer
         if (!_players.TryGetValue(peer, out var player))
         {
             var angle = peer * 2.1f;
-            var spawn = new Vector3(MathF.Cos(angle) * 4f, 0, MathF.Sin(angle) * 4f);
+            var spawn = _world.Spawn + new Vector3(MathF.Cos(angle) * 4f, 0, MathF.Sin(angle) * 4f);
+            spawn.Y = _world.GroundHeight(spawn.X, spawn.Z);
             player = new Player
             {
                 Id = peer,
@@ -203,7 +204,11 @@ public sealed class GameServer
         toTarget.Y = 0;
         if (nearest > Tuning.EnemyReach)
         {
-            enemy.Position += Vector3.Normalize(toTarget) * Tuning.EnemySpeed * Tuning.TickSeconds;
+            if (toTarget != Vector3.Zero)
+            {
+                enemy.Position += Vector3.Normalize(toTarget) * Tuning.EnemySpeed * Tuning.TickSeconds;
+                enemy.Position.Y = _world.GroundHeight(enemy.Position.X, enemy.Position.Z);
+            }
         }
         else if (enemy.Cooldown == 0)
         {
@@ -224,7 +229,8 @@ public sealed class GameServer
     private void Respawn(Enemy enemy)
     {
         var angle = (float)(_random.NextDouble() * Math.Tau);
-        enemy.Position = new Vector3(MathF.Cos(angle) * 15f, 0, MathF.Sin(angle) * 15f);
+        enemy.Position = _world.Spawn + new Vector3(MathF.Cos(angle) * 15f, 0, MathF.Sin(angle) * 15f);
+        enemy.Position.Y = _world.GroundHeight(enemy.Position.X, enemy.Position.Z);
         enemy.Health = Tuning.EnemyHealth;
         enemy.Cooldown = Tuning.EnemyCooldownTicks;
     }
