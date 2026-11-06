@@ -1,0 +1,17 @@
+{
+  "palette": "endesga-32",
+  "note": "Shadow to highlight. Every ramp shifts hue: shadows go cooler, highlights go warmer.",
+  "ramps": {
+    "skin": ["#733E39", "#B86F50", "#E4A672", "#EAD4AA"],
+    "skin-warm": ["#3E2731", "#733E39", "#C28569", "#E8B796"],
+    "wood": ["#3E2731", "#733E39", "#B86F50", "#E4A672"],
+    "fire": ["#A22633", "#E43B44", "#F77622", "#FEAE34", "#FEE761"],
+    "gold": ["#733E39", "#BE4A2F", "#F77622", "#FEAE34", "#FEE761"],
+    "foliage": ["#193C3E", "#265C42", "#3E8948", "#63C74D", "#FEE761"],
+    "water": ["#262B44", "#124E89", "#0099DB", "#2CE8F5", "#FFFFFF"],
+    "stone": ["#262B44", "#3A4466", "#5A6988", "#8B9BB4", "#C0CBDC"],
+    "metal": ["#181425", "#3A4466", "#8B9BB4", "#C0CBDC", "#FFFFFF"],
+    "magic": ["#262B44", "#68386C", "#B55088", "#F6757A", "#E8B796"]
+  },
+  "outline": "#181425"
+}

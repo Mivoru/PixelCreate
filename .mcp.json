@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "aseprite": {
+      "type": "stdio",
+      "command": "C:/Users/promi/.config/pixel-mcp/pixel-mcp.exe",
+      "args": [],
+      "env": {
+        "PIXEL_MCP_CONFIG": "C:/Users/promi/.config/pixel-mcp/config.json"
+      }
+    }
+  }
+}
