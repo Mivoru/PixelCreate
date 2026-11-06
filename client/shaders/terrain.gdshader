@@ -1,10 +1,10 @@
 // Ground: grass with dry patches, paths and rock. Vertex colour: red = path, green = rock.
 shader_type spatial;
 
-uniform sampler2D grass_tex : source_color, filter_nearest, repeat_enable;
-uniform sampler2D dry_tex : source_color, filter_nearest, repeat_enable;
-uniform sampler2D dirt_tex : source_color, filter_nearest, repeat_enable;
-uniform sampler2D rock_tex : source_color, filter_nearest, repeat_enable;
+uniform sampler2D grass_tex : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform sampler2D dry_tex : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform sampler2D dirt_tex : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform sampler2D rock_tex : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
 
 varying vec3 world_position;
 
@@ -13,7 +13,7 @@ void vertex() {
 }
 
 void fragment() {
-	vec2 uv = world_position.xz / 6.0;
+	vec2 uv = world_position.xz / 7.0;
 	float large = texture(dry_tex, world_position.xz / 96.0).g;
 	float grain = texture(grass_tex, world_position.xz / 11.0).g;
 	vec3 color = texture(grass_tex, uv).rgb;

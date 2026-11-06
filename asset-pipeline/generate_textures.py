@@ -12,7 +12,7 @@ from PIL import Image, ImageDraw, ImageFont
 ROOT = Path(__file__).resolve().parent.parent
 TEXTURES = ROOT / "client" / "assets" / "textures"
 UI = ROOT / "client" / "assets" / "ui"
-SIZE = 64
+SIZE = 256
 
 
 def rgb(value):
@@ -39,9 +39,11 @@ def layered(rng, *cells):
 
 
 def ramp(values, colors):
-    """Map 0..1 values onto a few flat colours, so the texture keeps hard pixel clusters."""
-    index = np.clip((values * len(colors)).astype(int), 0, len(colors) - 1)
-    return np.array([rgb(c) for c in colors], dtype=np.uint8)[index]
+    """Blend smoothly through a list of colours."""
+    stops = np.linspace(0, 1, len(colors))
+    table = np.array([rgb(c) for c in colors], dtype=float)
+    channels = [np.interp(values, stops, table[:, i]) for i in range(3)]
+    return np.stack(channels, axis=-1).astype(np.uint8)
 
 
 def save(name, pixels):
@@ -55,22 +57,47 @@ def speckle(rng, pixels, color, chance):
 
 
 def grass(rng, name, colors):
-    pixels = ramp(layered(rng, 4, 8, 16, 32), colors)
-    speckle(rng, pixels, colors[-1], 0.02)
+    values = layered(rng, 4, 8, 16, 32, 64, 128)
+    pixels = ramp(values, colors)
+    blades(rng, pixels, colors[0], colors[-1])
     save(name, pixels)
 
 
 def dirt(rng):
-    pixels = ramp(layered(rng, 4, 16, 32), ["733E39", "B86F50", "C28569", "D77643"])
-    speckle(rng, pixels, "3E2731", 0.03)
-    speckle(rng, pixels, "E4A672", 0.02)
+    pixels = ramp(layered(rng, 4, 16, 32, 64, 128), ["5A3A30", "8A5A44", "A9765A", "C0926E"])
+    pebbles(rng, pixels, 240, ["6E5A4C", "8F7A66", "B8A58A"])
     save("dirt", pixels)
 
 
 def rock(rng):
-    pixels = ramp(layered(rng, 4, 8, 32), ["3A4466", "5A6988", "8B9BB4", "C0CBDC"])
-    speckle(rng, pixels, "262B44", 0.03)
+    values = layered(rng, 4, 8, 16, 32, 64)
+    cracks = np.abs(layered(rng, 8, 16) - 0.5) < 0.012
+    pixels = ramp(values, ["4A4C58", "666A78", "85899A", "A8ABB8"])
+    pixels[cracks] = rgb("3A3C48")
     save("rock", pixels)
+
+
+def blades(rng, pixels, dark, light):
+    """Short diagonal strokes that read as grass from a distance."""
+    dark_rgb, light_rgb = np.array(rgb(dark)), np.array(rgb(light))
+    for _ in range(5200):
+        x, y = rng.integers(0, SIZE, 2)
+        tone = dark_rgb if rng.random() < 0.55 else light_rgb
+        lean = rng.integers(-1, 2)
+        for step in range(rng.integers(3, 8)):
+            px, py = (x + step * lean // 2) % SIZE, (y - step) % SIZE
+            pixels[py, px] = (pixels[py, px] * 0.45 + tone * 0.55).astype(np.uint8)
+
+
+def pebbles(rng, pixels, count, colors):
+    for _ in range(count):
+        x, y = rng.integers(0, SIZE, 2)
+        radius = rng.integers(1, 4)
+        tone = np.array(rgb(colors[rng.integers(0, len(colors))]))
+        for dy in range(-radius, radius + 1):
+            for dx in range(-radius, radius + 1):
+                if dx * dx + dy * dy <= radius * radius:
+                    pixels[(y + dy) % SIZE, (x + dx) % SIZE] = tone
 
 
 def detail(rng, name, values):
@@ -81,16 +108,17 @@ def detail(rng, name, values):
 
 def planks(rng):
     values = layered(rng, 4, 16, 32) * 0.7 + 0.3
-    values[::16, :] = 0.0
+    values[::32, :] = 0.0
+    values[1::32, :] = 0.15
     detail(rng, "planks", values)
 
 
 def shingles(rng):
     values = layered(rng, 8, 32) * 0.6 + 0.4
-    for row in range(0, SIZE, 8):
-        values[row, :] = 0.0
-        offset = 8 if (row // 8) % 2 else 0
-        values[row:row + 8, offset::16] = 0.1
+    for row in range(0, SIZE, 32):
+        values[row:row + 2, :] = 0.0
+        offset = 32 if (row // 32) % 2 else 0
+        values[row:row + 32, offset::64] = 0.1
     detail(rng, "shingles", values)
 
 
@@ -139,13 +167,13 @@ def bitmap_font():
 
 def main():
     rng = np.random.default_rng(7)
-    grass(rng, "grass", ["265C42", "3E8948", "3E8948", "4F9A4E", "63C74D"])
-    grass(rng, "grass_dry", ["3E8948", "63A84D", "8DB255", "B5C26A"])
+    grass(rng, "grass", ["2E5F3C", "3E7F44", "4C9149", "5EA650", "7AB95C"])
+    grass(rng, "grass_dry", ["4F8444", "6E9A4C", "8FAE58", "B0BE6C"])
     dirt(rng)
     rock(rng)
-    detail(rng, "leaves", layered(rng, 8, 16, 32))
-    detail(rng, "plaster", layered(rng, 8, 32) * 0.5 + 0.5)
-    detail(rng, "stone", layered(rng, 8, 16))
+    detail(rng, "leaves", layered(rng, 16, 32, 64, 128))
+    detail(rng, "plaster", layered(rng, 8, 32, 128) * 0.5 + 0.5)
+    detail(rng, "stone", layered(rng, 8, 16, 64))
     planks(rng)
     shingles(rng)
     print(f"palette colours: {merged_palette()}")

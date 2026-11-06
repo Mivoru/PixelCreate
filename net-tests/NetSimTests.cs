@@ -536,27 +536,27 @@ public sealed class EnemyTests
     }
 
     [Fact]
-    public void FireWall_LeavesTheInsideOfTheVSafe()
+    public void FireWall_BurnsTheWholeVOnce()
     {
         var (server, client, network, shaman) = CastWall();
         Fire(server, shaman, server.GetPlayer(1)!.Value.Position);
         Assert.Equal(1, server.FireWallCount);
         var hits = server.Stats.PlayerHits;
         Play(server, client, network, 200);
-        Assert.Equal(hits, server.Stats.PlayerHits);
+        Assert.Equal(hits + 1, server.Stats.PlayerHits);
         Assert.Equal(0, server.FireWallCount);
     }
 
     [Fact]
-    public void FireWall_ArmHitsOnceAndStopsAtFullLength()
+    public void FireWall_MissesAPlayerOutsideTheV()
     {
         var (server, client, network, shaman) = CastWall();
         var player = server.GetPlayer(1)!.Value.Position;
-        Fire(server, shaman, shaman.Position + Vector3.Transform(Vector3.Normalize(player - shaman.Position), Matrix4x4.CreateRotationY(FireWallHazard.HalfAngle)) * 8f);
+        var away = Vector3.Normalize(player - shaman.Position);
+        Fire(server, shaman, shaman.Position + Vector3.Transform(away, Matrix4x4.CreateRotationY(1.4f)) * 8f);
         var hits = server.Stats.PlayerHits;
         Play(server, client, network, 200);
-        Assert.Equal(hits + 1, server.Stats.PlayerHits);
-        Assert.Equal(FireWallHazard.MaxLength, new FireWallHazard { Id = 0, Origin = Vector3.Zero, Direction = Vector3.UnitZ, Damage = 1, Age = 500 }.Length);
+        Assert.Equal(hits, server.Stats.PlayerHits);
     }
 
     [Fact]

@@ -18,10 +18,10 @@ public sealed class TelegraphView
     private Vector3 _lastEnd;
     private float _lastRadius;
 
-    public TelegraphView(World world, Fx fx, Node parent)
+    public TelegraphView(World world, Fx fx, Node parent, Color? color = null)
     {
         _world = world;
-        _fill = fx.Stipple(new Color("e43b44"), 0.55f);
+        _fill = fx.Stipple(color ?? new Color("e43b44"), 0.55f);
         _node = new MeshInstance3D { Mesh = _mesh, MaterialOverride = _fill, Visible = false };
         parent.AddChild(_node);
     }
@@ -53,6 +53,52 @@ public sealed class TelegraphView
             BuildLine(from, to, width);
         }
     }
+
+    /// <summary>Shows the filled V of a fire wall, up to the given length.</summary>
+    public void ShowWedge(Vector3 origin, float yaw, float length, float strength)
+    {
+        _node.Visible = true;
+        _fill.SetShaderParameter("strength", strength);
+        if (Mathf.Abs(length - _lastRadius) > 0.05f || origin.DistanceSquaredTo(_lastCenter) > 0.01f)
+        {
+            _lastCenter = origin;
+            _lastRadius = length;
+            BuildWedge(origin, yaw, length);
+        }
+    }
+
+    private void BuildWedge(Vector3 origin, float yaw, float length)
+    {
+        var surface = new SurfaceTool();
+        surface.Begin(Mesh.PrimitiveType.Triangles);
+        const int columns = 10;
+        var rows = Mathf.Max(1, (int)(length / 1.2f));
+        for (var row = 0; row < rows; row++)
+        {
+            var near = length * row / rows;
+            var far = length * (row + 1) / rows;
+            for (var column = 0; column < columns; column++)
+            {
+                var a = Mathf.Lerp(-FireWallHazard.HalfAngle, FireWallHazard.HalfAngle, column / (float)columns) + yaw;
+                var b = Mathf.Lerp(-FireWallHazard.HalfAngle, FireWallHazard.HalfAngle, (column + 1) / (float)columns) + yaw;
+                var p0 = Spoke(origin, a, near);
+                var p1 = Spoke(origin, b, near);
+                var p2 = Spoke(origin, a, far);
+                var p3 = Spoke(origin, b, far);
+                surface.AddVertex(p0);
+                surface.AddVertex(p2);
+                surface.AddVertex(p3);
+                surface.AddVertex(p0);
+                surface.AddVertex(p3);
+                surface.AddVertex(p1);
+            }
+        }
+
+        Commit(surface);
+    }
+
+    private Vector3 Spoke(Vector3 origin, float angle, float distance) =>
+        OnGround(origin + new Vector3(-Mathf.Sin(angle), 0, -Mathf.Cos(angle)) * distance);
 
     private void BuildCircle(Vector3 center, float radius)
     {

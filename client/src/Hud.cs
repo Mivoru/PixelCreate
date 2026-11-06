@@ -11,7 +11,7 @@ namespace PixelCreate;
 /// </summary>
 public partial class Hud : Control
 {
-    private const int Scale2 = 2;
+    private const float UiHeight = 360f;
     private const int Slot = 22;
     private const float TagRange = 34f;
 
@@ -34,6 +34,7 @@ public partial class Hud : Control
     private float _time;
     private Item? _held;
     private float _shownXp;
+    private int _uiScale = 2;
     private float _bannerTime;
     private string _banner = "";
     private Color _bannerColor = Colors.White;
@@ -54,6 +55,9 @@ public partial class Hud : Control
     public Snapshot? Snapshot { get; set; }
 
     public int Level => Snapshot?.Level ?? 1;
+
+    /// <summary>Window pixels for each pixel of the 3D view.</summary>
+    public float WorldScale { get; set; } = 1f;
     public Camera3D? Camera { get; set; }
     public string Notice { get; set; } = "";
 
@@ -66,9 +70,20 @@ public partial class Hud : Control
         _icons["wooden_sword"] = GD.Load<Texture2D>("res://assets/ui/wooden_sword.png");
         TextureFilter = TextureFilterEnum.Nearest;
         MouseFilter = MouseFilterEnum.Stop;
-        Scale = Vector2.One * Scale2;
-        Size = new Vector2(PixelStage.RenderSize.X, PixelStage.RenderSize.Y);
+        GetViewport().SizeChanged += FitWindow;
+        FitWindow();
     }
+
+    private void FitWindow()
+    {
+        var window = GetViewport().GetVisibleRect().Size;
+        _uiScale = Mathf.Max(1, Mathf.RoundToInt(window.Y / UiHeight));
+        Scale = Vector2.One * _uiScale;
+        Size = window / _uiScale;
+    }
+
+    /// <summary>Turns a position in the 3D view into a position in this interface.</summary>
+    private Vector2 ToHud(Vector3 world) => Camera!.UnprojectPosition(world) * WorldScale / _uiScale;
 
     /// <summary>Shows a line of text in the world that rises and fades.</summary>
     public void AddFloating(string text, Vector3 position, Color color) =>
@@ -229,7 +244,7 @@ public partial class Hud : Control
                 continue;
             }
 
-            var at = Camera.UnprojectPosition(world);
+            var at = ToHud(world);
             var width = _font.GetStringSize(text.Text, HorizontalAlignment.Left, -1, 11).X;
             DrawOutlined(text.Text, new Vector2(at.X - width / 2f, at.Y), text.Color);
         }
@@ -333,7 +348,7 @@ public partial class Hud : Control
 
     private void DrawInventory()
     {
-        var window = new Rect2(150, 54, 340, 196);
+        var window = new Rect2((Size.X - 340f) / 2f, (Size.Y - 220f) / 2f, 340, 196);
         DrawPanel(window);
         DrawString(_font, window.Position + new Vector2(10, 13), "Equipment", HorizontalAlignment.Left, -1, 11, Text);
         DrawString(_font, window.Position + new Vector2(180, 13), "Inventory", HorizontalAlignment.Left, -1, 11, Text);
@@ -437,7 +452,7 @@ public partial class Hud : Control
                 continue;
             }
 
-            DrawTag(Camera.UnprojectPosition(head), enemy, def);
+            DrawTag(ToHud(head), enemy, def);
         }
     }
 

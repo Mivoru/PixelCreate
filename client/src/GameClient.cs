@@ -158,6 +158,7 @@ public partial class GameClient : Node
         PlayerEvents(shown, d);
         _fx.Update(d);
         PlaceCamera(shown);
+        _hud.WorldScale = _stage.PixelScale;
         _hud.Player = _client.State;
         _hud.Snapshot = _client.Latest;
     }
@@ -483,6 +484,11 @@ public partial class GameClient : Node
         {
             telegraph.Hide();
         }
+        else if (ability.Telegraph == "wedge")
+        {
+            var flat = new Vector2(target.X - position.X, target.Z - position.Z);
+            telegraph.ShowWedge(position, Mathf.Atan2(-flat.X, -flat.Y), FireWallHazard.MaxLength, 0.42f);
+        }
         else if (ability.Telegraph == "circle")
         {
             telegraph.ShowCircle(ability.Effect == "spin" ? position : target, ability.Radius, 0.5f);
@@ -604,7 +610,7 @@ public partial class GameClient : Node
                 _sfx.Play("explosion", last);
                 _fx.Burst(last, new Color("f77622"), 34, 9f, 0.6f, 0.13f, -5f, 90f);
                 _fx.Burst(last, new Color("fee761"), 18, 5f, 0.45f, 0.09f, -3f, 90f);
-                _fx.Puddle(ground, new Color("3e2731"), 2.2f, 2.2f);
+                _fx.Puddle(ground, new Color("3e2731"), 1.8f, 1.2f);
                 break;
             default:
                 _sfx.Play("arrow_hit", last, -5f);

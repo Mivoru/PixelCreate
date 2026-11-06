@@ -2,7 +2,7 @@
 shader_type spatial;
 
 uniform vec3 tint : source_color = vec3(1.0);
-uniform sampler2D detail : source_color, filter_nearest, repeat_enable;
+uniform sampler2D detail : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform float detail_scale = 0.5;
 uniform float sway = 0.0;
 

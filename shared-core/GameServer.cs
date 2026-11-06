@@ -46,7 +46,9 @@ public sealed class FireWallHazard
     public const float MaxLength = 15f;
     public const int GrowTicks = 48;
     public const int BurnTicks = 80;
-    public const float Thickness = 1.1f;
+
+    /// <summary>How far past the edge of the flames a player still gets burnt, in metres.</summary>
+    public const float Reach = 0.5f;
 
     public required int Id;
     public required Vector3 Origin;
@@ -501,9 +503,8 @@ public sealed class GameServer : IEnemyEvents
     }
 
     /// <summary>
-    /// A V of fire on the ground. It starts at the caster and its two arms grow at a fixed angle
-    /// towards the player, up to full length, where they stop and burn for a moment. The inside
-    /// of the V stays safe.
+    /// A filled V of fire on the ground. It starts at the caster and spreads at a fixed angle
+    /// towards the player, up to full length, where it stops and burns for a moment.
     /// </summary>
     private void FireWall(Enemy enemy, Vector3 aim, short damage)
     {
@@ -520,7 +521,7 @@ public sealed class GameServer : IEnemyEvents
             var length = wall.Length;
             foreach (var player in _players.Values)
             {
-                if (!wall.Struck.Contains(player.Id) && OnArm(wall, player.State.Position, length))
+                if (!wall.Struck.Contains(player.Id) && InWedge(wall, player.State.Position, length))
                 {
                     wall.Struck.Add(player.Id);
                     Hurt(player, wall.Damage, 0);
@@ -531,20 +532,16 @@ public sealed class GameServer : IEnemyEvents
         _walls.RemoveAll(w => w.Age > FireWallHazard.GrowTicks + FireWallHazard.BurnTicks);
     }
 
-    private static bool OnArm(FireWallHazard wall, Vector3 position, float length)
+    private static bool InWedge(FireWallHazard wall, Vector3 position, float length)
     {
         var offset = (position - wall.Origin) with { Y = 0 };
-        foreach (var side in new[] { -1f, 1f })
+        var distance = offset.Length();
+        if (distance > length + FireWallHazard.Reach)
         {
-            var arm = Vector3.Transform(wall.Direction, Matrix4x4.CreateRotationY(side * FireWallHazard.HalfAngle));
-            var along = Vector3.Dot(offset, arm);
-            if (along >= 0 && along <= length && (offset - arm * along).Length() < FireWallHazard.Thickness)
-            {
-                return true;
-            }
+            return false;
         }
 
-        return false;
+        return distance < FireWallHazard.Reach || Vector3.Dot(offset / distance, wall.Direction) >= MathF.Cos(FireWallHazard.HalfAngle);
     }
 
     private void StepProjectiles()

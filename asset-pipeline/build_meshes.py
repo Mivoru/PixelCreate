@@ -63,16 +63,18 @@ def roof(name, center, width, depth, height, material):
     add_object(name, mesh_from(name, verts, faces), material, center)
 
 
-def blob(name, center, radius, material, seed, squash=1.0, subdivisions=2):
+def blob(name, center, radius, material, seed, squash=1.0, subdivisions=3):
     rng = random.Random(seed)
     bm = bmesh.new()
     bmesh.ops.create_icosphere(bm, subdivisions=subdivisions, radius=radius)
     for vert in bm.verts:
-        vert.co *= 1 + rng.uniform(-0.14, 0.14)
+        vert.co *= 1 + rng.uniform(-0.1, 0.1)
         vert.co.z *= squash
     mesh = bpy.data.meshes.new(name)
     bm.to_mesh(mesh)
     bm.free()
+    for polygon in mesh.polygons:
+        polygon.use_smooth = True
     add_object(name, mesh, material, center)
 
 

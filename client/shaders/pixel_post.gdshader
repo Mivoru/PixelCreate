@@ -8,7 +8,8 @@ uniform sampler2D normal_tex : hint_normal_roughness_texture, repeat_disable, fi
 uniform vec3 palette[128];
 uniform int palette_size = 32;
 uniform vec3 outline_color;
-uniform float dither_amount = 0.03;
+uniform float dither_amount = 0.012;
+uniform float palette_strength = 1.0;
 uniform float normal_threshold = 0.75;
 
 const float BAYER[16] = float[16](0.0, 8.0, 2.0, 10.0, 12.0, 4.0, 14.0, 6.0,
@@ -53,7 +54,7 @@ void fragment() {
 
 	vec3 color = to_srgb(texture(screen_tex, SCREEN_UV).rgb);
 	if (depth < 1000.0) {
-		color *= 1.0 + normal_edge * 0.14;
+		color *= 1.0 + normal_edge * 0.06;
 	}
 	ivec2 cell = ivec2(FRAGCOORD.xy) % 4;
 	color += (BAYER[cell.y * 4 + cell.x] / 16.0 - 0.5) * dither_amount;
@@ -69,8 +70,9 @@ void fragment() {
 		}
 	}
 	// Grass shares the normal of the ground, so a depth step alone draws no line around a blade.
+	vec3 final_color = mix(color, best, palette_strength);
 	if (depth_edge > 0.5 && normal_gap > 0.5 && depth < 1000.0) {
-		best = outline_color;
+		final_color = mix(final_color, outline_color, 0.72);
 	}
-	ALBEDO = to_linear(best);
+	ALBEDO = to_linear(final_color);
 }

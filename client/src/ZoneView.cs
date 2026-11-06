@@ -8,7 +8,7 @@ namespace PixelCreate;
 /// <summary>Builds what the player sees from the same zone data the server uses for collision.</summary>
 public static class ZoneView
 {
-    private const int GrassBlades = 90000;
+    private const int GrassBlades = 220000;
 
     /// <summary>Material name from Blender: detail texture, world scale and leaf sway.</summary>
     private static readonly Dictionary<string, (string Texture, float Scale, float Sway)> Surfaces = new()
@@ -143,8 +143,8 @@ public static class ZoneView
         arrays.Resize((int)Mesh.ArrayType.Max);
         arrays[(int)Mesh.ArrayType.Vertex] = new[]
         {
-            new Vector3(-0.11f, 0, 0), new Vector3(0.11f, 0, 0), new Vector3(0, 0.3f, 0),
-            new Vector3(0, 0, -0.11f), new Vector3(0, 0, 0.11f), new Vector3(0.05f, 0.25f, 0.02f),
+            new Vector3(-0.05f, 0, 0), new Vector3(0.05f, 0, 0), new Vector3(0, 0.34f, 0),
+            new Vector3(0, 0, -0.05f), new Vector3(0, 0, 0.05f), new Vector3(0.05f, 0.28f, 0.02f),
         };
         arrays[(int)Mesh.ArrayType.Normal] = new[] { Vector3.Up, Vector3.Up, Vector3.Up, Vector3.Up, Vector3.Up, Vector3.Up };
         blade.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);

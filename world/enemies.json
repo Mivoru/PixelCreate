@@ -61,7 +61,7 @@
     "aggroRange": 16, "preferredRange": 10,
     "abilities": [
       { "effect": "fireball", "range": 15, "windupTicks": 34, "recoverTicks": 22, "cooldownTicks": 90, "damage": 18, "radius": 2.4 },
-      { "effect": "firewall", "range": 14, "windupTicks": 62, "recoverTicks": 70, "cooldownTicks": 360, "damage": 26 }
+      { "effect": "firewall", "range": 14, "windupTicks": 62, "recoverTicks": 70, "cooldownTicks": 360, "damage": 26, "telegraph": "wedge" }
     ],
     "drops": [{ "rarity": 1, "chance": 1 }, { "rarity": 2, "chance": 0.15 }, { "rarity": 3, "chance": 0.01 }]
   }

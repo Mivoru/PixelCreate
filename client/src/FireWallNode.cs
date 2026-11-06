@@ -1,66 +1,80 @@
-using System.Collections.Generic;
+using System;
 using Godot;
 using PixelCreate.Core;
 
 namespace PixelCreate;
 
-/// <summary>Two walls of flame in a V. Each arm grows along the ground as the server reports its length.</summary>
+/// <summary>A filled V of real-looking flame. The front of the fire follows the length from the server.</summary>
 public sealed class FireWallNode
 {
-    private const float Spacing = 0.7f;
+    private const float Spacing = 1.25f;
+    private const float FlameSize = 1.9f;
 
-    private sealed record Flame(Node3D Node, float Distance, float Seed);
-
-    private readonly List<Flame> _flames = new();
+    private readonly ShaderMaterial _flames;
+    private readonly TelegraphView _burn;
+    private readonly OmniLight3D _light;
+    private readonly Vector3 _origin;
+    private readonly Vector3 _forward;
+    private readonly float _yaw;
     private float _time;
 
     public Node3D Root { get; } = new();
 
     public FireWallNode(World world, Fx fx, Vector3 origin, float yaw)
     {
-        var outer = fx.Stipple(new Color("e43b44"), 1f);
-        var middle = fx.Stipple(new Color("f77622"), 1f);
-        var inner = fx.Stipple(new Color("fee761"), 1f);
-        var forward = new Vector3(-Mathf.Sin(yaw), 0, -Mathf.Cos(yaw));
-        var count = (int)(FireWallHazard.MaxLength / Spacing);
-        foreach (var side in new[] { -1f, 1f })
+        _origin = origin;
+        _yaw = yaw;
+        _forward = new Vector3(-Mathf.Sin(yaw), 0, -Mathf.Cos(yaw));
+        _flames = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/flame.gdshader") };
+
+        var multi = new MultiMesh
         {
-            var arm = forward.Rotated(Vector3.Up, side * FireWallHazard.HalfAngle);
-            for (var i = 1; i <= count; i++)
+            TransformFormat = MultiMesh.TransformFormatEnum.Transform3D,
+            UseCustomData = true,
+            Mesh = BuildQuad(),
+        };
+        var spots = new System.Collections.Generic.List<(Vector3 Position, float Distance)>();
+        var random = new Random((int)(origin.X * 31f + origin.Z * 17f));
+        for (var distance = 0.8f; distance <= FireWallHazard.MaxLength; distance += Spacing)
+        {
+            var half = distance * Mathf.Tan(FireWallHazard.HalfAngle);
+            var side = new Vector3(-_forward.Z, 0, _forward.X);
+            for (var across = -half; across <= half; across += Spacing)
             {
-                var distance = i * Spacing;
-                var spot = origin + arm * distance;
+                var jitter = new Vector3((float)random.NextDouble() - 0.5f, 0, (float)random.NextDouble() - 0.5f) * 0.5f;
+                var spot = origin + _forward * distance + side * across + jitter;
                 spot.Y = world.GroundHeight(spot.X, spot.Z);
-                var flame = new Node3D { Position = spot, Visible = false };
-                flame.AddChild(Tongue(0.46f, 1.9f, outer));
-                flame.AddChild(Tongue(0.33f, 1.35f, middle));
-                flame.AddChild(Tongue(0.2f, 0.8f, inner));
-                Root.AddChild(flame);
-                _flames.Add(new Flame(flame, distance, i * 1.7f + side));
+                spots.Add((spot, spot.DistanceTo(origin)));
             }
         }
+
+        multi.InstanceCount = spots.Count;
+        for (var i = 0; i < spots.Count; i++)
+        {
+            var scale = FlameSize * (0.75f + (float)random.NextDouble() * 0.6f);
+            multi.SetInstanceTransform(i, new Transform3D(Basis.Identity.Scaled(Vector3.One * scale), spots[i].Position));
+            multi.SetInstanceCustomData(i, new Color(spots[i].Distance, (float)random.NextDouble(), 0f, 0f));
+        }
+
+        Root.AddChild(new MultiMeshInstance3D { Multimesh = multi, MaterialOverride = _flames, ExtraCullMargin = 30f });
+        _burn = new TelegraphView(world, fx, Root, new Color("3e2731"));
+        _light = new OmniLight3D { LightColor = new Color("f77622"), OmniRange = 18f, LightEnergy = 3f, Position = origin + Vector3.Up * 2f };
+        Root.AddChild(_light);
     }
 
     public void Update(float length, float delta)
     {
         _time += delta;
-        foreach (var flame in _flames)
-        {
-            var lit = flame.Distance <= length;
-            flame.Node.Visible = lit;
-            if (lit)
-            {
-                var flicker = 0.8f + Mathf.Sin(_time * 13f + flame.Seed) * 0.16f + Mathf.Sin(_time * 29f + flame.Seed * 2f) * 0.1f;
-                flame.Node.Scale = new Vector3(1f, flicker, 1f);
-                flame.Node.Rotation = new Vector3(0, _time * 2f + flame.Seed, 0);
-            }
-        }
+        _flames.SetShaderParameter("reach", length);
+        _burn.ShowWedge(_origin, _yaw, length, 0.85f);
+        _light.Position = _origin + _forward * (length * 0.6f) + Vector3.Up * 2f;
+        _light.LightEnergy = 2.6f + Mathf.Sin(_time * 17f) * 0.5f + Mathf.Sin(_time * 29f) * 0.3f;
     }
 
-    private static MeshInstance3D Tongue(float radius, float height, Material material) => new()
+    /// <summary>A quad that stands on the ground, so a flame scales up from its base.</summary>
+    private static QuadMesh BuildQuad() => new()
     {
-        Mesh = new CylinderMesh { TopRadius = 0f, BottomRadius = radius, Height = height, RadialSegments = 5, Rings = 1 },
-        Position = new Vector3(0, height / 2f, 0),
-        MaterialOverride = material,
+        Size = Vector2.One,
+        CenterOffset = new Vector3(0, 0.5f, 0),
     };
 }

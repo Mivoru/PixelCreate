@@ -6,22 +6,31 @@ namespace PixelCreate;
 /// <summary>A low-resolution 3D view scaled up by a whole number, with the pixel post shader.</summary>
 public sealed class PixelStage
 {
-    public static readonly Vector2I RenderSize = new(640, 360);
+    /// <summary>The render height to aim for. Lower it for bigger pixels, raise it for a finer picture.</summary>
+    private const float TargetHeight = 540f;
+
+    /// <summary>How much the final colours lean towards the palette: 1 is hard pixel art, 0 is none.</summary>
+    private const float PaletteStrength = 0.22f;
 
     public SubViewport View { get; }
+
+    /// <summary>Window pixels for each rendered pixel.</summary>
+    public int PixelScale { get; private set; } = 1;
     public Camera3D Camera { get; }
 
     public PixelStage(Node parent)
     {
         View = new SubViewport
         {
-            Size = RenderSize,
             OwnWorld3D = true,
             Msaa3D = Viewport.Msaa.Disabled,
             RenderTargetUpdateMode = SubViewport.UpdateMode.Always,
             AudioListenerEnable3D = true,
         };
         parent.AddChild(View);
+        var window = parent.GetViewport();
+        window.SizeChanged += () => Resize(window);
+        Resize(window);
 
         var screen = new TextureRect
         {
@@ -47,6 +56,13 @@ public sealed class PixelStage
         Camera = new Camera3D { Fov = 58, Far = 260 };
         View.AddChild(Camera);
         Camera.AddChild(BuildPostQuad());
+    }
+
+    private void Resize(Viewport window)
+    {
+        var size = window.GetVisibleRect().Size;
+        PixelScale = Mathf.Max(1, Mathf.RoundToInt(size.Y / TargetHeight));
+        View.Size = new Vector2I(Mathf.CeilToInt(size.X / PixelScale), Mathf.CeilToInt(size.Y / PixelScale));
     }
 
     private static WorldEnvironment BuildEnvironment()
@@ -84,6 +100,7 @@ public sealed class PixelStage
         var colors = PaletteData.Colors.Select(hex => new Color(hex)).Select(c => new Vector3(c.R, c.G, c.B)).ToArray();
         material.SetShaderParameter("palette", colors);
         material.SetShaderParameter("palette_size", colors.Length);
+        material.SetShaderParameter("palette_strength", PaletteStrength);
         material.SetShaderParameter("outline_color", new Vector3(0x18, 0x14, 0x25) / 255f);
         return new MeshInstance3D
         {
