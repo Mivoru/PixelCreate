@@ -19,7 +19,7 @@ OUT = Path(__file__).resolve().parent.parent / "client" / "assets" / "sounds"
 # Paid-for originals stay here, so changing the trimming or level costs no credits.
 CACHE = Path(__file__).resolve().parent / ".sound-cache"
 API = "https://api.elevenlabs.io/v1"
-DEFAULT_KEY_FILE = r"D:\AIvidea\ElevenLabsTextToSpeach&SoundEfektsAPI\apiElevenLabs.txt"
+DEFAULT_KEY_FILE = r"D:\AIvidea\ElevenLabsTextToSpeach&SoundEfektsAPI\apiElevenLabs.old.txt"
 MIN_CREDITS = 1500
 
 # name: (prompt, seconds asked for, seconds kept, level in dB relative to full loudness)
