@@ -9,7 +9,7 @@ Workspace for pixel art and experiments around it.
 - `export/previews/`: review sheets, ignored by git.
 - `palettes/`: `.gpl` palettes and material ramps (`ramps-*.json`).
 - `refs/`: reference images. Use them for study; do not copy them into finished art.
-- `tools/`: Python tooling. `tests/`: tests for it (`python tests/test_tools.py`).
+- `tools/`: Python tooling (`compose.py` walks a sprite across a scene into a GIF). `tests/`: tests for it (`python tests/test_tools.py`).
 
 ## Which tool to draw with
 
@@ -34,8 +34,8 @@ Known `pixel-mcp` quirks:
 
 Known Pixelwright quirks:
 
-- `map_write` keys that differ only by case (`a` and `A`) fail with "Request body contains
-  duplicate JSON keys". Use different letters.
+- Keys that differ only by case (`a` and `A`) fail in `map_write` and `part_write` with "Request
+  body contains duplicate JSON keys". Use different letters.
 - Templates add their own colours to the palette. Move them onto the project palette with
   `palette_update` before export.
 

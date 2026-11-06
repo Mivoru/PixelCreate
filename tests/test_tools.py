@@ -8,6 +8,9 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "tools"))
 
+from PIL import Image  # noqa: E402
+
+from compose import compose, path_points  # noqa: E402
 from lint import lint, stray_pixels, upscale_factor  # noqa: E402
 from pixlib import PALETTE_DIR, Frame, from_hex, load_palette, luminance  # noqa: E402
 from preview import build_sheet  # noqa: E402
@@ -21,6 +24,22 @@ def sprite(size=8):
     pixels[2:6, 2:5] = RED
     pixels[3, 3] = BLUE
     return pixels
+
+
+class ComposeTests(unittest.TestCase):
+    def test_path_ends_exactly_on_end(self):
+        points = path_points((-8, 48), (106, 48), 3)
+        self.assertEqual(points[0], (-8, 48))
+        self.assertEqual(points[-1], (106, 48))
+
+    def test_sprite_lands_at_position_and_holds(self):
+        scene = Image.new("RGBA", (8, 8), BLUE)
+        dot = Image.new("RGBA", (1, 1), RED)
+        frames = compose(scene, [dot], [(-1, 0), (3, 2)], hold=2)
+        self.assertEqual(len(frames), 4)
+        self.assertEqual(frames[1].getpixel((3, 2)), RED)
+        self.assertEqual(frames[0].getpixel((0, 0)), BLUE)
+        self.assertEqual(frames[3].getpixel((3, 2)), RED)
 
 
 class LintTests(unittest.TestCase):
