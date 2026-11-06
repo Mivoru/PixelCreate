@@ -13,14 +13,31 @@ Workspace for pixel art and experiments around it.
 
 ## Which tool to draw with
 
-- Default: Aseprite through the `aseprite` MCP server (`mcp__aseprite__*`). Files stay local.
-  Save work from the temp sprite into `src/` with `save_as`.
-- Pixelwright: rigged characters, tilesets, or when the user wants to watch the drawing live.
-  Export finished pieces in Aseprite format into `src/`.
+- Default: Pixelwright, for sprites, characters, tilesets, scenes and animation. It writes pixels
+  as text rows and audits the result. Work happens in the cloud, so export every finished piece
+  in Aseprite format into `src/`.
+- Aseprite through the `aseprite` MCP server (`mcp__aseprite__*`): local edits, inspection and
+  export of files in `src/`. Save work from the temp sprite into `src/` with `save_as`.
 
 The `aseprite` server is defined in `.mcp.json` and starts `pixel-mcp.exe` directly. The
 pixel-plugin launcher can fail at session start because bash strips the backslashes from its
 Windows path. Keep the plugin installed for its skills.
+
+Known `pixel-mcp` quirks:
+
+- `draw_pixels` takes coordinates relative to the cel, not the canvas. A cel is trimmed to its
+  content, so pixels land shifted by the cel position, and pixels outside the cel are lost.
+  Subtract the cel position first, or use `draw_rectangle` with size 1x1. Shape tools
+  (`draw_rectangle`, `draw_contour`, `fill_area`) use canvas coordinates.
+- Pass paths with forward slashes. Backslashes make `save_as` report a JSON parse error, even
+  though the file is saved.
+
+Known Pixelwright quirks:
+
+- `map_write` keys that differ only by case (`a` and `A`) fail with "Request body contains
+  duplicate JSON keys". Use different letters.
+- Templates add their own colours to the palette. Move them onto the project palette with
+  `palette_update` before export.
 
 ## Workflow for every sprite
 
