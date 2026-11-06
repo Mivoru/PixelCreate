@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>PixelCreate.Transport</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\shared-core\SharedCore.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="LiteNetLib" Version="2.1.5" />
+  </ItemGroup>
+</Project>

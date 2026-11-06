@@ -11,6 +11,27 @@ Workspace for pixel art and experiments around it.
 - `refs/`: reference images. Use them for study; do not copy them into finished art.
 - `tools/`: Python tooling (`compose.py` walks a sprite across a scene into a GIF). `tests/`: tests for it (`python tests/test_tools.py`).
 
+## The game
+
+A fast 3D action game with a pixel art look, built code-first. PvE comes first, PvP later. Accounts,
+databases and matchmaking wait until the game is fun. Godot 4.7 with C#; the server does not use Godot.
+
+- `shared-core/`: movement, collision, protocol, server and client prediction. No engine and no
+  packages. Keep it that way: anything here must run in `dotnet test`.
+- `transport/`: real UDP through LiteNetLib. `server/`: the dedicated server console app.
+- `client/`: Godot project. `asset-pipeline/`: Blender scripts that write `.glb` files.
+- `net-tests/`: `bash scripts/test_net_sim.sh` plays two bots through a simulated network (80 ms RTT,
+  2 % loss) on a virtual clock. Run it after every change to movement, abilities or networking.
+
+Rules:
+
+- Never use Godot physics for players. Reconciliation replays ticks, so movement stays in
+  `Movement.Step` and collision against `World`.
+- Every value that affects movement lives in `PlayerState`, and client and server both call
+  `Movement.Step`. An ability the client cannot predict must correct through a snapshot.
+- Blender: `D:\Program\Blender Foundation\Blender 5.2\blender.exe -b --factory-startup -P <script>`.
+- Render check: run the Godot console executable with `--path client -- <folder>` to save frames.
+
 ## Which tool to draw with
 
 - Default: Pixelwright, for sprites, characters, tilesets, scenes and animation. It writes pixels

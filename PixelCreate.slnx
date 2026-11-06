@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/net-tests/">
+    <Project Path="net-tests/NetTests.csproj" />
+  </Folder>
+  <Folder Name="/server/">
+    <Project Path="server/Server.csproj" />
+  </Folder>
+  <Folder Name="/shared-core/">
+    <Project Path="shared-core/SharedCore.csproj" />
+  </Folder>
+  <Folder Name="/transport/">
+    <Project Path="transport/Transport.csproj" />
+  </Folder>
+</Solution>
