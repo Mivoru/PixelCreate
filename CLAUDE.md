@@ -13,8 +13,13 @@ Workspace for pixel art and experiments around it.
 
 ## The game
 
-A fast 3D action game with a pixel art look, built code-first. PvE comes first, PvP later. Accounts,
-databases and matchmaking wait until the game is fun. Godot 4.7 with C#; the server does not use Godot.
+A fast 3D action RPG with a pixel art look, built code-first. The long-term goal is an MMORPG, but
+the MMO parts wait. Work now on the world, mechanics, movement, abilities and enemies. Do not tune
+difficulty or balance yet. PvE comes first, PvP later. Accounts, databases and matchmaking wait until
+the game is fun. Godot 4.7 with C#; the server does not use Godot.
+
+Keep the MMORPG path open: the server stays authoritative, abilities and enemies are data rather
+than special code, and the world is built from zones that one server process can run.
 
 - `shared-core/`: movement, collision, protocol, server and client prediction. No engine and no
   packages. Keep it that way: anything here must run in `dotnet test`.
