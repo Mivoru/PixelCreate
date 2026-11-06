@@ -37,7 +37,25 @@ public enum ProjectileKind : byte
     Arrow = 1,
     PowerArrow = 2,
     Fireball = 3,
-    Flame = 4,
+}
+
+/// <summary>A burning V on the ground. See <see cref="GameServer"/>.</summary>
+public sealed class FireWallHazard
+{
+    public const float HalfAngle = 0.5236f;
+    public const float MaxLength = 15f;
+    public const int GrowTicks = 48;
+    public const int BurnTicks = 80;
+    public const float Thickness = 1.1f;
+
+    public required int Id;
+    public required Vector3 Origin;
+    public required Vector3 Direction;
+    public required short Damage;
+    public int Age;
+    public readonly HashSet<int> Struck = new();
+
+    public float Length => MaxLength * MathF.Min(1f, Age / (float)GrowTicks);
 }
 
 /// <summary>The authoritative game. It owns every player and enemy, and knows nothing about rendering.</summary>
@@ -47,16 +65,13 @@ public sealed class GameServer : IEnemyEvents
     private const float ArrowSpeed = 22f;
     private const float PowerArrowSpeed = 48f;
     private const float FireballSpeed = 13f;
-    private const float FlameSpeed = 13f;
     private const float HitRadius = 0.9f;
     private const float SpitSplashRadius = 1.8f;
     private const int ProjectileLifeTicks = 170;
     private const float SpitLead = 0.6f;
     private const float VolleySpread = 0.2f;
-    private const float WallSpread = 0.5f;
-    private const int WallStageDelayTicks = 13;
     private const float SplashPush = 4f;
-    private const float HelpRadius = 9f;
+    private const float HelpRadius = 6f;
     private const uint RegenDelayTicks = 300;
     private const uint RegenIntervalTicks = 20;
     private const float LootRadius = 2.4f;
@@ -92,9 +107,6 @@ public sealed class GameServer : IEnemyEvents
         public float Gravity;
         public float SplashRadius;
         public bool Pierces;
-        public bool HugsGround;
-        public int Delay;
-        public int CastId;
         public Vector3 Position;
         public Vector3 Velocity;
         public int Life = ProjectileLifeTicks;
@@ -117,9 +129,8 @@ public sealed class GameServer : IEnemyEvents
     private readonly List<Enemy> _enemies = new();
     private readonly List<Projectile> _projectiles = new();
     private readonly List<Crystal> _crystals = new();
-    private readonly HashSet<(int Cast, int Player)> _castHits = new();
+    private readonly List<FireWallHazard> _walls = new();
     private int _nextId;
-    private int _nextCast;
 
     public uint Tick { get; private set; }
     public ServerStats Stats { get; } = new();
@@ -157,6 +168,8 @@ public sealed class GameServer : IEnemyEvents
     public int GetCrystals(int id, CrystalRarity rarity) => _players[id].Crystals[(int)rarity];
 
     public int ProjectileCount => _projectiles.Count;
+
+    public int FireWallCount => _walls.Count;
 
     public int CrystalsOnGround => _crystals.Count;
 
@@ -201,6 +214,7 @@ public sealed class GameServer : IEnemyEvents
             }
 
             StepProjectiles();
+            StepWalls();
         }
 
         if (Tick % (uint)_options.SnapshotInterval == 0)
@@ -446,7 +460,6 @@ public sealed class GameServer : IEnemyEvents
                 Shoot(ProjectileKind.Arrow, chest, direction * ArrowSpeed, ability.Damage);
                 break;
             case "volley":
-                var cast = _nextCast++;
                 foreach (var angle in new[] { -VolleySpread, 0f, VolleySpread })
                 {
                     Shoot(ProjectileKind.Arrow, chest, Vector3.Transform(direction, Matrix4x4.CreateRotationY(angle)) * ArrowSpeed * 0.65f, ability.Damage);
@@ -488,49 +501,60 @@ public sealed class GameServer : IEnemyEvents
     }
 
     /// <summary>
-    /// Three staged waves of flame. Each stage is a V: the middle runs ahead and the wings fan out,
-    /// so the wall widens as it nears the player. A cast can hit a player only once.
+    /// A V of fire on the ground. It starts at the caster and its two arms grow at a fixed angle
+    /// towards the player, up to full length, where they stop and burn for a moment. The inside
+    /// of the V stays safe.
     /// </summary>
     private void FireWall(Enemy enemy, Vector3 aim, short damage)
     {
         var flat = aim with { Y = 0 };
         flat = flat == Vector3.Zero ? Vector3.UnitZ : Vector3.Normalize(flat);
-        var cast = _nextCast++;
-        for (var stage = 0; stage < 3; stage++)
+        _walls.Add(new FireWallHazard { Id = _nextId++, Origin = enemy.Position, Direction = flat, Damage = damage });
+    }
+
+    private void StepWalls()
+    {
+        foreach (var wall in _walls)
         {
-            var flames = 5 + stage * 2;
-            for (var i = 0; i < flames; i++)
+            wall.Age++;
+            var length = wall.Length;
+            foreach (var player in _players.Values)
             {
-                var along = i / (float)(flames - 1) * 2f - 1f;
-                var heading = Vector3.Transform(flat, Matrix4x4.CreateRotationY(along * WallSpread));
-                var flame = Shoot(ProjectileKind.Flame, enemy.Position + heading * 1.2f, heading * FlameSpeed * (1f - MathF.Abs(along) * 0.3f), damage);
-                flame.Delay = stage * WallStageDelayTicks;
-                flame.HugsGround = true;
-                flame.CastId = cast + 1;
-                flame.Life = 100;
+                if (!wall.Struck.Contains(player.Id) && OnArm(wall, player.State.Position, length))
+                {
+                    wall.Struck.Add(player.Id);
+                    Hurt(player, wall.Damage, 0);
+                }
             }
         }
+
+        _walls.RemoveAll(w => w.Age > FireWallHazard.GrowTicks + FireWallHazard.BurnTicks);
+    }
+
+    private static bool OnArm(FireWallHazard wall, Vector3 position, float length)
+    {
+        var offset = (position - wall.Origin) with { Y = 0 };
+        foreach (var side in new[] { -1f, 1f })
+        {
+            var arm = Vector3.Transform(wall.Direction, Matrix4x4.CreateRotationY(side * FireWallHazard.HalfAngle));
+            var along = Vector3.Dot(offset, arm);
+            if (along >= 0 && along <= length && (offset - arm * along).Length() < FireWallHazard.Thickness)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private void StepProjectiles()
     {
         foreach (var shot in _projectiles)
         {
-            if (shot.Delay > 0)
-            {
-                shot.Delay--;
-                continue;
-            }
-
             shot.Velocity.Y -= shot.Gravity * Tuning.TickSeconds;
             shot.Position += shot.Velocity * Tuning.TickSeconds;
             shot.Life--;
-            if (shot.HugsGround)
-            {
-                shot.Position.Y = _world.GroundHeight(shot.Position.X, shot.Position.Z) + 0.5f;
-            }
-
-            var struck = !shot.Pierces && !shot.HugsGround && _world.IsBlocked(shot.Position);
+            var struck = !shot.Pierces && _world.IsBlocked(shot.Position);
             foreach (var player in _players.Values)
             {
                 var chest = player.State.Position + Vector3.UnitY;
@@ -543,10 +567,10 @@ public sealed class GameServer : IEnemyEvents
                 {
                     struck = true;
                 }
-                else if (shot.CastId == 0 || _castHits.Add((shot.CastId, player.Id)))
+                else
                 {
                     Hurt(player, shot.Damage, shot.SlowTicks);
-                    struck = shot.CastId == 0;
+                    struck = true;
                 }
             }
 
@@ -588,7 +612,7 @@ public sealed class GameServer : IEnemyEvents
                 .Take(MaxEnemiesPerSnapshot)
                 .Select(e => new EnemyView(e.Id, e.Type, e.Level, e.Position, e.Facing, e.Health, (short)e.MaxHealth,
                     e.Action, e.HitFlash, e.LeapTarget, e.TargetId >= 0, e.AbilityIndex)).ToArray();
-            var shots = _projectiles.Where(s => s.Delay == 0)
+            var shots = _projectiles
                 .OrderBy(s => Vector3.Distance(s.Position, origin)).Take(MaxProjectilesPerSnapshot)
                 .Select(s => new ProjectileView(s.Id, s.Kind, s.Position)).ToArray();
             var crystals = _crystals.Where(c => c.Owner == player.Id)
@@ -612,6 +636,8 @@ public sealed class GameServer : IEnemyEvents
                 Enemies = enemies,
                 Projectiles = shots,
                 Drops = crystals,
+                FireWalls = _walls.Where(w => Vector3.Distance(w.Origin, origin) < InterestRange).Take(2)
+                    .Select(w => new FireWallView(w.Id, w.Origin, MathF.Atan2(-w.Direction.X, -w.Direction.Z), w.Length)).ToArray(),
             };
             _transport.Send(player.Id, Protocol.EncodeSnapshot(snapshot));
         }

@@ -30,14 +30,15 @@ public sealed class GoblinView : IEnemyView
     public GoblinView(EnemyDef def)
     {
         _def = def;
-        var tunic = new Color(def.Weapon switch
+        var (kind, cloth) = def.Id switch
         {
-            "club" => "733e39",
-            "bow" => "3e8948",
-            "staff" => "68386c",
-            _ => "b86f50",
-        });
-        _rig = new PlayerRig(tunic, new RigLook(new Color("63a84d"), def.Size, false, false, true, def.Weapon));
+            "goblin_brute" => ("brute", "5a4a3a"),
+            "goblin_rapid_archer" => ("archer", "4f6b3a"),
+            "goblin_sharpshooter" => ("sharpshooter", "3e5a68"),
+            "goblin_shaman" => ("shaman", "733e39"),
+            _ => ("skirmisher", "3e7a48"),
+        };
+        _rig = new PlayerRig(new Color(cloth), new RigLook(kind, new Color("7fb04a"), def.Size, def.Weapon));
     }
 
     public void Update(in EnemyView enemy, Vector3 position, float delta, Sfx sfx)
@@ -48,31 +49,33 @@ public sealed class GoblinView : IEnemyView
         PlaySounds(enemy, position, sfx);
 
         var ability = _def.Abilities is { } list && enemy.Ability < list.Length ? list[enemy.Ability] : null;
-        var attack = AttackKind.None;
-        var tick = 0;
-        var heavy = ability is { Effect: "slam" or "spin" or "firewall" or "powershot" or "volley" };
-        if (ability is not null)
-        {
-            var kind = heavy ? AttackKind.Heavy : AttackKind.Light;
-            var hitAt = Tuning.Attack(kind).HitAt;
-            if (enemy.Action == EnemyAction.Cast)
-            {
-                attack = kind;
-                tick = (int)(_actionTime / (ability.WindupTicks * Tuning.TickSeconds) * (hitAt - 1));
-            }
-            else if (enemy.Action == EnemyAction.Strike)
-            {
-                attack = kind;
-                tick = hitAt + (int)(_actionTime * 60f);
-            }
-        }
-
-        _spin = enemy.Action == EnemyAction.Strike && ability?.Effect == "spin" ? _spin + delta * 22f : 0f;
+        var spinning = enemy.Action == EnemyAction.Strike && ability?.Effect == "spin" && _actionTime < 0.5f;
+        _spin = spinning ? _spin + delta * 20f : 0f;
         Root.Position = position;
         Root.Rotation = new Vector3(0, enemy.Facing + _spin, 0);
         Root.Visible = enemy.Action != EnemyAction.Dead;
         _rig.Flash = enemy.HitFlash > 0;
-        _rig.Animate(new MotionState(speed > 20f ? 0f : speed, true, 0f, enemy.Action == EnemyAction.Leap, attack, tick), delta);
+        _rig.Animate(new MotionState(speed > 20f ? 0f : speed, true, 0f, false, AttackKind.None, 0, MoveFor(enemy.Action, ability)), delta);
+    }
+
+    private static WeaponMove MoveFor(EnemyAction action, Ability? ability)
+    {
+        if (ability is null || action is not (EnemyAction.Cast or EnemyAction.Strike or EnemyAction.Leap))
+        {
+            return WeaponMove.None;
+        }
+
+        var winding = action == EnemyAction.Cast;
+        return ability.Effect switch
+        {
+            "arrow" or "volley" or "powershot" => winding ? WeaponMove.BowDraw : WeaponMove.BowRelease,
+            "melee" or "dashStrike" => winding ? WeaponMove.StabWindup : WeaponMove.Stab,
+            "slam" => winding ? WeaponMove.ClubRaise : WeaponMove.ClubSmash,
+            "spin" => winding ? WeaponMove.ClubRaise : WeaponMove.ClubSpin,
+            "fireball" => winding ? WeaponMove.StaffRaise : WeaponMove.StaffThrust,
+            "firewall" => WeaponMove.StaffPlant,
+            _ => WeaponMove.None,
+        };
     }
 
     private void PlaySounds(in EnemyView enemy, Vector3 position, Sfx sfx)

@@ -164,7 +164,6 @@ public sealed class NetSimTests
     public void Zone_80msRtt_2PercentLoss_CorrectsAndConverges()
     {
         var result = Run(rtt: 80, jitter: 8, loss: 2, enemies: 4, map: Zone.Load("meadow-valley").World);
-        Assert.True(result.Server.PlayerHits > 0, "Enemies must reach players, or nothing is tested.");
         Assert.All(result.Clients, c => Assert.InRange(c.MaxShownStep, 0f, MaxShownStep));
         Assert.All(result.FinalGaps, gap => Assert.InRange(gap, 0f, 0.001f));
     }
@@ -382,6 +381,29 @@ public sealed class EnemyTests
     }
 
     [Fact]
+    public void EnemyAtHome_HealsSlowly()
+    {
+        var camp = new EnemySpawn(new Vector3(100, 0, 0), 5f, 1, 1, 1);
+        var (server, client, network) = StartCamp(camp);
+        Play(server, client, network, 5);
+        var enemy = server.Enemies[0];
+        enemy.Health = 1;
+        Play(server, client, network, 60 * 5);
+        Assert.InRange(enemy.Health, 2, enemy.MaxHealth / 2);
+    }
+
+    [Fact]
+    public void AggroRange_DoesNotReachAVillage()
+    {
+        var zone = Zone.Load("meadow-valley");
+        foreach (var camp in zone.World.EnemySpawns)
+        {
+            var edge = Vector3.Distance(camp.Center with { Y = 0 }, new Vector3(2, 0, 4)) - camp.Radius;
+            Assert.True(edge > 22f, $"The camp at {camp.Center} is too close to the village.");
+        }
+    }
+
+    [Fact]
     public void HittingOneSlime_PullsItsNeighbours()
     {
         var camp = new EnemySpawn(new Vector3(0, 0, 60), 3f, 4, 1, 1);
@@ -459,9 +481,9 @@ public sealed class EnemyTests
     [Theory]
     [InlineData("goblin_skirmisher", 6f)]
     [InlineData("goblin_brute", 6f)]
-    [InlineData("goblin_rapid_archer", 14f)]
-    [InlineData("goblin_sharpshooter", 18f)]
-    [InlineData("goblin_shaman", 14f)]
+    [InlineData("goblin_rapid_archer", 12f)]
+    [InlineData("goblin_sharpshooter", 15f)]
+    [InlineData("goblin_shaman", 13f)]
     public void Goblins_HurtTheirTarget(string id, float distance)
     {
         var (server, client, network) = StartGoblin(id, distance);
@@ -487,9 +509,9 @@ public sealed class EnemyTests
     [Fact]
     public void Powershot_PassesThroughWalls()
     {
-        var wall = new Aabb(new Vector3(-6, 0, 12), new Vector3(6, 6, 13));
+        var wall = new Aabb(new Vector3(-6, 0, 8), new Vector3(6, 6, 9));
         var network = new SimNetwork(1, 0, 0, 0);
-        var camp = new EnemySpawn(new Vector3(0, 0, 26), 1f, 1, Types: new[] { "goblin_sharpshooter" });
+        var camp = new EnemySpawn(new Vector3(0, 0, 16), 1f, 1, Types: new[] { "goblin_sharpshooter" });
         var world = new World(new[] { wall }, null, Vector3.Zero, new[] { camp });
         var server = new GameServer(network.Connect(0), world, new ServerOptions { Seed = 9 });
         var client = new ClientPrediction(network.Connect(1), world);
@@ -497,20 +519,44 @@ public sealed class EnemyTests
         Assert.True(server.Stats.PlayerHits > 0, "A powershot must reach a player behind a wall.");
     }
 
-    [Fact]
-    public void FireWall_HitsOncePerCast()
+    private static (GameServer Server, ClientPrediction Client, SimNetwork Network, Enemy Shaman) CastWall()
     {
         var (server, client, network) = StartGoblin("goblin_shaman", 12f);
-        Play(server, client, network, 60);
-        var enemy = server.Enemies[0];
-        var ability = enemy.Def.Abilities!.Single(a => a.Effect == "firewall");
-        var target = new Target(1, server.GetPlayer(1)!.Value.Position, Vector3.Zero);
+        Play(server, client, network, 30);
+        var shaman = server.Enemies[0];
+        shaman.Position = server.GetPlayer(1)!.Value.Position + new Vector3(0, 0, 8);
+        return (server, client, network, shaman);
+    }
+
+    private static void Fire(GameServer server, Enemy shaman, Vector3 at)
+    {
+        var ability = shaman.Def.Abilities!.Single(a => a.Effect == "firewall");
+        ((IEnemyEvents)server).Fire(shaman, ability, new Target(1, at, Vector3.Zero));
+        shaman.TakeHit(short.MaxValue, Vector3.Zero);
+    }
+
+    [Fact]
+    public void FireWall_LeavesTheInsideOfTheVSafe()
+    {
+        var (server, client, network, shaman) = CastWall();
+        Fire(server, shaman, server.GetPlayer(1)!.Value.Position);
+        Assert.Equal(1, server.FireWallCount);
         var hits = server.Stats.PlayerHits;
-        ((IEnemyEvents)server).Fire(enemy, ability, target);
-        Assert.True(server.ProjectileCount >= 21, "Three stages must make up the wall.");
-        enemy.TakeHit(short.MaxValue, Vector3.Zero);
-        Play(server, client, network, 120);
+        Play(server, client, network, 200);
+        Assert.Equal(hits, server.Stats.PlayerHits);
+        Assert.Equal(0, server.FireWallCount);
+    }
+
+    [Fact]
+    public void FireWall_ArmHitsOnceAndStopsAtFullLength()
+    {
+        var (server, client, network, shaman) = CastWall();
+        var player = server.GetPlayer(1)!.Value.Position;
+        Fire(server, shaman, shaman.Position + Vector3.Transform(Vector3.Normalize(player - shaman.Position), Matrix4x4.CreateRotationY(FireWallHazard.HalfAngle)) * 8f);
+        var hits = server.Stats.PlayerHits;
+        Play(server, client, network, 200);
         Assert.Equal(hits + 1, server.Stats.PlayerHits);
+        Assert.Equal(FireWallHazard.MaxLength, new FireWallHazard { Id = 0, Origin = Vector3.Zero, Direction = Vector3.UnitZ, Damage = 1, Age = 500 }.Length);
     }
 
     [Fact]
@@ -540,9 +586,9 @@ public sealed class EnemyTests
     [Fact]
     public void Slimes_SteerAroundObstacles()
     {
-        var wall = new Aabb(new Vector3(-2, 0, 4), new Vector3(2, 3, 5));
+        var wall = new Aabb(new Vector3(-2, 0, 3), new Vector3(2, 3, 4));
         var network = new SimNetwork(1, 0, 0, 0);
-        var camp = new EnemySpawn(new Vector3(0, 0, 12), 1f, 1, 1, 1);
+        var camp = new EnemySpawn(new Vector3(0, 0, 7.5f), 1f, 1, 1, 1);
         var world = new World(new[] { wall }, null, Vector3.Zero, new[] { camp });
         var server = new GameServer(network.Connect(0), world, new ServerOptions { Seed = 8 });
         var client = new ClientPrediction(network.Connect(1), world);

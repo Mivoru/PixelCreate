@@ -29,9 +29,9 @@
     { "width": 2.5, "points": [[3, 24], [18, 28], [40, 36], [66, 48], [92, 58]] }
   ],
   "enemies": [
-    { "x": -24, "z": 28, "radius": 11, "count": 5, "minLevel": 1, "maxLevel": 1, "respawnTicks": 900 },
-    { "x": 30, "z": 16, "radius": 12, "count": 5, "minLevel": 1, "maxLevel": 2, "respawnTicks": 900 },
-    { "x": -38, "z": -28, "radius": 13, "count": 6, "minLevel": 2, "maxLevel": 3, "respawnTicks": 1200 },
+    { "x": -46, "z": 42, "radius": 10, "count": 5, "minLevel": 1, "maxLevel": 1, "respawnTicks": 900 },
+    { "x": 56, "z": 20, "radius": 11, "count": 5, "minLevel": 1, "maxLevel": 2, "respawnTicks": 900 },
+    { "x": -46, "z": -34, "radius": 12, "count": 6, "minLevel": 2, "maxLevel": 3, "respawnTicks": 1200 },
     { "x": 2, "z": -56, "radius": 15, "count": 7, "minLevel": 3, "maxLevel": 4, "respawnTicks": 1200 },
     { "x": 34, "z": -48, "radius": 5, "count": 1, "minLevel": 4, "maxLevel": 4, "respawnTicks": 7200, "rare": true },
     { "x": 54, "z": -82, "radius": 12, "count": 5, "respawnTicks": 1500, "types": ["goblin_skirmisher", "goblin_skirmisher", "goblin_rapid_archer"] },

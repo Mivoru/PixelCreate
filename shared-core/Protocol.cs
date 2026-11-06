@@ -17,6 +17,8 @@ public readonly record struct EnemyView(
 
 public readonly record struct ProjectileView(int Id, ProjectileKind Kind, Vector3 Position);
 
+public readonly record struct FireWallView(int Id, Vector3 Origin, float Yaw, float Length);
+
 public readonly record struct CrystalView(int Id, CrystalRarity Rarity, Vector3 Position);
 
 public sealed class Snapshot
@@ -44,6 +46,7 @@ public sealed class Snapshot
     public EnemyView[] Enemies = Array.Empty<EnemyView>();
     public ProjectileView[] Projectiles = Array.Empty<ProjectileView>();
     public CrystalView[] Drops = Array.Empty<CrystalView>();
+    public FireWallView[] FireWalls = Array.Empty<FireWallView>();
 }
 
 /// <summary>Binary encoding of the two packets the game sends.</summary>
@@ -169,6 +172,15 @@ public static class Protocol
             WriteVector(writer, crystal.Position);
         }
 
+        writer.Write((byte)snapshot.FireWalls.Length);
+        foreach (var wall in snapshot.FireWalls)
+        {
+            writer.Write(wall.Id);
+            WriteVector(writer, wall.Origin);
+            writer.Write(wall.Yaw);
+            writer.Write(wall.Length);
+        }
+
         writer.Flush();
         return stream.ToArray();
     }
@@ -232,6 +244,12 @@ public static class Protocol
         for (var i = 0; i < snapshot.Drops.Length; i++)
         {
             snapshot.Drops[i] = new CrystalView(reader.ReadInt32(), (CrystalRarity)reader.ReadByte(), ReadVector(reader));
+        }
+
+        snapshot.FireWalls = new FireWallView[reader.ReadByte()];
+        for (var i = 0; i < snapshot.FireWalls.Length; i++)
+        {
+            snapshot.FireWalls[i] = new FireWallView(reader.ReadInt32(), ReadVector(reader), reader.ReadSingle(), reader.ReadSingle());
         }
 
         return true;

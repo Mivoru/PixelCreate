@@ -79,8 +79,6 @@ public sealed partial class Enemy
             if (homeDistance < Home.Radius * 0.6f)
             {
                 Returning = false;
-                Health = (short)MaxHealth;
-                TaggedBy = -1;
                 Action = EnemyAction.Idle;
                 ActionTicks = 30;
                 return;

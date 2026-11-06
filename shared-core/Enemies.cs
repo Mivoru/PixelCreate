@@ -87,6 +87,11 @@ public sealed partial class Enemy
     private const float LeashExtra = 16f;
     private const float LeapLead = 0.3f;
     private const float ReturnSpeedFactor = 1.8f;
+    private const int RegenIntervalTicks = 60;
+
+    /// <summary>Seconds a full heal takes, as one step of health comes each second.</summary>
+    private const int RegenSteps = 45;
+    private int _regenTicks;
 
     public required int Id;
     public required byte Type;
@@ -152,6 +157,7 @@ public sealed partial class Enemy
     public void Step(World world, Random random, IReadOnlyList<Target> targets, IEnemyEvents events)
     {
         if (HitFlash > 0) HitFlash--;
+        Recover();
         if (LeapCooldown > 0) LeapCooldown--;
         if (SpitCooldown > 0) SpitCooldown--;
         ActionTicks--;
@@ -212,6 +218,25 @@ public sealed partial class Enemy
         }
 
         Fall(world, random, events);
+    }
+
+    /// <summary>Out of a fight an enemy heals slowly, so a retreat does not undo the damage at once.</summary>
+    private void Recover()
+    {
+        if (!Alive || TargetId >= 0 || Health >= MaxHealth)
+        {
+            return;
+        }
+
+        if (++_regenTicks >= RegenIntervalTicks)
+        {
+            _regenTicks = 0;
+            Health = (short)Math.Min(MaxHealth, Health + Math.Max(1, MaxHealth / RegenSteps));
+            if (Health >= MaxHealth)
+            {
+                TaggedBy = -1;
+            }
+        }
     }
 
     /// <summary>Takes damage from a player. Returns true when this hit kills the enemy.</summary>
@@ -283,8 +308,6 @@ public sealed partial class Enemy
             if (homeDistance < Home.Radius * 0.6f)
             {
                 Returning = false;
-                Health = (short)MaxHealth;
-                TaggedBy = -1;
                 ToIdle(random);
                 return;
             }

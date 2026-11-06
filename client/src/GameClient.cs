@@ -27,11 +27,13 @@ public partial class GameClient : Node
 
     private readonly Dictionary<int, PlayerRig> _remotes = new();
     private readonly Dictionary<int, IEnemyView> _enemies = new();
+    private readonly Dictionary<int, byte> _enemyTypes = new();
     private readonly Dictionary<int, TelegraphView> _telegraphs = new();
     private readonly Dictionary<int, MeshInstance3D> _spits = new();
     private readonly Dictionary<int, ProjectileKind> _spitKinds = new();
     private readonly Dictionary<int, Node3D> _crystals = new();
     private readonly int[] _lastCrystals = new int[Crystals.Tiers];
+    private readonly Dictionary<int, FireWallNode> _walls = new();
     private Zone _zone = null!;
     private string _region = "";
     private PixelStage _stage = null!;
@@ -381,12 +383,24 @@ public partial class GameClient : Node
         foreach (var enemy in snapshot.Enemies)
         {
             var def = EnemyDef.All[enemy.Type];
+
+            // A respawn can bring back another type under the same id, with another weapon and moves.
+            if (_enemies.TryGetValue(enemy.Id, out var old) && _enemyTypes[enemy.Id] != enemy.Type)
+            {
+                old.Root.QueueFree();
+                _enemies.Remove(enemy.Id);
+            }
+
             if (!_enemies.TryGetValue(enemy.Id, out var slime))
             {
                 slime = def.Kind == "goblin" ? new GoblinView(def) : new SlimeView();
                 _enemies.Add(enemy.Id, slime);
+                _enemyTypes[enemy.Id] = enemy.Type;
                 _stage.View.AddChild(slime.Root);
-                _telegraphs.Add(enemy.Id, new TelegraphView(_world, _fx, _stage.View));
+                if (!_telegraphs.ContainsKey(enemy.Id))
+                {
+                    _telegraphs.Add(enemy.Id, new TelegraphView(_world, _fx, _stage.View));
+                }
             }
 
             var target = ToGodot(enemy.Position);
@@ -419,6 +433,31 @@ public partial class GameClient : Node
 
         DrawSpits(snapshot, blend);
         DrawCrystals(snapshot, delta);
+        DrawFireWalls(snapshot, delta);
+    }
+
+    private void DrawFireWalls(Snapshot snapshot, float delta)
+    {
+        var alive = new HashSet<int>();
+        foreach (var wall in snapshot.FireWalls)
+        {
+            alive.Add(wall.Id);
+            if (!_walls.TryGetValue(wall.Id, out var node))
+            {
+                node = new FireWallNode(_world, _fx, ToGodot(wall.Origin), wall.Yaw);
+                _walls.Add(wall.Id, node);
+                _stage.View.AddChild(node.Root);
+                _sfx.Play("fire_wall", ToGodot(wall.Origin));
+            }
+
+            node.Update(wall.Length, delta);
+        }
+
+        foreach (var id in _walls.Keys.Where(id => !alive.Contains(id)).ToList())
+        {
+            _walls[id].Root.QueueFree();
+            _walls.Remove(id);
+        }
     }
 
     private void ShowTelegraph(in EnemyView enemy, EnemyDef def, Vector3 position)
@@ -522,9 +561,8 @@ public partial class GameClient : Node
                     ProjectileKind.Spit => "slime_spit",
                     ProjectileKind.Arrow => "bow_shot",
                     ProjectileKind.PowerArrow => "bow_power",
-                    ProjectileKind.Fireball => "fireball",
-                    _ => "fire_wall",
-                }, ball.Position, spit.Kind == ProjectileKind.Flame ? -14f : 0f);
+                    _ => "fireball",
+                }, ball.Position);
             }
 
             var motion = target - ball.Position;
@@ -568,9 +606,6 @@ public partial class GameClient : Node
                 _fx.Burst(last, new Color("fee761"), 18, 5f, 0.45f, 0.09f, -3f, 90f);
                 _fx.Puddle(ground, new Color("3e2731"), 2.2f, 2.2f);
                 break;
-            case ProjectileKind.Flame:
-                _fx.Burst(last, new Color("f77622"), 5, 3f, 0.35f, 0.1f, 3f);
-                break;
             default:
                 _sfx.Play("arrow_hit", last, -5f);
                 _fx.Burst(last, new Color("b8a58a"), 5, 3f, 0.25f, 0.05f);
@@ -602,8 +637,7 @@ public partial class GameClient : Node
             return arrow;
         }
 
-        var fire = kind == ProjectileKind.Fireball;
-        var size = fire ? 0.42f : 0.55f;
+        const float size = 0.42f;
         var ball = new MeshInstance3D
         {
             Mesh = new SphereMesh { Radius = size, Height = size * 2f, RadialSegments = 8, Rings = 5 },
