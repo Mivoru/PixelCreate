@@ -5,7 +5,11 @@ using PixelCreate.Transport;
 var port = args.Length > 0 ? int.Parse(args[0]) : 7777;
 using var transport = UdpTransport.Listen(port);
 var zone = Zone.Load("meadow-valley");
-var server = new GameServer(transport, zone.World, new ServerOptions());
+var spawn = Environment.GetEnvironmentVariable("PIXEL_SPAWN")?.Split(',').Select(float.Parse).ToArray();
+var server = new GameServer(transport, zone.World, new ServerOptions
+{
+    SpawnOverride = spawn is null ? null : new System.Numerics.Vector3(spawn[0], 0, spawn[1]),
+});
 Console.WriteLine($"Zone {zone.Name}. Listening on UDP {port} at {Tuning.TickRate} Hz.");
 
 var clock = Stopwatch.StartNew();

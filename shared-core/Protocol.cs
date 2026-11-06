@@ -13,9 +13,11 @@ public readonly record struct RemotePlayer(int Id, Vector3 Position, Vector3 Vel
 
 public readonly record struct EnemyView(
     int Id, byte Type, byte Level, Vector3 Position, float Facing, short Health, short MaxHealth,
-    EnemyAction Action, byte HitFlash, Vector3 LeapTarget, bool Fighting);
+    EnemyAction Action, byte HitFlash, Vector3 LeapTarget, bool Fighting, byte Ability = 0);
 
-public readonly record struct SpitView(int Id, Vector3 Position);
+public readonly record struct ProjectileView(int Id, ProjectileKind Kind, Vector3 Position);
+
+public readonly record struct CrystalView(int Id, CrystalRarity Rarity, Vector3 Position);
 
 public sealed class Snapshot
 {
@@ -35,9 +37,13 @@ public sealed class Snapshot
 
     /// <summary>Counts attacks avoided with a dash, so the client can show each one.</summary>
     public byte Dodges;
+
+    /// <summary>Magic crystals held, by rarity.</summary>
+    public int[] Crystals = new int[Core.Crystals.Tiers];
     public RemotePlayer[] Others = Array.Empty<RemotePlayer>();
     public EnemyView[] Enemies = Array.Empty<EnemyView>();
-    public SpitView[] Spits = Array.Empty<SpitView>();
+    public ProjectileView[] Projectiles = Array.Empty<ProjectileView>();
+    public CrystalView[] Drops = Array.Empty<CrystalView>();
 }
 
 /// <summary>Binary encoding of the two packets the game sends.</summary>
@@ -109,6 +115,11 @@ public static class Protocol
         writer.Write(snapshot.XpToNext);
         writer.Write(snapshot.MaxHealth);
         writer.Write(snapshot.Dodges);
+        foreach (var count in snapshot.Crystals)
+        {
+            writer.Write((ushort)count);
+        }
+
         writer.Write((byte)snapshot.Others.Length);
         foreach (var other in snapshot.Others)
         {
@@ -132,15 +143,30 @@ public static class Protocol
             writer.Write(enemy.MaxHealth);
             writer.Write((byte)enemy.Action);
             writer.Write(enemy.HitFlash);
-            WriteVector(writer, enemy.LeapTarget);
             writer.Write(enemy.Fighting);
+            writer.Write(enemy.Ability);
+
+            // Only an enemy about to strike needs its aim point, which saves most of the packet.
+            if (ShowsTarget(enemy.Action))
+            {
+                WriteVector(writer, enemy.LeapTarget);
+            }
         }
 
-        writer.Write((byte)snapshot.Spits.Length);
-        foreach (var spit in snapshot.Spits)
+        writer.Write((byte)snapshot.Projectiles.Length);
+        foreach (var shot in snapshot.Projectiles)
         {
-            writer.Write(spit.Id);
-            WriteVector(writer, spit.Position);
+            writer.Write(shot.Id);
+            writer.Write((byte)shot.Kind);
+            WriteVector(writer, shot.Position);
+        }
+
+        writer.Write((byte)snapshot.Drops.Length);
+        foreach (var crystal in snapshot.Drops)
+        {
+            writer.Write(crystal.Id);
+            writer.Write((byte)crystal.Rarity);
+            WriteVector(writer, crystal.Position);
         }
 
         writer.Flush();
@@ -166,6 +192,11 @@ public static class Protocol
         snapshot.XpToNext = reader.ReadInt32();
         snapshot.MaxHealth = reader.ReadInt16();
         snapshot.Dodges = reader.ReadByte();
+        for (var i = 0; i < snapshot.Crystals.Length; i++)
+        {
+            snapshot.Crystals[i] = reader.ReadUInt16();
+        }
+
         snapshot.Others = new RemotePlayer[reader.ReadByte()];
         for (var i = 0; i < snapshot.Others.Length; i++)
         {
@@ -176,19 +207,38 @@ public static class Protocol
         snapshot.Enemies = new EnemyView[reader.ReadByte()];
         for (var i = 0; i < snapshot.Enemies.Length; i++)
         {
-            snapshot.Enemies[i] = new EnemyView(reader.ReadInt32(), reader.ReadByte(), reader.ReadByte(), ReadVector(reader),
-                reader.ReadSingle(), reader.ReadInt16(), reader.ReadInt16(), (EnemyAction)reader.ReadByte(), reader.ReadByte(),
-                ReadVector(reader), reader.ReadBoolean());
+            var id = reader.ReadInt32();
+            var type = reader.ReadByte();
+            var level = reader.ReadByte();
+            var position = ReadVector(reader);
+            var facing = reader.ReadSingle();
+            var health = reader.ReadInt16();
+            var maxHealth = reader.ReadInt16();
+            var action = (EnemyAction)reader.ReadByte();
+            var flash = reader.ReadByte();
+            var fighting = reader.ReadBoolean();
+            var ability = reader.ReadByte();
+            var target = ShowsTarget(action) ? ReadVector(reader) : Vector3.Zero;
+            snapshot.Enemies[i] = new EnemyView(id, type, level, position, facing, health, maxHealth, action, flash, target, fighting, ability);
         }
 
-        snapshot.Spits = new SpitView[reader.ReadByte()];
-        for (var i = 0; i < snapshot.Spits.Length; i++)
+        snapshot.Projectiles = new ProjectileView[reader.ReadByte()];
+        for (var i = 0; i < snapshot.Projectiles.Length; i++)
         {
-            snapshot.Spits[i] = new SpitView(reader.ReadInt32(), ReadVector(reader));
+            snapshot.Projectiles[i] = new ProjectileView(reader.ReadInt32(), (ProjectileKind)reader.ReadByte(), ReadVector(reader));
+        }
+
+        snapshot.Drops = new CrystalView[reader.ReadByte()];
+        for (var i = 0; i < snapshot.Drops.Length; i++)
+        {
+            snapshot.Drops[i] = new CrystalView(reader.ReadInt32(), (CrystalRarity)reader.ReadByte(), ReadVector(reader));
         }
 
         return true;
     }
+
+    private static bool ShowsTarget(EnemyAction action) =>
+        action is EnemyAction.Windup or EnemyAction.Leap or EnemyAction.Cast;
 
     private static void WriteVector(BinaryWriter writer, Vector3 value)
     {

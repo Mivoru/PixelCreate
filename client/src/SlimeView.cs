@@ -4,7 +4,7 @@ using PixelCreate.Core;
 namespace PixelCreate;
 
 /// <summary>A jelly body that squashes and stretches from what the server says it is doing.</summary>
-public sealed class SlimeView
+public sealed class SlimeView : IEnemyView
 {
     private readonly MeshInstance3D _body;
     private readonly ShaderMaterial _material;
@@ -28,16 +28,8 @@ public sealed class SlimeView
     /// <summary>Damage shown when the last update found a hit, or zero.</summary>
     public int DamageTaken { get; private set; }
 
-    public MeshInstance3D Warning { get; }
-
-    public SlimeView(Fx fx)
+    public SlimeView()
     {
-        Warning = new MeshInstance3D
-        {
-            Mesh = new CylinderMesh { TopRadius = 1f, BottomRadius = 1f, Height = 0.03f, RadialSegments = 20 },
-            MaterialOverride = fx.Stipple(new Color("e43b44"), 0.45f),
-            Visible = false,
-        };
 
         _material = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/slime.gdshader") };
 
@@ -112,16 +104,6 @@ public sealed class SlimeView
         }
 
         PlaySounds(enemy, position, sfx);
-        var def = EnemyDef.All[enemy.Type];
-        var warn = enemy.Action is EnemyAction.Windup or EnemyAction.Leap;
-        Warning.Visible = warn;
-        if (warn)
-        {
-            var landing = enemy.LeapTarget;
-            Warning.Position = new Vector3(landing.X, landing.Y + 0.08f, landing.Z);
-            Warning.Scale = new Vector3(def.SplashRadius, 1f, def.SplashRadius);
-        }
-
         Root.Position = position;
         _rise = Mathf.Lerp(_rise, (position.Y - _lastY) / Mathf.Max(delta, 0.001f), 0.3f);
         _lastY = position.Y;

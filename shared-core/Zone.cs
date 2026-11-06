@@ -65,11 +65,14 @@ public sealed class Zone
     private sealed record ScatterData(string Model, int Count, float[] Area, float MinScale, float MaxScale, float Spacing);
 
     private sealed record EnemySpawnData(
-        float X, float Z, float Radius, int Count, int MinLevel = 1, int MaxLevel = 3, int RespawnTicks = 900, bool Rare = false);
+        float X, float Z, float Radius, int Count, int MinLevel = 1, int MaxLevel = 3, int RespawnTicks = 900,
+        bool Rare = false, string[]? Types = null);
+
+    private sealed record RegionData(string Name, float X, float Z, float Radius);
 
     private sealed record ZoneData(
         string Name, float Size, int Cells, int Seed, float[] Spawn, HillData[] Hills, PathData[] Paths,
-        PropData[] Props, ScatterData[] Scatter, EnemySpawnData[]? Enemies);
+        PropData[] Props, ScatterData[] Scatter, EnemySpawnData[]? Enemies, RegionData[]? Regions);
 
     /// <summary>Half width, half depth and height of each model's collision at scale 1.</summary>
     private static readonly Dictionary<string, Vector3> Collision = new()
@@ -79,9 +82,14 @@ public sealed class Zone
         ["tree_b"] = new(0.5f, 0.5f, 6f),
         ["rock"] = new(0.55f, 0.55f, 0.7f),
         ["bush"] = new(0f, 0f, 0f),
+        ["tent"] = new(2.1f, 2.1f, 3f),
+        ["camp_fire"] = new(0.7f, 0.7f, 0.6f),
+        ["palisade"] = new(4.2f, 0.4f, 3f),
+        ["ruin"] = new(1.1f, 1.1f, 4f),
     };
 
     private readonly PathData[] _paths;
+    private readonly RegionData[] _regions;
 
     public string Name { get; }
     public float Size { get; }
@@ -110,7 +118,8 @@ public sealed class Zone
         Props = props;
         var spawn = new Vector3(data.Spawn[0], terrain.At(data.Spawn[0], data.Spawn[1]), data.Spawn[1]);
         var enemySpawns = (data.Enemies ?? Array.Empty<EnemySpawnData>())
-            .Select(e => new EnemySpawn(new Vector3(e.X, terrain.At(e.X, e.Z), e.Z), e.Radius, e.Count, e.MinLevel, e.MaxLevel, e.RespawnTicks, e.Rare)).ToArray();
+            .Select(e => new EnemySpawn(new Vector3(e.X, terrain.At(e.X, e.Z), e.Z), e.Radius, e.Count, e.MinLevel, e.MaxLevel, e.RespawnTicks, e.Rare, e.Types)).ToArray();
+        _regions = data.Regions ?? Array.Empty<RegionData>();
         World = new World(BuildBoxes(props, data.Size), terrain, spawn, enemySpawns);
     }
 
@@ -121,6 +130,20 @@ public sealed class Zone
             ?? throw new ArgumentException($"There is no zone called {name}.");
         var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
         return new Zone(JsonSerializer.Deserialize<ZoneData>(stream, options)!);
+    }
+
+    /// <summary>The name of the place at a point, or an empty string in the wilds between places.</summary>
+    public string RegionAt(float x, float z)
+    {
+        foreach (var region in _regions)
+        {
+            if (new Vector2(x - region.X, z - region.Z).Length() < region.Radius)
+            {
+                return region.Name;
+            }
+        }
+
+        return "";
     }
 
     /// <summary>Distance from a point to the edge of the nearest path; negative means on the path.</summary>
@@ -153,6 +176,14 @@ public sealed class Zone
                 var falloff = 1f - distance * distance;
                 height += hill.Height * falloff * falloff;
             }
+        }
+
+        // Mountains close the zone, so there is no visible end of the world.
+        var edge = MathF.Max(MathF.Abs(x), MathF.Abs(z)) / (data.Size / 2);
+        if (edge > 0.84f)
+        {
+            var rise = (edge - 0.84f) / 0.16f;
+            height += rise * rise * 55f + MathF.Sin(x * 0.11f) * MathF.Cos(z * 0.13f) * 5f * rise;
         }
 
         return height + Bumps(data.Seed, x, z);

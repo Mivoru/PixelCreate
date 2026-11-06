@@ -12,6 +12,9 @@ public sealed class ServerOptions
     public int SnapshotInterval { get; init; } = 2;
 
     public int InputBufferTicks { get; init; } = Tuning.InputBufferTicks;
+
+    /// <summary>Starts new players somewhere else, to test a far part of the zone.</summary>
+    public Vector3? SpawnOverride { get; init; }
 }
 
 public sealed class ServerStats
@@ -24,31 +27,53 @@ public sealed class ServerStats
     public long Spits;
     public long Dodges;
     public long LevelUps;
+    public long CrystalsDropped;
+    public long CrystalsLooted;
+}
+
+public enum ProjectileKind : byte
+{
+    Spit = 0,
+    Arrow = 1,
+    PowerArrow = 2,
+    Fireball = 3,
+    Flame = 4,
 }
 
 /// <summary>The authoritative game. It owns every player and enemy, and knows nothing about rendering.</summary>
 public sealed class GameServer : IEnemyEvents
 {
     private const float SpitSpeed = 13f;
-    private const float SpitHitRadius = 0.9f;
-    private const int SpitLifeTicks = 150;
-    private const float SplashPush = 4f;
-
-    /// <summary>A player hears only about nearby enemies, which keeps a snapshot inside one UDP packet.</summary>
-    private const float InterestRange = 70f;
-    private const int MaxEnemiesPerSnapshot = 14;
-    private const int MaxSpitsPerSnapshot = 8;
+    private const float ArrowSpeed = 22f;
+    private const float PowerArrowSpeed = 48f;
+    private const float FireballSpeed = 13f;
+    private const float FlameSpeed = 13f;
+    private const float HitRadius = 0.9f;
     private const float SpitSplashRadius = 1.8f;
+    private const int ProjectileLifeTicks = 170;
     private const float SpitLead = 0.6f;
+    private const float VolleySpread = 0.2f;
+    private const float WallSpread = 0.5f;
+    private const int WallStageDelayTicks = 13;
+    private const float SplashPush = 4f;
     private const float HelpRadius = 9f;
     private const uint RegenDelayTicks = 300;
     private const uint RegenIntervalTicks = 20;
+    private const float LootRadius = 2.4f;
+    private const int CrystalLifeTicks = 60 * 90;
+
+    /// <summary>A player hears only about nearby things, which keeps a snapshot inside one UDP packet.</summary>
+    private const float InterestRange = 70f;
+    private const int MaxEnemiesPerSnapshot = 12;
+    private const int MaxProjectilesPerSnapshot = 16;
+    private const int MaxDropsPerSnapshot = 6;
 
     private sealed class Player
     {
         public required int Id;
         public PlayerState State;
         public readonly SortedDictionary<uint, InputCmd> Inputs = new();
+        public readonly int[] Crystals = new int[Core.Crystals.Tiers];
         public uint NextTick;
         public int WaitTicks;
         public InputCmd LastInput;
@@ -58,14 +83,30 @@ public sealed class GameServer : IEnemyEvents
         public byte Dodges;
     }
 
-    private sealed class Spit
+    private sealed class Projectile
     {
         public required int Id;
+        public required ProjectileKind Kind;
         public required short Damage;
-        public required byte SlowTicks;
+        public byte SlowTicks;
+        public float Gravity;
+        public float SplashRadius;
+        public bool Pierces;
+        public bool HugsGround;
+        public int Delay;
+        public int CastId;
         public Vector3 Position;
         public Vector3 Velocity;
-        public int Life;
+        public int Life = ProjectileLifeTicks;
+    }
+
+    private sealed class Crystal
+    {
+        public required int Id;
+        public required CrystalRarity Rarity;
+        public required int Owner;
+        public Vector3 Position;
+        public int Life = CrystalLifeTicks;
     }
 
     private readonly ITransport _transport;
@@ -74,8 +115,11 @@ public sealed class GameServer : IEnemyEvents
     private readonly Random _random;
     private readonly Dictionary<int, Player> _players = new();
     private readonly List<Enemy> _enemies = new();
-    private readonly List<Spit> _spits = new();
-    private int _nextSpitId;
+    private readonly List<Projectile> _projectiles = new();
+    private readonly List<Crystal> _crystals = new();
+    private readonly HashSet<(int Cast, int Player)> _castHits = new();
+    private int _nextId;
+    private int _nextCast;
 
     public uint Tick { get; private set; }
     public ServerStats Stats { get; } = new();
@@ -110,6 +154,12 @@ public sealed class GameServer : IEnemyEvents
 
     public int GetXp(int id) => _players[id].Xp;
 
+    public int GetCrystals(int id, CrystalRarity rarity) => _players[id].Crystals[(int)rarity];
+
+    public int ProjectileCount => _projectiles.Count;
+
+    public int CrystalsOnGround => _crystals.Count;
+
     /// <summary>Gives a player experience and raises the level as often as it allows.</summary>
     public void AwardXp(int id, int amount)
     {
@@ -140,6 +190,7 @@ public sealed class GameServer : IEnemyEvents
             StepPlayer(player);
         }
 
+        StepCrystals();
         if (!EnemiesFrozen)
         {
             var targets = _players.Values.OrderBy(p => p.Id)
@@ -149,7 +200,7 @@ public sealed class GameServer : IEnemyEvents
                 enemy.Step(_world, _random, targets, this);
             }
 
-            StepSpits();
+            StepProjectiles();
         }
 
         if (Tick % (uint)_options.SnapshotInterval == 0)
@@ -168,7 +219,7 @@ public sealed class GameServer : IEnemyEvents
         if (!_players.TryGetValue(peer, out var player))
         {
             var angle = peer * 2.1f;
-            var spawn = _world.Spawn + new Vector3(MathF.Cos(angle) * 3f, 0, MathF.Sin(angle) * 3f);
+            var spawn = (_options.SpawnOverride ?? _world.Spawn) + new Vector3(MathF.Cos(angle) * 3f, 0, MathF.Sin(angle) * 3f);
             spawn.Y = _world.GroundHeight(spawn.X, spawn.Z);
             player = new Player
             {
@@ -236,7 +287,11 @@ public sealed class GameServer : IEnemyEvents
         }
 
         player.State.Health -= damage;
-        player.State.SlowTicks = slowTicks;
+        if (slowTicks > 0)
+        {
+            player.State.SlowTicks = slowTicks;
+        }
+
         player.LastHurtTick = Tick;
         Stats.PlayerHits++;
         return true;
@@ -269,11 +324,46 @@ public sealed class GameServer : IEnemyEvents
             CallForHelp(enemy, player.Id);
             if (killed)
             {
-                Stats.EnemiesKilled++;
-                var winner = _players.ContainsKey(enemy.TaggedBy) ? enemy.TaggedBy : player.Id;
-                AwardXp(winner, Progression.KillXp(enemy.Level, _players[winner].Level, enemy.Def.RareChance > 0));
+                OnKilled(enemy, player);
             }
         }
+    }
+
+    private void OnKilled(Enemy enemy, Player killer)
+    {
+        Stats.EnemiesKilled++;
+        var winner = _players.TryGetValue(enemy.TaggedBy, out var tagged) ? tagged : killer;
+        AwardXp(winner.Id, Progression.KillXp(enemy.Level, winner.Level, enemy.Def.Rare));
+        foreach (var drop in enemy.Def.Drops ?? Array.Empty<DropEntry>())
+        {
+            if (_random.NextDouble() >= drop.Chance)
+            {
+                continue;
+            }
+
+            var angle = (float)(_random.NextDouble() * Math.Tau);
+            var spot = enemy.Position + new Vector3(MathF.Cos(angle) * 0.8f, 0, MathF.Sin(angle) * 0.8f);
+            spot.Y = _world.GroundHeight(spot.X, spot.Z);
+            _crystals.Add(new Crystal { Id = _nextId++, Rarity = drop.Rarity, Owner = winner.Id, Position = spot });
+            Stats.CrystalsDropped++;
+        }
+    }
+
+    private void StepCrystals()
+    {
+        foreach (var crystal in _crystals)
+        {
+            crystal.Life--;
+            if (_players.TryGetValue(crystal.Owner, out var owner) &&
+                Vector3.Distance(owner.State.Position, crystal.Position) < LootRadius)
+            {
+                owner.Crystals[(int)crystal.Rarity]++;
+                crystal.Life = 0;
+                Stats.CrystalsLooted++;
+            }
+        }
+
+        _crystals.RemoveAll(c => c.Life <= 0);
     }
 
     void IEnemyEvents.CallForHelp(Enemy enemy, int targetId) => CallForHelp(enemy, targetId);
@@ -296,12 +386,7 @@ public sealed class GameServer : IEnemyEvents
         foreach (var player in _players.Values)
         {
             var away = player.State.Position - enemy.Position;
-            if (away.Length() > enemy.Def.SplashRadius)
-            {
-                continue;
-            }
-
-            if (!Hurt(player, enemy.Def.SplashDamage, enemy.Def.SlowTicks))
+            if (away.Length() > enemy.Def.SplashRadius || !Hurt(player, enemy.Def.SplashDamage, enemy.Def.SlowTicks))
             {
                 continue;
             }
@@ -324,51 +409,170 @@ public sealed class GameServer : IEnemyEvents
         var lead = target.Velocity with { Y = 0 } * flight * SpitLead;
         var aim = target.Position + lead + Vector3.UnitY * 0.9f - start;
         var velocity = aim / flight;
-        velocity.Y += Tuning.Gravity * 0.25f * flight;
-        _spits.Add(new Spit
+        const float gravity = Tuning.Gravity * 0.5f;
+        velocity.Y += gravity * 0.5f * flight;
+        _projectiles.Add(new Projectile
         {
-            Id = _nextSpitId++,
+            Id = _nextId++,
+            Kind = ProjectileKind.Spit,
             Position = start,
             Velocity = velocity,
-            Life = SpitLifeTicks,
+            Gravity = gravity,
             Damage = enemy.Def.SpitDamage,
             SlowTicks = enemy.Def.SlowTicks,
+            SplashRadius = SpitSplashRadius,
         });
     }
 
-    private void StepSpits()
+    void IEnemyEvents.Fire(Enemy enemy, Ability ability, Target? target)
     {
-        foreach (var spit in _spits)
+        var chest = enemy.Position + Vector3.UnitY * (enemy.Def.Size * 1.1f);
+        var aimPoint = (target?.Position ?? enemy.LeapTarget) + Vector3.UnitY;
+        var direction = aimPoint - chest;
+        direction = direction == Vector3.Zero ? Vector3.UnitZ : Vector3.Normalize(direction);
+        switch (ability.Effect)
         {
-            spit.Velocity.Y -= Tuning.Gravity * 0.5f * Tuning.TickSeconds;
-            spit.Position += spit.Velocity * Tuning.TickSeconds;
-            spit.Life--;
-            var struck = _world.IsBlocked(spit.Position);
+            case "melee":
+            case "dashStrike":
+                Area(enemy.Position + Facing(enemy) * 1.1f, ability.Radius, ability.Damage);
+                break;
+            case "slam":
+                Area(enemy.LeapTarget, ability.Radius, ability.Damage);
+                break;
+            case "spin":
+                Area(enemy.Position, ability.Radius, ability.Damage);
+                break;
+            case "arrow":
+                Shoot(ProjectileKind.Arrow, chest, direction * ArrowSpeed, ability.Damage);
+                break;
+            case "volley":
+                var cast = _nextCast++;
+                foreach (var angle in new[] { -VolleySpread, 0f, VolleySpread })
+                {
+                    Shoot(ProjectileKind.Arrow, chest, Vector3.Transform(direction, Matrix4x4.CreateRotationY(angle)) * ArrowSpeed * 0.65f, ability.Damage);
+                }
+
+                break;
+            case "powershot":
+                var arrow = Shoot(ProjectileKind.PowerArrow, chest, direction * PowerArrowSpeed, ability.Damage);
+                arrow.Pierces = true;
+                break;
+            case "fireball":
+                var ball = Shoot(ProjectileKind.Fireball, chest, direction * FireballSpeed, ability.Damage);
+                ball.SplashRadius = ability.Radius;
+                break;
+            case "firewall":
+                FireWall(enemy, direction, ability.Damage);
+                break;
+        }
+    }
+
+    private static Vector3 Facing(Enemy enemy) => new(-MathF.Sin(enemy.Facing), 0, -MathF.Cos(enemy.Facing));
+
+    private void Area(Vector3 center, float radius, short damage)
+    {
+        foreach (var player in _players.Values)
+        {
+            if (Vector3.Distance(player.State.Position, center) <= radius + 0.4f)
+            {
+                Hurt(player, damage, 0);
+            }
+        }
+    }
+
+    private Projectile Shoot(ProjectileKind kind, Vector3 from, Vector3 velocity, short damage)
+    {
+        var projectile = new Projectile { Id = _nextId++, Kind = kind, Position = from, Velocity = velocity, Damage = damage };
+        _projectiles.Add(projectile);
+        return projectile;
+    }
+
+    /// <summary>
+    /// Three staged waves of flame. Each stage is a V: the middle runs ahead and the wings fan out,
+    /// so the wall widens as it nears the player. A cast can hit a player only once.
+    /// </summary>
+    private void FireWall(Enemy enemy, Vector3 aim, short damage)
+    {
+        var flat = aim with { Y = 0 };
+        flat = flat == Vector3.Zero ? Vector3.UnitZ : Vector3.Normalize(flat);
+        var cast = _nextCast++;
+        for (var stage = 0; stage < 3; stage++)
+        {
+            var flames = 5 + stage * 2;
+            for (var i = 0; i < flames; i++)
+            {
+                var along = i / (float)(flames - 1) * 2f - 1f;
+                var heading = Vector3.Transform(flat, Matrix4x4.CreateRotationY(along * WallSpread));
+                var flame = Shoot(ProjectileKind.Flame, enemy.Position + heading * 1.2f, heading * FlameSpeed * (1f - MathF.Abs(along) * 0.3f), damage);
+                flame.Delay = stage * WallStageDelayTicks;
+                flame.HugsGround = true;
+                flame.CastId = cast + 1;
+                flame.Life = 100;
+            }
+        }
+    }
+
+    private void StepProjectiles()
+    {
+        foreach (var shot in _projectiles)
+        {
+            if (shot.Delay > 0)
+            {
+                shot.Delay--;
+                continue;
+            }
+
+            shot.Velocity.Y -= shot.Gravity * Tuning.TickSeconds;
+            shot.Position += shot.Velocity * Tuning.TickSeconds;
+            shot.Life--;
+            if (shot.HugsGround)
+            {
+                shot.Position.Y = _world.GroundHeight(shot.Position.X, shot.Position.Z) + 0.5f;
+            }
+
+            var struck = !shot.Pierces && !shot.HugsGround && _world.IsBlocked(shot.Position);
             foreach (var player in _players.Values)
             {
                 var chest = player.State.Position + Vector3.UnitY;
-                struck |= Vector3.Distance(chest, spit.Position) < SpitHitRadius;
+                if (Vector3.Distance(chest, shot.Position) >= HitRadius)
+                {
+                    continue;
+                }
+
+                if (shot.SplashRadius > 0f)
+                {
+                    struck = true;
+                }
+                else if (shot.CastId == 0 || _castHits.Add((shot.CastId, player.Id)))
+                {
+                    Hurt(player, shot.Damage, shot.SlowTicks);
+                    struck = shot.CastId == 0;
+                }
             }
 
             if (struck)
             {
-                SpitSplash(spit);
-                spit.Life = 0;
+                if (shot.SplashRadius > 0f)
+                {
+                    Burst(shot);
+                }
+
+                shot.Life = 0;
             }
         }
 
-        _spits.RemoveAll(s => s.Life <= 0);
+        _projectiles.RemoveAll(s => s.Life <= 0);
     }
 
-    /// <summary>A spit bursts on impact, so a near miss on the ground still catches the player.</summary>
-    private void SpitSplash(Spit spit)
+    /// <summary>A bursting shot, so a near miss on the ground still catches the player.</summary>
+    private void Burst(Projectile shot)
     {
         foreach (var player in _players.Values)
         {
             var chest = player.State.Position + Vector3.UnitY;
-            if (Vector3.Distance(chest, spit.Position) < SpitSplashRadius)
+            if (Vector3.Distance(chest, shot.Position) < shot.SplashRadius)
             {
-                Hurt(player, spit.Damage, spit.SlowTicks);
+                Hurt(player, shot.Damage, shot.SlowTicks);
             }
         }
     }
@@ -383,9 +587,13 @@ public sealed class GameServer : IEnemyEvents
                 .OrderBy(e => Vector3.Distance(e.Position, origin))
                 .Take(MaxEnemiesPerSnapshot)
                 .Select(e => new EnemyView(e.Id, e.Type, e.Level, e.Position, e.Facing, e.Health, (short)e.MaxHealth,
-                    e.Action, e.HitFlash, e.LeapTarget, e.TargetId >= 0)).ToArray();
-            var spits = _spits.OrderBy(s => Vector3.Distance(s.Position, origin)).Take(MaxSpitsPerSnapshot)
-                .Select(s => new SpitView(s.Id, s.Position)).ToArray();
+                    e.Action, e.HitFlash, e.LeapTarget, e.TargetId >= 0, e.AbilityIndex)).ToArray();
+            var shots = _projectiles.Where(s => s.Delay == 0)
+                .OrderBy(s => Vector3.Distance(s.Position, origin)).Take(MaxProjectilesPerSnapshot)
+                .Select(s => new ProjectileView(s.Id, s.Kind, s.Position)).ToArray();
+            var crystals = _crystals.Where(c => c.Owner == player.Id)
+                .OrderBy(c => Vector3.Distance(c.Position, origin)).Take(MaxDropsPerSnapshot)
+                .Select(c => new CrystalView(c.Id, c.Rarity, c.Position)).ToArray();
             var snapshot = new Snapshot
             {
                 ServerTick = Tick,
@@ -398,10 +606,12 @@ public sealed class GameServer : IEnemyEvents
                 XpToNext = Progression.XpToNext(player.Level),
                 MaxHealth = Progression.MaxHealth(player.Level),
                 Dodges = player.Dodges,
-                Others = _players.Values.Where(p => p.Id != player.Id)
+                Crystals = player.Crystals.ToArray(),
+                Others = _players.Values.Where(p => p.Id != player.Id).Take(6)
                     .Select(p => new RemotePlayer(p.Id, p.State.Position, p.State.Velocity, p.State.AttackAim, p.State.Attack, p.State.AttackTick)).ToArray(),
                 Enemies = enemies,
-                Spits = spits,
+                Projectiles = shots,
+                Drops = crystals,
             };
             _transport.Send(player.Id, Protocol.EncodeSnapshot(snapshot));
         }

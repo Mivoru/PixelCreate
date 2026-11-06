@@ -1,44 +1,68 @@
 [
   {
-    "id": "slime",
-    "name": "Slime",
-    "minLevel": 1,
-    "maxLevel": 3,
-    "health": 40,
-    "healthPerLevel": 15,
-    "speed": 3.2,
-    "size": 1.0,
-    "hopTicks": 40,
-    "aggroRange": 16,
-    "leapRange": 7,
-    "leapCooldownTicks": 200,
-    "splashRadius": 2.6,
-    "splashDamage": 10,
-    "slowTicks": 150,
-    "spitRange": 0,
-    "spitDamage": 0,
-    "spitCooldownTicks": 0,
-    "rareChance": 0
+    "id": "slime", "name": "Slime", "kind": "slime",
+    "minLevel": 1, "maxLevel": 3, "health": 40, "healthPerLevel": 15, "speed": 3.2, "size": 1.0,
+    "hopTicks": 40, "aggroRange": 16, "leapRange": 7, "leapCooldownTicks": 200,
+    "splashRadius": 2.6, "splashDamage": 10, "slowTicks": 150,
+    "spitRange": 0, "spitDamage": 0, "spitCooldownTicks": 0, "rareChance": 0,
+    "drops": [{ "rarity": 0, "chance": 1 }]
   },
   {
-    "id": "rare_slime",
-    "name": "Rare Slime",
-    "minLevel": 1,
-    "maxLevel": 60,
-    "health": 70,
-    "healthPerLevel": 15,
-    "speed": 4.4,
-    "size": 0.7,
-    "hopTicks": 30,
-    "aggroRange": 20,
-    "leapRange": 7,
-    "leapCooldownTicks": 180,
-    "splashRadius": 2.4,
-    "splashDamage": 12,
-    "slowTicks": 180,
-    "spitRange": 14,
-    "spitDamage": 8,
-    "spitCooldownTicks": 120,
-    "rareChance": 0.03
+    "id": "rare_slime", "name": "Rare Slime", "kind": "slime", "rare": true,
+    "minLevel": 1, "maxLevel": 60, "health": 70, "healthPerLevel": 15, "speed": 4.4, "size": 0.7,
+    "hopTicks": 30, "aggroRange": 20, "leapRange": 7, "leapCooldownTicks": 180,
+    "splashRadius": 2.4, "splashDamage": 12, "slowTicks": 180,
+    "spitRange": 14, "spitDamage": 8, "spitCooldownTicks": 120, "rareChance": 0.03,
+    "drops": [{ "rarity": 0, "chance": 1 }, { "rarity": 1, "chance": 0.12 }]
+  },
+  {
+    "id": "goblin_skirmisher", "name": "Goblin Skirmisher", "kind": "goblin", "weapon": "dagger",
+    "minLevel": 3, "maxLevel": 5, "health": 60, "healthPerLevel": 15, "speed": 5.2, "size": 0.85,
+    "aggroRange": 18, "preferredRange": 1.6,
+    "abilities": [
+      { "effect": "melee", "range": 2.2, "windupTicks": 10, "recoverTicks": 12, "cooldownTicks": 26, "damage": 7, "radius": 1.5 },
+      { "effect": "dashStrike", "range": 8, "minRange": 3, "windupTicks": 22, "recoverTicks": 18, "cooldownTicks": 200, "damage": 12, "radius": 1.8, "telegraph": "line" }
+    ],
+    "drops": [{ "rarity": 0, "chance": 1 }, { "rarity": 1, "chance": 0.03 }]
+  },
+  {
+    "id": "goblin_brute", "name": "Goblin Brute", "kind": "goblin", "weapon": "club",
+    "minLevel": 4, "maxLevel": 6, "health": 150, "healthPerLevel": 30, "speed": 3.2, "size": 1.3,
+    "aggroRange": 15, "preferredRange": 2,
+    "abilities": [
+      { "effect": "slam", "range": 3.2, "windupTicks": 46, "recoverTicks": 34, "cooldownTicks": 110, "damage": 30, "radius": 1.5, "telegraph": "circle" },
+      { "effect": "spin", "range": 3.6, "windupTicks": 54, "recoverTicks": 40, "cooldownTicks": 300, "damage": 22, "radius": 4.2, "telegraph": "circle" }
+    ],
+    "drops": [{ "rarity": 0, "chance": 1 }, { "rarity": 1, "chance": 0.06 }]
+  },
+  {
+    "id": "goblin_rapid_archer", "name": "Goblin Archer", "kind": "goblin", "weapon": "bow",
+    "minLevel": 3, "maxLevel": 5, "health": 50, "healthPerLevel": 12, "speed": 4, "size": 0.85,
+    "aggroRange": 24, "preferredRange": 12,
+    "abilities": [
+      { "effect": "arrow", "range": 20, "windupTicks": 22, "recoverTicks": 14, "cooldownTicks": 60, "damage": 7 },
+      { "effect": "volley", "range": 18, "windupTicks": 40, "recoverTicks": 24, "cooldownTicks": 300, "damage": 8 }
+    ],
+    "drops": [{ "rarity": 0, "chance": 1 }, { "rarity": 1, "chance": 0.03 }]
+  },
+  {
+    "id": "goblin_sharpshooter", "name": "Goblin Sharpshooter", "kind": "goblin", "weapon": "bow",
+    "minLevel": 4, "maxLevel": 6, "health": 55, "healthPerLevel": 12, "speed": 3.4, "size": 0.9,
+    "aggroRange": 30, "preferredRange": 18,
+    "abilities": [
+      { "effect": "arrow", "range": 26, "windupTicks": 44, "recoverTicks": 26, "cooldownTicks": 130, "damage": 16 },
+      { "effect": "powershot", "range": 44, "windupTicks": 64, "recoverTicks": 40, "cooldownTicks": 420, "damage": 34, "telegraph": "line" }
+    ],
+    "drops": [{ "rarity": 0, "chance": 1 }, { "rarity": 1, "chance": 0.05 }]
+  },
+  {
+    "id": "goblin_shaman", "name": "Goblin Shaman", "kind": "goblin", "weapon": "staff", "rare": true,
+    "minLevel": 7, "maxLevel": 7, "health": 240, "healthPerLevel": 30, "speed": 3.6, "size": 1.0,
+    "aggroRange": 26, "preferredRange": 13,
+    "abilities": [
+      { "effect": "fireball", "range": 22, "windupTicks": 34, "recoverTicks": 22, "cooldownTicks": 90, "damage": 18, "radius": 2.4 },
+      { "effect": "firewall", "range": 20, "windupTicks": 60, "recoverTicks": 40, "cooldownTicks": 360, "damage": 26 }
+    ],
+    "drops": [{ "rarity": 1, "chance": 1 }, { "rarity": 2, "chance": 0.15 }, { "rarity": 3, "chance": 0.01 }]
   }
 ]

@@ -26,8 +26,14 @@ public partial class GameClient : Node
     private const int CaptureEveryTicks = 45;
 
     private readonly Dictionary<int, PlayerRig> _remotes = new();
-    private readonly Dictionary<int, SlimeView> _slimes = new();
+    private readonly Dictionary<int, IEnemyView> _enemies = new();
+    private readonly Dictionary<int, TelegraphView> _telegraphs = new();
     private readonly Dictionary<int, MeshInstance3D> _spits = new();
+    private readonly Dictionary<int, ProjectileKind> _spitKinds = new();
+    private readonly Dictionary<int, Node3D> _crystals = new();
+    private readonly int[] _lastCrystals = new int[Crystals.Tiers];
+    private Zone _zone = null!;
+    private string _region = "";
     private PixelStage _stage = null!;
     private UdpTransport _transport = null!;
     private ClientPrediction _client = null!;
@@ -66,6 +72,7 @@ public partial class GameClient : Node
 
         var zone = Zone.Load("meadow-valley");
         _world = zone.World;
+        _zone = zone;
         _stage = new PixelStage(this);
         _stage.View.AddChild(ZoneView.Build(zone));
         _player = new PlayerRig(new Color("0099db"));
@@ -228,13 +235,32 @@ public partial class GameClient : Node
             _lastXp = snapshot.Xp;
         }
 
-        var rareAlive = snapshot.Enemies.Any(e => e.Action != EnemyAction.Dead && EnemyDef.All[e.Type].RareChance > 0);
+        var rare = snapshot.Enemies.FirstOrDefault(e => e.Action != EnemyAction.Dead && EnemyDef.All[e.Type].Rare);
+        var rareAlive = EnemyDef.All[rare.Type].Rare && rare.Action != EnemyAction.Dead && snapshot.Enemies.Length > 0;
         if (rareAlive && !_rareSeen)
         {
-            _hud.ShowBanner("A Rare Slime has appeared!", new Color("f6757a"));
+            _hud.ShowBanner($"A {EnemyDef.All[rare.Type].Name} is near!", new Color("f6757a"));
         }
 
         _rareSeen = rareAlive;
+        for (var i = 0; i < Crystals.Tiers; i++)
+        {
+            if (snapshot.Crystals[i] > _lastCrystals[i])
+            {
+                _sfx.Play("crystal", chest);
+                _hud.AddFloating($"+{Crystals.All[i].Name}", chest + Vector3.Up * 1.7f, new Color(Crystals.All[i].Color));
+            }
+
+            _lastCrystals[i] = snapshot.Crystals[i];
+        }
+
+        var region = _zone.RegionAt(shown.X, shown.Z);
+        if (region != _region && region.Length > 0)
+        {
+            _hud.ShowBanner(region, new Color("ead4aa"));
+        }
+
+        _region = region.Length > 0 ? region : _region;
     }
 
     private byte AimByte() => (byte)Mathf.PosMod(Mathf.Round(_yaw / Mathf.Tau * 256f), 256f);
@@ -354,12 +380,13 @@ public partial class GameClient : Node
         _hud.EnemyPositions.Clear();
         foreach (var enemy in snapshot.Enemies)
         {
-            if (!_slimes.TryGetValue(enemy.Id, out var slime))
+            var def = EnemyDef.All[enemy.Type];
+            if (!_enemies.TryGetValue(enemy.Id, out var slime))
             {
-                slime = new SlimeView(_fx);
-                _slimes.Add(enemy.Id, slime);
+                slime = def.Kind == "goblin" ? new GoblinView(def) : new SlimeView();
+                _enemies.Add(enemy.Id, slime);
                 _stage.View.AddChild(slime.Root);
-                _stage.View.AddChild(slime.Warning);
+                _telegraphs.Add(enemy.Id, new TelegraphView(_world, _fx, _stage.View));
             }
 
             var target = ToGodot(enemy.Position);
@@ -368,59 +395,239 @@ public partial class GameClient : Node
             position = position.DistanceTo(target) > 6f ? target : position.Lerp(target, blend);
             slime.Update(enemy, position, delta, _sfx);
             _hud.EnemyPositions[enemy.Id] = position;
+            ShowTelegraph(enemy, def, position);
             if (slime.DamageTaken > 0)
             {
                 var heavy = _client.State.Attack == AttackKind.Heavy;
-                _sfx.Play(heavy ? "hit_heavy" : "hit", position + Vector3.Up);
+                _sfx.Play(heavy ? "hit_heavy" : "hit", position + Vector3.Up, -3f);
                 _hud.AddFloating(slime.DamageTaken.ToString(), position + Vector3.Up * 1.6f, heavy ? new Color("feae34") : Colors.White);
-                _fx.Burst(position + Vector3.Up * 0.6f, new Color(enemy.Type == 1 ? "f6757a" : "63c74d"), heavy ? 22 : 12, 6f, 0.5f, 0.09f);
+                var blood = def.Kind == "goblin" ? "a22633" : def.Rare ? "f6757a" : "63c74d";
+                _fx.Burst(position + Vector3.Up * 0.6f, new Color(blood), heavy ? 22 : 12, 6f, 0.5f, 0.09f);
             }
         }
 
         // Enemies outside the player's area are not in the snapshot, so they must not linger on screen.
         var near = snapshot.Enemies.Select(e => e.Id).ToHashSet();
-        foreach (var (id, slime) in _slimes)
+        foreach (var (id, view) in _enemies)
         {
-            slime.Root.Visible &= near.Contains(id);
-            slime.Warning.Visible &= near.Contains(id);
+            view.Root.Visible &= near.Contains(id);
+            if (!near.Contains(id))
+            {
+                _telegraphs[id].Hide();
+            }
         }
 
         DrawSpits(snapshot, blend);
+        DrawCrystals(snapshot, delta);
+    }
+
+    private void ShowTelegraph(in EnemyView enemy, EnemyDef def, Vector3 position)
+    {
+        var telegraph = _telegraphs[enemy.Id];
+        var target = ToGodot(enemy.LeapTarget);
+        if (def.Kind != "goblin")
+        {
+            if (enemy.Action is EnemyAction.Windup or EnemyAction.Leap)
+            {
+                telegraph.ShowCircle(target, def.SplashRadius, enemy.Action == EnemyAction.Leap ? 1f : 0.3f);
+            }
+            else
+            {
+                telegraph.Hide();
+            }
+
+            return;
+        }
+
+        var ability = def.Abilities![enemy.Ability];
+        if (enemy.Action != EnemyAction.Cast || ability.Telegraph == "none")
+        {
+            telegraph.Hide();
+        }
+        else if (ability.Telegraph == "circle")
+        {
+            telegraph.ShowCircle(ability.Effect == "spin" ? position : target, ability.Radius, 0.5f);
+        }
+        else
+        {
+            var along = (target - position).Normalized();
+            telegraph.ShowLine(position, position + along * ability.Range, ability.Effect == "powershot" ? 0.5f : 0.9f, 0f);
+        }
+    }
+
+    /// <summary>Crystals on the ground: they float and spin, and better ones throw a beam of light.</summary>
+    private void DrawCrystals(Snapshot snapshot, float delta)
+    {
+        var alive = new HashSet<int>();
+        foreach (var drop in snapshot.Drops)
+        {
+            alive.Add(drop.Id);
+            if (!_crystals.TryGetValue(drop.Id, out var node))
+            {
+                node = BuildCrystal(drop);
+                _crystals.Add(drop.Id, node);
+                _stage.View.AddChild(node);
+            }
+
+            node.Rotation += new Vector3(0, delta * 2.2f, 0);
+            node.Position = ToGodot(drop.Position) + Vector3.Up * (0.55f + Mathf.Sin(Time.GetTicksMsec() / 300f + drop.Id) * 0.12f);
+        }
+
+        foreach (var id in _crystals.Keys.Where(id => !alive.Contains(id)).ToList())
+        {
+            _fx.Burst(_crystals[id].Position, Colors.White, 8, 3f, 0.3f, 0.05f, -3f);
+            _crystals[id].QueueFree();
+            _crystals.Remove(id);
+        }
+    }
+
+    private Node3D BuildCrystal(in CrystalView drop)
+    {
+        var color = new Color(Crystals.All[(int)drop.Rarity].Color);
+        var root = new Node3D();
+        var size = 0.26f + (int)drop.Rarity * 0.06f;
+        var material = new StandardMaterial3D { AlbedoColor = color, EmissionEnabled = true, Emission = color, EmissionEnergyMultiplier = 0.4f, Roughness = 0.2f };
+        var top = new MeshInstance3D { Mesh = new CylinderMesh { TopRadius = 0f, BottomRadius = size, Height = size * 1.6f, RadialSegments = 5 }, MaterialOverride = material, Position = new Vector3(0, size * 0.8f, 0) };
+        var bottom = new MeshInstance3D { Mesh = new CylinderMesh { TopRadius = size, BottomRadius = 0f, Height = size * 1.1f, RadialSegments = 5 }, MaterialOverride = material, Position = new Vector3(0, -size * 0.55f, 0) };
+        root.AddChild(top);
+        root.AddChild(bottom);
+        if (drop.Rarity != CrystalRarity.Common)
+        {
+            root.AddChild(new MeshInstance3D
+            {
+                Mesh = new CylinderMesh { TopRadius = 0.05f, BottomRadius = 0.32f, Height = 6f, RadialSegments = 8 },
+                MaterialOverride = _fx.Stipple(color, 0.3f),
+                Position = new Vector3(0, 3f, 0),
+            });
+        }
+
+        return root;
     }
 
     private void DrawSpits(Snapshot snapshot, float blend)
     {
         var alive = new HashSet<int>();
-        foreach (var spit in snapshot.Spits)
+        foreach (var spit in snapshot.Projectiles)
         {
             alive.Add(spit.Id);
+            var target = ToGodot(spit.Position);
             if (!_spits.TryGetValue(spit.Id, out var ball))
             {
-                ball = BuildSpit(ToGodot(spit.Position));
+                ball = BuildProjectile(spit.Kind, target);
                 _spits.Add(spit.Id, ball);
+                _spitKinds.Add(spit.Id, spit.Kind);
                 _stage.View.AddChild(ball);
-                _sfx.Play("slime_spit", ball.Position);
+                _sfx.Play(spit.Kind switch
+                {
+                    ProjectileKind.Spit => "slime_spit",
+                    ProjectileKind.Arrow => "bow_shot",
+                    ProjectileKind.PowerArrow => "bow_power",
+                    ProjectileKind.Fireball => "fireball",
+                    _ => "fire_wall",
+                }, ball.Position, spit.Kind == ProjectileKind.Flame ? -14f : 0f);
             }
 
-            ball.Position = ball.Position.Lerp(ToGodot(spit.Position), blend);
-            ball.Rotation += new Vector3(0.2f, 0.3f, 0f);
+            var motion = target - ball.Position;
+            ball.Position = ball.Position.Lerp(target, spit.Kind == ProjectileKind.PowerArrow ? 1f : blend);
+            if (spit.Kind is ProjectileKind.Arrow or ProjectileKind.PowerArrow && motion.LengthSquared() > 0.0001f)
+            {
+                ball.LookAt(ball.GlobalPosition + motion, Vector3.Up);
+            }
+            else if (spit.Kind == ProjectileKind.Spit)
+            {
+                ball.Rotation += new Vector3(0.2f, 0.3f, 0f);
+            }
+
             _spitPositions[spit.Id] = ball.Position;
         }
 
         foreach (var id in _spits.Keys.Where(id => !alive.Contains(id)).ToList())
         {
-            var last = _spitPositions[id];
-            var ground = _world.GroundHeight(last.X, last.Z);
-            var pink = new Color("f6757a");
-            _sfx.Play("spit_splash", last);
-            _fx.Burst(last, pink, 26, 7f, 0.6f, 0.11f);
-            _fx.Burst(last, new Color("b55088"), 14, 4f, 0.5f, 0.08f);
-            _fx.Puddle(new Vector3(last.X, ground, last.Z), new Color("b55088"), 1.6f, 1.6f);
+            ImpactEffect(_spitKinds[id], _spitPositions[id]);
             _spits[id].QueueFree();
             _spits.Remove(id);
+            _spitKinds.Remove(id);
             _spitPositions.Remove(id);
         }
     }
+
+    private void ImpactEffect(ProjectileKind kind, Vector3 last)
+    {
+        var ground = new Vector3(last.X, _world.GroundHeight(last.X, last.Z), last.Z);
+        switch (kind)
+        {
+            case ProjectileKind.Spit:
+                _sfx.Play("spit_splash", last);
+                _fx.Burst(last, new Color("f6757a"), 26, 7f, 0.6f, 0.11f);
+                _fx.Burst(last, new Color("b55088"), 14, 4f, 0.5f, 0.08f);
+                _fx.Puddle(ground, new Color("b55088"), 1.6f, 1.6f);
+                break;
+            case ProjectileKind.Fireball:
+                _sfx.Play("explosion", last);
+                _fx.Burst(last, new Color("f77622"), 34, 9f, 0.6f, 0.13f, -5f, 90f);
+                _fx.Burst(last, new Color("fee761"), 18, 5f, 0.45f, 0.09f, -3f, 90f);
+                _fx.Puddle(ground, new Color("3e2731"), 2.2f, 2.2f);
+                break;
+            case ProjectileKind.Flame:
+                _fx.Burst(last, new Color("f77622"), 5, 3f, 0.35f, 0.1f, 3f);
+                break;
+            default:
+                _sfx.Play("arrow_hit", last, -5f);
+                _fx.Burst(last, new Color("b8a58a"), 5, 3f, 0.25f, 0.05f);
+                break;
+        }
+    }
+
+    private MeshInstance3D BuildProjectile(ProjectileKind kind, Vector3 position)
+    {
+        if (kind == ProjectileKind.Spit)
+        {
+            return BuildSpit(position);
+        }
+
+        if (kind is ProjectileKind.Arrow or ProjectileKind.PowerArrow)
+        {
+            var power = kind == ProjectileKind.PowerArrow;
+            var arrow = new MeshInstance3D
+            {
+                Mesh = new BoxMesh { Size = new Vector3(0.06f, 0.06f, power ? 1.6f : 0.95f) },
+                MaterialOverride = _fx.Stipple(new Color(power ? "f6757a" : "ead4aa"), 1f),
+                Position = position,
+            };
+            if (power)
+            {
+                arrow.AddChild(Trail(new Color("e43b44"), 22, 0.28f, 0.06f));
+            }
+
+            return arrow;
+        }
+
+        var fire = kind == ProjectileKind.Fireball;
+        var size = fire ? 0.42f : 0.55f;
+        var ball = new MeshInstance3D
+        {
+            Mesh = new SphereMesh { Radius = size, Height = size * 2f, RadialSegments = 8, Rings = 5 },
+            MaterialOverride = _fx.Stipple(new Color("feae34"), 1f),
+            Position = position,
+        };
+        ball.AddChild(Trail(new Color("f77622"), 30, 0.5f, 0.15f, 4f));
+        ball.AddChild(Trail(new Color("e43b44"), 14, 0.65f, 0.1f, 5f));
+        return ball;
+    }
+
+    private CpuParticles3D Trail(Color color, int amount, float life, float size, float rise = 0f) => new()
+    {
+        Amount = amount,
+        Lifetime = life,
+        LocalCoords = false,
+        Spread = 180f,
+        InitialVelocityMax = 1.2f,
+        Gravity = new Vector3(0, rise, 0),
+        ScaleAmountMin = 0.5f,
+        ScaleAmountMax = 1.2f,
+        Mesh = new BoxMesh { Size = Vector3.One * size },
+        MaterialOverride = _fx.Stipple(color, 1f),
+    };
 
     /// <summary>A wet ball of slime that sheds drops along its path.</summary>
     private static MeshInstance3D BuildSpit(Vector3 position)

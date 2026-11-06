@@ -7,6 +7,12 @@ namespace PixelCreate;
 public readonly record struct MotionState(
     float Speed, bool Grounded, float VerticalSpeed, bool Dashing, AttackKind Attack, int AttackTick);
 
+/// <summary>How a rig looks. The player uses the default; goblins set their own.</summary>
+public sealed record RigLook(Color Skin, float Scale, bool Hat, bool Pack, bool Ears, string Weapon)
+{
+    public static readonly RigLook Player = new(new Color("e8b796"), 1f, true, true, false, "sword");
+}
+
 /// <summary>
 /// A jointed figure animated from code. Each state gives a target pose and the rig blends towards it,
 /// so every change of state becomes a smooth transition without an authored clip for each pair.
@@ -51,9 +57,14 @@ public sealed class PlayerRig
         set => _sword.Visible = value;
     }
 
-    public PlayerRig(Color tunic)
+    /// <summary>Set while the figure is hit. It shakes for as long as this is on.</summary>
+    public bool Flash { get; set; }
+
+    public PlayerRig(Color tunic, RigLook? look = null)
     {
-        var skin = new Color("e8b796");
+        look ??= RigLook.Player;
+        var skin = look.Skin;
+        Root.Scale = Vector3.One * look.Scale;
         var trousers = new Color("5a6988");
         var leather = new Color("733e39");
 
@@ -65,13 +76,29 @@ public sealed class PlayerRig
         _torso.Position = new Vector3(0, 0.1f, 0);
         _torso.AddChild(Part(new CylinderMesh { TopRadius = 0.27f, BottomRadius = 0.22f, Height = 0.52f, RadialSegments = 8 }, tunic, new Vector3(0, 0.26f, 0)));
         _torso.AddChild(Part(new BoxMesh { Size = new Vector3(0.46f, 0.07f, 0.34f) }, leather, new Vector3(0, 0.03f, 0)));
-        _torso.AddChild(Part(new BoxMesh { Size = new Vector3(0.42f, 0.46f, 0.2f) }, leather, new Vector3(0, 0.3f, 0.26f)));
+        if (look.Pack)
+        {
+            _torso.AddChild(Part(new BoxMesh { Size = new Vector3(0.42f, 0.46f, 0.2f) }, leather, new Vector3(0, 0.3f, 0.26f)));
+        }
 
         _torso.AddChild(_head);
         _head.Position = new Vector3(0, 0.58f, 0);
         _head.AddChild(Part(new SphereMesh { Radius = 0.21f, Height = 0.42f, RadialSegments = 10, Rings = 5 }, skin, new Vector3(0, 0.14f, 0)));
-        _head.AddChild(Part(new CylinderMesh { TopRadius = 0.42f, BottomRadius = 0.46f, Height = 0.05f, RadialSegments = 10 }, new Color("e4a672"), new Vector3(0, 0.26f, 0)));
-        _head.AddChild(Part(new CylinderMesh { TopRadius = 0.12f, BottomRadius = 0.23f, Height = 0.24f, RadialSegments = 8 }, new Color("e4a672"), new Vector3(0, 0.39f, 0)));
+        if (look.Hat)
+        {
+            _head.AddChild(Part(new CylinderMesh { TopRadius = 0.42f, BottomRadius = 0.46f, Height = 0.05f, RadialSegments = 10 }, new Color("e4a672"), new Vector3(0, 0.26f, 0)));
+            _head.AddChild(Part(new CylinderMesh { TopRadius = 0.12f, BottomRadius = 0.23f, Height = 0.24f, RadialSegments = 8 }, new Color("e4a672"), new Vector3(0, 0.39f, 0)));
+        }
+
+        if (look.Ears)
+        {
+            foreach (var side in new[] { -1f, 1f })
+            {
+                var ear = Part(new PrismMesh { Size = new Vector3(0.14f, 0.34f, 0.08f) }, skin, new Vector3(side * 0.28f, 0.2f, 0));
+                ear.Rotation = new Vector3(0, 0, -side * 1.25f);
+                _head.AddChild(ear);
+            }
+        }
         _head.AddChild(Part(new BoxMesh { Size = new Vector3(0.05f, 0.07f, 0.04f) }, new Color("181425"), new Vector3(-0.08f, 0.15f, -0.2f)));
         _head.AddChild(Part(new BoxMesh { Size = new Vector3(0.05f, 0.07f, 0.04f) }, new Color("181425"), new Vector3(0.08f, 0.15f, -0.2f)));
 
@@ -82,10 +109,7 @@ public sealed class PlayerRig
 
         _forearmR.AddChild(_sword);
         _sword.Position = new Vector3(0, -0.3f, -0.04f);
-        _sword.AddChild(Part(new BoxMesh { Size = new Vector3(0.06f, 0.05f, 0.2f) }, new Color("733e39"), Vector3.Zero));
-        _sword.AddChild(Part(new BoxMesh { Size = new Vector3(0.24f, 0.05f, 0.07f) }, new Color("3e2731"), new Vector3(0, 0, -0.12f)));
-        _sword.AddChild(Part(new BoxMesh { Size = new Vector3(0.1f, 0.04f, 0.9f) }, new Color("c28569"), new Vector3(0, 0, -0.58f)));
-        _sword.AddChild(Part(new BoxMesh { Size = new Vector3(0.05f, 0.05f, 0.9f) }, new Color("e4a672"), new Vector3(-0.025f, 0.005f, -0.58f)));
+        BuildWeapon(look.Weapon);
 
         _slashMaterial = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/slash.gdshader") };
         _slash = new MeshInstance3D
@@ -135,6 +159,41 @@ public sealed class PlayerRig
             LocalCoords = false,
         };
         Root.AddChild(_wind);
+    }
+
+    private void BuildWeapon(string weapon)
+    {
+        var wood = new Color("733e39");
+        var dark = new Color("3e2731");
+        switch (weapon)
+        {
+            case "dagger":
+                _sword.AddChild(Part(new BoxMesh { Size = new Vector3(0.06f, 0.05f, 0.14f) }, dark, Vector3.Zero));
+                _sword.AddChild(Part(new BoxMesh { Size = new Vector3(0.08f, 0.03f, 0.42f) }, new Color("c0cbdc"), new Vector3(0, 0, -0.28f)));
+                break;
+            case "club":
+                _sword.AddChild(Part(new CylinderMesh { TopRadius = 0.07f, BottomRadius = 0.2f, Height = 1.3f, RadialSegments = 7 }, wood, new Vector3(0, 0, -0.6f)));
+                _sword.GetChild<Node3D>(0).Rotation = new Vector3(-Mathf.Pi / 2f, 0, 0);
+                break;
+            case "bow":
+                var arc = Part(new TorusMesh { InnerRadius = 0.5f, OuterRadius = 0.56f, Rings = 12, RingSegments = 5 }, wood, new Vector3(0, 0, -0.1f));
+                arc.Rotation = new Vector3(0, 0, Mathf.Pi / 2f);
+                arc.Scale = new Vector3(1f, 1f, 0.45f);
+                _sword.AddChild(arc);
+                break;
+            case "staff":
+                var pole = Part(new CylinderMesh { TopRadius = 0.04f, BottomRadius = 0.05f, Height = 1.7f, RadialSegments = 6 }, wood, new Vector3(0, 0, -0.5f));
+                pole.Rotation = new Vector3(-Mathf.Pi / 2f, 0, 0);
+                _sword.AddChild(pole);
+                _sword.AddChild(Part(new SphereMesh { Radius = 0.16f, Height = 0.32f, RadialSegments = 8, Rings = 4 }, new Color("f77622"), new Vector3(0, 0, -1.38f)));
+                break;
+            default:
+                _sword.AddChild(Part(new BoxMesh { Size = new Vector3(0.06f, 0.05f, 0.2f) }, wood, Vector3.Zero));
+                _sword.AddChild(Part(new BoxMesh { Size = new Vector3(0.24f, 0.05f, 0.07f) }, dark, new Vector3(0, 0, -0.12f)));
+                _sword.AddChild(Part(new BoxMesh { Size = new Vector3(0.1f, 0.04f, 0.9f) }, new Color("c28569"), new Vector3(0, 0, -0.58f)));
+                _sword.AddChild(Part(new BoxMesh { Size = new Vector3(0.05f, 0.05f, 0.9f) }, new Color("e4a672"), new Vector3(-0.025f, 0.005f, -0.58f)));
+                break;
+        }
     }
 
     /// <summary>Moves the rig towards the pose for this state. Call it once a frame.</summary>
@@ -325,7 +384,8 @@ public sealed class PlayerRig
 
     private void Apply()
     {
-        _hips.Position = new Vector3(0, 0.92f + _pose[Bob], 0);
+        var shake = Flash ? (float)GD.RandRange(-0.05, 0.05) : 0f;
+        _hips.Position = new Vector3(shake, 0.92f + _pose[Bob], 0);
         _torso.Rotation = new Vector3(-_pose[Lean], _pose[Twist], 0);
         _head.Rotation = new Vector3(-_pose[Head], -_pose[Twist] * 0.6f, 0);
         _thighL.Rotation = new Vector3(_pose[ThighL], 0, 0);

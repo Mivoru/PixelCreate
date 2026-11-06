@@ -447,7 +447,94 @@ public sealed class EnemyTests
             }
         }
 
-        Assert.All(clients, c => Assert.InRange(c.Latest!.Enemies.Length, 1, 14));
+        Assert.All(clients, c => Assert.InRange(c.Latest!.Enemies.Length, 1, 12));
+    }
+
+    private static (GameServer Server, ClientPrediction Client, SimNetwork Network) StartGoblin(string id, float distance)
+    {
+        var camp = new EnemySpawn(new Vector3(0, 0, distance), 1f, 1, Types: new[] { id });
+        return StartCamp(camp);
+    }
+
+    [Theory]
+    [InlineData("goblin_skirmisher", 6f)]
+    [InlineData("goblin_brute", 6f)]
+    [InlineData("goblin_rapid_archer", 14f)]
+    [InlineData("goblin_sharpshooter", 18f)]
+    [InlineData("goblin_shaman", 14f)]
+    public void Goblins_HurtTheirTarget(string id, float distance)
+    {
+        var (server, client, network) = StartGoblin(id, distance);
+        Assert.Equal(id, server.Enemies[0].Def.Id);
+        Play(server, client, network, 60 * 30);
+        Assert.True(server.Stats.PlayerHits > 0, $"{id} must hit a player who stands still.");
+    }
+
+    [Fact]
+    public void Volley_FiresThreeArrowsThatSpreadApart()
+    {
+        var (server, client, network) = StartGoblin("goblin_rapid_archer", 10f);
+        var seen = 0;
+        for (var i = 0; i < 60 * 30 && seen < 3; i++)
+        {
+            Play(server, client, network, 1);
+            seen = Math.Max(seen, server.ProjectileCount);
+        }
+
+        Assert.True(seen >= 3, "The archer must loose its three arrow volley.");
+    }
+
+    [Fact]
+    public void Powershot_PassesThroughWalls()
+    {
+        var wall = new Aabb(new Vector3(-6, 0, 12), new Vector3(6, 6, 13));
+        var network = new SimNetwork(1, 0, 0, 0);
+        var camp = new EnemySpawn(new Vector3(0, 0, 26), 1f, 1, Types: new[] { "goblin_sharpshooter" });
+        var world = new World(new[] { wall }, null, Vector3.Zero, new[] { camp });
+        var server = new GameServer(network.Connect(0), world, new ServerOptions { Seed = 9 });
+        var client = new ClientPrediction(network.Connect(1), world);
+        Play(server, client, network, 60 * 40);
+        Assert.True(server.Stats.PlayerHits > 0, "A powershot must reach a player behind a wall.");
+    }
+
+    [Fact]
+    public void FireWall_HitsOncePerCast()
+    {
+        var (server, client, network) = StartGoblin("goblin_shaman", 12f);
+        Play(server, client, network, 60);
+        var enemy = server.Enemies[0];
+        var ability = enemy.Def.Abilities!.Single(a => a.Effect == "firewall");
+        var target = new Target(1, server.GetPlayer(1)!.Value.Position, Vector3.Zero);
+        var hits = server.Stats.PlayerHits;
+        ((IEnemyEvents)server).Fire(enemy, ability, target);
+        Assert.True(server.ProjectileCount >= 21, "Three stages must make up the wall.");
+        enemy.TakeHit(short.MaxValue, Vector3.Zero);
+        Play(server, client, network, 120);
+        Assert.Equal(hits + 1, server.Stats.PlayerHits);
+    }
+
+    [Fact]
+    public void Kills_DropCrystalsThatThePlayerLoots()
+    {
+        var (server, client, network) = Start();
+        Play(server, client, network, 60);
+        server.EnemiesFrozen = true;
+        var enemy = server.Enemies[0];
+        enemy.Health = 1;
+        enemy.Position = server.GetPlayer(1)!.Value.Position + new Vector3(0, 0, -2);
+        Play(server, client, network, 40, Buttons.Light);
+        Assert.True(server.Stats.CrystalsDropped > 0, "Every slime drops a crystal.");
+        Assert.Equal(server.Stats.CrystalsDropped, server.Stats.CrystalsLooted);
+        Assert.True(server.GetCrystals(1, CrystalRarity.Common) > 0);
+        Assert.True(client.Latest!.Crystals[0] > 0);
+    }
+
+    [Fact]
+    public void Crystals_HaveFourTiersAndGetHeavier()
+    {
+        Assert.Equal(new[] { "Common", "Rare", "Epic", "Legendary" }, Crystals.All.Select(c => c.Rarity.ToString()));
+        Assert.True(Crystals.All.Zip(Crystals.All.Skip(1)).All(p => p.First.Weight < p.Second.Weight));
+        Assert.All(EnemyDef.All, def => Assert.NotEmpty(def.Drops!));
     }
 
     [Fact]
@@ -496,6 +583,7 @@ public sealed class ZoneTests
         Assert.Equal(Valley.Props, other.Props);
         Assert.Equal(Valley.World.GroundHeight(13.3f, -41.2f), other.World.GroundHeight(13.3f, -41.2f));
         Assert.True(Valley.Props.Count > 50, "The zone must have generated detail.");
+        Assert.Equal("Goblin Hollow", Valley.RegionAt(84, -92));
     }
 
     [Fact]
@@ -709,12 +797,14 @@ public sealed class MovementTests
             Self = PlayerState.Spawn(new Vector3(1, 2, 3)),
             Others = new[] { new RemotePlayer(1, Vector3.One, Vector3.UnitX, 9, AttackKind.Heavy, 3) },
             Enemies = new[] { new EnemyView(4, 1, 3, Vector3.UnitZ, 1.5f, 30, 40, EnemyAction.Leap, 2, Vector3.UnitX, true) },
-            Spits = new[] { new SpitView(7, Vector3.UnitY) },
+            Projectiles = new[] { new ProjectileView(7, ProjectileKind.Arrow, Vector3.UnitY) },
+            Drops = new[] { new CrystalView(8, CrystalRarity.Epic, Vector3.UnitX) },
         };
         Assert.True(Protocol.TryDecodeSnapshot(Protocol.EncodeSnapshot(snapshot), out var decoded));
         Assert.Equal(snapshot.Self, decoded.Self);
         Assert.Equal(snapshot.Others, decoded.Others);
         Assert.Equal(snapshot.Enemies, decoded.Enemies);
-        Assert.Equal(snapshot.Spits, decoded.Spits);
+        Assert.Equal(snapshot.Projectiles, decoded.Projectiles);
+        Assert.Equal(snapshot.Drops, decoded.Drops);
     }
 }

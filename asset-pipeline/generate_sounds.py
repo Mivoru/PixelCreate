@@ -33,19 +33,32 @@ SOUNDS = {
     "land": ("boots landing on soft ground, short thud with a little dust", 0.5, 0.35, -8),
     "swing_light": ("quick light wooden sword swing, thin fast whoosh, video game", 0.5, 0.3, -7),
     "swing_heavy": ("slow powerful wooden sword swing, deep heavy whoosh, video game", 0.8, 0.6, -5),
-    "hit": ("wooden sword hitting wet jelly, short slap and squish, video game impact", 0.5, 0.3, -5),
-    "hit_heavy": ("heavy wooden club smashing into thick wet jelly, deep punchy splat, video game", 0.7, 0.5, -3),
+    "hit": ("soft low dull thud of a wooden stick hitting thick mud, deep muffled, warm, no high frequencies", 0.5, 0.3, -9),
+    "hit_heavy": ("deep muffled heavy thump into thick mud, low bass impact, warm, no high frequencies", 0.7, 0.5, -7),
     "hurt": ("short male grunt of pain, fantasy game character taking a hit", 0.5, 0.4, -6),
-    "dodge": ("bright quick magical shimmer whoosh, successful dodge, video game", 0.5, 0.3, -11),
+    "dodge": ("soft low airy whoosh, gentle, warm, no high frequencies", 0.5, 0.3, -12),
     "level_up": ("triumphant fantasy RPG level up jingle, bright magical chime rising with sparkle", 2.0, 2.0, -5),
-    "slime_hop": ("small wet slime bounce, soft gooey boing, cartoon, short", 0.5, 0.3, -13),
+    "slime_hop": ("low soft wet blob bounce, deep gooey plop, muffled", 0.5, 0.3, -13),
     "slime_charge": ("wet gooey slime squeezing and building up pressure, rising squelch", 0.7, 0.6, -9),
-    "slime_spit": ("wet slime spitting a glob of goo, quick wet ptooey projectile, video game", 0.5, 0.35, -7),
-    "slime_hit": ("gooey slime creature hurt, wet squish with a tiny squeak, video game", 0.5, 0.3, -7),
-    "slime_alert": ("small slime creature noticing the player, short wet burble, cute, video game", 0.5, 0.35, -10),
-    "slime_splat": ("big slime blob slamming the ground and splattering, heavy wet splat with droplets", 0.8, 0.7, -4),
-    "spit_splash": ("glob of slime bursting on impact, wet splash with small droplets", 0.5, 0.4, -6),
-    "slime_die": ("slime monster bursting and melting away, long wet squelch collapsing into a puddle", 1.0, 0.9, -5),
+    "slime_spit": ("low wet glob launched, deep soft gooey pop, muffled", 0.5, 0.35, -10),
+    "slime_hit": ("low deep wet squish, thick mud being pressed, soft and muffled, no squeak, no high frequencies", 0.5, 0.3, -10),
+    "slime_alert": ("low soft wet gurgle, deep bubbling mud, short", 0.5, 0.35, -12),
+    "slime_splat": ("big heavy mud blob falling on the ground, deep low wet thump, muffled, no high frequencies", 0.8, 0.7, -7),
+    "spit_splash": ("low soft wet mud splat, deep and muffled, no high frequencies", 0.5, 0.4, -9),
+    "slime_die": ("thick mud slowly collapsing with a deep low wet sigh, soft bubbling, muffled, no high frequencies", 1.0, 0.9, -8),
+    "goblin_alert": ("short low gruff goblin growl, fantasy creature, no words", 0.6, 0.5, -9),
+    "goblin_hit": ("short low goblin grunt of pain, fantasy creature, no words", 0.5, 0.35, -9),
+    "goblin_die": ("goblin dying with a low croaking groan, fantasy creature, no words", 0.9, 0.8, -8),
+    "goblin_swing": ("quick low whoosh of a small blade swing, soft", 0.5, 0.3, -10),
+    "club_slam": ("huge wooden club slamming the ground, deep heavy boom with low rumble", 0.8, 0.7, -5),
+    "club_spin": ("heavy wooden club spinning through the air, deep low whoosh", 0.9, 0.8, -7),
+    "bow_shot": ("wooden bow releasing an arrow, soft low twang and thump", 0.5, 0.35, -9),
+    "bow_power": ("powerful longbow shot, deep heavy twang and fast low whoosh", 0.7, 0.6, -6),
+    "arrow_hit": ("arrow thudding into wood, short low dull thunk", 0.5, 0.25, -9),
+    "fireball": ("fireball launched, low whoosh of flames, warm roar", 0.7, 0.6, -7),
+    "fire_wall": ("wall of fire rushing forward, deep roaring flames sweeping, low rumble", 1.5, 1.4, -6),
+    "explosion": ("small fiery explosion, deep muffled boom, low rumble", 0.8, 0.7, -6),
+    "crystal": ("soft warm glass chime, one gentle low note, calm, magical", 0.6, 0.5, -11),
 }
 
 
@@ -80,7 +93,7 @@ def download(key, name, prompt, seconds):
 
 def convert(name, keep, level):
     """Removes silence at the start, keeps the useful part, fades the end and sets the level."""
-    filters = (f"silenceremove=start_periods=1:start_threshold=-45dB,atrim=0:{keep},"
+    filters = (f"silenceremove=start_periods=1:start_threshold=-45dB,lowpass=f=4800,lowpass=f=7000,atrim=0:{keep},"
                f"afade=t=out:st={max(keep - 0.05, 0)}:d=0.05,loudnorm=I=-14:TP=-1:LRA=11,"
                f"volume={level + 5}dB,alimiter=limit=0.95:level=false")
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(CACHE / f"{name}.mp3"), "-af", filters,

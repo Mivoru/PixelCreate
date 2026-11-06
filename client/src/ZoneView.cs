@@ -8,7 +8,7 @@ namespace PixelCreate;
 /// <summary>Builds what the player sees from the same zone data the server uses for collision.</summary>
 public static class ZoneView
 {
-    private const int GrassBlades = 42000;
+    private const int GrassBlades = 90000;
 
     /// <summary>Material name from Blender: detail texture, world scale and leaf sway.</summary>
     private static readonly Dictionary<string, (string Texture, float Scale, float Sway)> Surfaces = new()

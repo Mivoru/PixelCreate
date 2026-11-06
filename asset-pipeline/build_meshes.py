@@ -155,6 +155,29 @@ def bush():
     blob("bush_top", (0.1, 0.1, 0.55), 0.35, "leaf", 9, 0.8, 1)
 
 
+def tent():
+    roof("canvas", (0, 0, 0), 3.6, 4.2, 2.8, "wall")
+    box("pole", (0, 0, 1.4), (0.12, 0.12, 2.8), "wood_dark")
+
+
+def camp_fire():
+    for index, angle in enumerate((0.0, 1.2, 2.3)):
+        cylinder(f"log{index}", (math.cos(angle) * 0.25, math.sin(angle) * 0.25, 0.2), 0.11, 0.9, "wood_dark")
+    blob("embers", (0, 0, 0.32), 0.3, "window", 4, 1.3, 1)
+
+
+def palisade():
+    for index in range(9):
+        x = -3.9 + index * 0.98
+        cylinder(f"stake{index}", (x, 0, 1.4), 0.33, 2.9 + (index % 3) * 0.25, "wood")
+
+
+def ruin():
+    box("base", (0, 0, 0.25), (2.3, 2.3, 0.5), "stone")
+    cylinder("column", (0, 0, 2.2), 0.72, 3.5, "stone", 8)
+    blob("rubble", (1.4, 0.8, 0.2), 0.55, "stone_dark", 2, 0.7, 1)
+
+
 MODELS = {
     "village": village,
     "cottage": cottage,
@@ -162,6 +185,10 @@ MODELS = {
     "tree_b": lambda: tree("b", 0, 0, 1.0, 21),
     "rock": rock,
     "bush": bush,
+    "tent": tent,
+    "camp_fire": camp_fire,
+    "palisade": palisade,
+    "ruin": ruin,
 }
 
 for model_name, build in MODELS.items():

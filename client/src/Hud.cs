@@ -270,13 +270,9 @@ public partial class Hud : Control
     {
         var width = Inventory.HotbarSlots * (Slot + 2) + 6;
         var left = (Size.X - width) / 2f;
-        var top = Size.Y - Slot - 16f;
+        var top = Size.Y - Slot - 12f;
         DrawPanel(new Rect2(left, top, width, Slot + 8));
-        var xpBar = new Rect2(left, top + Slot + 10, width, 3);
-        DrawRect(xpBar.Grow(1), Ink);
-        DrawRect(xpBar, new Color("3e2731"));
-        DrawRect(new Rect2(xpBar.Position, xpBar.Size.X * _shownXp, xpBar.Size.Y), new Color("feae34"));
-        DrawRect(new Rect2(xpBar.Position, xpBar.Size.X * _shownXp, 1), new Color("fee761"));
+        DrawXpBar(left, top - 14f, width);
         for (var i = 0; i < Inventory.HotbarSlots; i++)
         {
             var rect = new Rect2(left + 4 + i * (Slot + 2), top + 4, Slot, Slot);
@@ -289,6 +285,50 @@ public partial class Hud : Control
 
             DrawOutlined((i + 1).ToString(), rect.Position + new Vector2(2, 9), Text);
         }
+    }
+
+    /// <summary>Experience sits right above the hotbar, with the level on the left and the numbers on it.</summary>
+    private void DrawXpBar(float left, float top, float width)
+    {
+        var levelBox = new Rect2(left - 2, top, 30, 11);
+        DrawPanel(levelBox);
+        DrawOutlined($"Lv {Level}", levelBox.Position + new Vector2(3, 9), new Color("fee761"));
+
+        var bar = new Rect2(left + 32, top + 1, width - 32, 9);
+        DrawRect(bar.Grow(1), Ink);
+        DrawRect(bar, new Color("3e2731"));
+        var fill = new Rect2(bar.Position, bar.Size.X * _shownXp, bar.Size.Y);
+        DrawRect(fill, new Color("d77643"));
+        DrawRect(new Rect2(fill.Position, fill.Size.X, 4), new Color("feae34"));
+        var sweep = Mathf.PosMod(_time * 40f, bar.Size.X + 30f) - 15f;
+        var from = Mathf.Max(bar.Position.X + sweep, bar.Position.X);
+        var to = Mathf.Min(bar.Position.X + sweep + 8f, bar.Position.X + fill.Size.X);
+        if (to > from)
+        {
+            DrawRect(new Rect2(from, bar.Position.Y, to - from, 2), new Color("fee761"));
+        }
+
+        var label = $"XP {Snapshot?.Xp ?? 0} / {Snapshot?.XpToNext ?? 0}";
+        var size = _font.GetStringSize(label, HorizontalAlignment.Left, -1, 11).X;
+        DrawOutlined(label, new Vector2(bar.Position.X + (bar.Size.X - size) / 2f, bar.End.Y - 1), Colors.White);
+    }
+
+    private void DrawCrystals(Rect2 window)
+    {
+        var counts = Snapshot?.Crystals ?? new int[Crystals.Tiers];
+        var weight = 0f;
+        var y = window.Position.Y + 146;
+        for (var i = 0; i < Crystals.Tiers; i++)
+        {
+            var def = Crystals.All[i];
+            weight += counts[i] * def.Weight;
+            var x = window.Position.X + 180 + i * 37;
+            DrawRect(new Rect2(x, y, 7, 9), new Color(def.Color));
+            DrawRect(new Rect2(x + 1, y + 1, 2, 3), Colors.White);
+            DrawString(_font, new Vector2(x + 10, y + 9), counts[i].ToString(), HorizontalAlignment.Left, -1, 11, Text);
+        }
+
+        DrawString(_font, new Vector2(window.Position.X + 180, y + 22), $"Crystals: {weight:F1} kg", HorizontalAlignment.Left, -1, 11, Edge);
     }
 
     private void DrawInventory()
@@ -316,10 +356,11 @@ public partial class Hud : Control
 
         for (var i = 0; i < Inventory.BagSlots; i++)
         {
-            var rect = new Rect2(window.Position + new Vector2(180 + i % 5 * (Slot + 8), 22 + i / 5 * (Slot + 8)), Slot, Slot);
+            var rect = new Rect2(window.Position + new Vector2(180 + i % 5 * (Slot + 8), 20 + i / 5 * (Slot + 8)), Slot, Slot);
             DrawSlot(rect, Items.Bag[i], new SlotRef("bag", i));
         }
 
+        DrawCrystals(window);
         DrawTooltip(window);
     }
 
@@ -402,7 +443,7 @@ public partial class Hud : Control
 
     private void DrawTag(Vector2 at, in EnemyView enemy, EnemyDef def)
     {
-        var rare = def.RareChance > 0;
+        var rare = def.Rare;
         var threat = ThreatRules.Compare(enemy.Level, Level);
         var color = threat switch
         {

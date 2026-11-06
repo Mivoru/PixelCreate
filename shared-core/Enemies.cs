@@ -7,8 +7,10 @@ namespace PixelCreate.Core;
 /// <summary>An enemy type, loaded from world/enemies.json.</summary>
 public sealed record EnemyDef(
     string Id, string Name, int MinLevel, int MaxLevel, int Health, int HealthPerLevel, float Speed, float Size,
-    int HopTicks, float AggroRange, float LeapRange, int LeapCooldownTicks, float SplashRadius, short SplashDamage,
-    byte SlowTicks, float SpitRange, short SpitDamage, int SpitCooldownTicks, double RareChance)
+    float AggroRange, int HopTicks = 40, float LeapRange = 0f, int LeapCooldownTicks = 0, float SplashRadius = 0f,
+    short SplashDamage = 0, byte SlowTicks = 0, float SpitRange = 0f, short SpitDamage = 0, int SpitCooldownTicks = 0,
+    double RareChance = 0, string Kind = "slime", bool Rare = false, string Weapon = "", float PreferredRange = 2f,
+    Ability[]? Abilities = null, DropEntry[]? Drops = null)
 {
     private static readonly Lazy<IReadOnlyList<EnemyDef>> Loaded = new(Load);
 
@@ -24,7 +26,8 @@ public sealed record EnemyDef(
 
 /// <summary>A camp: a place enemies live, return to and respawn at. A rare camp holds only rare enemies.</summary>
 public readonly record struct EnemySpawn(
-    Vector3 Center, float Radius, int Count, int MinLevel = 1, int MaxLevel = 3, int RespawnTicks = 240, bool Rare = false);
+    Vector3 Center, float Radius, int Count, int MinLevel = 1, int MaxLevel = 3, int RespawnTicks = 240, bool Rare = false,
+    string[]? Types = null);
 
 public enum EnemyAction : byte
 {
@@ -35,6 +38,9 @@ public enum EnemyAction : byte
     Splat = 4,
     Spit = 5,
     Dead = 6,
+    Walk = 7,
+    Cast = 8,
+    Strike = 9,
 }
 
 /// <summary>The nametag colour rule: how an enemy compares with the player.</summary>
@@ -60,6 +66,9 @@ public interface IEnemyEvents
     void Splash(Enemy enemy);
     void Spit(Enemy enemy, Target target);
 
+    /// <summary>An ability goes off. The target can be missing, as at the end of a lunge.</summary>
+    void Fire(Enemy enemy, Ability ability, Target? target);
+
     /// <summary>The enemy has noticed a player; its neighbours join in.</summary>
     void CallForHelp(Enemy enemy, int targetId);
 }
@@ -68,7 +77,7 @@ public interface IEnemyEvents
 /// One enemy on the server. It wanders its camp, chases what it notices, leaps with a warning circle
 /// and splashes on landing. Pulled too far from home it gives up, returns and heals.
 /// </summary>
-public sealed class Enemy
+public sealed partial class Enemy
 {
     private const int WindupTicks = 34;
     private const int SpitWindupTicks = 26;
@@ -108,10 +117,10 @@ public sealed class Enemy
 
     public void Reset(Random random, World world)
     {
-        var rare = EnemyDef.All.First(d => d.RareChance > 0);
-        var chosen = Home.Rare || random.NextDouble() < rare.RareChance ? rare : EnemyDef.All[0];
+        var chosen = Choose(random);
         Type = (byte)EnemyDef.All.ToList().IndexOf(chosen);
-        Level = (byte)(chosen == rare ? Home.MaxLevel + 1 : random.Next(Home.MinLevel, Home.MaxLevel + 1));
+        Level = (byte)(Home.Types is not null ? random.Next(chosen.MinLevel, chosen.MaxLevel + 1)
+            : chosen.Rare ? Home.MaxLevel + 1 : random.Next(Home.MinLevel, Home.MaxLevel + 1));
         var angle = (float)(random.NextDouble() * Math.Tau);
         var reach = (float)random.NextDouble() * Home.Radius;
         var spot = Home.Center + new Vector3(MathF.Cos(angle) * reach, 0, MathF.Sin(angle) * reach);
@@ -128,12 +137,30 @@ public sealed class Enemy
         Returning = false;
     }
 
+    private EnemyDef Choose(Random random)
+    {
+        if (Home.Types is { Length: > 0 } types)
+        {
+            var id = types[random.Next(types.Length)];
+            return EnemyDef.All.First(d => d.Id == id);
+        }
+
+        var rare = EnemyDef.All.First(d => d.RareChance > 0);
+        return Home.Rare || random.NextDouble() < rare.RareChance ? rare : EnemyDef.All[0];
+    }
+
     public void Step(World world, Random random, IReadOnlyList<Target> targets, IEnemyEvents events)
     {
         if (HitFlash > 0) HitFlash--;
         if (LeapCooldown > 0) LeapCooldown--;
         if (SpitCooldown > 0) SpitCooldown--;
         ActionTicks--;
+
+        if (Def.Kind == "goblin" && Action != EnemyAction.Dead)
+        {
+            StepGoblin(world, random, targets, events);
+            return;
+        }
 
         switch (Action)
         {
@@ -211,6 +238,11 @@ public sealed class Enemy
         if (Action == EnemyAction.Windup || Action == EnemyAction.Spit)
         {
             Action = EnemyAction.Hop;
+        }
+        else if (Action == EnemyAction.Cast && MaxHealth - Health > 0 && Def.Weapon == "dagger")
+        {
+            Action = EnemyAction.Idle;
+            ActionTicks = 8;
         }
 
         if (Health > 0)
@@ -419,6 +451,11 @@ public sealed class Enemy
 
         Position = next;
         if (!landed)
+        {
+            return;
+        }
+
+        if (Def.Kind == "goblin")
         {
             return;
         }
