@@ -60,7 +60,7 @@ public static class ZoneView
         return new MeshInstance3D
         {
             Mesh = surface.Commit(),
-            MaterialOverride = new StandardMaterial3D { VertexColorUseAsAlbedo = true, Roughness = 1 },
+            MaterialOverride = new StandardMaterial3D { VertexColorUseAsAlbedo = true, VertexColorIsSrgb = true, Roughness = 1 },
         };
     }
 
