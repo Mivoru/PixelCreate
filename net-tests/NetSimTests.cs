@@ -531,8 +531,79 @@ public sealed class EnemyTests
     private static void Fire(GameServer server, Enemy shaman, Vector3 at)
     {
         var ability = shaman.Def.Abilities!.Single(a => a.Effect == "firewall");
+        shaman.LeapTarget = at;
         ((IEnemyEvents)server).Fire(shaman, ability, new Target(1, at, Vector3.Zero));
         shaman.TakeHit(short.MaxValue, Vector3.Zero);
+    }
+
+    [Fact]
+    public void Warning_FollowsThePlayerThenLocks()
+    {
+        var (server, client, network) = StartGoblin("goblin_shaman", 12f);
+        var enemy = server.Enemies[0];
+        for (var i = 0; i < 60 * 20 && enemy.Action != EnemyAction.Cast; i++)
+        {
+            Play(server, client, network, 1);
+        }
+
+        Assert.Equal(EnemyAction.Cast, enemy.Action);
+        for (var i = 0; i < 400 && enemy.ActionTicks > Enemy.AimLockTicks + 1; i++)
+        {
+            MoveAway(server, client, network);
+        }
+
+        var player = server.GetPlayer(1)!.Value.Position;
+        Assert.True(Vector3.Distance(enemy.LeapTarget with { Y = 0 }, player with { Y = 0 }) < 1.5f, "The warning must follow the player.");
+        var locked = enemy.LeapTarget;
+        for (var i = 0; i < 8; i++)
+        {
+            MoveAway(server, client, network);
+        }
+
+        Assert.Equal(locked, enemy.LeapTarget);
+    }
+
+    private static void MoveAway(GameServer server, ClientPrediction client, SimNetwork network)
+    {
+        network.Advance(1000.0 / Tuning.TickRate);
+        server.Step();
+        client.Step(127, 0, Buttons.None);
+    }
+
+    [Fact]
+    public void Goblin_WalksAroundALongWall()
+    {
+        var wall = new Aabb(new Vector3(-7, 0, 4), new Vector3(7, 3, 5));
+        var network = new SimNetwork(1, 0, 0, 0);
+        var camp = new EnemySpawn(new Vector3(0, 0, 9), 1f, 1, Types: new[] { "goblin_skirmisher" });
+        var world = new World(new[] { wall }, null, Vector3.Zero, new[] { camp });
+        var server = new GameServer(network.Connect(0), world, new ServerOptions { Seed = 4 });
+        var client = new ClientPrediction(network.Connect(1), world);
+        Play(server, client, network, 60 * 30);
+        Assert.True(server.Stats.PlayerHits > 0, "The goblin must find its way around the wall.");
+    }
+
+    [Fact]
+    public void TrappedEnemy_GivesUpAndGoesHome()
+    {
+        var boxes = new[]
+        {
+            new Aabb(new Vector3(-3, 0, 2), new Vector3(3, 3, 3)),
+            new Aabb(new Vector3(-3, 0, 7), new Vector3(3, 3, 8)),
+            new Aabb(new Vector3(-3, 0, 2), new Vector3(-2, 3, 8)),
+            new Aabb(new Vector3(2, 0, 2), new Vector3(3, 3, 8)),
+        };
+        var network = new SimNetwork(1, 0, 0, 0);
+        var camp = new EnemySpawn(new Vector3(30, 0, 30), 1f, 1, Types: new[] { "goblin_skirmisher" });
+        var world = new World(boxes, null, Vector3.Zero, new[] { camp });
+        var server = new GameServer(network.Connect(0), world, new ServerOptions { Seed = 4 });
+        var client = new ClientPrediction(network.Connect(1), world);
+        Play(server, client, network, 30);
+        var enemy = server.Enemies[0];
+        enemy.Position = new Vector3(0, 0, 5);
+        enemy.TargetId = 1;
+        Play(server, client, network, 60 * 30);
+        Assert.True(Vector3.Distance(enemy.Position, camp.Center) < 8f, "A trapped enemy must return home.");
     }
 
     [Fact]

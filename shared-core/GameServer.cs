@@ -443,7 +443,8 @@ public sealed class GameServer : IEnemyEvents
     void IEnemyEvents.Fire(Enemy enemy, Ability ability, Target? target)
     {
         var chest = enemy.Position + Vector3.UnitY * (enemy.Def.Size * 1.1f);
-        var aimPoint = (target?.Position ?? enemy.LeapTarget) + Vector3.UnitY;
+        // The attack goes where the warning showed, even if the player moved after it locked.
+        var aimPoint = enemy.LeapTarget + Vector3.UnitY;
         var direction = aimPoint - chest;
         direction = direction == Vector3.Zero ? Vector3.UnitZ : Vector3.Normalize(direction);
         switch (ability.Effect)

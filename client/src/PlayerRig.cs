@@ -56,6 +56,13 @@ public sealed class PlayerRig
     private readonly CpuParticles3D _sparks;
     private readonly CpuParticles3D _wind;
     private RigLook _look = RigLook.Player;
+    private readonly System.Collections.Generic.List<Node3D> _hairLocks = new();
+    private readonly System.Collections.Generic.List<Node3D> _eyes = new();
+    private float _hairAngle;
+    private float _hairVelocity;
+    private float _hairSide;
+    private float _lastYaw;
+    private float _blinkClock = 3f;
     private float _hipHeight = 0.92f;
     private float _phase;
     private float _lastStride;
@@ -93,7 +100,7 @@ public sealed class PlayerRig
         _hips.AddChild(_torso);
         _torso.Position = new Vector3(0, 0.1f, 0);
         _torso.AddChild(_head);
-        _head.Position = new Vector3(0, look.Goblin ? 0.5f : 0.58f, look.Goblin ? -0.06f : 0f);
+        _head.Position = new Vector3(0, look.Goblin ? 0.5f : 0.46f, look.Goblin ? -0.06f : -0.01f);
         if (look.Goblin)
         {
             BuildGoblin(tunic, skin);
@@ -158,51 +165,125 @@ public sealed class PlayerRig
         Root.AddChild(_wind);
     }
 
-    private void BuildHuman(Color tunic, Color skin)
+    /// <summary>A person of natural proportions: about seven and a half heads tall.</summary>
+    private void BuildHuman(Color shirt, Color skin)
     {
-        var trousers = new Color("5a6988");
-        var leather = new Color("733e39");
-        var dark = new Color("3e2731");
-        var straw = new Color("e4a672");
-        _hips.AddChild(Part(new BoxMesh { Size = new Vector3(0.44f, 0.2f, 0.3f) }, trousers, Vector3.Zero));
+        var trousers = new Color("3f4658");
+        var leather = new Color("6b4632");
+        var darkLeather = new Color("3e2731");
 
-        // A tunic that widens into a skirt, a belt with a buckle and pouch, a scarf and a pack with a bedroll.
-        _torso.AddChild(Part(new CylinderMesh { TopRadius = 0.26f, BottomRadius = 0.21f, Height = 0.5f, RadialSegments = 8 }, tunic, new Vector3(0, 0.27f, 0)));
-        _torso.AddChild(Part(new CylinderMesh { TopRadius = 0.22f, BottomRadius = 0.3f, Height = 0.26f, RadialSegments = 8 }, tunic.Darkened(0.15f), new Vector3(0, -0.1f, 0)));
-        _torso.AddChild(Part(new BoxMesh { Size = new Vector3(0.48f, 0.08f, 0.36f) }, leather, new Vector3(0, 0.05f, 0)));
-        _torso.AddChild(Part(new BoxMesh { Size = new Vector3(0.1f, 0.09f, 0.04f) }, new Color("feae34"), new Vector3(0, 0.05f, -0.19f)));
-        _torso.AddChild(Part(new BoxMesh { Size = new Vector3(0.13f, 0.16f, 0.1f) }, dark, new Vector3(-0.26f, -0.04f, -0.05f)));
-        _torso.AddChild(Part(new CylinderMesh { TopRadius = 0.19f, BottomRadius = 0.25f, Height = 0.13f, RadialSegments = 8 }, new Color("a22633"), new Vector3(0, 0.54f, 0)));
-        var strap = Part(new BoxMesh { Size = new Vector3(0.07f, 0.62f, 0.44f) }, leather, new Vector3(0, 0.28f, 0));
-        strap.Rotation = new Vector3(0, 0, 0.5f);
-        _torso.AddChild(strap);
-        _torso.AddChild(Part(new BoxMesh { Size = new Vector3(0.42f, 0.46f, 0.2f) }, leather, new Vector3(0, 0.3f, 0.26f)));
-        var bedroll = Part(new CylinderMesh { TopRadius = 0.09f, BottomRadius = 0.09f, Height = 0.5f, RadialSegments = 7 }, new Color("c28569"), new Vector3(0, 0.58f, 0.27f));
-        bedroll.Rotation = new Vector3(0, 0, Mathf.Pi / 2f);
-        _torso.AddChild(bedroll);
+        var pelvis = Part(new CylinderMesh { TopRadius = 0.15f, BottomRadius = 0.175f, Height = 0.2f, RadialSegments = 12 }, trousers, Vector3.Zero);
+        pelvis.Scale = new Vector3(1f, 1f, 0.72f);
+        _hips.AddChild(pelvis);
 
-        _head.AddChild(Part(new SphereMesh { Radius = 0.21f, Height = 0.42f, RadialSegments = 10, Rings = 5 }, skin, new Vector3(0, 0.14f, 0)));
-        var hair = Part(new SphereMesh { Radius = 0.22f, Height = 0.44f, RadialSegments = 8, Rings = 4 }, new Color("733e39"), new Vector3(0, 0.16f, 0.05f));
-        _head.AddChild(hair);
-        _head.AddChild(Part(new BoxMesh { Size = new Vector3(0.06f, 0.09f, 0.08f) }, skin.Darkened(0.1f), new Vector3(0, 0.12f, -0.21f)));
-        foreach (var x in new[] { -0.09f, 0.09f })
+        // One tapered torso, narrow at the waist and broad at the chest, with a sloping top for the shoulders.
+        var chest = Part(new CylinderMesh { TopRadius = 0.2f, BottomRadius = 0.145f, Height = 0.44f, RadialSegments = 14 }, shirt, new Vector3(0, 0.22f, 0));
+        chest.Scale = new Vector3(1f, 1f, 0.68f);
+        _torso.AddChild(chest);
+        var yoke = Part(new CylinderMesh { TopRadius = 0.08f, BottomRadius = 0.2f, Height = 0.1f, RadialSegments = 14 }, shirt, new Vector3(0, 0.49f, 0));
+        yoke.Scale = new Vector3(1f, 1f, 0.68f);
+        _torso.AddChild(yoke);
+
+        // A leather jerkin hugs the chest, open down the front to show the shirt.
+        var jerkin = Part(new CylinderMesh { TopRadius = 0.208f, BottomRadius = 0.155f, Height = 0.4f, RadialSegments = 14 }, leather, new Vector3(0, 0.22f, 0));
+        jerkin.Scale = new Vector3(1f, 1f, 0.7f);
+        _torso.AddChild(jerkin);
+        _torso.AddChild(Part(new BoxMesh { Size = new Vector3(0.075f, 0.4f, 0.02f) }, shirt, new Vector3(0, 0.22f, -0.122f)));
+        var belt = Part(new CylinderMesh { TopRadius = 0.16f, BottomRadius = 0.163f, Height = 0.055f, RadialSegments = 14 }, darkLeather, new Vector3(0, 0.02f, 0));
+        belt.Scale = new Vector3(1f, 1f, 0.74f);
+        _torso.AddChild(belt);
+        _torso.AddChild(Part(new BoxMesh { Size = new Vector3(0.06f, 0.055f, 0.02f) }, new Color("c9a35a"), new Vector3(0, 0.02f, -0.122f)));
+        _torso.AddChild(Part(new CylinderMesh { TopRadius = 0.052f, BottomRadius = 0.064f, Height = 0.11f, RadialSegments = 10 }, skin, new Vector3(0, 0.55f, -0.005f)));
+
+        BuildFace(skin);
+        BuildLeg(_thighL, _shinL, -0.095f, trousers, leather, 1f, false);
+        BuildLeg(_thighR, _shinR, 0.095f, trousers, leather, 1f, false);
+        BuildArm(_armL, _forearmL, -0.235f, shirt, skin, leather);
+        BuildArm(_armR, _forearmR, 0.235f, shirt, skin, leather);
+    }
+
+    /// <summary>A sculpted head from Blender with eyes, brows and a mouth, under moving hair.</summary>
+    private void BuildFace(Color skin)
+    {
+        var head = new Node3D { Position = new Vector3(0, 0.25f, 0), Scale = Vector3.One * 1.12f };
+        _head.AddChild(head);
+        head.AddChild(GD.Load<PackedScene>("res://assets/human_head.glb").Instantiate());
+
+        var hair = new Color("5a3a28");
+        var brow = new Color("3e2731");
+        foreach (var side in new[] { -1f, 1f })
         {
-            _head.AddChild(Part(new BoxMesh { Size = new Vector3(0.05f, 0.07f, 0.03f) }, new Color("181425"), new Vector3(x, 0.17f, -0.2f)));
-            _head.AddChild(Part(new BoxMesh { Size = new Vector3(0.09f, 0.025f, 0.03f) }, dark, new Vector3(x, 0.22f, -0.2f)));
+            var eye = new Node3D { Position = new Vector3(side * 0.044f, 0.024f, -0.1f) };
+            eye.AddChild(Rounded(new Vector3(0.019f, 0.012f, 0.008f), new Color("f4efe6"), Vector3.Zero));
+            eye.AddChild(Rounded(new Vector3(0.0105f, 0.0105f, 0.006f), new Color("3f6f8f"), new Vector3(0, 0, -0.006f)));
+            eye.AddChild(Rounded(new Vector3(0.0055f, 0.0055f, 0.004f), new Color("181425"), new Vector3(0, 0, -0.0095f)));
+            head.AddChild(eye);
+            _eyes.Add(eye);
+
+            var bar = Part(new BoxMesh { Size = new Vector3(0.047f, 0.009f, 0.012f) }, brow, new Vector3(side * 0.045f, 0.05f, -0.107f));
+            bar.Rotation = new Vector3(0, 0, side * -0.12f);
+            head.AddChild(bar);
         }
 
-        _head.AddChild(Part(new CylinderMesh { TopRadius = 0.42f, BottomRadius = 0.47f, Height = 0.05f, RadialSegments = 12 }, straw, new Vector3(0, 0.27f, 0)));
-        _head.AddChild(Part(new CylinderMesh { TopRadius = 0.13f, BottomRadius = 0.23f, Height = 0.24f, RadialSegments = 10 }, straw, new Vector3(0, 0.4f, 0)));
-        _head.AddChild(Part(new CylinderMesh { TopRadius = 0.235f, BottomRadius = 0.235f, Height = 0.06f, RadialSegments = 10 }, leather, new Vector3(0, 0.31f, 0)));
+        head.AddChild(Part(new BoxMesh { Size = new Vector3(0.05f, 0.008f, 0.008f) }, new Color("9c5a4a"), new Vector3(0, -0.07f, -0.109f)));
+        head.AddChild(GD.Load<PackedScene>("res://assets/human_hair.glb").Instantiate());
 
-        BuildLeg(_thighL, _shinL, -0.12f, trousers, leather, 1f, false);
-        BuildLeg(_thighR, _shinR, 0.12f, trousers, leather, 1f, false);
-        BuildArm(_armL, _forearmL, -0.32f, tunic, skin, leather);
-        BuildArm(_armR, _forearmR, 0.32f, tunic, skin, leather);
-        foreach (var x in new[] { -0.32f, 0.32f })
+        // Loose locks hang from the crown on joints, so they can swing with the body.
+        var locks = new (Vector3 Root, float Length, float Width)[]
         {
-            _torso.AddChild(Part(new SphereMesh { Radius = 0.13f, Height = 0.2f, RadialSegments = 8, Rings = 4 }, leather, new Vector3(x, 0.5f, 0)));
+            (new Vector3(-0.07f, 0.1f, -0.085f), 0.07f, 0.035f),
+            (new Vector3(-0.02f, 0.115f, -0.095f), 0.055f, 0.04f),
+            (new Vector3(0.05f, 0.105f, -0.09f), 0.065f, 0.035f),
+            (new Vector3(-0.1f, 0.05f, 0.02f), 0.1f, 0.036f),
+            (new Vector3(0.1f, 0.05f, 0.02f), 0.1f, 0.036f),
+            (new Vector3(-0.07f, 0.03f, 0.09f), 0.13f, 0.05f),
+            (new Vector3(0f, 0.04f, 0.105f), 0.15f, 0.055f),
+            (new Vector3(0.07f, 0.03f, 0.09f), 0.13f, 0.05f),
+        };
+        foreach (var (root, length, width) in locks)
+        {
+            var joint = new Node3D { Position = root };
+            var strand = Part(new CylinderMesh { TopRadius = width, BottomRadius = 0.004f, Height = length, RadialSegments = 6 }, hair, new Vector3(0, -length / 2f, 0));
+            joint.AddChild(strand);
+            head.AddChild(joint);
+            _hairLocks.Add(joint);
         }
+    }
+
+    /// <summary>Hair lags behind the head: it streams back with speed, lifts when falling and settles slowly.</summary>
+    private void AnimateHair(in MotionState state, float delta)
+    {
+        var target = Mathf.Clamp(state.Speed * 0.075f, 0f, 1.25f) + (state.Grounded ? 0f : Mathf.Clamp(-state.VerticalSpeed * 0.06f, -0.3f, 0.7f));
+        target += Mathf.Sin(_phase * 2f) * Mathf.Min(state.Speed * 0.012f, 0.1f);
+        var force = (target - _hairAngle) * 95f - _hairVelocity * 11f;
+        _hairVelocity += force * delta;
+        _hairAngle += _hairVelocity * delta;
+        var turn = Mathf.Clamp((_lastYaw - Root.Rotation.Y) / Mathf.Max(delta, 0.001f), -6f, 6f);
+        _hairSide = Mathf.Lerp(_hairSide, turn * 0.07f, 1f - Mathf.Exp(-9f * delta));
+        _lastYaw = Root.Rotation.Y;
+        for (var i = 0; i < _hairLocks.Count; i++)
+        {
+            var ripple = Mathf.Sin(_phase * 1.5f + i * 1.3f) * Mathf.Min(state.Speed * 0.012f, 0.1f);
+            _hairLocks[i].Rotation = new Vector3(_hairAngle + ripple, 0, _hairSide);
+        }
+
+        _blinkClock -= delta;
+        if (_blinkClock < -0.12f)
+        {
+            _blinkClock = (float)GD.RandRange(2.0, 5.0);
+        }
+
+        foreach (var eye in _eyes)
+        {
+            eye.Scale = new Vector3(1f, _blinkClock < 0f ? 0.1f : 1f, 1f);
+        }
+    }
+
+    private static MeshInstance3D Rounded(Vector3 radius, Color color, Vector3 position)
+    {
+        var part = Part(new SphereMesh { Radius = 1f, Height = 2f, RadialSegments = 14, Rings = 8 }, color, position);
+        part.Scale = radius;
+        return part;
     }
 
     /// <summary>Small and hunched, with a huge head, ears and nose, ragged clothes and clawed feet.</summary>
@@ -362,7 +443,7 @@ public sealed class PlayerRig
                 _sword.AddChild(tip);
                 break;
             case "club":
-                var shaft = Part(new CylinderMesh { TopRadius = 0.07f, BottomRadius = 0.21f, Height = 1.35f, RadialSegments = 7 }, wood, new Vector3(0, 0, -0.62f));
+                var shaft = Part(new CylinderMesh { TopRadius = 0.22f, BottomRadius = 0.06f, Height = 1.35f, RadialSegments = 7 }, wood, new Vector3(0, 0, -0.62f));
                 shaft.Rotation = new Vector3(-Mathf.Pi / 2f, 0, 0);
                 _sword.AddChild(shaft);
                 foreach (var z in new[] { -0.75f, -1f, -1.2f })
@@ -462,6 +543,11 @@ public sealed class PlayerRig
         {
             WeaponPose(state.Move);
             blend = 26f;
+        }
+
+        if (!_look.Goblin)
+        {
+            AnimateHair(state, delta);
         }
 
         var weight = 1f - Mathf.Exp(-blend * delta);
@@ -780,8 +866,8 @@ public sealed class PlayerRig
         _thighR.Rotation = new Vector3(_pose[ThighR], 0, 0);
         _shinL.Rotation = new Vector3(-_pose[ShinL], 0, 0);
         _shinR.Rotation = new Vector3(-_pose[ShinR], 0, 0);
-        _armL.Rotation = new Vector3(_pose[ArmL], 0, 0.08f);
-        _armR.Rotation = new Vector3(_pose[ArmR], 0, -0.08f - _pose[ArmRSide]);
+        _armL.Rotation = new Vector3(_pose[ArmL], 0, -0.08f);
+        _armR.Rotation = new Vector3(_pose[ArmR], 0, 0.08f + _pose[ArmRSide]);
         _forearmL.Rotation = new Vector3(-_pose[ForearmL], 0, 0);
         _forearmR.Rotation = new Vector3(-_pose[ForearmR], 0, 0);
         _sword.Rotation = new Vector3(_pose[SwordTilt], _pose[SwordYaw], 0);
@@ -791,15 +877,23 @@ public sealed class PlayerRig
     {
         _hips.AddChild(thigh);
         thigh.Position = new Vector3(x, -0.08f, 0);
-        thigh.AddChild(Part(new CylinderMesh { TopRadius = 0.11f, BottomRadius = 0.085f, Height = 0.42f * length, RadialSegments = 6 }, cloth, new Vector3(0, -0.21f * length, 0)));
+        var hip = claws ? 0.11f : 0.09f;
+        var knee = claws ? 0.085f : 0.06f;
+        thigh.AddChild(Part(new CylinderMesh { TopRadius = hip, BottomRadius = knee, Height = 0.42f * length, RadialSegments = 8 }, cloth, new Vector3(0, -0.21f * length, 0)));
         thigh.AddChild(shin);
         shin.Position = new Vector3(0, -0.42f * length, 0);
-        shin.AddChild(Part(new CylinderMesh { TopRadius = 0.085f, BottomRadius = 0.07f, Height = 0.32f * length, RadialSegments = 6 }, cloth, new Vector3(0, -0.16f * length, 0)));
+        if (!claws)
+        {
+            shin.AddChild(Rounded(Vector3.One * 0.062f, cloth, Vector3.Zero));
+            shin.AddChild(Rounded(new Vector3(0.066f, 0.13f, 0.07f), cloth, new Vector3(0, -0.1f, 0.012f)));
+        }
+
+        shin.AddChild(Part(new CylinderMesh { TopRadius = knee, BottomRadius = claws ? 0.07f : 0.045f, Height = 0.32f * length, RadialSegments = 8 }, cloth, new Vector3(0, -0.16f * length, 0)));
         var foot = -0.32f * length - 0.03f;
         if (!claws)
         {
-            shin.AddChild(Part(new CylinderMesh { TopRadius = 0.11f, BottomRadius = 0.09f, Height = 0.1f, RadialSegments = 7 }, boot, new Vector3(0, -0.24f, 0)));
-            shin.AddChild(Part(new BoxMesh { Size = new Vector3(0.15f, 0.11f, 0.28f) }, boot, new Vector3(0, foot, -0.06f)));
+            shin.AddChild(Part(new CylinderMesh { TopRadius = 0.058f, BottomRadius = 0.05f, Height = 0.17f, RadialSegments = 8 }, boot, new Vector3(0, -0.25f, 0)));
+            shin.AddChild(Rounded(new Vector3(0.062f, 0.05f, 0.135f), boot, new Vector3(0, foot + 0.005f, -0.055f)));
             return;
         }
 
@@ -812,14 +906,34 @@ public sealed class PlayerRig
 
     private void BuildArm(Node3D arm, Node3D forearm, float x, Color cloth, Color skin, Color glove)
     {
+        var goblin = _look.Goblin;
         _torso.AddChild(arm);
-        arm.Position = new Vector3(x, _look.Goblin ? 0.36f : 0.47f, 0);
-        arm.AddChild(Part(new CylinderMesh { TopRadius = 0.09f, BottomRadius = 0.07f, Height = 0.32f, RadialSegments = 6 }, cloth, new Vector3(0, -0.16f, 0)));
+        arm.Position = new Vector3(x, goblin ? 0.36f : 0.45f, 0);
+        var top = goblin ? 0.09f : 0.058f;
+        arm.AddChild(Part(new CylinderMesh { TopRadius = top, BottomRadius = top * 0.78f, Height = 0.32f, RadialSegments = 8 }, cloth, new Vector3(0, -0.16f, 0)));
         arm.AddChild(forearm);
+        if (!goblin)
+        {
+            arm.AddChild(Rounded(Vector3.One * 0.062f, cloth, Vector3.Zero));
+            arm.AddChild(Rounded(Vector3.One * 0.047f, cloth, new Vector3(0, -0.32f, 0)));
+        }
+
         forearm.Position = new Vector3(0, -0.32f, 0);
-        forearm.AddChild(Part(new CylinderMesh { TopRadius = 0.07f, BottomRadius = 0.055f, Height = 0.26f, RadialSegments = 6 }, skin, new Vector3(0, -0.13f, 0)));
-        forearm.AddChild(Part(new CylinderMesh { TopRadius = 0.085f, BottomRadius = 0.075f, Height = 0.12f, RadialSegments = 6 }, glove, new Vector3(0, -0.18f, 0)));
-        forearm.AddChild(Part(new SphereMesh { Radius = _look.Goblin ? 0.095f : 0.075f, Height = _look.Goblin ? 0.19f : 0.15f, RadialSegments = 6, Rings = 3 }, _look.Goblin ? skin : glove, new Vector3(0, -0.29f, 0)));
+        var wrist = goblin ? 0.055f : 0.036f;
+        forearm.AddChild(Part(new CylinderMesh { TopRadius = top * 0.78f, BottomRadius = wrist, Height = 0.26f, RadialSegments = 8 }, goblin ? skin : cloth, new Vector3(0, -0.13f, 0)));
+        forearm.AddChild(Part(new CylinderMesh { TopRadius = wrist + 0.018f, BottomRadius = wrist + 0.012f, Height = 0.1f, RadialSegments = 8 }, glove, new Vector3(0, -0.21f, 0)));
+        if (goblin)
+        {
+            forearm.AddChild(Part(new SphereMesh { Radius = 0.095f, Height = 0.19f, RadialSegments = 6, Rings = 3 }, skin, new Vector3(0, -0.29f, 0)));
+            return;
+        }
+
+        // A hand: palm, four fingers curled together and a thumb.
+        forearm.AddChild(Rounded(new Vector3(0.042f, 0.052f, 0.022f), skin, new Vector3(0, -0.3f, 0)));
+        forearm.AddChild(Rounded(new Vector3(0.04f, 0.038f, 0.019f), skin, new Vector3(0, -0.355f, -0.008f)));
+        var thumb = Rounded(new Vector3(0.014f, 0.034f, 0.014f), skin, new Vector3(Mathf.Sign(x) * -0.042f, -0.31f, -0.012f));
+        thumb.Rotation = new Vector3(0, 0, Mathf.Sign(x) * -0.5f);
+        forearm.AddChild(thumb);
     }
 
     /// <summary>A solid colour without the outline the post pass would draw around small pieces.</summary>

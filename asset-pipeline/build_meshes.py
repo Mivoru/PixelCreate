@@ -16,7 +16,7 @@ COLORS = {
     "grass": "3E8948", "grass_dark": "265C42", "leaf": "63C74D", "path": "D77643",
     "wall": "E4A672", "roof": "A22633", "wood": "733E39", "wood_dark": "3E2731",
     "stone": "8B9BB4", "stone_dark": "5A6988", "window": "FEE761", "tunic": "0099DB",
-    "skin": "E8B796", "hat": "E4A672",
+    "skin": "E0AC8C", "hat": "E4A672", "hair": "5A3A28",
 }
 MATERIALS = {}
 
@@ -157,6 +157,74 @@ def bush():
     blob("bush_top", (0.1, 0.1, 0.55), 0.35, "leaf", 9, 0.8, 1)
 
 
+def sculpt(bm, shape):
+    for vert in bm.verts:
+        vert.co = shape(vert.co.x, vert.co.y, vert.co.z)
+
+
+def face_shape(x, y, z):
+    """Turns a unit sphere into a head that looks along +Y."""
+    gauss = lambda value, width: math.exp(-(value / width) ** 2)
+    jaw = max(0.0, -z)
+    width = 0.105 * (1 - 0.34 * jaw ** 1.6)
+    depth = 0.122 * (1 - 0.16 * jaw)
+    front = max(0.0, y)
+    px, py, pz = x * width, y * depth, z * 0.142
+    nose = 0.034 * gauss(x, 0.17) * gauss(z + 0.14, 0.26) * front
+    bridge = 0.016 * gauss(x, 0.13) * gauss(z - 0.1, 0.2) * front
+    brow = 0.011 * gauss(z - 0.3, 0.12) * front
+    socket = 0.012 * gauss(abs(x) - 0.42, 0.2) * gauss(z - 0.16, 0.13) * front
+    lips = 0.009 * gauss(x, 0.28) * gauss(z + 0.5, 0.1) * front
+    chin = 0.012 * gauss(x, 0.3) * gauss(z + 0.82, 0.14) * front
+    cheek = 0.006 * gauss(abs(x) - 0.55, 0.25) * gauss(z + 0.2, 0.25)
+    return (px + math.copysign(cheek, x), py + nose + bridge + brow - socket + lips + chin, pz)
+
+
+def human_head():
+    bm = bmesh.new()
+    bmesh.ops.create_icosphere(bm, subdivisions=5, radius=1)
+    sculpt(bm, face_shape)
+    mesh = bpy.data.meshes.new("head")
+    bm.to_mesh(mesh)
+    bm.free()
+    for polygon in mesh.polygons:
+        polygon.use_smooth = True
+    add_object("head", mesh, "skin")
+    for side in (-1, 1):
+        ear = bmesh.new()
+        bmesh.ops.create_icosphere(ear, subdivisions=2, radius=1)
+        for vert in ear.verts:
+            vert.co = (vert.co.x * 0.012, vert.co.y * 0.023, vert.co.z * 0.036)
+        ear_mesh = bpy.data.meshes.new("ear")
+        ear.to_mesh(ear_mesh)
+        ear.free()
+        for polygon in ear_mesh.polygons:
+            polygon.use_smooth = True
+        add_object("ear", ear_mesh, "skin", (side * 0.106, -0.005, 0.0))
+
+
+def hair_shape(x, y, z):
+    """A cap of hair over the crown and back of the head, with an uneven lower edge."""
+    edge = 0.15 + 0.05 * math.sin(x * 9) * math.cos(y * 7)
+    limit = -0.55 if y < 0 else edge
+    drop = max(0.0, limit - z) if y > 0 else 0.0
+    return (x * 0.116, y * 0.13 - 0.004, max(z, limit - 0.6) * 0.158 + 0.012 + drop * 0.0)
+
+
+def human_hair():
+    bm = bmesh.new()
+    bmesh.ops.create_icosphere(bm, subdivisions=4, radius=1)
+    remove = [v for v in bm.verts if v.co.z < (0.15 if v.co.y > 0.25 else -0.62)]
+    bmesh.ops.delete(bm, geom=remove, context="VERTS")
+    sculpt(bm, hair_shape)
+    mesh = bpy.data.meshes.new("hair")
+    bm.to_mesh(mesh)
+    bm.free()
+    for polygon in mesh.polygons:
+        polygon.use_smooth = True
+    add_object("hair", mesh, "hair")
+
+
 def tent():
     roof("canvas", (0, 0, 0), 3.6, 4.2, 2.8, "wall")
     box("pole", (0, 0, 1.4), (0.12, 0.12, 2.8), "wood_dark")
@@ -187,6 +255,8 @@ MODELS = {
     "tree_b": lambda: tree("b", 0, 0, 1.0, 21),
     "rock": rock,
     "bush": bush,
+    "human_head": human_head,
+    "human_hair": human_hair,
     "tent": tent,
     "camp_fire": camp_fire,
     "palisade": palisade,

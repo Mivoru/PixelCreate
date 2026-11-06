@@ -86,6 +86,14 @@ public sealed partial class Enemy
     private const float HopSpeed = 5.5f;
     private const float LeashExtra = 16f;
     private const float LeapLead = 0.3f;
+
+    /// <summary>Ticks before an attack lands in which its aim no longer moves.</summary>
+    public const int AimLockTicks = 14;
+    private const int StuckCheckTicks = 40;
+    private const float StuckDistance = 0.5f;
+    private const int DetourTicks = 80;
+    private const int GiveUpChecks = 9;
+    private const float GiveUpDistance = 7f;
     private const float ReturnSpeedFactor = 1.8f;
     private const int RegenIntervalTicks = 60;
 
@@ -115,6 +123,12 @@ public sealed partial class Enemy
     public int TaggedBy = -1;
 
     public bool Returning;
+    private int _detour;
+    private float _detourSide = 1f;
+    private int _stuckClock;
+    private int _stalls;
+    private Vector3 _lastCheck;
+    private Vector3 _anchor;
 
     public EnemyDef Def => EnemyDef.All[Type];
     public int MaxHealth => Def.Health + Def.HealthPerLevel * (Level - 1);
@@ -130,6 +144,13 @@ public sealed partial class Enemy
         var reach = (float)random.NextDouble() * Home.Radius;
         var spot = Home.Center + new Vector3(MathF.Cos(angle) * reach, 0, MathF.Sin(angle) * reach);
         spot.Y = world.GroundHeight(spot.X, spot.Z);
+        for (var tries = 0; tries < 12 && world.IsBlocked(spot + Vector3.UnitY * 0.6f); tries++)
+        {
+            angle += 1.1f;
+            spot = Home.Center + new Vector3(MathF.Cos(angle) * reach, 0, MathF.Sin(angle) * reach);
+            spot.Y = world.GroundHeight(spot.X, spot.Z);
+        }
+
         Position = spot;
         Velocity = Vector3.Zero;
         Health = (short)MaxHealth;
@@ -158,6 +179,7 @@ public sealed partial class Enemy
     {
         if (HitFlash > 0) HitFlash--;
         Recover();
+        WatchForStuck(world, random, targets);
         if (LeapCooldown > 0) LeapCooldown--;
         if (SpitCooldown > 0) SpitCooldown--;
         ActionTicks--;
@@ -188,6 +210,7 @@ public sealed partial class Enemy
                 break;
             case EnemyAction.Windup:
                 Velocity = Vector3.Zero;
+                TrackTarget(world, targets, true);
                 if (ActionTicks <= 0)
                 {
                     Launch();
@@ -218,6 +241,51 @@ public sealed partial class Enemy
         }
 
         Fall(world, random, events);
+    }
+
+    /// <summary>
+    /// Notices an enemy that wants to move but does not get anywhere. It first walks around the
+    /// obstacle, and if that keeps failing it gives up and goes home, as MMO enemies do.
+    /// </summary>
+    private void WatchForStuck(World world, Random random, IReadOnlyList<Target> targets)
+    {
+        if (_detour > 0) _detour--;
+        if (++_stuckClock < StuckCheckTicks)
+        {
+            return;
+        }
+
+        _stuckClock = 0;
+        var moving = Action is EnemyAction.Walk or EnemyAction.Hop;
+        if (moving && Flat(Position - _lastCheck).Length() < StuckDistance)
+        {
+            _detour = DetourTicks;
+            _detourSide = random.Next(2) == 0 ? -1f : 1f;
+        }
+
+        _lastCheck = Position;
+
+        // Going nowhere for a long time, while the goal is still far away, means it cannot be reached.
+        var goal = FindTarget(targets) is { } target ? target.Position : Home.Center;
+        var far = Flat(goal - Position).Length() > Def.PreferredRange + 4f;
+        if (Flat(Position - _anchor).Length() > GiveUpDistance || !moving || !far)
+        {
+            _anchor = Position;
+            _stalls = 0;
+            return;
+        }
+
+        if (++_stalls >= GiveUpChecks)
+        {
+            _stalls = 0;
+            TargetId = -1;
+            Returning = false;
+            var spot = Home.Center;
+            spot.Y = world.GroundHeight(spot.X, spot.Z);
+            Position = spot;
+            Velocity = Vector3.Zero;
+            ToIdle(random);
+        }
     }
 
     /// <summary>Out of a fight an enemy heals slowly, so a retreat does not undo the damage at once.</summary>
@@ -279,6 +347,25 @@ public sealed partial class Enemy
         ActionTicks = Home.RespawnTicks;
         Velocity = Vector3.Zero;
         return true;
+    }
+
+    /// <summary>
+    /// Keeps the warning on the player while an attack winds up. It locks a moment before the attack
+    /// lands, so what the warning shows is what happens, and the player can still step out.
+    /// </summary>
+    private void TrackTarget(World world, IReadOnlyList<Target> targets, bool follow)
+    {
+        if (ActionTicks <= AimLockTicks || FindTarget(targets) is not { } target)
+        {
+            return;
+        }
+
+        Face(target.Position);
+        if (follow)
+        {
+            LeapTarget = target.Position;
+            LeapTarget.Y = world.GroundHeight(LeapTarget.X, LeapTarget.Z);
+        }
     }
 
     private Target? FindTarget(IReadOnlyList<Target> targets)
@@ -416,18 +503,41 @@ public sealed partial class Enemy
 
     private Vector3 Steer(World world, Vector3 heading)
     {
-        foreach (var turn in new[] { 0f, 0.6f, -0.6f, 1.2f, -1.2f, 1.9f, -1.9f })
+        if (_detour > 0)
         {
-            var rotated = Vector3.Transform(heading, Matrix4x4.CreateRotationY(turn));
-            var ahead = Position + rotated * 1.6f;
-            ahead.Y = world.GroundHeight(ahead.X, ahead.Z) + 0.6f;
-            if (!world.IsBlocked(ahead))
+            heading = Vector3.Transform(heading, Matrix4x4.CreateRotationY(_detourSide * 1.25f));
+        }
+
+        foreach (var turn in new[] { 0f, 0.45f, -0.45f, 0.9f, -0.9f, 1.4f, -1.4f, 2f, -2f, 2.7f, -2.7f })
+        {
+            var rotated = Vector3.Transform(heading, Matrix4x4.CreateRotationY(_detour > 0 ? turn * _detourSide : turn));
+            if (PathIsClear(world, rotated))
             {
                 return rotated;
             }
         }
 
         return heading;
+    }
+
+    /// <summary>Checks a body-wide strip ahead, so an enemy does not clip a corner and stop.</summary>
+    private bool PathIsClear(World world, Vector3 heading)
+    {
+        var side = new Vector3(-heading.Z, 0, heading.X) * (0.55f * Def.Size);
+        foreach (var distance in new[] { 0.9f, 1.8f, 2.8f })
+        {
+            foreach (var offset in new[] { Vector3.Zero, side, -side })
+            {
+                var point = Position + heading * distance + offset;
+                point.Y = world.GroundHeight(point.X, point.Z) + 0.6f;
+                if (world.IsBlocked(point))
+                {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 
     private void Launch()
@@ -451,17 +561,46 @@ public sealed partial class Enemy
 
     private static Vector3 Flat(Vector3 value) => value with { Y = 0 };
 
-    private void Fall(World world, Random random, IEnemyEvents events)
+    /// <summary>Moves along each axis alone, so a blocked enemy slides along a wall instead of stopping.</summary>
+    private Vector3 Slide(World world)
     {
-        var next = Position + Flat(Velocity) * Tuning.TickSeconds;
-        var probe = next with { Y = MathF.Max(Position.Y, world.GroundHeight(next.X, next.Z)) + 0.6f };
-        if (world.IsBlocked(probe))
+        var next = Position;
+        var step = Flat(Velocity) * Tuning.TickSeconds;
+        var alongX = next + new Vector3(step.X, 0, 0);
+        if (Free(world, alongX))
+        {
+            next = alongX;
+        }
+        else
         {
             Velocity.X = 0;
-            Velocity.Z = 0;
-            next = Position;
         }
 
+        var alongZ = next + new Vector3(0, 0, step.Z);
+        if (Free(world, alongZ))
+        {
+            next = alongZ;
+        }
+        else
+        {
+            Velocity.Z = 0;
+        }
+
+        return next;
+    }
+
+    private bool Free(World world, Vector3 spot)
+    {
+        var reach = 0.45f * Def.Size;
+        var height = MathF.Max(Position.Y, world.GroundHeight(spot.X, spot.Z)) + 0.6f;
+        var direction = Flat(spot - Position);
+        var ahead = direction == Vector3.Zero ? Vector3.Zero : Vector3.Normalize(direction) * reach;
+        return !world.IsBlocked((spot + ahead) with { Y = height });
+    }
+
+    private void Fall(World world, Random random, IEnemyEvents events)
+    {
+        var next = Slide(world);
         Velocity.Y -= Tuning.Gravity * Tuning.TickSeconds;
         next.Y = Position.Y + Velocity.Y * Tuning.TickSeconds;
         var ground = world.GroundHeight(next.X, next.Z);

@@ -17,6 +17,7 @@ public sealed class TelegraphView
     private Vector3 _lastCenter;
     private Vector3 _lastEnd;
     private float _lastRadius;
+    private float _lastYaw;
 
     public TelegraphView(World world, Fx fx, Node parent, Color? color = null)
     {
@@ -59,10 +60,12 @@ public sealed class TelegraphView
     {
         _node.Visible = true;
         _fill.SetShaderParameter("strength", strength);
-        if (Mathf.Abs(length - _lastRadius) > 0.05f || origin.DistanceSquaredTo(_lastCenter) > 0.01f)
+        if (Mathf.Abs(length - _lastRadius) > 0.05f || origin.DistanceSquaredTo(_lastCenter) > 0.01f ||
+            Mathf.Abs(Mathf.AngleDifference(yaw, _lastYaw)) > 0.01f)
         {
             _lastCenter = origin;
             _lastRadius = length;
+            _lastYaw = yaw;
             BuildWedge(origin, yaw, length);
         }
     }

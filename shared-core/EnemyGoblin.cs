@@ -39,6 +39,7 @@ public sealed partial class Enemy
             case EnemyAction.Cast:
                 Velocity.X = 0;
                 Velocity.Z = 0;
+                TrackTarget(world, targets, CurrentAbility!.Effect != "spin");
                 if (ActionTicks <= 0)
                 {
                     Release(events, targets);
