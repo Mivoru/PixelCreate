@@ -44,8 +44,28 @@ public static class Tuning
         AttackKind.Heavy => HeavyAttack,
         AttackKind.DaggerFlurry => DaggerFlurry,
         AttackKind.DaggerLeap => DaggerLeap,
+        AttackKind.BowShot => BowShot,
         _ => LightAttack,
     };
+
+    /// <summary>
+    /// Loosing an arrow: the shot leaves on the first tick and the arms recover. Damage is for a
+    /// full draw; the arrow itself is the server's (see GameServer.Loose).
+    /// </summary>
+    private static readonly AttackDef BowShot = new(14, 1, 30, 0f, 1f, 0f, 0.6f);
+
+    /// <summary>A bow reaches full draw after this many ticks of holding the attack button.</summary>
+    public const byte FullDraw = 54;
+
+    /// <summary>A quick shot still carries this share of a full draw's damage and speed.</summary>
+    public const float MinDrawShare = 0.3f;
+
+    /// <summary>Holding a drawn bow slows the walk to this share, and costs this stamina when loosed.</summary>
+    public const float DrawMoveScale = 0.55f;
+    public const float ShotStamina = 6f;
+
+    /// <summary>The share of a full draw's power a shot of this draw carries.</summary>
+    public static float DrawShare(byte draw) => MinDrawShare + (1f - MinDrawShare) * Math.Min(draw, FullDraw) / FullDraw;
 
     private static readonly AttackDef LightAttack = new(22, 9, 15, 2.8f, 0.3f, 8f, 0.55f);
     private static readonly AttackDef HeavyAttack = new(46, 26, 40, 3.3f, 0.1f, 25f, 0.25f);
@@ -100,6 +120,7 @@ public enum AttackKind : byte
     Heavy = 2,
     DaggerFlurry = 3,
     DaggerLeap = 4,
+    BowShot = 5,
 }
 
 /// <param name="Total">Length of the attack in ticks.</param>
@@ -155,6 +176,10 @@ public struct PlayerState
 
     /// <summary>The kind of weapon held (see <see cref="Weapons"/>). The server sets it when gear changes.</summary>
     public byte Weapon;
+
+    /// <summary>Ticks the bow has been drawn so far, and how far it was drawn when the last arrow left.</summary>
+    public byte DrawTicks;
+    public byte ShotDraw;
 
     public static PlayerState Spawn(Vector3 position, short health = Tuning.PlayerHealth) => new()
     {
@@ -444,6 +469,11 @@ public static class Movement
             }
         }
 
+        if (state.Weapon == Weapons.Bow)
+        {
+            return StepBow(ref state, input, landed);
+        }
+
         var wanted = input.Buttons.HasFlag(Buttons.Heavy) ? AttackKind.Heavy
             : input.Buttons.HasFlag(Buttons.Light) ? AttackKind.Light : AttackKind.None;
         if (state.Weapon == Weapons.Dagger && wanted != AttackKind.None)
@@ -462,6 +492,30 @@ public static class Movement
             state.AttackTick = 0;
             state.AttackAim = input.Aim;
             Spend(ref state, next.Stamina);
+        }
+
+        return landed;
+    }
+
+    /// <summary>
+    /// The bow: holding the attack button draws it, up to a full draw; letting go looses the arrow
+    /// with the draw it had, in the direction the player aims.
+    /// </summary>
+    private static AttackKind StepBow(ref PlayerState state, in InputCmd input, AttackKind landed)
+    {
+        var holding = input.Buttons.HasFlag(Buttons.Light);
+        if (holding && CanStartAttack(state) && state.Stamina >= Tuning.ShotStamina)
+        {
+            state.DrawTicks = (byte)Math.Min(state.DrawTicks + 1, Tuning.FullDraw);
+        }
+        else if (!holding && state.DrawTicks > 0)
+        {
+            state.Attack = AttackKind.BowShot;
+            state.AttackTick = 0;
+            state.AttackAim = input.Aim;
+            state.ShotDraw = state.DrawTicks;
+            state.DrawTicks = 0;
+            Spend(ref state, Tuning.ShotStamina);
         }
 
         return landed;
@@ -512,6 +566,11 @@ public static class Movement
         if (state.Attack != AttackKind.None)
         {
             speed *= Tuning.Attack(state.Attack).MoveScale;
+        }
+
+        if (state.DrawTicks > 0)
+        {
+            speed *= Tuning.DrawMoveScale;
         }
 
         var current = new Vector2(state.Velocity.X, state.Velocity.Z);

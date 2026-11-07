@@ -49,6 +49,7 @@ public enum ProjectileKind : byte
     Arrow = 1,
     PowerArrow = 2,
     Fireball = 3,
+    PlayerArrow = 4,
 }
 
 /// <summary>A burning V on the ground. See <see cref="GameServer"/>.</summary>
@@ -169,6 +170,10 @@ public sealed class GameServer : IEnemyEvents
         public float Gravity;
         public float SplashRadius;
         public bool Pierces;
+
+        /// <summary>For a player's arrow: who loosed it and how far the bow was drawn, as a share of a full draw.</summary>
+        public int Shooter = -1;
+        public float Draw = 1f;
         public Vector3 Position;
         public Vector3 Velocity;
         public int Life = ProjectileLifeTicks;
@@ -336,9 +341,10 @@ public sealed class GameServer : IEnemyEvents
                 enemy.Step(_world, _random, targets, this);
             }
 
-            StepProjectiles();
             StepWalls();
         }
+
+        StepProjectiles();
 
         if (Tick % (uint)_options.SnapshotInterval == 0)
         {
@@ -383,10 +389,10 @@ public sealed class GameServer : IEnemyEvents
             if (_options.TestMode)
             {
                 // Test runs start with one piece of each rarity, so gear can be checked at once.
-                var kit = new[] { "twin_daggers", "iron_helm", "leather_jerkin", "chain_leggings" };
+                var kit = new[] { "twin_daggers", "iron_helm", "leather_jerkin", "chain_leggings", "hunters_longbow" };
                 for (var i = 0; i < kit.Length; i++)
                 {
-                    player.Gear[i] = GearPiece.Roll(ItemDef.Index(kit[i]), (Rarity)i, 5, _random);
+                    player.Gear[i] = GearPiece.Roll(ItemDef.Index(kit[i]), (Rarity)(i % 4), 5, _random);
                     player.GearChanged.Add(i);
                 }
             }
@@ -429,7 +435,11 @@ public sealed class GameServer : IEnemyEvents
 
         player.NextTick++;
         var landed = Movement.Step(ref player.State, command, _world);
-        if (landed != AttackKind.None)
+        if (landed == AttackKind.BowShot)
+        {
+            Loose(player);
+        }
+        else if (landed != AttackKind.None)
         {
             Strike(player, landed);
         }
@@ -1110,14 +1120,124 @@ public sealed class GameServer : IEnemyEvents
         return distance < FireWallHazard.Reach || Vector3.Dot(offset / distance, wall.Direction) >= MathF.Cos(FireWallHazard.HalfAngle);
     }
 
+    /// <summary>How far a player's arrow looks for something to hit, and how wide the cone it bends towards.</summary>
+    private const float ArrowRange = 45f;
+    private const float ArrowAssist = 0.985f;
+
+    /// <summary>
+    /// A player looses an arrow: along the aim, bent a little towards the enemy nearest the line of
+    /// aim when one stands inside a narrow cone, which also aims it up or down at that enemy. A
+    /// fuller draw flies faster and flatter.
+    /// </summary>
+    private void Loose(Player player)
+    {
+        var aim = Movement.AimDirection(player.State.AttackAim);
+        var origin = player.State.Position + new Vector3(0, 1.4f, 0) + aim * 0.6f;
+        var draw = Tuning.DrawShare(player.State.ShotDraw);
+        var speed = 16f + 26f * draw;
+        var gravity = 9f - 6f * draw;
+        Vector3? target = null;
+        var best = ArrowAssist;
+        foreach (var enemy in _enemies)
+        {
+            if (!enemy.Alive)
+            {
+                continue;
+            }
+
+            var chest = enemy.Position + new Vector3(0, enemy.Def.Size * 0.6f, 0);
+            var flat = (chest - origin) with { Y = 0 };
+            if (flat.Length() > ArrowRange || flat.Length() < 0.5f)
+            {
+                continue;
+            }
+
+            var alignment = Vector3.Dot(Vector3.Normalize(flat), aim);
+            if (alignment > best)
+            {
+                best = alignment;
+                target = chest;
+            }
+        }
+
+        var velocity = aim * speed;
+        if (target is { } chestOf)
+        {
+            // Aimed at an enemy: straight at it, lifted by the drop it will suffer on the way, as an archer would.
+            var toward = chestOf - origin;
+            velocity = Vector3.Normalize(toward) * speed;
+            velocity.Y += 0.5f * gravity * (toward.Length() / speed);
+        }
+
+        _projectiles.Add(new Projectile
+        {
+            Id = _nextId++,
+            Kind = ProjectileKind.PlayerArrow,
+            Damage = 0,
+            Position = origin,
+            Velocity = velocity,
+            Gravity = gravity,
+            Shooter = player.Id,
+            Draw = draw,
+        });
+    }
+
+    /// <summary>A player's arrow strikes the first living enemy it reaches.</summary>
+    private bool StrikeWithArrow(Projectile shot)
+    {
+        if (!_players.TryGetValue(shot.Shooter, out var shooter))
+        {
+            return true;
+        }
+
+        foreach (var enemy in _enemies)
+        {
+            var chest = enemy.Position + new Vector3(0, enemy.Def.Size * 0.6f, 0);
+            if (!enemy.Alive || Vector3.Distance(chest, shot.Position) >= HitRadius + enemy.Def.Size * 0.35f)
+            {
+                continue;
+            }
+
+            var damage = (short)Math.Max(1, MathF.Round(BlowDamage(shooter, AttackKind.BowShot, enemy) * shot.Draw));
+            var killed = enemy.TakeHit(damage, shot.Position - shot.Velocity, shooter.Id);
+            AfterBlow(shooter, enemy, damage);
+            Stats.EnemyHits++;
+            CallForHelp(enemy, shooter.Id);
+            if (killed)
+            {
+                OnKilled(enemy, shooter);
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
     private void StepProjectiles()
     {
-        foreach (var shot in _projectiles)
+        foreach (var shot in _projectiles.ToList())
         {
+            // Frozen enemies (in tests) hold their own shots in the air; players' arrows still fly.
+            if (EnemiesFrozen && shot.Shooter < 0)
+            {
+                continue;
+            }
+
             shot.Velocity.Y -= shot.Gravity * Tuning.TickSeconds;
             shot.Position += shot.Velocity * Tuning.TickSeconds;
             shot.Life--;
             var struck = !shot.Pierces && _world.IsBlocked(shot.Position);
+            if (shot.Shooter >= 0)
+            {
+                if (struck || StrikeWithArrow(shot))
+                {
+                    shot.Life = 0;
+                }
+
+                continue;
+            }
+
             foreach (var player in _players.Values)
             {
                 var chest = player.State.Position + Vector3.UnitY;

@@ -186,6 +186,6 @@ public sealed class ClientPrediction
 
     private static bool SameDiscreteState(in PlayerState a, in PlayerState b) =>
         a.SlowTicks == b.SlowTicks && a.DashTicks == b.DashTicks && a.DashCooldown == b.DashCooldown &&
-        a.Attack == b.Attack && a.AttackTick == b.AttackTick && a.Weapon == b.Weapon &&
+        a.Attack == b.Attack && a.AttackTick == b.AttackTick && a.Weapon == b.Weapon && a.DrawTicks == b.DrawTicks &&
         MathF.Abs(a.Stamina - b.Stamina) < 0.01f;
 }

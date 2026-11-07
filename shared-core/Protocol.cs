@@ -380,6 +380,8 @@ public static class Protocol
         writer.Write(state.AttackAim);
         writer.Write(state.Health);
         writer.Write(state.Weapon);
+        writer.Write(state.DrawTicks);
+        writer.Write(state.ShotDraw);
     }
 
     private static PlayerState ReadState(BinaryReader reader) => new()
@@ -398,5 +400,7 @@ public static class Protocol
         AttackAim = reader.ReadByte(),
         Health = reader.ReadInt16(),
         Weapon = reader.ReadByte(),
+        DrawTicks = reader.ReadByte(),
+        ShotDraw = reader.ReadByte(),
     };
 }

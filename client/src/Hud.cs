@@ -331,6 +331,7 @@ public partial class Hud : Control
             Label($"x {p.X:F1}   y {p.Y:F1}   z {p.Z:F1}", new Vector2(28, Size.Y - 24), 16, Text, _bold, true);
         }
 
+        DrawDraw();
         DrawMessages();
         DrawDialog();
         if (InventoryOpen)
@@ -984,6 +985,28 @@ public partial class Hud : Control
         {
             canvas.DrawCircle(rect.Position + new Vector2(25, height - 24), 6, Accent);
             canvas.DrawString(_bold, rect.Position + new Vector2(38, height - 18), price, HorizontalAlignment.Left, -1, 15, Accent);
+        }
+    }
+
+    /// <summary>
+    /// While a bow is drawn, a ring round the middle of the screen fills with the draw and turns
+    /// gold at a full draw, so the player knows when to let go.
+    /// </summary>
+    private void DrawDraw()
+    {
+        if (Player.DrawTicks == 0)
+        {
+            return;
+        }
+
+        var share = Mathf.Clamp(Player.DrawTicks / (float)Tuning.FullDraw, 0f, 1f);
+        var centre = Size / 2f + new Vector2(0, 40);
+        var full = share >= 1f;
+        DrawArc(centre, 22, 0, Mathf.Tau, 40, new Color(0, 0, 0, 0.45f), 5f, true);
+        DrawArc(centre, 22, -Mathf.Pi / 2f, -Mathf.Pi / 2f + Mathf.Tau * share, 40, full ? Accent : new Color(1, 1, 1, 0.85f), 3.5f, true);
+        if (full)
+        {
+            DrawCircle(centre, 3f, Accent);
         }
     }
 

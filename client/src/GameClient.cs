@@ -401,7 +401,12 @@ public partial class GameClient : Node
             _fx.Burst(shown + Vector3.Up * 0.05f, new Color("b8a58a"), 8, 2.5f, 0.3f, 0.07f, -6f, 85f);
         }
 
-        if (now.Attack != AttackKind.None && now.AttackTick < _last.AttackTick | now.Attack != _last.Attack)
+        if (now.Attack == AttackKind.BowShot && _last.Attack != AttackKind.BowShot)
+        {
+            // A full draw thrums; a quick shot only twangs.
+            _sfx.Play(now.ShotDraw >= Tuning.FullDraw * 0.8f ? "bow_power" : "bow_shot", chest);
+        }
+        else if (now.Attack != AttackKind.None && now.AttackTick < _last.AttackTick | now.Attack != _last.Attack)
         {
             _sfx.Play(now.Attack is AttackKind.Heavy or AttackKind.DaggerLeap ? "swing_heavy" : "swing_light", chest);
         }
@@ -542,6 +547,11 @@ public partial class GameClient : Node
         if (mode == "gear")
         {
             return GearBot();
+        }
+
+        if (mode == "bow")
+        {
+            return BowBot();
         }
 
         if (mode is "talk" or "trial" && _client.Tick == 60)
@@ -696,6 +706,38 @@ public partial class GameClient : Node
     }
 
     /// <summary>
+    /// Checks the bow (start the server with PIXEL_TEST=1): takes up the longbow, then turns towards
+    /// the nearest enemy and draws and looses again and again, some quick shots and some full draws.
+    /// </summary>
+    private (sbyte X, sbyte Z, Buttons Buttons) BowBot()
+    {
+        var tick = _client.Tick;
+        if (tick == 100 && _hud.Items.Bag.FirstOrDefault(i => i?.Gear?.Def.Weapon == "bow") is { } bow)
+        {
+            BotStage("take up the bow");
+            _pendingCommand = GearCommands.Toggle(bow.Place);
+        }
+
+        if (tick < 160 || _client.Latest is not { } snapshot)
+        {
+            return (0, 0, Buttons.None);
+        }
+
+        BotStage("shoot");
+        var me = _client.State.Position;
+        if (snapshot.Enemies.Where(e => e.Action != EnemyAction.Dead).OrderBy(e => (e.Position - me).Length()).FirstOrDefault() is { Id: > 0 } target)
+        {
+            var to = target.Position - me;
+            _yaw = Mathf.Atan2(-to.X, -to.Z);
+        }
+
+        // Every other shot is a quick one.
+        var cycle = (int)(tick % 150);
+        var drawFor = tick / 150 % 2 == 0 ? 80 : 15;
+        return (0, 0, cycle < drawFor ? Buttons.Light : Buttons.None);
+    }
+
+    /// <summary>
     /// Hunts whatever lives nearby, walks over the loot, eats once, then opens the bag and points at
     /// the first slot so the capture shows the inventory and a tooltip. Start it near a camp.
     /// </summary>
@@ -820,7 +862,12 @@ public partial class GameClient : Node
         var state = _client.State;
         _player.Root.Position = shown;
         var flat = new Vector2(state.Velocity.X, state.Velocity.Z);
-        if (state.Attack != AttackKind.None)
+        if (state.DrawTicks > 0)
+        {
+            // A drawn bow points where the camera aims.
+            _facing = LerpFacing(_facing, _yaw, 30f * delta);
+        }
+        else if (state.Attack != AttackKind.None)
         {
             _facing = LerpFacing(_facing, state.AttackAim / 256f * Mathf.Tau, 30f * delta);
         }
@@ -832,8 +879,9 @@ public partial class GameClient : Node
         _player.Root.Rotation = new Vector3(0, _facing, 0);
         _player.SetWeapon(Weapons.Name(_client.State.Weapon));
         _player.SwordVisible = _hud.Items.HasWeapon;
+        var bow = state.DrawTicks > 0 ? WeaponMove.BowDraw : state.Attack == AttackKind.BowShot ? WeaponMove.BowRelease : WeaponMove.None;
         _player.Animate(new MotionState(flat.Length(), state.Grounded, state.Velocity.Y,
-            state.DashTicks > 0, state.Attack, state.AttackTick), delta);
+            state.DashTicks > 0, state.Attack, state.AttackTick, bow), delta);
     }
 
     private static float LerpFacing(float from, float to, float amount) =>
@@ -865,7 +913,8 @@ public partial class GameClient : Node
 
             rig.SetWeapon(Weapons.Name(other.Weapon));
             rig.Animate(new MotionState(flat.Length(), Mathf.Abs(other.Velocity.Y) < 0.5f, other.Velocity.Y,
-                flat.Length() > Tuning.MoveSpeed + 1f, other.Attack, other.AttackTick), delta);
+                flat.Length() > Tuning.MoveSpeed + 1f, other.Attack, other.AttackTick,
+                other.Attack == AttackKind.BowShot ? WeaponMove.BowRelease : WeaponMove.None), delta);
         }
 
         _hud.EnemyPositions.Clear();
@@ -1117,18 +1166,21 @@ public partial class GameClient : Node
                 _spits.Add(spit.Id, ball);
                 _spitKinds.Add(spit.Id, spit.Kind);
                 _stage.View.AddChild(ball);
-                _sfx.Play(spit.Kind switch
+                if (spit.Kind != ProjectileKind.PlayerArrow)
                 {
-                    ProjectileKind.Spit => "slime_spit",
-                    ProjectileKind.Arrow => "bow_shot",
-                    ProjectileKind.PowerArrow => "bow_power",
-                    _ => "fireball",
-                }, ball.Position);
+                    _sfx.Play(spit.Kind switch
+                    {
+                        ProjectileKind.Spit => "slime_spit",
+                        ProjectileKind.Arrow => "bow_shot",
+                        ProjectileKind.PowerArrow => "bow_power",
+                        _ => "fireball",
+                    }, ball.Position);
+                }
             }
 
             var motion = target - ball.Position;
             ball.Position = ball.Position.Lerp(target, spit.Kind == ProjectileKind.PowerArrow ? 1f : blend);
-            if (spit.Kind is ProjectileKind.Arrow or ProjectileKind.PowerArrow && motion.LengthSquared() > 0.0001f)
+            if (spit.Kind is ProjectileKind.Arrow or ProjectileKind.PowerArrow or ProjectileKind.PlayerArrow && motion.LengthSquared() > 0.0001f)
             {
                 ball.LookAt(ball.GlobalPosition + motion, Vector3.Up);
             }
@@ -1179,6 +1231,19 @@ public partial class GameClient : Node
         if (kind == ProjectileKind.Spit)
         {
             return BuildSpit(position);
+        }
+
+        if (kind == ProjectileKind.PlayerArrow)
+        {
+            // The player's arrow: a pale shaft with a white fletching streak behind it.
+            var shaft = new MeshInstance3D
+            {
+                Mesh = new BoxMesh { Size = new Vector3(0.05f, 0.05f, 1.0f) },
+                MaterialOverride = _fx.Stipple(new Color("e4a672"), 1f),
+                Position = position,
+            };
+            shaft.AddChild(Trail(new Color("ffffff"), 14, 0.18f, 0.04f));
+            return shaft;
         }
 
         if (kind is ProjectileKind.Arrow or ProjectileKind.PowerArrow)

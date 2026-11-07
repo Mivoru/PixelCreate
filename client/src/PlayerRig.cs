@@ -624,7 +624,7 @@ public sealed class PlayerRig
             DaggerPose(state.Attack, state.AttackTick);
             blend = state.Attack == AttackKind.DaggerFlurry ? 40f : 26f;
         }
-        else if (state.Attack != AttackKind.None)
+        else if (state.Attack is not (AttackKind.None or AttackKind.BowShot))
         {
             AttackPose(state.Attack, state.AttackTick);
             blend = 34f;

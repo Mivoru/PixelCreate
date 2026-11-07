@@ -239,4 +239,113 @@ public sealed class GearTests
         // One correction when the server hands over the daggers; leaps themselves must agree.
         Assert.True(client.Stats.Corrections <= 2, $"{client.Stats.Corrections} corrections while leaping");
     }
+
+    [Fact]
+    public void Bow_DrawsWhileHeldAndLoosesOnRelease()
+    {
+        var world = new World(Array.Empty<Aabb>());
+        var state = PlayerState.Spawn(Vector3.Zero);
+        state.Weapon = Weapons.Bow;
+        var shotAt = -1;
+        var walkedDrawing = 0f;
+        for (var tick = 0; tick < 60; tick++)
+        {
+            var holding = tick < 30;
+            var before = state.Position.Z;
+            var input = new InputCmd { Tick = (uint)tick, MoveZ = -127, Buttons = holding ? Buttons.Light : Buttons.None };
+            if (Movement.Step(ref state, input, world) == AttackKind.BowShot)
+            {
+                shotAt = tick;
+                Assert.Equal(30, state.ShotDraw);
+            }
+
+            if (holding && tick > 20)
+            {
+                walkedDrawing = MathF.Max(walkedDrawing, before - state.Position.Z);
+            }
+        }
+
+        Assert.True(shotAt >= 30, "the arrow leaves when the button is let go");
+        Assert.InRange(walkedDrawing * Tuning.TickRate, 1f, Tuning.MoveSpeed * Tuning.DrawMoveScale + 0.2f);
+        Assert.Equal(0, state.DrawTicks);
+    }
+
+    private static (GameServer Server, ClientPrediction Client, SimNetwork Network) StartArcher(Vector3 target)
+    {
+        var network = new SimNetwork(1, 0, 0, 0);
+        var camp = new EnemySpawn(target, 0.1f, 1, Types: new[] { "goblin_brute" });
+        var world = new World(Array.Empty<Aabb>(), null, Vector3.Zero, new[] { camp });
+        var server = new GameServer(network.Connect(0), world, new ServerOptions { Seed = 3 });
+        var client = new ClientPrediction(network.Connect(1), world);
+        Run(server, client, network, 10);
+        server.EnemiesFrozen = true;
+        server.Enemies[0].Position = target;
+        var bow = server.GiveGear(1, new GearPiece(Item("hunters_longbow"), Rarity.Common, 1, Array.Empty<AffixRoll>()));
+        Run(server, client, network, 12, GearCommands.Toggle(bow));
+        return (server, client, network);
+    }
+
+    /// <summary>Draws for some ticks, lets go, and waits for the arrow. Returns the damage it did.</summary>
+    private static int Shoot(GameServer server, ClientPrediction client, SimNetwork network, int draw, byte aim = 0)
+    {
+        var before = server.Enemies[0].Health;
+        for (var tick = 0; tick < draw + 90; tick++)
+        {
+            network.Advance(1000.0 / Tuning.TickRate);
+            server.Step();
+            client.Step(0, 0, tick < draw ? Buttons.Light : Buttons.None, aim);
+        }
+
+        return before - server.Enemies[0].Health;
+    }
+
+    [Fact]
+    public void Arrows_HurtMoreAtFullDraw()
+    {
+        var (server, client, network) = StartArcher(new Vector3(0, 0, -14));
+        var quick = Shoot(server, client, network, 4);
+        var (fullServer, fullClient, fullNetwork) = StartArcher(new Vector3(0, 0, -14));
+        var full = Shoot(fullServer, fullClient, fullNetwork, Tuning.FullDraw + 10);
+        Assert.True(quick > 0, "a quick shot still hits");
+        Assert.True(full > quick * 2, $"a full draw ({full}) hits much harder than a quick shot ({quick})");
+    }
+
+    [Fact]
+    public void Arrows_BendTowardsAnEnemyNearTheAimOnly()
+    {
+        // A little to the side of the aim: the arrow bends onto it.
+        var (server, client, network) = StartArcher(new Vector3(0.8f, 0, -16));
+        Assert.True(Shoot(server, client, network, Tuning.FullDraw) > 0);
+
+        // Far off to the side: the arrow flies on along the aim.
+        var (wide, wideClient, wideNetwork) = StartArcher(new Vector3(9f, 0, -16));
+        Assert.Equal(0, Shoot(wide, wideClient, wideNetwork, Tuning.FullDraw));
+    }
+
+    [Fact]
+    public void BowDraws_ArePredictedWithoutCorrections()
+    {
+        var network = new SimNetwork(80, 8, 2, 7);
+        var world = new World(Array.Empty<Aabb>());
+        var server = new GameServer(network.Connect(0), world, new ServerOptions { Seed = 3, EnemyCount = 0 });
+        var client = new ClientPrediction(network.Connect(1), world);
+        for (var tick = 0; tick < 30; tick++)
+        {
+            network.Advance(1000.0 / Tuning.TickRate);
+            server.Step();
+            client.Step(0, 0, Buttons.None);
+        }
+
+        var place = server.GiveGear(1, GearPiece.Roll(Item("goblin_shortbow"), Rarity.Common, 1, new Random(1)));
+        for (var tick = 0; tick < Tuning.TickRate * 8; tick++)
+        {
+            network.Advance(1000.0 / Tuning.TickRate);
+            server.Step();
+            var drawing = tick > 60 && tick % 80 < 50;
+            client.Step(60, 90, drawing ? Buttons.Light : Buttons.None, (byte)(tick / 30), tick == 0 ? GearCommands.Toggle(place) : Command.None);
+        }
+
+        Assert.Equal(Weapons.Bow, client.State.Weapon);
+        Assert.True(client.Stats.Corrections <= 2, $"{client.Stats.Corrections} corrections while drawing and loosing");
+    }
 }
