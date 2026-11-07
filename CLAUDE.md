@@ -70,6 +70,11 @@ Rules:
   live in `client/studio/shots.json`; add one for each new place. `PIXEL_SHOTS=guild,arena` films only shots
   whose names start with those words.
 - `net-tests/ZoneAuditTests.cs` walks the real zone: keep every door, camp and bridge reachable.
+- Collision is measured from the models: building a model writes its boxes to `world/collision.json`
+  (`asset-pipeline/collision.py`). Never hand-size a hitbox; rebuild the model. Plants and models with
+  platform floors are listed as non-solid in `Zone.NonSolid`. Grass never grows inside a solid box.
+- Studio model shots: `PIXEL_MODELS=cottage,bridge` photographs only those models, from five sides, with
+  their collision boxes drawn.
 - Models: edit `asset-pipeline/build_meshes.py`, then `scripts/build_assets.ps1` builds and imports them.
   Name models to rebuild only those: `scripts/build_assets.ps1 guild_interior beast_cow`. Animals are
   `beast_*` (asset-pipeline/beasts.py) and goblin parts and camp props come from asset-pipeline/goblins.py.
