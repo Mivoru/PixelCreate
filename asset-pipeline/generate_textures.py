@@ -211,6 +211,23 @@ def glass(rng):
     save("glass", np.stack([grey, grey, grey], axis=-1))
 
 
+def bark(rng):
+    """Bark: ridges running along the trunk, split by dark furrows that wander and fork."""
+    values = np.full((SIZE, SIZE), 0.72)
+    ridges = layered(rng, 2, 4, 8)
+    for _ in range(26):
+        x = float(rng.integers(0, SIZE))
+        width = int(rng.integers(2, 4))
+        for y in range(SIZE):
+            x += (ridges[y, int(x) % SIZE] - 0.5) * 1.6
+            for k in range(width):
+                values[y, (int(x) + k) % SIZE] = 0.38
+    grain = layered(rng, 8, 32, 128)
+    values = values * (0.82 + grain * 0.3)
+    grey = (np.clip(values, 0, 1) * 255).astype(np.uint8)
+    save("bark", np.stack([grey, grey, grey], axis=-1))
+
+
 def merged_palette():
     colours = []
     for name in ("endesga-32", "resurrect-64"):
@@ -269,6 +286,7 @@ def main():
     shingles(rng)
     # Natural stone keeps the soft weathered noise; built stone uses the coursed masonry above.
     detail(rng, "rockface", layered(rng, 8, 16, 64))
+    bark(rng)
     print(f"palette colours: {merged_palette()}")
     bitmap_font()
 

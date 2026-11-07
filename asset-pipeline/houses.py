@@ -9,7 +9,7 @@ import math
 import mathutils
 
 # build_meshes.py hands over its drawing helpers through bind().
-box = timber = blob = add_object = mesh_from = None
+box = timber = blob = add_object = mesh_from = round_log = None
 
 
 def bind(helpers):
@@ -245,7 +245,7 @@ def cottage_b():
         for k in range(5 - row):
             y = -0.9 + 0.16 * row + k * 0.32
             z = 0.4 + row * 0.27
-            timber("log", (x0 + 0.35, y, z), (x1 - 0.35, y, z), 0.26, "bark")
+            round_log("log", (x0 + 0.35, y, z), (x1 - 0.35, y, z), 0.13)
 
 
 def tavern():

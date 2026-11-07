@@ -873,6 +873,7 @@ def timber(name, start, end, size, material="wood"):
 houses.bind({"box": box, "timber": timber, "blob": blob, "add_object": add_object, "mesh_from": mesh_from})
 cottage, cottage_b, tavern = houses.cottage, houses.cottage_b, houses.tavern
 landmarks.bind({"box": box, "timber": timber, "blob": blob, "loft": loft, "add_object": add_object, "mesh_from": mesh_from})
+houses.bind({"round_log": lambda *a: round_log(*a)})
 windmill, watchtower, well, stall = landmarks.windmill, landmarks.watchtower, landmarks.well, landmarks.stall
 ruin_arch, ruin_wall, ruin = landmarks.ruin_arch, landmarks.ruin_wall, landmarks.ruin
 
@@ -938,11 +939,25 @@ def hay():
     blob("hay_top", (0.2, 0.1, 1.1), 0.5, "hay", 13, 0.8, 2)
 
 
+def round_log(name, start, end, radius):
+    """A split-free log: round in bark, with the pale sawn wood showing at both ends."""
+    start, end = mathutils.Vector(start), mathutils.Vector(end)
+    beasts.section_tube(name, [tuple(start), tuple(end)], [radius] * 2, [radius] * 2, "bark", add_object, smooth, 9)
+    along = (end - start).normalized() * 0.015
+    for tip, out in ((start, -along), (end, along)):
+        beasts.section_tube(name + "_end", [tuple(tip), tuple(tip + out)], [radius * 0.92] * 2, [radius * 0.92] * 2, "sack", add_object, smooth, 9)
+
+
 def log_pile():
+    """Firewood stacked in a pyramid, each log a little different in thickness and length."""
+    rng = random.Random(12)
     for row, count in enumerate((4, 3, 2)):
         for i in range(count):
             y = (i - (count - 1) / 2) * 0.42
-            timber("log", (-1.1, y, 0.2 + row * 0.36), (1.1, y, 0.2 + row * 0.36), 0.36)
+            r = rng.uniform(0.16, 0.2)
+            reach = rng.uniform(1.0, 1.15)
+            z = 0.19 + row * 0.35
+            round_log("log", (-reach, y, z), (reach + rng.uniform(-0.08, 0.08), y + rng.uniform(-0.03, 0.03), z), r)
 
 
 def fence():
@@ -1496,11 +1511,17 @@ def cliff():
     crag("cliff", 11, 9, 11, 4, 40)
 
 
-def crag(name, width, depth, height, levels, seed, material="rock_dark"):
-    """Layered rock with a flat foot and top. Each layer steps in, like weathered strata."""
+def crag(name, width, depth, height, levels, seed, material="rock_dark", sides=18, rough=0.0):
+    """Layered rock with a flat foot and top. Each layer steps in, like weathered strata. Rough
+    crags have more sides, smoothly varying bulges and a few deep vertical clefts."""
     rng = random.Random(seed)
-    sides = 18
-    wobble = [rng.uniform(0.84, 1.14) for _ in range(sides)]
+    if rough > 0:
+        bulge = [rng.uniform(-1, 1) for _ in range(6)]
+        clefts = {rng.randrange(sides) for _ in range(4)}
+        wobble = [1 + rough * sum(b * math.sin((k + 1) * i / sides * math.tau + k) for k, b in enumerate(bulge)) / 4
+                  - (0.12 if i in clefts else 0.0) for i in range(sides)]
+    else:
+        wobble = [rng.uniform(0.84, 1.14) for _ in range(sides)]
     bm = bmesh.new()
     rings = []
     for level in range(levels + 1):
@@ -1537,9 +1558,9 @@ def falls_cliff():
     the water always hugs the rock. Keep the two in step (ZoneView.ChuteFront).
     """
     crag("wall", 50, 18, 16, 6, 71, "rock")
-    crag("left", 18, 14, 21, 7, 72, "rock_dark")
+    crag("left", 18, 14, 21, 7, 72, "rock_dark", 32, 0.35)
     bpy.data.objects["left"].location = (-19, 2, 0)
-    crag("right", 16, 14, 19, 6, 73, "rock_dark")
+    crag("right", 16, 14, 19, 6, 73, "rock_dark", 32, 0.35)
     bpy.data.objects["right"].location = (20, 2, 0)
 
     def chute_front(t):

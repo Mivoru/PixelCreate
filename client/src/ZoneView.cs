@@ -48,10 +48,10 @@ public static class ZoneView
         ["leaf"] = ("leaves", 0.9f, 1f),
         ["hide"] = ("plaster", 0.9f, 0f),
         ["foliage_core"] = ("leaves", 0.9f, 1f),
-        ["bark"] = ("planks", 1.6f, 0f),
-        ["bark_dark"] = ("planks", 1.6f, 0f),
+        ["bark"] = ("bark", 1.2f, 0f),
+        ["bark_dark"] = ("bark", 1.2f, 0f),
         ["bark_birch"] = ("plaster", 1.4f, 0f),
-        ["bark_grey"] = ("planks", 1.6f, 0f),
+        ["bark_grey"] = ("bark", 1.2f, 0f),
         ["reed"] = ("leaves", 2f, 1f),
         ["grass_tall"] = ("leaves", 2f, 1f),
         ["hide_dark"] = ("plaster", 0.9f, 0f),
@@ -60,6 +60,7 @@ public static class ZoneView
         ["paper"] = ("plaster", 2f, 0f),
         ["window"] = ("plaster", 3f, 0f),
         ["pane"] = ("glass", 1.1f, 0f),
+        ["glass"] = ("glass", 1.1f, 0f),
         ["moss"] = ("leaves", 1.2f, 0f),
         ["rock"] = ("rockface", 0.5f, 0f),
         ["rock_dark"] = ("rockface", 0.6f, 0f),
@@ -500,7 +501,9 @@ public static class ZoneView
             return foliage;
         }
 
-        var look = Surfaces.GetValueOrDefault(original.ResourceName, ("stone", 0.6f, 0f));
+        // Anything without its own surface (gold, flowers, cloth trim) gets a faint neutral grain,
+        // not the masonry courses of built stone.
+        var look = Surfaces.GetValueOrDefault(original.ResourceName, ("plaster", 1.2f, 0f));
         var material = new ShaderMaterial { Shader = shader };
         material.SetShaderParameter("tint", original.AlbedoColor);
         material.SetShaderParameter("detail", GD.Load<Texture2D>($"res://assets/textures/{look.Item1}.png"));
