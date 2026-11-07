@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Godot;
 using PixelCreate.Core;
 
@@ -8,6 +9,9 @@ namespace PixelCreate;
 /// <summary>Builds what the player sees from the same zone data the server uses for collision.</summary>
 public static class ZoneView
 {
+    private const int BatchMinimum = 8;
+    private const float BatchCell = 60f;
+    private const float SmallRange = 70f;
     private const float GrassPatch = 24f;
     private const int GrassPerPatch = 4200;
     private const float GrassRange = 95f;
@@ -49,7 +53,10 @@ public static class ZoneView
     {
         var root = new Node3D { Name = zone.Name };
         root.AddChild(BuildTerrain(zone));
-        root.AddChild(BuildGrass(zone));
+        if (!PixelStage.Off("grass"))
+        {
+            root.AddChild(BuildGrass(zone));
+        }
         BuildWater(zone, root);
         BuildInteriorLights(root);
         root.AddChild(new Ambient(zone));
@@ -57,8 +64,14 @@ public static class ZoneView
         var models = new Dictionary<string, PackedScene>();
         var shader = GD.Load<Shader>("res://shaders/prop.gdshader");
         var materials = new Dictionary<Material, ShaderMaterial>();
+        var batched = BuildBatches(zone, root, shader, materials);
         foreach (var prop in zone.Props)
         {
+            if (batched.Contains(prop.Model))
+            {
+                continue;
+            }
+
             if (!models.TryGetValue(prop.Model, out var model))
             {
                 model = GD.Load<PackedScene>($"res://assets/{prop.Model}.glb");
@@ -196,6 +209,100 @@ public static class ZoneView
     {
         surface.SetUV(new Vector2(u * 0.14f, v));
         surface.AddVertex(position);
+    }
+
+    /// <summary>
+    /// Scattered models, which appear many times, are drawn as one MultiMesh per model and area
+    /// instead of one node each. Small things stop drawing at a shorter distance.
+    /// </summary>
+    private static HashSet<string> BuildBatches(Zone zone, Node3D root, Shader shader, Dictionary<Material, ShaderMaterial> materials)
+    {
+        var groups = new Dictionary<(string Model, int X, int Z), List<PlacedProp>>();
+        var counts = new Dictionary<string, int>();
+        foreach (var prop in zone.Props)
+        {
+            counts[prop.Model] = counts.GetValueOrDefault(prop.Model) + 1;
+        }
+
+        var batched = new HashSet<string>(counts.Where(c => c.Value >= BatchMinimum && c.Key != "camp_fire").Select(c => c.Key));
+        foreach (var prop in zone.Props.Where(p => batched.Contains(p.Model)))
+        {
+            var key = (prop.Model, (int)Mathf.Floor(prop.Position.X / BatchCell), (int)Mathf.Floor(prop.Position.Z / BatchCell));
+            if (!groups.TryGetValue(key, out var list))
+            {
+                groups[key] = list = new List<PlacedProp>();
+            }
+
+            list.Add(prop);
+        }
+
+        var meshes = new Dictionary<string, Mesh>();
+        foreach (var ((model, _, _), props) in groups)
+        {
+            if (PixelStage.Off("batches"))
+            {
+                continue;
+            }
+
+            if (!meshes.TryGetValue(model, out var mesh))
+            {
+                var source = GD.Load<PackedScene>($"res://assets/{model}.glb").Instantiate<Node3D>();
+                var part = FindMesh(source)!;
+                var copy = (Mesh)part.Mesh.Duplicate();
+                for (var surface = 0; surface < copy.GetSurfaceCount(); surface++)
+                {
+                    if (copy.SurfaceGetMaterial(surface) is StandardMaterial3D original)
+                    {
+                        if (!materials.TryGetValue(original, out var replacement))
+                        {
+                            replacement = BuildMaterial(original, shader);
+                            materials.Add(original, replacement);
+                        }
+
+                        copy.SurfaceSetMaterial(surface, replacement);
+                    }
+                }
+
+                meshes[model] = mesh = copy;
+                source.Free();
+            }
+
+            var multi = new MultiMesh { TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, Mesh = mesh, InstanceCount = props.Count };
+            for (var i = 0; i < props.Count; i++)
+            {
+                var p = props[i];
+                var basis = Basis.Identity.Rotated(Vector3.Up, p.Yaw).Scaled(Vector3.One * p.Scale);
+                multi.SetInstanceTransform(i, new Transform3D(basis, new Vector3(p.Position.X, p.Position.Y, p.Position.Z)));
+            }
+
+            var small = model is "flowers" or "twigs" or "grass_tuft" or "mushroom" or "rock_c" or "fern" or "reeds" or "stump";
+            root.AddChild(new MultiMeshInstance3D
+            {
+                Multimesh = multi,
+                VisibilityRangeEnd = small ? SmallRange : 0f,
+                CastShadow = small ? GeometryInstance3D.ShadowCastingSetting.Off : GeometryInstance3D.ShadowCastingSetting.On,
+            });
+        }
+
+        return batched;
+    }
+
+    private static MeshInstance3D? FindMesh(Node node)
+    {
+        if (node is MeshInstance3D mesh)
+        {
+            return mesh;
+        }
+
+        foreach (var child in node.GetChildren())
+        {
+            if (FindMesh(child) is { } found)
+            {
+                return found;
+            }
+        }
+
+        return null;
     }
 
     /// <summary>A few flames and a warm light over a camp fire.</summary>

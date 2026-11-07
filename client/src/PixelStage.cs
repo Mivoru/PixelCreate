@@ -53,9 +53,10 @@ public sealed class PixelStage
             RotationDegrees = new Vector3(-38, -50, 0),
             LightColor = new Color("fff0d8"),
             LightEnergy = 1.2f,
-            ShadowEnabled = true,
+            ShadowEnabled = !Off("shadow"),
             ShadowBlur = 1.6f,
-            DirectionalShadowMaxDistance = 130f,
+            DirectionalShadowMaxDistance = 90f,
+            DirectionalShadowMode = DirectionalLight3D.ShadowMode.Parallel2Splits,
         });
 
         Camera = new Camera3D { Fov = 58, Far = 260 };
@@ -63,6 +64,29 @@ public sealed class PixelStage
         PostQuad = BuildPostQuad();
         Camera.AddChild(PostQuad);
     }
+
+    /// <summary>
+    /// Stops a figure drawing beyond a distance, where it would be a few pixels anyway, and keeps
+    /// its tiny parts out of the shadow pass.
+    /// </summary>
+    public static void Limit(Node node, float range)
+    {
+        if (node is GeometryInstance3D geometry)
+        {
+            geometry.VisibilityRangeEnd = range;
+            if (geometry.GetAabb().Size.Length() < 0.12f)
+            {
+                geometry.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off;
+            }
+        }
+
+        foreach (var child in node.GetChildren())
+        {
+            Limit(child, range);
+        }
+    }
+
+    public static bool Off(string feature) => OS.GetEnvironment("PIXEL_OFF").Split(',').Contains(feature);
 
     private void Resize(Viewport window)
     {
@@ -87,16 +111,16 @@ public sealed class PixelStage
                 FogLightColor = new Color("bcd8ea"),
                 FogDensity = 0.0024f,
                 FogSkyAffect = 0f,
-                VolumetricFogEnabled = true,
+                VolumetricFogEnabled = !Off("fog"),
                 VolumetricFogDensity = 0.002f,
                 VolumetricFogAlbedo = new Color("fff3e0"),
                 VolumetricFogLength = 90f,
                 VolumetricFogAnisotropy = 0.55f,
-                GlowEnabled = true,
+                GlowEnabled = !Off("glow"),
                 GlowIntensity = 0.35f,
                 GlowBloom = 0.04f,
                 GlowHdrThreshold = 1.05f,
-                SsaoEnabled = true,
+                SsaoEnabled = !Off("ssao"),
                 SsaoRadius = 1.4f,
                 SsaoIntensity = 0.8f,
                 TonemapMode = Godot.Environment.ToneMapper.Linear,

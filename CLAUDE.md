@@ -52,6 +52,9 @@ Rules:
 - Live check: add `-Capture <folder>` to that command. A bot plays, saves frames and prints a `STATS` line.
 - `PIXEL_BOT` picks the bot: `guild` plays the Guild story through the real interface and prints `BOT` stages,
   with `PIXEL_TEST=1` making the examiner frail. Also `idle`, `talk`, `trial`, `keys`. `PIXEL_YAW` turns the camera.
+- `STATS` reports draws, objects and `frameMs` away from capture stalls. The frame is capped by vsync at
+  60 Hz, so judge cost by draws and objects. `PIXEL_OFF=fog,ssao,glow,shadow,batches,grass` switches
+  features off to measure them.
 - Full check after a change: `powershell -ExecutionPolicy Bypass -File scripts/check.ps1`.
 - Photo studio: `scripts/studio.ps1 -Jobs people,motion,models,world,hitboxes,map` needs no server and writes
   labelled contact sheets to `export/previews/studio/sheets`. Read them after every visual change. World shots

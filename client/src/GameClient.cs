@@ -21,6 +21,7 @@ public partial class GameClient : Node
     private const float CameraStep = 0.25f;
     private const float CameraClearance = 0.4f;
     private const int BotDialogTicks = 70;
+    private const float FigureRange = 60f;
     private const float GuildInteriorX = 400f;
     private const float ArenaX = 450f;
     private const float MinPitch = -1.1f;
@@ -65,6 +66,9 @@ public partial class GameClient : Node
     private float _facing;
     private double _clock;
     private string _botStage = "";
+    private int _sinceCapture;
+    private int _measuredFrames;
+    private double _frameSeconds;
     private int _botWait;
     private string? _captureDir;
     private int _captureFrames = 8;
@@ -103,6 +107,7 @@ public partial class GameClient : Node
                 var rig = new PlayerRig(new Color("0099db"), look);
                 rig.Root.Position = ToGodot(npc.Position);
                 rig.Root.Rotation = new Vector3(0, npc.Yaw, 0);
+                PixelStage.Limit(rig.Root, FigureRange);
                 _stage.View.AddChild(rig.Root);
                 _npcs.Add(npc.Id, rig);
             }
@@ -171,6 +176,13 @@ public partial class GameClient : Node
 
     public override void _Process(double delta)
     {
+        // Frame times are measured away from the frames that save a picture, which stall on purpose.
+        if (_captureDir is not null && _sinceCapture++ > 20)
+        {
+            _frameSeconds += delta;
+            _measuredFrames++;
+        }
+
         _transport.Poll();
         if (!_transport.IsConnected)
         {
@@ -682,6 +694,7 @@ public partial class GameClient : Node
                     _ => new GoblinView(def),
                 };
                 _enemies.Add(enemy.Id, slime);
+                PixelStage.Limit(slime.Root, FigureRange);
                 _enemyTypes[enemy.Id] = enemy.Type;
                 _stage.View.AddChild(slime.Root);
                 if (!_telegraphs.ContainsKey(enemy.Id))
@@ -1017,6 +1030,7 @@ public partial class GameClient : Node
     private void Capture()
     {
         GetViewport().GetTexture().GetImage().SavePng($"{_captureDir}/window-{_captured}.png");
+        _sinceCapture = 0;
         if (++_captured < _captureFrames)
         {
             return;
@@ -1027,7 +1041,7 @@ public partial class GameClient : Node
         GD.Print($"STATS snapshots={stats.Snapshots} corrections={stats.Corrections} " +
                  $"maxError={stats.MaxError:F3} buffered={_client.Latest?.BufferedInputs} " +
                  $"tickScale={_client.TickScale:F3} enemies={enemies.Length} rare={enemies.Count(e => e.Type == 1)} " +
-                 $"fps={Engine.GetFramesPerSecond()} sounds={_sfx.Played} level={_client.Latest?.Level} xp={_client.Latest?.Xp} hp={_client.State.Health} stamina={_client.State.Stamina:F0} maxHeight={_maxHeight:F2} travelled={_travelled:F0}");
+                 $"fps={(_measuredFrames > 0 ? _measuredFrames / _frameSeconds : 0):F0} draws={Performance.GetMonitor(Performance.Monitor.RenderTotalDrawCallsInFrame)} objects={Performance.GetMonitor(Performance.Monitor.RenderTotalObjectsInFrame)} tris={Performance.GetMonitor(Performance.Monitor.RenderTotalPrimitivesInFrame) / 1000:F0}k nodes={Performance.GetMonitor(Performance.Monitor.ObjectNodeCount)} frameMs={_frameSeconds * 1000 / Math.Max(_measuredFrames, 1):F1} sounds={_sfx.Played} level={_client.Latest?.Level} xp={_client.Latest?.Xp} hp={_client.State.Health} stamina={_client.State.Stamina:F0} maxHeight={_maxHeight:F2} travelled={_travelled:F0}");
         GetTree().Quit();
     }
 
