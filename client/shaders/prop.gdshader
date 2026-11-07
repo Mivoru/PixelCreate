@@ -23,9 +23,8 @@ void vertex() {
 void fragment() {
 	// Leaves between the camera and the player dissolve, so a tree crown never blinds the view.
 	if (sway > 0.5) {
-		float near = smoothstep(1.2, 2.8, -VERTEX.z);
-		ivec2 cell = ivec2(FRAGCOORD.xy) % 2;
-		if (near < (cell.x == cell.y ? 0.3 : 0.75)) {
+		// A clean cut, not a dither: at the pixel resolution a dither shows as a coarse checkerboard.
+		if (-VERTEX.z < 2.2) {
 			discard;
 		}
 	}

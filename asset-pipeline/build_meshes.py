@@ -28,7 +28,7 @@ COLORS = {
     "foliage_oak": "5F9A3C", "foliage_oak_b": "6FA63E", "foliage_birch": "A8C850", "foliage_blossom": "F4A8C0", "foliage_pine": "2F6A58",
     "foliage_willow": "8FB84A", "foliage_bush": "4F8E42", "foliage_jungle": "3F9048", "foliage_core": "1F4A3A",
     "bark": "6E4E3C", "bark_dark": "4A3634", "bark_birch": "E0DACC", "bark_grey": "8A8078", "reed": "9AA850", "grass_tall": "7FBF52",
-    "hide": "8A6A4A", "hide_dark": "4A3428", "sand": "D8C49A", "crop": "D8B85A", "paper": "EEE4C8", "glass": "CFE6F2", "ember": "B03A1E", "anime_glove": "23252E", "anime_vest": "2F4070", "anime_accent": "C84848", "anime_armor": "B8C4D4", "anime_armor_dark": "7A889C",
+    "hide": "8A6A4A", "hide_dark": "4A3428", "sand": "D8C49A", "crop": "D8B85A", "paper": "EEE4C8", "glass": "CFE6F2", "ember": "B03A1E", "rune": "2CE8F5", "anime_glove": "23252E", "anime_vest": "2F4070", "anime_accent": "C84848", "anime_armor": "B8C4D4", "anime_armor_dark": "7A889C",
 }
 COLORS.update(beasts.COLORS)
 COLORS.update(goblins.COLORS)
@@ -1465,9 +1465,12 @@ def ruin_arch():
     for x in (-2.6, 2.6):
         box("base", (x, 0, 0.3), (1.8, 1.8, 0.6), "stone_dark")
         cylinder(f"column{x}", (x, 0, 2.6), 0.6, 4.2, "stone", 8)
-    for i in range(7):
-        a = i / 6 * math.pi
-        blob(f"arch{i}", (math.cos(a) * 2.7, 0, 4.7 + math.sin(a) * 1.5), 0.62, "stone", i, 0.9, 1)
+    # A solid arch of stone resting on both columns, with one block fallen out of it.
+    arc = [(math.cos(i / 10 * math.pi) * 2.6, 0, 4.7 + math.sin(i / 10 * math.pi) * 1.55) for i in range(11)]
+    beasts.section_tube("arch", arc[:6], [0.62] * 6, [0.5] * 6, "stone", add_object, smooth, 6)
+    beasts.section_tube("arch", arc[7:], [0.62] * 4, [0.5] * 4, "stone", add_object, smooth, 6)
+    for x, z in ((2.6, 4.7), (-2.6, 4.7)):
+        box("capital", (x, 0, z), (1.5, 1.5, 0.35), "stone_dark")
     blob("fallen", (3.6, 1.8, 0.4), 0.8, "stone_dark", 3, 0.6, 2)
 
 
@@ -1667,6 +1670,7 @@ MODELS = {
 }
 
 MODELS.update(goblins.models(add_object, smooth))
+MODELS.update(goblins.camp_models(box, timber, blob, cylinder, loft, tube))
 for beast in beasts.NAMES:
     MODELS["beast_" + beast] = (lambda kind: lambda: beasts.build(kind, add_object, smooth))(beast)
 

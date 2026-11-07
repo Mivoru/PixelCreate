@@ -213,3 +213,92 @@ def models(add_object, smooth):
     found["gob_hand"] = lambda: hand(k)
     found["gob_foot"] = lambda: foot(k)
     return found
+
+
+def camp_models(box, timber, blob, cylinder, loft, tube):
+    """Goblin camp dressing, built with the prop helpers of build_meshes.py."""
+
+    def goblin_hut():
+        # A cone of crooked poles wrapped in patched hides, with a smoke hole and a dark doorway.
+        rng = __import__("random").Random(17)
+        poles = 9
+        for i in range(poles):
+            a = i / poles * math.tau
+            timber("pole", (math.cos(a) * 1.9, math.sin(a) * 1.9, 0), (math.cos(a) * 0.15, math.sin(a) * 0.15, 3.3 + rng.uniform(0, 0.4)), 0.08, "wood_dark")
+        loft("hides", [(0.0, 1.85, 1.85), (1.2, 1.25, 1.25), (2.4, 0.6, 0.6), (2.95, 0.25, 0.25)], "hide", 9)
+        for i in range(5):
+            a = rng.uniform(0, math.tau)
+            z = rng.uniform(0.5, 2.0)
+            r = 1.85 - z * 0.52
+            box("patch", (math.cos(a) * r, math.sin(a) * r, z), (0.5, 0.5, 0.45), "hide_dark")
+        add_door = [(-0.55, 1.6, 0), (0.55, 1.6, 0), (0, 1.25, 1.35)]
+        loft("door", [(0.0, 0.55, 0.12, 0, 1.62), (1.3, 0.12, 0.05, 0, 1.25)], "hide_dark", 6)
+        blob("skull", (0, 1.62, 1.75), 0.16, "paper", 3, 0.9, 1)
+
+    def goblin_totem():
+        timber("post", (0, 0, 0), (0, 0, 3.4), 0.22, "wood")
+        for z, colour in ((0.9, "cloth_red"), (1.9, "gold"), (2.8, "cloth_red")):
+            loft("face", [(z - 0.25, 0.26, 0.26), (z, 0.3, 0.3), (z + 0.25, 0.26, 0.26)], "wood_dark", 8)
+            for side in (-1, 1):
+                box("eye", (side * 0.11, 0.27, z + 0.06), (0.1, 0.06, 0.07), colour)
+            box("mouth", (0, 0.28, z - 0.11), (0.22, 0.06, 0.05), "wood_dark")
+        blob("skull", (0, 0.05, 3.55), 0.26, "paper", 5, 0.95, 2)
+        for side in (-1, 1):
+            tube("horn", [(side * 0.18, 0.0, 3.6), (side * 0.4, 0.0, 3.75), (side * 0.48, 0.05, 3.98)], [0.07, 0.05, 0.01], "paper", 6)
+            tube("feather", [(side * 0.2, -0.1, 3.2), (side * 0.45, -0.18, 2.9), (side * 0.55, -0.2, 2.5)], [0.04, 0.035, 0.005], "cloth_red" if side > 0 else "stone", 5)
+
+    def bone_pile():
+        rng = __import__("random").Random(9)
+        for i in range(9):
+            a = rng.uniform(0, math.tau)
+            r = rng.uniform(0, 0.55)
+            x, y = math.cos(a) * r, math.sin(a) * r
+            b = rng.uniform(0, math.tau)
+            timber("bone", (x - math.cos(b) * 0.3, y - math.sin(b) * 0.3, 0.06 + i * 0.015), (x + math.cos(b) * 0.3, y + math.sin(b) * 0.3, 0.08 + i * 0.012), 0.05, "paper")
+        blob("skull", (0.1, 0.0, 0.25), 0.2, "paper", 2, 0.9, 1)
+        for side in (-1, 1):
+            blob("socket", (0.1 + side * 0.07, 0.17, 0.27), 0.05, "wood_dark", 1, 1, 1)
+
+    def cook_pot():
+        for i in range(3):
+            a = i / 3 * math.tau
+            timber("leg", (math.cos(a) * 0.9, math.sin(a) * 0.9, 0), (0, 0, 1.7), 0.07, "wood_dark")
+        timber("chain", (0, 0, 1.7), (0, 0, 1.05), 0.02, "stone_dark")
+        loft("pot", [(0.45, 0.25, 0.25), (0.55, 0.42, 0.42), (0.8, 0.46, 0.46), (1.0, 0.4, 0.4), (1.05, 0.42, 0.42)], "stone_dark", 12)
+        loft("stew", [(1.0, 0.39, 0.39), (1.01, 0.39, 0.39)], "hide", 12)
+        timber("bone", (0.15, -0.1, 1.0), (0.3, -0.25, 1.35), 0.04, "paper")
+        for i in range(5):
+            a = i / 5 * math.tau + 0.4
+            timber("log", (math.cos(a) * 0.45, math.sin(a) * 0.45, 0.05), (math.cos(a) * 0.05, math.sin(a) * 0.05, 0.3), 0.08, "wood_dark")
+        blob("embers", (0, 0, 0.05), 0.28, "window", 4, 0.3, 1)
+
+    def goblin_banner():
+        timber("pole", (0, 0, 0), (0, 0, 4.2), 0.08, "wood_dark")
+        timber("bar", (-0.05, 0, 3.9), (0.9, 0, 3.9), 0.05, "wood_dark")
+        verts = [(0.0, 0, 3.9), (0.9, 0, 3.9), (0.85, 0, 2.6), (0.6, 0, 2.85), (0.4, 0, 2.4), (0.15, 0, 2.75), (0.0, 0, 2.5)]
+        mesh = bpy.data.meshes.new("cloth")
+        mesh.from_pydata(verts, [], [(0, 1, 2, 3, 4, 5, 6)])
+        mesh.materials.append(bpy.data.materials["cloth_red"])
+        obj = bpy.data.objects.new("cloth", mesh)
+        bpy.context.collection.objects.link(obj)
+        blob("mark", (0.45, -0.03, 3.35), 0.18, "paper", 1, 1, 1)
+        for side in (-1, 1):
+            box("socket", (0.45 + side * 0.07, -0.12, 3.38), (0.06, 0.06, 0.06), "wood_dark")
+
+    def spike_wall():
+        for i in range(7):
+            x = -2.7 + i * 0.9
+            timber("stake", (x, -0.6, 0), (x, 0.5, 2.0 + (i % 2) * 0.35), 0.13, "wood")
+        timber("rail", (-3, -0.25, 0.7), (3, -0.25, 0.7), 0.1, "wood_dark")
+        timber("rail", (-3, 0.05, 1.4), (3, 0.05, 1.4), 0.08, "wood_dark")
+
+    def rune_stone():
+        loft("stone", [(0, 0.55, 0.4), (1.4, 0.45, 0.32), (2.4, 0.3, 0.25), (2.7, 0.08, 0.08)], "stone_dark", 6)
+        for i, z in enumerate((0.7, 1.15, 1.6, 2.0)):
+            box("rune", (0.0, 0.36 - z * 0.05, z), (0.18 - i * 0.02, 0.04, 0.12), "ember")
+        blob("moss", (0.2, -0.2, 0.15), 0.3, "grass", 2, 0.4, 1)
+
+    return {
+        "goblin_hut": goblin_hut, "goblin_totem": goblin_totem, "bone_pile": bone_pile, "cook_pot": cook_pot,
+        "goblin_banner": goblin_banner, "spike_wall": spike_wall, "rune_stone": rune_stone,
+    }
