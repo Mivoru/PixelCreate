@@ -277,4 +277,67 @@ public class ZoneAuditTests
             }
         }
     }
+
+    /// <summary>
+    /// Steps off each bridge end at every point across the deck. The ground mesh never meets the deck
+    /// exactly, and a lip there once held a player in place at the east end of the river bridge.
+    /// </summary>
+    [Fact]
+    public void BridgeEnds_CanBeLeftAnywhereAcrossTheDeck()
+    {
+        var world = Valley.World;
+        foreach (var bridge in Valley.Bridges)
+        {
+            for (var z = bridge.MinZ + 0.6f; z <= bridge.MaxZ - 0.6f; z += 0.4f)
+            {
+                foreach (var (x, outward) in new[] { (bridge.MinX, -1f), (bridge.MaxX, 1f) })
+                {
+                    var state = PlayerState.Spawn(new Vector3(x, bridge.Height, z));
+                    var input = new InputCmd { MoveX = (sbyte)(outward * 127) };
+                    for (var tick = 0; tick < Tuning.TickRate; tick++)
+                    {
+                        input.Tick = (uint)tick;
+                        Movement.Step(ref state, input, world);
+                    }
+
+                    Assert.True(MathF.Abs(state.Position.X - x) > 2f,
+                        $"leaving the bridge at x {x}, z {z:F1} stopped at x {state.Position.X:F2}");
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Walks straight at every fence from both sides. A fence on a slope once sank so far into the
+    /// uphill ground that a player could step onto its top and snag along it.
+    /// </summary>
+    [Fact]
+    public void Fences_CannotBeSteppedOver()
+    {
+        var world = Valley.World;
+        foreach (var fence in Valley.Props.Where(p => p.Model == "fence"))
+        {
+            var (sin, cos) = MathF.SinCos(fence.Yaw);
+            var across = new Vector2(sin, cos);
+            foreach (var side in new[] { -1f, 1f })
+            {
+                var start = new Vector2(fence.Position.X, fence.Position.Z) + across * side * 1.5f;
+                var state = PlayerState.Spawn(new Vector3(start.X, world.GroundHeight(start.X, start.Y), start.Y));
+                if (world.OverlapsPlayer(state.Position))
+                {
+                    continue;
+                }
+
+                var input = new InputCmd { MoveX = (sbyte)(-across.X * side * 127), MoveZ = (sbyte)(-across.Y * side * 127) };
+                for (var tick = 0; tick < Tuning.TickRate; tick++)
+                {
+                    input.Tick = (uint)tick;
+                    Movement.Step(ref state, input, world);
+                }
+
+                var past = Vector2.Dot(new Vector2(state.Position.X - fence.Position.X, state.Position.Z - fence.Position.Z), across) * side;
+                Assert.True(past > 0f, $"walked over the fence at {fence.Position.X}, {fence.Position.Z} from side {side}");
+            }
+        }
+    }
 }

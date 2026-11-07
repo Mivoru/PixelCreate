@@ -149,6 +149,20 @@ public sealed class World
         return Terrain?.At(x, z) ?? 0f;
     }
 
+    /// <summary>True when a platform, not the terrain, is the ground at this point.</summary>
+    public bool OnPlatform(float x, float z)
+    {
+        foreach (var platform in Platforms)
+        {
+            if (x >= platform.MinX && x <= platform.MaxX && z >= platform.MinZ && z <= platform.MaxZ)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /// <summary>True when a player standing at this position would be inside a box.</summary>
     public bool OverlapsPlayer(Vector3 position)
     {
@@ -417,8 +431,11 @@ public static class Movement
         var groundNow = world.GroundHeight(state.Position.X, state.Position.Z);
         var groundNext = world.GroundHeight(next.X, next.Z);
         var onGround = state.Position.Y <= groundNow + 0.05f;
+        // The join between a platform and the terrain is a step, not a slope: the coarse ground mesh
+        // never meets a deck exactly, and a small lip there must not stop a walker.
+        var crossesEdge = world.OnPlatform(state.Position.X, state.Position.Z) != world.OnPlatform(next.X, next.Z);
         return groundNext > state.Position.Y + Tuning.StepHeight ||
-               (onGround && groundNext - groundNow > MathF.Abs(delta) * Tuning.MaxSlope);
+               (onGround && !crossesEdge && groundNext - groundNow > MathF.Abs(delta) * Tuning.MaxSlope);
     }
 
     private static void LandOnGround(ref PlayerState state, World world, bool wasGrounded)

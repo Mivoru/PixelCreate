@@ -120,6 +120,8 @@ public sealed class AnimalView : IEnemyView
 
         var dead = enemy.Action == EnemyAction.Dead;
         _fall = Mathf.MoveToward(_fall, dead ? 1f : 0f, delta * 3f);
+        // The client hides an animal that leaves the player's area; back in the snapshot, it shows again.
+        Root.Visible = true;
         Root.Position = position;
         Root.Rotation = new Vector3(0, enemy.Facing, _fall * Mathf.Pi / 2f);
 

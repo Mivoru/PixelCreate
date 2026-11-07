@@ -22,6 +22,7 @@
   { "name": "jungle", "eye": [-44, 3, -90], "at": [-90, 6, -112] },
   { "name": "jungle_inside", "eye": [-92, 2, -106], "at": [-110, 5, -130] },
   { "name": "windmill", "eye": [20, 3, 28], "at": [34, 6, 8] },
+  { "name": "windmill pen", "eye": [28, 5, -16], "at": [42, 2, -3] },
   { "name": "fields", "eye": [20, 4, -38], "at": [34, 0, -22] },
   { "name": "watchtower", "eye": [110, 3, -2], "at": [126, 4, -4] },
   { "name": "stones", "eye": [-78, 3, 106], "at": [-90, 1.5, 120] },

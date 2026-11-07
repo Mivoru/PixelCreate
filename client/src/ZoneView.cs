@@ -16,6 +16,18 @@ public static class ZoneView
     private const int GrassPerPatch = 4200;
     private const float GrassRange = 95f;
 
+    /// <summary>
+    /// A prop's turn and size. A fence on a slope is sheared rather than tilted, so its length follows
+    /// the ground while its posts still stand upright.
+    /// </summary>
+    private static Basis PropBasis(PlacedProp prop)
+    {
+        var sin = Mathf.Sin(prop.Yaw);
+        var cos = Mathf.Cos(prop.Yaw);
+        var along = new Vector3(cos, prop.Slope, -sin);
+        return new Basis(along, Vector3.Up, new Vector3(sin, 0, cos)).Scaled(Vector3.One * prop.Scale);
+    }
+
     /// <summary>Material name from Blender: detail texture, world scale and leaf sway.</summary>
     private static readonly Dictionary<string, (string Texture, float Scale, float Sway)> Surfaces = new()
     {
@@ -79,9 +91,7 @@ public static class ZoneView
             }
 
             var instance = model.Instantiate<Node3D>();
-            instance.Position = new Vector3(prop.Position.X, prop.Position.Y, prop.Position.Z);
-            instance.Rotation = new Vector3(0, prop.Yaw, 0);
-            instance.Scale = Vector3.One * prop.Scale;
+            instance.Transform = new Transform3D(PropBasis(prop), new Vector3(prop.Position.X, prop.Position.Y, prop.Position.Z));
             Retexture(instance, shader, materials);
             root.AddChild(instance);
             if (prop.Model == "camp_fire")
@@ -348,8 +358,7 @@ public static class ZoneView
             for (var i = 0; i < props.Count; i++)
             {
                 var p = props[i];
-                var basis = Basis.Identity.Rotated(Vector3.Up, p.Yaw).Scaled(Vector3.One * p.Scale);
-                multi.SetInstanceTransform(i, new Transform3D(basis, new Vector3(p.Position.X, p.Position.Y, p.Position.Z)));
+                multi.SetInstanceTransform(i, new Transform3D(PropBasis(p), new Vector3(p.Position.X, p.Position.Y, p.Position.Z)));
             }
 
             var small = model is "flowers" or "twigs" or "grass_tuft" or "mushroom" or "rock_c" or "fern" or "reeds" or "stump";

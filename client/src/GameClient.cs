@@ -820,9 +820,9 @@ public partial class GameClient : Node
         var near = snapshot.Enemies.Select(e => e.Id).ToHashSet();
         foreach (var (id, view) in _enemies)
         {
-            view.Root.Visible &= near.Contains(id);
             if (!near.Contains(id))
             {
+                view.Root.Visible = false;
                 _telegraphs[id].Hide();
             }
         }

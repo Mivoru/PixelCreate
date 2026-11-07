@@ -48,7 +48,8 @@ public sealed class HeightField
     }
 }
 
-public readonly record struct PlacedProp(string Model, Vector3 Position, float Scale, float Yaw);
+/// <param name="Slope">How much a long piece such as a fence rises per metre along its own x axis, so it follows the ground.</param>
+public readonly record struct PlacedProp(string Model, Vector3 Position, float Scale, float Yaw, float Slope = 0f);
 
 /// <summary>
 /// A part of the world, built from a hand-written file in world/zones. The layout is authored;
@@ -227,7 +228,8 @@ public sealed class Zone
         foreach (var prop in data.Props)
         {
             var position = new Vector3(prop.X, Settle(ground, prop.Model, prop.X, prop.Z, prop.Yaw), prop.Z);
-            props.Add(new PlacedProp(prop.Model, position, 1f, prop.Yaw));
+            var (height, slope) = IsRun(prop.Model) ? Lean(ground, prop.Model, prop.X, prop.Z, prop.Yaw) : (position.Y, 0f);
+            props.Add(new PlacedProp(prop.Model, position with { Y = height }, 1f, prop.Yaw, slope));
         }
 
         Bridges = platforms.Where(p => p.MaxX < data.Size / 2).ToArray();
@@ -251,7 +253,7 @@ public sealed class Zone
         var enemySpawns = (data.Enemies ?? Array.Empty<EnemySpawnData>())
             .Select(e => new EnemySpawn(new Vector3(e.X, terrain.At(e.X, e.Z), e.Z), e.Radius, e.Count, e.MinLevel, e.MaxLevel, e.RespawnTicks, e.Rare, e.Types)).ToArray();
         _regions = data.Regions ?? Array.Empty<RegionData>();
-        var boxes = BuildBoxes(props, data.Size);
+        var boxes = BuildBoxes(props, data.Size, ground);
         boxes.AddRange((data.Walls ?? Array.Empty<RectData>()).Select(w => new Aabb(new(w.X0, w.Bottom, w.Z0), new(w.X1, w.Height, w.Z1))));
         Vector3 Place(float x, float z) => new(x, ground.GroundHeight(x, z), z);
         var trial = data.Trial is { } t ? Place(t[0], t[1]) : spawn;
@@ -585,6 +587,24 @@ public sealed class Zone
         return MathF.Max(lowest, centre - 2.5f);
     }
 
+    /// <summary>
+    /// A fence or wall on a slope follows the ground from end to end instead of burying its uphill
+    /// end: the height of its middle and how much it rises per metre along its length.
+    /// </summary>
+    private static (float Height, float Slope) Lean(World ground, string model, float x, float z, float yaw)
+    {
+        var half = Collision[model].X;
+        var (sin, cos) = MathF.SinCos(yaw);
+        var start = ground.GroundHeight(x - half * cos, z + half * sin);
+        var end = ground.GroundHeight(x + half * cos, z - half * sin);
+        var centre = ground.GroundHeight(x, z);
+        // Sit a little low, so the posts never float over a dip in the middle.
+        return (MathF.Min((start + end) / 2, centre) - 0.05f, (end - start) / (2 * half));
+    }
+
+    /// <summary>Fences and walls: long, thin pieces laid end to end.</summary>
+    private static bool IsRun(string model) => model is "fence" or "stone_wall" or "palisade" or "spike_wall" or "ruin_wall";
+
     /// <summary>How far from its centre a model reaches on the ground, by what it is made of.</summary>
     private static float Footprint(string model) => model switch
     {
@@ -603,7 +623,7 @@ public sealed class Zone
         return new Vector2(prop.Position.X - x, prop.Position.Z - z).LengthSquared() < reach * reach;
     }
 
-    private static List<Aabb> BuildBoxes(List<PlacedProp> props, float size)
+    private static List<Aabb> BuildBoxes(List<PlacedProp> props, float size, World ground)
     {
         const float wallHeight = 80f;
         const float thick = 2f;
@@ -636,7 +656,18 @@ public sealed class Zone
                 var halfX = shape.X * cos + shape.Y * sin;
                 var halfZ = shape.X * sin + shape.Y * cos;
                 var p = prop.Position;
-                boxes.Add(new(new(p.X - halfX, p.Y - 1f, p.Z - halfZ), new(p.X + halfX, p.Y + shape.Z, p.Z + halfZ)));
+                // On a slope the box reaches as high above the uphill ground as the model is tall, so
+                // nobody steps onto the top of a fence from the high side.
+                var top = p.Y + shape.Z;
+                if (IsRun(prop.Model))
+                {
+                    foreach (var (sx, sz) in new[] { (-1f, -1f), (1f, -1f), (-1f, 1f), (1f, 1f) })
+                    {
+                        top = MathF.Max(top, ground.GroundHeight(p.X + sx * halfX, p.Z + sz * halfZ) + shape.Z);
+                    }
+                }
+
+                boxes.Add(new(new(p.X - halfX, p.Y - 1f, p.Z - halfZ), new(p.X + halfX, top, p.Z + halfZ)));
             }
         }
 
