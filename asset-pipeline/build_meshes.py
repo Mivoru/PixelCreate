@@ -21,7 +21,7 @@ COLORS = {
     "flower": "E8506A", "flower_b": "F0C040", "hay": "D8B85A", "sack": "C8B48C", "cloth_red": "B84040",
     "anime_skin": "F6D8C4", "anime_hair": "2B3044", "anime_shirt": "D8D0C2", "anime_dark": "23252E",
     "anime_trousers": "2E3040", "anime_leather": "5A3A2C", "anime_cloak": "2F4A3C", "anime_gold": "D8A23C",
-    "anime_glove": "23252E", "anime_vest": "2F4070", "anime_accent": "C84848", "anime_armor": "B8C4D4", "anime_armor_dark": "7A889C",
+    "hide": "8A6A4A", "hide_dark": "4A3428", "sand": "D8C49A", "crop": "D8B85A", "paper": "EEE4C8", "anime_glove": "23252E", "anime_vest": "2F4070", "anime_accent": "C84848", "anime_armor": "B8C4D4", "anime_armor_dark": "7A889C",
 }
 MATERIALS = {}
 
@@ -105,10 +105,19 @@ def ground():
 
 
 def tree(prefix, x, y, scale, seed):
-    cylinder(f"{prefix}_trunk", (x, y, 1.3 * scale), 0.38 * scale, 2.6 * scale, "wood")
-    blob(f"{prefix}_a", (x, y, 3.5 * scale), 1.9 * scale, "grass_dark", seed)
-    blob(f"{prefix}_b", (x - 0.8 * scale, y + 0.3 * scale, 4.3 * scale), 1.3 * scale, "grass", seed + 1)
-    blob(f"{prefix}_c", (x + 0.9 * scale, y - 0.5 * scale, 4.0 * scale), 1.1 * scale, "leaf", seed + 2)
+    """A trunk with branches and a crown of many leaf clumps: darker low down, brighter on top."""
+    rng = random.Random(seed)
+    cylinder(f"{prefix}_trunk", (x, y, 1.5 * scale), 0.34 * scale, 3 * scale, "wood")
+    for i in range(3):
+        a = i * 2.1 + seed
+        timber(f"{prefix}_branch{i}", (x, y, 2.3 * scale), (x + math.cos(a) * 1.1 * scale, y + math.sin(a) * 1.1 * scale, 3.5 * scale), 0.16 * scale)
+    for i in range(11):
+        a = rng.uniform(0, math.tau)
+        height = rng.uniform(0, 1)
+        reach = (1.55 - height * 1.1) * rng.uniform(0.55, 1)
+        color = "grass_dark" if height < 0.3 else "grass" if height < 0.72 else "leaf"
+        blob(f"{prefix}_leaf{i}", (x + math.cos(a) * reach * scale, y + math.sin(a) * reach * scale, (3.1 + height * 2.1) * scale),
+             rng.uniform(0.75, 1.15) * scale, color, seed + i, 0.82, 2)
 
 
 def start_scene():
@@ -148,8 +157,9 @@ def rock():
 
 
 def bush():
-    blob("bush", (0, 0, 0.35), 0.6, "grass_dark", 8, 0.7, 1)
-    blob("bush_top", (0.1, 0.1, 0.55), 0.35, "leaf", 9, 0.8, 1)
+    blob("bush", (0, 0, 0.32), 0.55, "grass", 8, 0.75, 2)
+    blob("bush_b", (0.35, 0.2, 0.3), 0.38, "grass_dark", 10, 0.8, 2)
+    blob("bush_top", (0.05, 0.1, 0.56), 0.33, "leaf", 9, 0.8, 2)
 
 
 def smooth(mesh):
@@ -632,14 +642,6 @@ def fence():
         timber("rail", (-1.6, 0, z), (1.6, 0, z), 0.08)
 
 
-def stone_wall():
-    rng = random.Random(4)
-    for i in range(9):
-        x = -1.8 + i * 0.45
-        blob(f"stone{i}", (x, rng.uniform(-0.1, 0.1), 0.26), 0.3, "stone_dark" if i % 3 else "stone", i, 0.8, 2)
-        blob(f"cap{i}", (x + 0.2, rng.uniform(-0.08, 0.08), 0.62), 0.24, "stone", i + 20, 0.75, 2)
-
-
 def flowers():
     rng = random.Random(21)
     for i in range(9):
@@ -723,50 +725,156 @@ def guild_hall():
     box("sign_face", (0, -8.27, 3.4), (2.4, 0.05, 0.42), "gold")
 
 
+def disc(name, center, radius, height, material, sides=32):
+    ring = [(math.cos(i / sides * math.tau) * radius, math.sin(i / sides * math.tau) * radius) for i in range(sides)]
+    verts = [(x, y, 0) for x, y in ring] + [(x, y, height) for x, y in ring]
+    faces = [tuple(range(sides, 2 * sides))]
+    faces += [(i, (i + 1) % sides, (i + 1) % sides + sides, i + sides) for i in range(sides)]
+    add_object(name, mesh_from(name, verts, faces), material, center)
+
+
+def books(x0, x1, y, z, rng):
+    """A row of book spines of different heights and colours."""
+    x = x0
+    while x < x1:
+        width = rng.uniform(0.09, 0.2)
+        height = rng.uniform(0.5, 0.82)
+        if rng.random() > 0.1:
+            color = rng.choice(("cloth_red", "shutter", "gold", "sack", "wood_dark", "stone_dark", "shutter", "cloth_red"))
+            box("book", (x + width / 2, y, z + height / 2), (width * 0.92, 0.3, height), color)
+        x += width
+
+
 def guild_interior():
+    rng = random.Random(77)
     box("floor", (0, 0, -0.05), (26, 22, 0.1), "wood")
     box("ceiling", (0, 0, 7), (26, 22, 0.2), "wood_dark")
     for y, width in ((-9.5, 24), (9.5, 24)):
         box("wall", (0, y, 3.5), (width, 1, 7), "wall")
     for x in (-11.5, 11.5):
         box("wall", (x, 0, 3.5), (1, 20, 7), "wall")
+    box("panel", (0, 8.94, 0.7), (22, 0.1, 1.4), "wood_dark")
+    box("panel", (0, -8.94, 0.7), (22, 0.1, 1.4), "wood_dark")
+    for x in (-10.94, 10.94):
+        box("panel", (x, 0, 0.7), (0.1, 18, 1.4), "wood_dark")
     for x in (-8, -3, 3, 8):
         timber("pillar", (x, -8.8, 0), (x, -8.8, 7), 0.35)
         timber("pillar", (x, 8.8, 0), (x, 8.8, 7), 0.35)
         timber("rafter", (x, -9, 6.7), (x, 9, 6.7), 0.3, "wood_dark")
+    for y in (-5, 0, 5):
+        timber("beam", (-11, y, 6.45), (11, y, 6.45), 0.22, "wood_dark")
+    for y in (-5.5, 0, 5.5):
+        for x in (-10.92, 10.92):
+            box("window", (x, y, 3.6), (0.08, 1.7, 2.2), "window")
+            box("frame", (x * 0.995, y, 3.6), (0.1, 0.12, 2.3), "wood_dark")
+            box("frame", (x * 0.995, y, 3.6), (0.1, 1.8, 0.12), "wood_dark")
     box("carpet", (0, 1, 0.02), (4, 15, 0.04), "cloth_red")
+    box("carpet_edge", (0, 1, 0.03), (3.4, 14.4, 0.04), "gold")
+    box("carpet_top", (0, 1, 0.04), (3.1, 14.1, 0.04), "cloth_red")
+
+    # The reception desk, with what a clerk needs on it.
     box("counter", (0, 4.8, 0.43), (14, 1.2, 0.86), "wood")
     box("counter_top", (0, 4.8, 0.9), (14.4, 1.4, 0.1), "wood_dark")
-    box("shelf", (0, 8.7, 2.1), (11, 0.5, 4.2), "wood_dark")
-    for row in range(3):
-        for i in range(11):
-            color = ("cloth_red", "shutter", "gold", "sack")[(i + row) % 4]
-            box("book", (-5 + i, 8.42, 1 + row * 1.2), (0.7, 0.2, 0.8), color)
-    box("emblem", (0, 8.94, 5.2), (2.4, 0.1, 1.4), "gold")
+    for x in (-6, -3, 3, 6):
+        box("panel", (x, 4.18, 0.45), (2.3, 0.05, 0.6), "wood_dark")
+    box("ledger", (-1.3, 4.7, 1.0), (0.8, 0.6, 0.1), "cloth_red")
+    box("page", (-1.3, 4.7, 1.06), (0.74, 0.54, 0.03), "paper")
+    box("papers", (1.5, 4.75, 0.98), (0.5, 0.65, 0.06), "paper")
+    loft("inkwell", [(0.95, 0.06, 0.06), (1.05, 0.05, 0.05), (1.09, 0.03, 0.03)], "stone_dark", 8, (-0.5, 4.5, 0))
+    timber("quill", (-0.5, 4.5, 1.05), (-0.36, 4.42, 1.35), 0.02, "paper")
+    loft("bell", [(0.95, 0.09, 0.09), (1.03, 0.07, 0.07), (1.09, 0.02, 0.02)], "gold", 10, (0.4, 4.45, 0))
+    timber("scale_post", (3.2, 4.7, 0.95), (3.2, 4.7, 1.55), 0.05, "gold")
+    timber("scale_arm", (2.8, 4.7, 1.52), (3.6, 4.7, 1.52), 0.03, "gold")
+    for x in (2.8, 3.6):
+        timber("cord", (x, 4.7, 1.52), (x, 4.7, 1.2), 0.012, "gold")
+        loft("pan", [(1.18, 0.14, 0.14), (1.2, 0.15, 0.15)], "gold", 10, (x, 4.7, 0))
+    blob("crystal", (2.8, 4.7, 1.26), 0.07, "tunic", 3, 1.4, 1)
+
+    # Shelves behind the desk.
+    box("shelf_back", (0, 8.72, 2.1), (11, 0.2, 4.2), "wood_dark")
+    for x in (-5.5, -2.75, 0, 2.75, 5.5):
+        box("shelf_side", (x, 8.5, 2.1), (0.14, 0.5, 4.2), "wood")
+    for row in range(4):
+        z = 0.15 + row * 1.0
+        box("shelf_board", (0, 8.5, z), (11.1, 0.5, 0.08), "wood")
+        books(-5.4, 5.3, 8.5, z + 0.04, rng)
+    box("shelf_top", (0, 8.5, 4.2), (11.3, 0.56, 0.12), "wood")
+
+    # The Guild crest with banners either side.
+    box("crest_back", (0, 8.9, 5.5), (2.2, 0.08, 1.6), "wood_dark")
+    box("crest", (0, 8.85, 5.5), (1.6, 0.06, 1.1), "gold")
+    timber("crest_sword", (-0.5, 8.8, 5.1), (0.5, 8.8, 5.9), 0.07, "stone")
+    timber("crest_sword", (0.5, 8.8, 5.1), (-0.5, 8.8, 5.9), 0.07, "stone")
+    for x in (-8.4, 8.4):
+        box("banner", (x, 8.92, 4.2), (1.4, 0.05, 3.6), "cloth_red")
+        box("banner_trim", (x, 8.88, 5.9), (1.4, 0.05, 0.14), "gold")
+        box("banner_mark", (x, 8.88, 4.2), (0.6, 0.05, 0.6), "gold")
+
+    # The quest board, with notices held by pins.
     box("board", (-11.0, 2, 2.2), (0.12, 4.6, 2.6), "wood")
-    for i, (y, z) in enumerate(((1, 2.6), (2.2, 2.9), (3.1, 2.2), (0.8, 1.7), (2.6, 1.6))):
-        box("notice", (-10.92, y - 0.2, z), (0.05, 0.7, 0.9), "sack")
+    box("board_rim", (-10.98, 2, 3.56), (0.16, 4.8, 0.14), "wood_dark")
+    box("board_rim", (-10.98, 2, 0.84), (0.16, 4.8, 0.14), "wood_dark")
+    for i, (y, z) in enumerate(((0.6, 2.7), (1.6, 3.0), (2.7, 2.6), (3.6, 2.9), (0.9, 1.6), (2.0, 1.7), (3.2, 1.5))):
+        box("notice", (-10.92, y, z), (0.03, 0.72, 0.9), "paper")
+        box("line", (-10.9, y, z + 0.18), (0.02, 0.5, 0.05), "wood_dark")
+        box("line", (-10.9, y, z - 0.02), (0.02, 0.5, 0.04), "stone_dark")
+        box("pin", (-10.89, y, z + 0.36), (0.05, 0.06, 0.06), "cloth_red")
+    box("board_sign", (-10.9, 2, 3.85), (0.1, 2, 0.36), "gold")
+
     for x, y in ((-6.5, -4.5), (6.5, -4.5), (-6.5, 0.5), (6.5, 0.5)):
-        loft("table", [(0.9, 1.0, 1.0), (1.0, 1.0, 1.0)], "wood", 12, (x, y, 0))
+        disc("table", (x, y, 0.88), 1.0, 0.12, "wood", 14)
         timber("leg", (x, y, 0), (x, y, 0.9), 0.22, "wood_dark")
         for dx, dy in ((1.3, 0), (-1.3, 0), (0, 1.3), (0, -1.3)):
-            loft("stool", [(0, 0.2, 0.2), (0.5, 0.26, 0.26)], "wood_dark", 8, (x + dx, y + dy, 0))
+            disc("stool", (x + dx, y + dy, 0), 0.24, 0.5, "wood_dark", 8)
         loft("mug", [(1.0, 0.1, 0.1), (1.24, 0.11, 0.11)], "gold", 8, (x + 0.3, y, 0))
+        box("plate", (x - 0.3, y + 0.2, 1.02), (0.34, 0.34, 0.03), "stone")
+
+    # A hearth with a stone hood, and barrels beside it.
     box("hearth", (11, -3, 1.2), (0.8, 3, 2.4), "stone_dark")
+    box("hood", (10.8, -3, 3.4), (1.2, 2.6, 2.2), "stone")
     box("embers", (10.6, -3, 0.5), (0.4, 2, 0.6), "window")
+    for y in (-0.8, -5.2):
+        loft("barrel", [(0, 0.34, 0.34), (0.5, 0.42, 0.42), (1, 0.34, 0.34)], "wood", 10, (10.2, y, 0))
+    for x, y in ((-10.2, -8.2), (10.2, 8.2), (-10.2, 8.2)):
+        disc("pot", (x, y, 0), 0.34, 0.5, "cloth_red", 10)
+        for i in range(6):
+            a = i * 1.05
+            blob("plant", (x + math.cos(a) * 0.2, y + math.sin(a) * 0.2, 0.9 + (i % 3) * 0.25), 0.3, "grass" if i % 2 else "leaf", i, 1, 1)
     for x, y in ((-4, -2), (4, -2), (-4, 4), (4, 4)):
         timber("chain", (x, y, 7), (x, y, 5.4), 0.04, "stone_dark")
         box("lamp", (x, y, 5.2), (0.42, 0.42, 0.5), "window")
+        box("lamp_cap", (x, y, 5.5), (0.56, 0.56, 0.08), "stone_dark")
+        box("lamp_foot", (x, y, 4.92), (0.5, 0.5, 0.06), "stone_dark")
 
 
 def trial_arena():
-    box("sand", (0, 0, -0.05), (56, 52, 0.1), "path")
+    box("floor", (0, 0, -0.05), (56, 52, 0.1), "sand")
     for x, y, w, d in ((0, 21, 46, 1), (0, -21, 46, 1), (-22, 0, 1, 42), (22, 0, 1, 42)):
         box("wall", (x, y, 3), (w, d, 6), "stone")
-    loft("ring", [(0.0, 11, 11), (0.03, 11, 11)], "sack", 24)
+    disc("ring", (0, 0, 0), 11.4, 0.04, "stone", 40)
+    disc("ring_inner", (0, 0, 0.01), 11, 0.05, "sand", 40)
+    for i in range(10):
+        a = i / 10 * math.tau
+        timber("post", (math.cos(a) * 12, math.sin(a) * 12, 0), (math.cos(a) * 12, math.sin(a) * 12, 1.4), 0.2, "wood")
+    for x in range(-21, 22, 6):
+        for y in (20.6, -20.6):
+            box("merlon", (x, y, 6.5), (2.6, 1, 1), "stone")
+    for side, x in ((-1, -21.2), (1, 21.2)):
+        for row in range(3):
+            box("seat", (x - side * (row * 0.8), 0, 0.3 + row * 0.6), (0.8, 30, 0.6 + row * 0.6), "wood_dark" if row % 2 else "wood")
     for x in (-18, -9, 0, 9, 18):
         box("banner", (x, 20.4, 4), (2, 0.06, 3), "cloth_red" if int(x / 9) % 2 == 0 else "shutter")
+        box("banner_rod", (x, 20.3, 5.55), (2.4, 0.1, 0.1), "wood_dark")
     box("gate", (0, -20.3, 1.8), (4, 0.3, 3.6), "wood")
+    for x in (-2.3, 2.3):
+        box("gate_post", (x, -20.2, 2.1), (0.6, 0.6, 4.2), "stone_dark")
+    box("gate_top", (0, -20.2, 4.3), (5.4, 0.6, 0.6), "stone_dark")
+    for x in (-1.2, 0, 1.2):
+        timber("bar", (x, -20.1, 0), (x, -20.1, 3.5), 0.1, "stone_dark")
+    for x in (-15, 15):
+        timber("rack", (x - 1.2, 18.8, 1.3), (x + 1.2, 18.8, 1.3), 0.1)
+        for i in range(3):
+            timber("weapon", (x - 0.8 + i * 0.8, 18.7, 0), (x - 0.8 + i * 0.8, 18.7, 1.9), 0.07, "stone")
 
 
 def bridge():
@@ -780,17 +888,117 @@ def bridge():
 
 
 def cliff():
+    crag("cliff", 11, 9, 11, 4, 40)
+
+
+def crag(name, width, depth, height, levels, seed, material="stone_dark"):
+    """Layered rock with a flat foot and top. Each layer steps in, like weathered strata."""
+    rng = random.Random(seed)
+    sides = 18
+    wobble = [rng.uniform(0.84, 1.14) for _ in range(sides)]
     bm = bmesh.new()
-    bmesh.ops.create_icosphere(bm, subdivisions=3, radius=1)
-    rng = random.Random(40)
-    for vert in bm.verts:
-        layer = math.floor((vert.co.z + 1) * 3.5) / 3.5
-        jag = 1 + rng.uniform(-0.12, 0.12)
-        vert.co = (vert.co.x * 5.5 * jag, vert.co.y * 4.4 * jag, (layer + 0.3) * 6.6)
-    mesh = bpy.data.meshes.new("cliff")
+    rings = []
+    for level in range(levels + 1):
+        t = level / levels
+        shrink = 1 - 0.34 * t ** 1.6
+        jag = [w * rng.uniform(0.93, 1.05) for w in wobble]
+        for lift in (0.0, height / levels * 0.86):
+            if level == levels and lift > 0:
+                continue
+            z = height * t + lift
+            ring = []
+            for i in range(sides):
+                a = i / sides * math.tau
+                inset = 0.965 if lift else 1.0
+                ring.append(bm.verts.new((math.cos(a) * width / 2 * shrink * jag[i] * inset,
+                                          math.sin(a) * depth / 2 * shrink * jag[i] * inset, z)))
+            rings.append(ring)
+    for r in range(len(rings) - 1):
+        for i in range(sides):
+            j = (i + 1) % sides
+            bm.faces.new((rings[r][i], rings[r][j], rings[r + 1][j], rings[r + 1][i]))
+    bm.faces.new(list(reversed(rings[0])))
+    bm.faces.new(rings[-1])
+    mesh = bpy.data.meshes.new(name)
     bm.to_mesh(mesh)
     bm.free()
-    add_object("cliff", mesh, "stone_dark")
+    add_object(name, mesh, material)
+
+
+def falls_cliff():
+    crag("wall", 50, 18, 16, 6, 71, "stone")
+    crag("left", 18, 12, 21, 7, 72, "stone_dark")
+    bpy.data.objects["left"].location = (-19, 3, 0)
+    crag("right", 16, 12, 19, 6, 73, "stone_dark")
+    bpy.data.objects["right"].location = (20, 3, 0)
+    for i, (x, y, z, s) in enumerate(((-12, -5.5, 15.5, 1.4), (10, -5.5, 15.5, 1.1), (15, -5, 15, 1.7), (-22, -5, 15, 1.2),
+                                      (-9, -7.5, 8, 0.9), (9, -7.6, 6, 1.1), (-15, -7, 3, 1.2), (13, -7, 11, 0.9))):
+        blob(f"moss{i}", (x, y, z), 1.9 * s, "grass" if i % 2 else "grass_dark", i, 0.45, 2)
+
+
+def windmill():
+    cylinder("tower", (0, 0, 3.6), 1.75, 7.2, "wall", 10)
+    loft("cap", [(7.1, 1.95, 1.95), (8, 1.5, 1.5), (8.9, 0.15, 0.15)], "roof", 10)
+    box("door", (0, -2.2, 1.1), (0.9, 0.3, 2.1), "wood")
+    box("window", (0, -1.92, 4.6), (0.6, 0.2, 0.8), "shutter")
+    timber("axle", (0, -1.5, 7.2), (0, -2.8, 7.2), 0.22, "wood_dark")
+    for i in range(4):
+        a = i * math.pi / 2 + 0.4
+        tip = (math.cos(a) * 5, -2.7, 7.2 + math.sin(a) * 5)
+        timber(f"arm{i}", (0, -2.7, 7.2), tip, 0.14, "wood_dark")
+        side = (-math.sin(a) * 0.45, 0, math.cos(a) * 0.45)
+        verts = [(math.cos(a) * 1.2, -2.75, 7.2 + math.sin(a) * 1.2), tip,
+                 (tip[0] + side[0] * 2, -2.75, tip[2] + side[2] * 2),
+                 (math.cos(a) * 1.2 + side[0] * 2, -2.75, 7.2 + math.sin(a) * 1.2 + side[2] * 2)]
+        add_object(f"sail{i}", mesh_from(f"sail{i}", verts, [(0, 1, 2, 3)]), "wall_b")
+
+
+def watchtower():
+    for x, y in ((-1.7, -1.7), (1.7, -1.7), (1.7, 1.7), (-1.7, 1.7)):
+        timber("leg", (x * 1.15, y * 1.15, 0), (x * 0.85, y * 0.85, 6.4), 0.3)
+    for z in (2.2, 4.4):
+        for (a, b) in (((-1.7, -1.7), (1.7, -1.7)), ((1.7, -1.7), (1.7, 1.7)), ((1.7, 1.7), (-1.7, 1.7)), ((-1.7, 1.7), (-1.7, -1.7))):
+            timber("brace", (a[0], a[1], z), (b[0], b[1], z + 1.6), 0.14, "wood_dark")
+    box("deck", (0, 0, 6.4), (4.2, 4.2, 0.24), "wood_dark")
+    for x in (-2, 2):
+        box("rail", (x, 0, 7.1), (0.14, 4.1, 1.1), "wood")
+        box("rail", (0, x, 7.1), (4.1, 0.14, 1.1), "wood")
+    for x, y in ((-1.9, -1.9), (1.9, -1.9), (1.9, 1.9), (-1.9, 1.9)):
+        timber("post", (x, y, 6.4), (x, y, 9), 0.16)
+    roof("roof", (0, 0, 9), 5, 5, 1.6, "thatch")
+
+
+def field():
+    box("soil", (0, 0, 0.03), (12, 8, 0.12), "wood_dark")
+    rng = random.Random(4)
+    for row in range(7):
+        y = -3.3 + row * 1.1
+        for i in range(24):
+            x = -5.6 + i * 0.49 + rng.uniform(-0.1, 0.1)
+            box(f"crop{row}_{i}", (x, y, 0.42), (0.16, 0.2, 0.8 + rng.uniform(-0.15, 0.15)), "crop")
+
+
+def pier():
+    box("deck", (0, 0, 0.5), (10, 2.4, 0.14), "wood")
+    for x in range(-4, 6, 2):
+        for y in (-1.1, 1.1):
+            timber("pile", (x, y, -1.6), (x, y, 0.9), 0.2, "wood_dark")
+    for x in range(-5, 5):
+        timber("plank", (x + 0.5, -1.2, 0.58), (x + 0.5, 1.2, 0.58), 0.1, "wood_dark")
+    box("barrel", (3.6, 0.7, 0.9), (0.6, 0.6, 0.7), "wood")
+
+
+def standing_stone():
+    crag("stone", 1.2, 0.9, 3, 3, 81, "stone")
+
+
+def stone_wall():
+    rng = random.Random(21)
+    for row in range(3):
+        for i in range(7 - row % 2):
+            x = -1.95 + i * 0.65 + (0.32 if row % 2 else 0)
+            size = (0.6 + rng.uniform(-0.06, 0.06), 0.62, 0.26 + rng.uniform(-0.02, 0.05))
+            box(f"stone{row}_{i}", (x, rng.uniform(-0.04, 0.04), 0.14 + row * 0.27), size, "stone" if (i + row) % 3 else "stone_dark")
 
 
 def ruin_arch():
@@ -837,14 +1045,27 @@ def training_dummy():
 
 
 def tent():
-    roof("canvas", (0, 0, 0), 3.6, 4.2, 2.8, "wall")
-    box("pole", (0, 0, 1.4), (0.12, 0.12, 2.8), "wood_dark")
+    """A patched hide shelter on crossed poles, with a dark mouth."""
+    w, d, h = 1.7, 2.0, 2.4
+    verts = [(-w, -d, 0), (w, -d, 0), (w, d, 0), (-w, d, 0), (0, -d - 0.15, h), (0, d + 0.15, h)]
+    add_object("canvas", mesh_from("canvas", verts, [(0, 3, 5, 4), (1, 2, 5, 4), (2, 3, 5)]), "hide")
+    add_object("mouth", mesh_from("mouth", [(-w * 0.8, -d + 0.02, 0), (w * 0.8, -d + 0.02, 0), (0, -d - 0.08, h * 0.86)], [(0, 1, 2)]), "hide_dark")
+    for y in (-d - 0.1, d + 0.1):
+        timber("pole", (-0.5, y, 0), (0.2, y, h + 0.5), 0.09, "wood_dark")
+        timber("pole", (0.5, y, 0), (-0.2, y, h + 0.5), 0.09, "wood_dark")
+    timber("ridge", (0, -d - 0.3, h + 0.02), (0, d + 0.3, h + 0.02), 0.08, "wood_dark")
+    for i, (x, y, z) in enumerate(((0.8, -0.8, 1.05), (-0.9, 0.5, 0.9), (0.6, 1.0, 1.3))):
+        box(f"patch{i}", (x, y, z), (0.5, 0.5, 0.05), "hide_dark")
 
 
 def camp_fire():
-    for index, angle in enumerate((0.0, 1.2, 2.3)):
-        cylinder(f"log{index}", (math.cos(angle) * 0.25, math.sin(angle) * 0.25, 0.2), 0.11, 0.9, "wood_dark")
-    blob("embers", (0, 0, 0.32), 0.3, "window", 4, 1.3, 1)
+    for index in range(9):
+        angle = index / 9 * math.tau
+        blob(f"stone{index}", (math.cos(angle) * 0.55, math.sin(angle) * 0.55, 0.08), 0.15, "stone_dark", index, 0.7, 1)
+    for index in range(5):
+        angle = index / 5 * math.tau + 0.4
+        timber(f"log{index}", (math.cos(angle) * 0.42, math.sin(angle) * 0.42, 0.06), (math.cos(angle) * 0.06, math.sin(angle) * 0.06, 0.42), 0.1, "wood_dark")
+    blob("embers", (0, 0, 0.06), 0.3, "window", 4, 0.3, 1)
 
 
 def palisade():
@@ -921,6 +1142,12 @@ MODELS = {
     "mushroom": mushroom,
     "camp_set": camp_set,
     "tent": tent,
+    "falls_cliff": falls_cliff,
+    "windmill": windmill,
+    "watchtower": watchtower,
+    "field": field,
+    "pier": pier,
+    "standing_stone": standing_stone,
     "camp_fire": camp_fire,
     "palisade": palisade,
     "ruin": ruin,

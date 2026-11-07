@@ -28,6 +28,12 @@ public static class ZoneView
         ["grass_dark"] = ("leaves", 0.9f, 1f),
         ["grass"] = ("leaves", 0.9f, 1f),
         ["leaf"] = ("leaves", 0.9f, 1f),
+        ["hide"] = ("plaster", 0.9f, 0f),
+        ["hide_dark"] = ("plaster", 0.9f, 0f),
+        ["sand"] = ("plaster", 0.6f, 0f),
+        ["crop"] = ("leaves", 1.2f, 0.4f),
+        ["paper"] = ("plaster", 2f, 0f),
+        ["window"] = ("plaster", 3f, 0f),
     };
 
     public static Node3D Build(Zone zone)
@@ -55,6 +61,10 @@ public static class ZoneView
             instance.Scale = Vector3.One * prop.Scale;
             Retexture(instance, shader, materials);
             root.AddChild(instance);
+            if (prop.Model == "camp_fire")
+            {
+                root.AddChild(BuildCampFlames(new Vector3(prop.Position.X, prop.Position.Y, prop.Position.Z)));
+            }
         }
 
         return root;
@@ -105,6 +115,11 @@ public static class ZoneView
             root.AddChild(new MeshInstance3D { Mesh = surface.Commit(), MaterialOverride = new ShaderMaterial { Shader = water } });
         }
 
+        foreach (var (centre, radius) in zone.LakeSurfaces)
+        {
+            root.AddChild(BuildLake(new Vector3(centre.X, centre.Y, centre.Z), radius, water));
+        }
+
         if (zone.Waterfall is { } source)
         {
             var foot = new Vector3(source.X, source.Y, source.Z);
@@ -113,9 +128,9 @@ public static class ZoneView
             material.SetShaderParameter("foam", 0.9f);
             var fall = new MeshInstance3D
             {
-                Mesh = new QuadMesh { Size = new Vector2(16f, 9f), Orientation = PlaneMesh.OrientationEnum.Z },
+                Mesh = new QuadMesh { Size = new Vector2(16f, 10f), Orientation = PlaneMesh.OrientationEnum.Z },
                 MaterialOverride = material,
-                Position = new Vector3(foot.X, foot.Y + 8f, foot.Z + 1.5f),
+                Position = new Vector3(foot.X, foot.Y + 8f, foot.Z + 4f),
                 Rotation = new Vector3(0, 0, Mathf.Pi / 2f),
             };
             root.AddChild(fall);
@@ -137,10 +152,66 @@ public static class ZoneView
         }
     }
 
+    /// <summary>A round sheet of water: the shader's foam runs along the rim, where V reaches 1.</summary>
+    private static MeshInstance3D BuildLake(Vector3 centre, float radius, Shader water)
+    {
+        const int sides = 40;
+        const int rings = 6;
+        var surface = new SurfaceTool();
+        surface.Begin(Mesh.PrimitiveType.Triangles);
+        Vector3 Point(int ring, int side)
+        {
+            var angle = side / (float)sides * Mathf.Tau;
+            return centre + new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle)) * (radius * 1.12f * ring / rings);
+        }
+
+        void Add(int ring, int side) => Vertex(surface, Point(ring, side), Point(ring, side).X * 0.5f, 0.5f + 0.5f * ring / rings);
+        for (var ring = 0; ring < rings; ring++)
+        {
+            for (var side = 0; side < sides; side++)
+            {
+                Add(ring, side);
+                Add(ring + 1, side);
+                Add(ring + 1, side + 1);
+                Add(ring, side);
+                Add(ring + 1, side + 1);
+                Add(ring, side + 1);
+            }
+        }
+
+        return new MeshInstance3D { Mesh = surface.Commit(), MaterialOverride = new ShaderMaterial { Shader = water } };
+    }
+
     private static void Vertex(SurfaceTool surface, Vector3 position, float u, float v)
     {
         surface.SetUV(new Vector2(u * 0.14f, v));
         surface.AddVertex(position);
+    }
+
+    /// <summary>A few flames and a warm light over a camp fire.</summary>
+    private static Node3D BuildCampFlames(Vector3 position)
+    {
+        var multi = new MultiMesh
+        {
+            TransformFormat = MultiMesh.TransformFormatEnum.Transform3D,
+            UseCustomData = true,
+            Mesh = new QuadMesh { Size = Vector2.One, CenterOffset = new Vector3(0, 0.5f, 0) },
+            InstanceCount = 5,
+        };
+        for (var i = 0; i < 5; i++)
+        {
+            var angle = i * 1.26f;
+            var spot = new Vector3(Mathf.Cos(angle) * 0.2f, 0.12f, Mathf.Sin(angle) * 0.2f);
+            multi.SetInstanceTransform(i, new Transform3D(Basis.Identity.Scaled(Vector3.One * (1f + (i % 2) * 0.35f)), spot));
+            multi.SetInstanceCustomData(i, new Color(0f, i * 0.19f, 0f, 0f));
+        }
+
+        var material = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/flame.gdshader") };
+        material.SetShaderParameter("reach", 99f);
+        var root = new Node3D { Position = position };
+        root.AddChild(new MultiMeshInstance3D { Multimesh = multi, MaterialOverride = material });
+        root.AddChild(new OmniLight3D { Position = Vector3.Up * 1.2f, LightColor = new Color("ffa050"), LightEnergy = 1.6f, OmniRange = 8f });
+        return root;
     }
 
     /// <summary>Gives a model the same materials it has in the world.</summary>
@@ -290,7 +361,7 @@ public static class ZoneView
 
         var blocked = BuildGrassMask(zone);
         var random = new Random(11);
-        var colors = new[] { new Color("3e8948"), new Color("4f9a4e"), new Color("5ab552"), new Color("63c74d") };
+        var colors = new[] { new Color("4f9a4e"), new Color("5ab552"), new Color("63c74d"), new Color("7ac85a") };
         var half = zone.Size / 2 - 4f;
         var placed = 0;
         for (var attempt = 0; attempt < GrassBlades * 3 && placed < GrassBlades; attempt++)

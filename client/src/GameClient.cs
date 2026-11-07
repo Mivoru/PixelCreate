@@ -20,6 +20,8 @@ public partial class GameClient : Node
     private const float CameraDistance = 5.2f;
     private const float CameraStep = 0.25f;
     private const float CameraClearance = 0.4f;
+    private const float GuildInteriorX = 400f;
+    private const float ArenaX = 450f;
     private const float MinPitch = -1.1f;
     private const float MaxPitch = 0.35f;
     private const float MouseSensitivity = 0.0035f;
@@ -258,10 +260,10 @@ public partial class GameClient : Node
             _lastRank = snapshot.Rank;
         }
 
-        _hud.Objective = Objective(snapshot);
+        _hud.Objective = Objective(snapshot, shown);
     }
 
-    private static string Objective(Snapshot? snapshot)
+    private static string Objective(Snapshot? snapshot, Vector3 shown)
     {
         if (snapshot is null)
         {
@@ -270,7 +272,7 @@ public partial class GameClient : Node
 
         if (snapshot.Rank == GuildRank.Newcomer)
         {
-            return "Find the Adventurers Guild in the west";
+            return shown.X > GuildInteriorX ? "Talk to Mira at the counter" : "Find the Adventurers Guild in the west";
         }
 
         if (snapshot.Rank == GuildRank.InTrial)
@@ -285,7 +287,12 @@ public partial class GameClient : Node
                 : $"{quest.Name}: {snapshot.QuestProgress} / {quest.Count}";
         }
 
-        return "Take a job from the Quest Board";
+        if (shown.X > ArenaX)
+        {
+            return "Leave through the gate";
+        }
+
+        return shown.X > GuildInteriorX ? "Take a job from the Quest Board" : "Hunt, or return to the Guild for a job";
     }
 
     /// <summary>E talks to whoever is close, or goes through a door.</summary>

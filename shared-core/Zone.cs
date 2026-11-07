@@ -59,12 +59,16 @@ public sealed class Zone
     private sealed record HillData(float X, float Z, float Radius, float Height);
 
     private const float BedStep = 2f;
+    private const float BridgeRamp = 8f;
+    private const float BridgeOverlap = 3f;
 
     private sealed record PathData(float Width, float[][] Points);
 
     private sealed record PropData(string Model, float X, float Z, float Yaw = 0f);
 
-    private sealed record ScatterData(string Model, int Count, float[] Area, float MinScale, float MaxScale, float Spacing);
+    /// <summary>Blob shapes the area like a wood instead of a rectangle; Clusters above 0 gathers things into groups.</summary>
+    private sealed record ScatterData(
+        string Model, int Count, float[] Area, float MinScale, float MaxScale, float Spacing, bool Blob = false, float Clusters = 0f);
 
     private sealed record EnemySpawnData(
         float X, float Z, float Radius, int Count, int MinLevel = 1, int MaxLevel = 3, int RespawnTicks = 900,
@@ -74,7 +78,9 @@ public sealed class Zone
 
     private sealed record RiverData(float Width, float Depth, float[][] Points);
 
-    private sealed record RectData(float X0, float Z0, float X1, float Z1, float Height = 4f);
+    private sealed record RectData(float X0, float Z0, float X1, float Z1, float Height = 4f, float Bottom = -2f);
+
+    private sealed record LakeData(float X, float Z, float Radius, float Depth);
 
     private sealed record PortalData(float X, float Z, float ToX, float ToZ);
 
@@ -84,7 +90,7 @@ public sealed class Zone
         string Name, float Size, int Cells, int Seed, float[] Spawn, HillData[] Hills, PathData[] Paths,
         PropData[] Props, ScatterData[] Scatter, EnemySpawnData[]? Enemies, RegionData[]? Regions,
         RiverData[]? Rivers = null, RectData[]? Platforms = null, RectData[]? Walls = null, PortalData[]? Portals = null,
-        NpcData[]? Npcs = null, float[]? Trial = null, float[]? Waterfall = null);
+        NpcData[]? Npcs = null, float[]? Trial = null, float[]? Waterfall = null, float[][]? Clearings = null, LakeData[]? Lakes = null);
 
     /// <summary>Half width, half depth and height of each model's collision at scale 1.</summary>
     private static readonly Dictionary<string, Vector3> Collision = new()
@@ -93,7 +99,13 @@ public sealed class Zone
         ["cottage_b"] = new(4.2f, 2.8f, 6f),
         ["tavern"] = new(4.9f, 3.3f, 9f),
         ["guild_hall"] = new(8.4f, 6.2f, 12f),
-        ["cliff"] = new(4.5f, 3.5f, 11f),
+        ["cliff"] = new(4.6f, 3.6f, 11f),
+        ["falls_cliff"] = new(21f, 7.5f, 16f),
+        ["windmill"] = new(2.4f, 2.4f, 10f),
+        ["watchtower"] = new(2.1f, 2.1f, 9f),
+        ["standing_stone"] = new(0.6f, 0.45f, 3f),
+        ["field"] = new(0f, 0f, 0f),
+        ["pier"] = new(0f, 0f, 0f),
         ["ruin_arch"] = new(0f, 0f, 0f),
         ["ruin_wall"] = new(3f, 0.5f, 4f),
         ["jungle_tree"] = new(0.7f, 0.7f, 11f),
@@ -124,8 +136,8 @@ public sealed class Zone
         ["tree_b"] = new(0.5f, 0.5f, 6f),
         ["rock"] = new(0.55f, 0.55f, 0.7f),
         ["bush"] = new(0f, 0f, 0f),
-        ["tent"] = new(2.1f, 2.1f, 3f),
-        ["camp_fire"] = new(0.7f, 0.7f, 0.6f),
+        ["tent"] = new(1.7f, 2f, 2.6f),
+        ["camp_fire"] = new(0.5f, 0.5f, 0.5f),
         ["palisade"] = new(4.2f, 0.4f, 3f),
         ["ruin"] = new(1.1f, 1.1f, 4f),
     };
@@ -146,6 +158,12 @@ public sealed class Zone
 
     private RiverData[] Rivers { get; }
 
+    private LakeData[] Lakes { get; }
+
+    /// <summary>Each lake: its centre on the water surface, and its radius.</summary>
+    public IEnumerable<(Vector3 Centre, float Radius)> LakeSurfaces => Lakes.Select(l =>
+        (new Vector3(l.X, World.Terrain!.At(l.X, l.Z) + 1.1f, l.Z), l.Radius));
+
     /// <summary>Points along each river, in order, with the width at that point.</summary>
     public IEnumerable<(Vector2[] Points, float Width)> RiverCourses =>
         Rivers.Select(r => (r.Points.Select(p => new Vector2(p[0], p[1])).ToArray(), r.Width));
@@ -155,6 +173,8 @@ public sealed class Zone
         Name = data.Name;
         Size = data.Size;
         _paths = data.Paths;
+        Rivers = data.Rivers ?? Array.Empty<RiverData>();
+        Lakes = data.Lakes ?? Array.Empty<LakeData>();
         var beds = (data.Rivers ?? Array.Empty<RiverData>()).Select(r => RiverBed(data, r)).ToArray();
         var terrain = new HeightField(data.Size, data.Cells, (x, z) => TerrainHeight(data, beds, x, z));
         var random = new Random(data.Seed);
@@ -169,7 +189,7 @@ public sealed class Zone
 
         foreach (var scatter in data.Scatter)
         {
-            Scatter(scatter, terrain, random, props);
+            Scatter(scatter, data, terrain, random, props);
         }
 
         Props = props;
@@ -178,7 +198,7 @@ public sealed class Zone
             .Select(e => new EnemySpawn(new Vector3(e.X, terrain.At(e.X, e.Z), e.Z), e.Radius, e.Count, e.MinLevel, e.MaxLevel, e.RespawnTicks, e.Rare, e.Types)).ToArray();
         _regions = data.Regions ?? Array.Empty<RegionData>();
         var boxes = BuildBoxes(props, data.Size);
-        boxes.AddRange((data.Walls ?? Array.Empty<RectData>()).Select(w => new Aabb(new(w.X0, -2, w.Z0), new(w.X1, w.Height, w.Z1))));
+        boxes.AddRange((data.Walls ?? Array.Empty<RectData>()).Select(w => new Aabb(new(w.X0, w.Bottom, w.Z0), new(w.X1, w.Height, w.Z1))));
         Vector3 Place(float x, float z) => new(x, ground.GroundHeight(x, z), z);
         var trial = data.Trial is { } t ? Place(t[0], t[1]) : spawn;
         World = new World(boxes, terrain, spawn, enemySpawns)
@@ -188,7 +208,6 @@ public sealed class Zone
             Portals = (data.Portals ?? Array.Empty<PortalData>()).Select(p => new Portal(Place(p.X, p.Z), Place(p.ToX, p.ToZ))).ToArray(),
             Npcs = (data.Npcs ?? Array.Empty<NpcData>()).Select(n => new Npc(n.Id, n.Name, n.Role, Place(n.X, n.Z), n.Yaw)).ToArray(),
         };
-        Rivers = data.Rivers ?? Array.Empty<RiverData>();
         Waterfall = data.Waterfall is { } w ? new Vector3(w[0], terrain.At(w[0], w[1]), w[1]) : null;
     }
 
@@ -212,7 +231,7 @@ public sealed class Zone
             }
         }
 
-        return Rivers.Any(r => PolylineDistance(r.Points, x, z) < r.Width * 1.45f);
+        return Rivers.Any(r => PolylineDistance(r.Points, x, z) < r.Width * 1.45f) || InLake(x, z, 1f);
     }
 
     /// <summary>The name of the place at a point, or an empty string in the wilds between places.</summary>
@@ -314,12 +333,38 @@ public sealed class Zone
             }
         }
 
+        foreach (var lake in data.Lakes ?? Array.Empty<LakeData>())
+        {
+            var distance = new Vector2(x - lake.X, z - lake.Z).Length();
+            var shore = lake.Radius * 1.5f;
+            if (distance < shore)
+            {
+                var t = 1f - distance / shore;
+                var bed = HillHeight(data, lake.X, lake.Z) - lake.Depth;
+                height += (MathF.Min(height, bed) - height) * MathF.Min(t * 2.2f, 1f);
+            }
+        }
+
+        // The ground rises to meet each end of a bridge, so nobody has to jump onto it.
+        foreach (var bridge in (data.Platforms ?? Array.Empty<RectData>()).Where(p => p.X1 < data.Size / 2))
+        {
+            var along = MathF.Max(bridge.X0 - x, x - bridge.X1);
+            var across = MathF.Max(MathF.Max(bridge.Z0 - z, z - bridge.Z1), 0f);
+            if (along > -BridgeOverlap && along < BridgeRamp && across < 3f)
+            {
+                // The rise starts under the deck, because the ground mesh is coarser than the join.
+                var t = 1f - MathF.Max(along, 0f) / BridgeRamp;
+                height += (bridge.Height - height) * t * t * (3f - 2f * t) * (1f - across / 3f);
+            }
+        }
+
         // Mountains close the zone, so there is no visible end of the world.
         var edge = MathF.Max(MathF.Abs(x), MathF.Abs(z)) / (data.Size / 2);
         if (edge > 0.84f)
         {
             var rise = (edge - 0.84f) / 0.16f;
-            height += rise * rise * 55f + MathF.Sin(x * 0.11f) * MathF.Cos(z * 0.13f) * 5f * rise;
+            var ridges = MathF.Sin(x * 0.11f) * MathF.Cos(z * 0.13f) + MathF.Sin(x * 0.043f + z * 0.031f) * 1.6f + MathF.Sin(z * 0.27f - x * 0.19f) * 0.35f;
+            height += rise * rise * 50f + ridges * 6f * rise;
         }
 
         return height + Bumps(data.Seed, x, z);
@@ -364,7 +409,37 @@ public sealed class Zone
         return ((hash ^ (hash >> 16)) & 0xFFFF) / 65535f * 0.18f;
     }
 
-    private void Scatter(ScatterData scatter, HeightField terrain, Random random, List<PlacedProp> props)
+    /// <summary>Wavy noise from a few sines, between about -1 and 1.</summary>
+    private static float Waves(float x, float z) =>
+        (MathF.Sin(x * 0.071f + 1.3f) * MathF.Cos(z * 0.083f) + MathF.Sin(x * 0.033f - z * 0.047f) + MathF.Sin(z * 0.15f + x * 0.11f) * 0.4f) / 1.7f;
+
+    private static bool OutsideShape(ScatterData scatter, float x, float z)
+    {
+        if (scatter.Clusters > 0f && Waves(x * 1.4f, z * 1.4f) < 1f - scatter.Clusters * 2f)
+        {
+            return true;
+        }
+
+        if (!scatter.Blob)
+        {
+            return false;
+        }
+
+        var a = scatter.Area;
+        var u = (x - (a[0] + a[2]) / 2) / ((a[2] - a[0]) / 2);
+        var v = (z - (a[1] + a[3]) / 2) / ((a[3] - a[1]) / 2);
+        return MathF.Sqrt(u * u + v * v) + Waves(x * 2f, z * 2f) * 0.28f > 1f;
+    }
+
+    private static bool InClearing(ZoneData data, float x, float z) =>
+        (data.Clearings ?? Array.Empty<float[]>()).Any(c => new Vector2(x - c[0], z - c[1]).Length() < c[2]);
+
+    private bool NearWater(float x, float z) => Rivers.Any(r => PolylineDistance(r.Points, x, z) < r.Width * 1.75f) || InLake(x, z, 1.2f);
+
+    private bool InLake(float x, float z, float margin) =>
+        Lakes.Any(l => new Vector2(x - l.X, z - l.Z).Length() < l.Radius * margin);
+
+    private void Scatter(ScatterData scatter, ZoneData data, HeightField terrain, Random random, List<PlacedProp> props)
     {
         var placed = 0;
         for (var attempt = 0; attempt < scatter.Count * 20 && placed < scatter.Count; attempt++)
@@ -373,7 +448,8 @@ public sealed class Zone
             var z = scatter.Area[1] + (float)random.NextDouble() * (scatter.Area[3] - scatter.Area[1]);
             var scale = scatter.MinScale + (float)random.NextDouble() * (scatter.MaxScale - scatter.MinScale);
             var yaw = (float)random.NextDouble() * MathF.Tau;
-            if (PathDistance(x, z) < 1.5f || terrain.At(x, z) < -0.3f || props.Any(p => Near(p, x, z, scatter.Spacing)))
+            if (PathDistance(x, z) < 1.5f || terrain.At(x, z) < -0.3f || props.Any(p => Near(p, x, z, scatter.Spacing)) ||
+                OutsideShape(scatter, x, z) || InClearing(data, x, z) || NearWater(x, z))
             {
                 continue;
             }

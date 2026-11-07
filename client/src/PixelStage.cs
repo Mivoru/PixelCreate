@@ -51,8 +51,8 @@ public sealed class PixelStage
         View.AddChild(new DirectionalLight3D
         {
             RotationDegrees = new Vector3(-42, -50, 0),
-            LightColor = new Color("fff3df"),
-            LightEnergy = 1.25f,
+            LightColor = new Color("fff6e6"),
+            LightEnergy = 1.15f,
             ShadowEnabled = true,
         });
 
@@ -71,24 +71,19 @@ public sealed class PixelStage
 
     private static WorldEnvironment BuildEnvironment()
     {
-        var sky = new ProceduralSkyMaterial
-        {
-            SkyTopColor = new Color("68386c"),
-            SkyHorizonColor = new Color("f6757a"),
-            GroundHorizonColor = new Color("f6757a"),
-            GroundBottomColor = new Color("b55088"),
-        };
+        var sky = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/sky.gdshader") };
         return new WorldEnvironment
         {
             Environment = new Godot.Environment
             {
                 BackgroundMode = Godot.Environment.BGMode.Sky,
                 Sky = new Sky { SkyMaterial = sky },
-                AmbientLightSource = Godot.Environment.AmbientSource.Sky,
-                AmbientLightEnergy = 1.7f,
+                AmbientLightSource = Godot.Environment.AmbientSource.Color,
+                AmbientLightColor = new Color("cfd8ea"),
+                AmbientLightEnergy = 0.82f,
                 FogEnabled = true,
-                FogLightColor = new Color("c7b6c9"),
-                FogDensity = 0.0025f,
+                FogLightColor = new Color("bcd8ea"),
+                FogDensity = 0.0024f,
                 FogSkyAffect = 0f,
                 SsaoEnabled = true,
                 SsaoRadius = 1.4f,
