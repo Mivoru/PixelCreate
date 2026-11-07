@@ -13,6 +13,8 @@ from pathlib import Path
 
 from PIL import Image
 
+import weapon_icons
+
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "client" / "assets" / "ui" / "icons"
 OUTLINE = "181425"
@@ -712,8 +714,12 @@ def main():
     OUT.mkdir(parents=True, exist_ok=True)
     painted = []
     for item in items:
-        shape, ramp = ICONS[item["icon"]]
-        image = paint(shape, ramp)
+        if item["icon"] in weapon_icons.PAINTERS:
+            # Weapons get 32x32 icons, painted from their profile.
+            image = weapon_icons.paint(item["icon"])
+        else:
+            shape, ramp = ICONS[item["icon"]]
+            image = paint(shape, ramp)
         image.save(OUT / f"{item['icon']}.png")
         painted.append((item["icon"], image))
 
@@ -722,7 +728,8 @@ def main():
         rows = (len(painted) + columns - 1) // columns
         sheet = Image.new("RGBA", (columns * 72, rows * 72), (40, 44, 60, 255))
         for i, (_, image) in enumerate(painted):
-            sheet.paste(image.resize((64, 64), Image.NEAREST), ((i % columns) * 72 + 4, (i // columns) * 72 + 4), image.resize((64, 64), Image.NEAREST))
+            big = image.resize((64, 64), Image.NEAREST)
+            sheet.paste(big, ((i % columns) * 72 + 4, (i // columns) * 72 + 4), big)
         target = ROOT / "export" / "previews" / "icons.png"
         target.parent.mkdir(parents=True, exist_ok=True)
         sheet.save(target)

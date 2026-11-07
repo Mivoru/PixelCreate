@@ -14,7 +14,7 @@ namespace PixelCreate;
 public partial class Hud : Control
 {
     private const float DesignHeight = 1080f;
-    private const float SlotSize = 64f;
+    private const float SlotSize = 76f;
     private const float SlotGap = 8f;
     private const float TagRange = 34f;
     private const float LootFeedSeconds = 4.5f;
@@ -91,9 +91,14 @@ public partial class Hud : Control
 
         public override void _Draw()
         {
+            // Pixel art grows only by whole steps: the largest that fits the place, centred in it.
             foreach (var (rect, icon, alpha) in Hud._iconDraws)
             {
-                DrawTextureRect(Hud.Icon(icon), rect, false, new Color(1, 1, 1, alpha));
+                var texture = Hud.Icon(icon);
+                var size = texture.GetSize();
+                var scale = Mathf.Max(1f, Mathf.Floor(Mathf.Min(rect.Size.X / size.X, rect.Size.Y / size.Y)));
+                var shown = size * scale;
+                DrawTextureRect(texture, new Rect2((rect.Position + (rect.Size - shown) / 2f).Round(), shown), false, new Color(1, 1, 1, alpha));
             }
         }
     }
@@ -344,7 +349,7 @@ public partial class Hud : Control
 
         if (Items.Held is { } held)
         {
-            _iconDraws.Add((new Rect2(GetLocalMousePosition() - new Vector2(24, 24), 48, 48), held.Icon, 1f));
+            _iconDraws.Add((new Rect2(GetLocalMousePosition() - new Vector2(32, 32), 64, 64), held.Icon, 1f));
         }
     }
 
@@ -863,7 +868,7 @@ public partial class Hud : Control
         }
 
         var count = Items.Count(item);
-        _iconDraws.Add((rect.Grow(-10), item.Icon, count > 0 ? 1f : 0.35f));
+        _iconDraws.Add((rect.Grow(-6), item.Icon, count > 0 ? 1f : 0.35f));
         if (count > 1)
         {
             var text = count.ToString();
@@ -892,7 +897,7 @@ public partial class Hud : Control
 
     private void DrawInventory()
     {
-        var window = new Rect2((Size.X - 940f) / 2f, (Size.Y - 640f) / 2f, 940, 640);
+        var window = new Rect2((Size.X - 1064f) / 2f, (Size.Y - 690f) / 2f, 1064, 690);
         Card(window, 22, GlassDeep, true);
         Label("Equipment", window.Position + new Vector2(34, 56), 24, Text, _bold);
         Label("Bag", window.Position + new Vector2(340, 56), 24, Text, _bold);
@@ -902,12 +907,12 @@ public partial class Hud : Control
 
         var equip = new (EquipSlot Slot, string Label, int X, int Y)[]
         {
-            (EquipSlot.Head, "Head", 120, 86),
-            (EquipSlot.Chest, "Chest", 120, 178),
-            (EquipSlot.Legs, "Legs", 120, 270),
-            (EquipSlot.Boots, "Boots", 120, 362),
-            (EquipSlot.Weapon, "Weapon", 34, 178),
-            (EquipSlot.Ring, "Ring", 206, 178),
+            (EquipSlot.Head, "Head", 116, 84),
+            (EquipSlot.Chest, "Chest", 116, 188),
+            (EquipSlot.Legs, "Legs", 116, 292),
+            (EquipSlot.Boots, "Boots", 116, 396),
+            (EquipSlot.Weapon, "Weapon", 26, 188),
+            (EquipSlot.Ring, "Ring", 206, 188),
         };
         foreach (var (slot, label, x, y) in equip)
         {
@@ -923,11 +928,11 @@ public partial class Hud : Control
             DrawSlot(rect, Items.Bag[i], new SlotRef("bag", i));
         }
 
-        DrawCrystals(new Rect2(window.Position + new Vector2(34, 500), 260, 90));
+        DrawCrystals(new Rect2(window.Position + new Vector2(34, 540), 260, 90));
         var worth = Items.SaleValue();
         if (worth > 0)
         {
-            Label($"Materials worth {worth} gold to the appraiser", window.Position + new Vector2(340, 400), 15, Muted);
+            Label($"Materials worth {worth} gold to the appraiser", window.Position + new Vector2(340, 452), 15, Muted);
         }
 
         var bottom = window.Position + new Vector2(340, window.Size.Y - 30);

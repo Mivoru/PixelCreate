@@ -1004,7 +1004,7 @@ public partial class GameClient : Node
         }
 
         _player.Root.Rotation = new Vector3(0, _facing, 0);
-        _player.SetWeapon(Weapons.Name(_client.State.Weapon));
+        _player.SetWeapon(Weapons.Name(_client.State.Weapon), _hud.Items.Equipped[EquipSlot.Weapon]?.Gear?.Def.Id);
         _player.SwordVisible = _hud.Items.HasWeapon;
         var bow = state.DrawTicks > 0 ? WeaponMove.BowDraw : state.Attack == AttackKind.BowShot ? WeaponMove.BowRelease : WeaponMove.None;
         _player.Animate(new MotionState(flat.Length(), state.Grounded, state.Velocity.Y,

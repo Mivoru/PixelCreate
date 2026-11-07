@@ -86,8 +86,14 @@ public sealed class PlayerRig
 
     /// <summary>The bow in hand and the quiver on the back, while the weapon is a bow.</summary>
     private BowView? _bow;
+
+    /// <summary>The weapon item in hand, or null for the kind's usual one.</summary>
+    private string? _weaponItem;
     private Node3D? _quiver;
     private MotionState _motion;
+
+    /// <summary>How far the arms follow the dagger keys instead of the blended pose, from 0 to 1.</summary>
+    private float _daggerReach;
 
     /// <summary>How far the arms follow the archer's reach instead of the blended pose, from 0 to 1.</summary>
     private float _archer;
@@ -123,14 +129,17 @@ public sealed class PlayerRig
     /// Changes the weapon in hand: a bow in the left hand, two daggers one in each, anything else in
     /// the right. A player picks up a new weapon whenever the gear they wear changes.
     /// </summary>
-    public void SetWeapon(string weapon)
+    /// <param name="weapon">The kind of weapon: sword, dagger, bow, club, staff or none.</param>
+    /// <param name="item">The item in hand, which picks its model; without it the kind's usual one.</param>
+    public void SetWeapon(string weapon, string? item = null)
     {
-        if (_look.Weapon == weapon)
+        if (_look.Weapon == weapon && _weaponItem == item)
         {
             return;
         }
 
         _look = _look with { Weapon = weapon };
+        _weaponItem = item;
         foreach (var child in _sword.GetChildren())
         {
             child.QueueFree();
@@ -145,10 +154,6 @@ public sealed class PlayerRig
         (weapon == "bow" ? _forearmL : _forearmR).AddChild(_sword);
         _sword.Position = new Vector3(0, -0.3f, -0.04f);
         BuildWeapon(weapon);
-        if (weapon == "dagger" && !_look.Goblin)
-        {
-            BuildDagger(_offhand);
-        }
     }
 
     public bool SwordVisible
@@ -383,6 +388,49 @@ public sealed class PlayerRig
     }
 
     /// <summary>Loads a Blender part and gives it the cel shader.</summary>
+    /// <summary>
+    /// The model of a weapon item, weapon_&lt;item id&gt; from Blender, in toon colours; null when the item
+    /// has none. Its origin is the middle of the grip and the blade runs along -Z.
+    /// </summary>
+    public static Node3D? WeaponModel(string item)
+    {
+        var path = $"res://assets/weapon_{item}.glb";
+        if (!ResourceLoader.Exists(path))
+        {
+            return null;
+        }
+
+        var model = GD.Load<PackedScene>(path).Instantiate<Node3D>();
+        ToonColours(model);
+        return model;
+    }
+
+    private static void ToonColours(Node node)
+    {
+        if (node is MeshInstance3D mesh && mesh.Mesh is not null)
+        {
+            for (var surface = 0; surface < mesh.Mesh.GetSurfaceCount(); surface++)
+            {
+                if (mesh.Mesh.SurfaceGetMaterial(surface) is StandardMaterial3D original)
+                {
+                    var material = Toon(original.AlbedoColor);
+                    if (original.ResourceName is "wpn_edge" or "wpn_gem" or "wpn_ember")
+                    {
+                        // Edges and embers catch the light from every side.
+                        material.SetShaderParameter("shade", original.AlbedoColor * new Color(0.85f, 0.85f, 0.9f));
+                    }
+
+                    mesh.SetSurfaceOverrideMaterial(surface, material);
+                }
+            }
+        }
+
+        foreach (var child in node.GetChildren())
+        {
+            ToonColours(child);
+        }
+    }
+
     private Node3D Model(string name, System.Collections.Generic.List<ShaderMaterial>? cloth = null, float top = 0f, float length = 1f)
     {
         var model = GD.Load<PackedScene>($"res://assets/{name}.glb").Instantiate<Node3D>();
@@ -514,75 +562,61 @@ public sealed class PlayerRig
         _head.AddChild(Model($"gob_head_{_look.Kind}"));
     }
 
+    /// <summary>The model a kind of weapon shows when no item is named: a goblin's is cruder.</summary>
+    private string DefaultItem(string weapon) => weapon switch
+    {
+        "dagger" => _look.Goblin ? "rusty_dagger" : "twin_daggers",
+        "bow" => _look.Goblin ? "goblin_shortbow" : "hunters_longbow",
+        "club" => "spiked_club",
+        "staff" => "bone_staff",
+        _ => "wooden_sword",
+    };
+
+    /// <summary>
+    /// Puts the weapon's model in the hand: a Blender model for blades, clubs and staves, and a bow
+    /// that bends for bows. Daggers come in pairs for players, one in each hand.
+    /// </summary>
     private void BuildWeapon(string weapon)
     {
         _bow = null;
         _quiver?.QueueFree();
         _quiver = null;
-        var wood = new Color("733e39");
-        var dark = new Color("3e2731");
-        switch (weapon)
+        foreach (var child in _offhand.GetChildren())
         {
-            case "none":
-                break;
-            case "dagger":
-                BuildDagger(_sword);
-                break;
-            case "club":
-                var shaft = Part(new CylinderMesh { TopRadius = 0.22f, BottomRadius = 0.06f, Height = 1.35f, RadialSegments = 7 }, wood, new Vector3(0, 0, -0.62f));
-                shaft.Rotation = new Vector3(-Mathf.Pi / 2f, 0, 0);
-                _sword.AddChild(shaft);
-                foreach (var z in new[] { -0.75f, -1f, -1.2f })
-                {
-                    _sword.AddChild(Part(new BoxMesh { Size = new Vector3(0.44f, 0.06f, 0.06f) }, new Color("c0cbdc"), new Vector3(0, 0, z)));
-                    _sword.AddChild(Part(new BoxMesh { Size = new Vector3(0.06f, 0.44f, 0.06f) }, new Color("c0cbdc"), new Vector3(0, 0, z - 0.1f)));
-                }
-
-                break;
-            case "bow":
-                // The bow stands upright in the fist, its string towards the archer; it bends as it is drawn.
-                _sword.Position = new Vector3(0, -0.32f, 0);
-                _bow = new BowView(_look.Goblin ? BowLook.Plain with { Length = 1.0f } : BowLook.Plain);
-                _sword.AddChild(_bow);
-                if (!_look.Goblin)
-                {
-                    _quiver = BuildQuiver();
-                    _torso.AddChild(_quiver);
-                }
-
-                break;
-            case "staff":
-                var pole = Part(new CylinderMesh { TopRadius = 0.04f, BottomRadius = 0.055f, Height = 1.9f, RadialSegments = 6 }, wood, new Vector3(0, 0, -0.45f));
-                pole.Rotation = new Vector3(-Mathf.Pi / 2f, 0, 0);
-                _sword.AddChild(pole);
-                var bone = new Color("ead4aa");
-                _sword.AddChild(Part(new SphereMesh { Radius = 0.17f, Height = 0.3f, RadialSegments = 8, Rings = 4 }, bone, new Vector3(0, 0, -1.48f)));
-                _sword.AddChild(Part(new BoxMesh { Size = new Vector3(0.14f, 0.1f, 0.05f) }, bone, new Vector3(0, -0.14f, -1.38f)));
-                foreach (var x in new[] { -0.06f, 0.06f })
-                {
-                    _sword.AddChild(Part(new BoxMesh { Size = new Vector3(0.05f, 0.06f, 0.05f) }, new Color("f77622"), new Vector3(x, -0.15f, -1.5f)));
-                }
-
-                _sword.AddChild(Part(new SphereMesh { Radius = 0.07f, Height = 0.13f, RadialSegments = 6, Rings = 3 }, bone, new Vector3(0.08f, 0, -1.2f)));
-                break;
-            default:
-                _sword.AddChild(Part(new BoxMesh { Size = new Vector3(0.06f, 0.05f, 0.2f) }, wood, Vector3.Zero));
-                _sword.AddChild(Part(new BoxMesh { Size = new Vector3(0.24f, 0.05f, 0.07f) }, dark, new Vector3(0, 0, -0.12f)));
-                _sword.AddChild(Part(new BoxMesh { Size = new Vector3(0.1f, 0.04f, 0.9f) }, new Color("c28569"), new Vector3(0, 0, -0.58f)));
-                _sword.AddChild(Part(new BoxMesh { Size = new Vector3(0.05f, 0.05f, 0.9f) }, new Color("e4a672"), new Vector3(-0.025f, 0.005f, -0.58f)));
-                break;
+            child.QueueFree();
         }
-    }
 
-    /// <summary>A dagger: a wrapped grip, a short guard and a leaf blade with a bright edge.</summary>
-    private static void BuildDagger(Node3D hand)
-    {
-        hand.AddChild(Part(new BoxMesh { Size = new Vector3(0.06f, 0.06f, 0.16f) }, new Color("3e2731"), Vector3.Zero));
-        hand.AddChild(Part(new BoxMesh { Size = new Vector3(0.16f, 0.04f, 0.05f) }, new Color("8b9bb4"), new Vector3(0, 0, -0.1f)));
-        hand.AddChild(Part(new BoxMesh { Size = new Vector3(0.1f, 0.03f, 0.3f) }, new Color("c0cbdc"), new Vector3(0, 0, -0.26f)));
-        var tip = Part(new BoxMesh { Size = new Vector3(0.08f, 0.03f, 0.22f) }, new Color("ffffff"), new Vector3(0.03f, 0, -0.48f));
-        tip.Rotation = new Vector3(0, 0.45f, 0);
-        hand.AddChild(tip);
+        if (weapon == "none")
+        {
+            return;
+        }
+
+        var item = _weaponItem ?? DefaultItem(weapon);
+        if (weapon == "bow")
+        {
+            // The bow stands upright in the fist, its string towards the archer; it bends as it is drawn.
+            _sword.Position = new Vector3(0, -0.32f, 0);
+            _bow = new BowView(BowLook.For(item, _look.Goblin));
+            _sword.AddChild(_bow);
+            if (!_look.Goblin)
+            {
+                _quiver = BuildQuiver();
+                _torso.AddChild(_quiver);
+            }
+
+            return;
+        }
+
+        var model = WeaponModel(item) ?? WeaponModel(DefaultItem(weapon));
+        if (model is not null)
+        {
+            _sword.AddChild(model);
+        }
+
+        if (weapon == "dagger" && !_look.Goblin && WeaponModel(item) is { } second)
+        {
+            _offhand.AddChild(second);
+        }
     }
 
     /// <summary>Moves the rig towards the pose for this state. Call it once a frame.</summary>
@@ -656,6 +690,7 @@ public sealed class PlayerRig
 
         Apply();
         UpdateBow(state, delta);
+        UpdateDaggers(state, delta);
         if (!_look.Goblin)
         {
             AnimateCloth(state, delta);
@@ -1166,12 +1201,13 @@ public sealed class PlayerRig
             var left = tick > attack.HitAt + 1;
             var strike = left ? attack.SecondHitAt : attack.HitAt;
             var drawn = tick < strike - 1;
-            _target[Twist] = left ? (drawn ? -0.35f : 0.55f) : (drawn ? 0.35f : -0.55f);
-            _target[Lean] = drawn ? 0.05f : 0.4f;
-            _target[ThighL] = -0.5f;
-            _target[ThighR] = 0.4f;
-            _target[ShinR] = 0.35f;
-            _target[Bob] = drawn ? -0.03f : -0.09f;
+            _target[Twist] = left ? (drawn ? -0.3f : 0.6f) : (drawn ? 0.4f : -0.6f);
+            _target[Lean] = drawn ? 0.1f : 0.38f;
+            _target[ThighL] = -0.75f;
+            _target[ThighR] = 0.45f;
+            _target[ShinL] = 0.3f;
+            _target[ShinR] = 0.45f;
+            _target[Bob] = drawn ? -0.06f : -0.13f;
             var (arm, side, forearm, tilt, yaw, other, otherForearm) = left
                 ? (ArmL, ArmLSide, ForearmL, OffTilt, OffYaw, ArmR, ForearmR)
                 : (ArmR, ArmRSide, ForearmR, SwordTilt, SwordYaw, ArmL, ForearmL);
@@ -1251,6 +1287,96 @@ public sealed class PlayerRig
             _sparks.Restart();
             _sparks.Emitting = true;
         }
+    }
+
+    /// <summary>A moment of a dagger attack: where each hand is, and where each blade points, in the rig's own space.</summary>
+    private readonly record struct DaggerKey(int Tick, Vector3 Right, Vector3 Left, Vector3 BladeR, Vector3 BladeL);
+
+    private static readonly Vector3 Ahead = new(0, 0.1f, -1f);
+    private static readonly Vector3 PointDown = new(0, -0.75f, -0.66f);
+
+    /// <summary>
+    /// The flurry: the right hand draws back to the ribs and punches its blade straight out at the
+    /// first hit, then snaps back to guard while the left does the same for the second.
+    /// </summary>
+    private static readonly DaggerKey[] FlurryKeys =
+    {
+        new(0, new(0.2f, 1.2f, -0.28f), new(-0.2f, 1.2f, -0.28f), Ahead, Ahead),
+        new(3, new(0.24f, 1.12f, 0.04f), new(-0.16f, 1.28f, -0.3f), new(0, 0.2f, -1f), new(0.2f, 0.4f, -1f)),
+        new(6, new(0.04f, 1.3f, -0.78f), new(-0.18f, 1.25f, -0.18f), new(0, 0f, -1f), new(0.3f, 0.5f, -1f)),
+        new(8, new(0.14f, 1.27f, -0.42f), new(-0.22f, 1.13f, 0.02f), Ahead, new(0, 0.2f, -1f)),
+        new(13, new(0.2f, 1.25f, -0.2f), new(-0.04f, 1.3f, -0.78f), new(-0.3f, 0.5f, -1f), new(0, 0f, -1f)),
+        new(16, new(0.2f, 1.22f, -0.26f), new(-0.16f, 1.27f, -0.44f), Ahead, Ahead),
+        new(24, new(0.2f, 1.2f, -0.28f), new(-0.2f, 1.2f, -0.28f), Ahead, Ahead),
+    };
+
+    /// <summary>
+    /// The leap: a crouch with both blades swept low behind, then in the air both hands rise above
+    /// the head in a reverse grip, points down, and cock back further at the top; at the hit both
+    /// blades are driven down together into what stands in front, and stay there a moment.
+    /// </summary>
+    private static readonly DaggerKey[] LeapKeys =
+    {
+        new(0, new(0.22f, 1.15f, -0.25f), new(-0.22f, 1.15f, -0.25f), Ahead, Ahead),
+        new(3, new(0.3f, 0.85f, 0.2f), new(-0.3f, 0.85f, 0.2f), new(0.2f, -0.4f, 1f), new(-0.2f, -0.4f, 1f)),
+        new(9, new(0.16f, 2.02f, -0.12f), new(-0.16f, 2.02f, -0.12f), PointDown, PointDown),
+        new(22, new(0.15f, 2.05f, -0.04f), new(-0.15f, 2.05f, -0.04f), new(0, -0.6f, -0.8f), new(0, -0.6f, -0.8f)),
+        new(27, new(0.14f, 1.98f, 0.14f), new(-0.14f, 1.98f, 0.14f), new(0, -0.2f, -1f), new(0, -0.2f, -1f)),
+        new(30, new(0.1f, 0.9f, -0.58f), new(-0.1f, 0.9f, -0.58f), new(0, -0.94f, -0.34f), new(0, -0.94f, -0.34f)),
+        new(38, new(0.11f, 0.9f, -0.56f), new(-0.11f, 0.9f, -0.56f), new(0, -0.94f, -0.34f), new(0, -0.94f, -0.34f)),
+        new(50, new(0.22f, 1.15f, -0.25f), new(-0.22f, 1.15f, -0.25f), Ahead, Ahead),
+    };
+
+    /// <summary>
+    /// A player's dagger attacks place both hands exactly, from keys in the rig's own space eased
+    /// one into the next, and turn each blade to point where its key says. The body follows the
+    /// joint pose of DaggerPose underneath.
+    /// </summary>
+    private void UpdateDaggers(in MotionState state, float delta)
+    {
+        if (_look.Goblin || _look.Weapon != "dagger")
+        {
+            _daggerReach = 0f;
+            return;
+        }
+
+        var attacking = state.Attack is AttackKind.DaggerFlurry or AttackKind.DaggerLeap;
+        _daggerReach = Mathf.MoveToward(_daggerReach, attacking ? 1f : 0f, delta * (attacking ? 14f : 5f));
+        if (_daggerReach <= 0f)
+        {
+            return;
+        }
+
+        var keys = state.Attack == AttackKind.DaggerLeap ? LeapKeys : FlurryKeys;
+        var tick = attacking ? state.AttackTick : keys[^1].Tick;
+        var next = 1;
+        while (next < keys.Length - 1 && keys[next].Tick <= tick)
+        {
+            next++;
+        }
+
+        var from = keys[next - 1];
+        var to = keys[next];
+        var t = Mathf.Clamp((tick - from.Tick) / (float)Mathf.Max(1, to.Tick - from.Tick), 0f, 1f);
+        t = t * t * (3f - 2f * t);
+        var w = _daggerReach * _daggerReach * (3f - 2f * _daggerReach);
+        var basis = Root.GlobalBasis;
+        var reach = 0.3f * Root.Scale.X;
+        Reach(_armR, _forearmR, Root.ToGlobal(from.Right.Lerp(to.Right, t)), basis * new Vector3(1f, -1f, 0.4f), reach, w);
+        Reach(_armL, _forearmL, Root.ToGlobal(from.Left.Lerp(to.Left, t)), basis * new Vector3(-1f, -1f, 0.4f), reach, w);
+        Point(_sword, basis * from.BladeR.Lerp(to.BladeR, t), basis * Vector3.Right, w);
+        Point(_offhand, basis * from.BladeL.Lerp(to.BladeL, t), basis * Vector3.Left, w);
+    }
+
+    /// <summary>Turns a blade so its point (-Z) runs along a direction, its edge as near the hint as it can.</summary>
+    private void Point(Node3D blade, Vector3 direction, Vector3 edge, float weight)
+    {
+        var z = -direction.Normalized();
+        var x = edge - z * z.Dot(edge);
+        x = x.LengthSquared() < 1e-6f ? z.Cross(Vector3.Up) : x.Normalized();
+        var aimed = new Basis(x, z.Cross(x), z);
+        var held = blade.GlobalTransform;
+        blade.GlobalTransform = new Transform3D(Blend(held.Basis, aimed, weight).Scaled(Vector3.One * Root.Scale.X), held.Origin);
     }
 
     private void AttackPose(AttackKind kind, int tick)

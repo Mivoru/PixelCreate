@@ -7,6 +7,24 @@ public sealed record BowLook(float Length, float Recurve, Color Wood, Color Wood
 {
     /// <summary>A plain self bow of pale wood with a leather grip.</summary>
     public static readonly BowLook Plain = new(1.2f, 0.1f, new Color("733e39"), new Color("b86f50"), new Color("3e2731"), new Color("ead4aa"), new Color("ead4aa"));
+
+    /// <summary>A goblin's short bow: crude pale wood, no recurve, bone tips and a string of gut.</summary>
+    public static readonly BowLook GoblinShortbow = new(1.0f, 0f, new Color("8a5a3c"), new Color("c28569"), new Color("6b3a2e"), new Color("b89e7a"), new Color("c28569"));
+
+    /// <summary>A hunter's longbow: tall dark yew with recurved tips, a leather grip and horn nocks.</summary>
+    public static readonly BowLook HuntersLongbow = new(1.42f, 0.12f, new Color("4a3028"), new Color("9e5a3a"), new Color("733e39"), new Color("ead4aa"), new Color("ead4aa"));
+
+    /// <summary>The look of a bow item; a goblin's bow is a little shorter for its small arms.</summary>
+    public static BowLook For(string item, bool goblin)
+    {
+        var look = item switch
+        {
+            "goblin_shortbow" => GoblinShortbow,
+            "hunters_longbow" => HuntersLongbow,
+            _ => Plain,
+        };
+        return goblin ? look with { Length = look.Length * 0.85f } : look;
+    }
 }
 
 /// <summary>

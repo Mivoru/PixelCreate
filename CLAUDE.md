@@ -44,7 +44,13 @@ Rules:
   `gear` table in `enemies.json` sets its drop chance, rarity weights and base items; `GearTests` prints pieces per hour.
   Gear commands start at `GearCommands.ToggleBase`. The worn weapon sets `PlayerState.Weapon`, which picks the attacks in `Movement.Step` (daggers: a two-stab flurry and a predicted leap; bow: hold to draw, release to loose a server arrow exactly along the fine aim in `InputCmd.AimYaw`/`AimPitch`, with no aim assist, a minimum draw and a range set in `Tuning`; the client aims over the shoulder and takes the aim from the point under the crosshair). `PIXEL_BOT=bow` with `PIXEL_TEST=1` shoots. `PIXEL_BOT=gear` with `PIXEL_TEST=1` checks the bag and tooltips. Food is eaten with the command range from `ItemCommands.EatBase`.
 - Item icons: `python asset-pipeline/generate_icons.py --sheet` paints all 16x16 icons from text shapes
-  and writes a preview to `export/previews/icons.png`. A test fails if an item has no icon.
+  and writes a preview to `export/previews/icons.png`. A test fails if an item has no icon. Weapons get
+  32x32 icons painted from their profile in `asset-pipeline/weapon_icons.py`. The HUD scales icons by whole
+  steps only (a 64 px icon area: 4x for 16 px, 2x for 32 px). Run Godot's `--import` after painting.
+- Weapon models: `asset-pipeline/weapons.py` builds `weapon_<item id>` (origin in the middle of the grip,
+  blade along the game's -Z); `PlayerRig.WeaponModel` loads them and the worn item picks the model. Bows are
+  `BowView` in code, so they can bend; `BowLook.For` gives each bow item its shape. `scripts/studio.ps1 -Jobs weapons`
+  photographs every weapon up close. Dagger attacks and the bow place the hands with keys and reach (`PlayerRig.Reach`).
 - Test a far area: set `PIXEL_SPAWN=x,z` before starting the server.
 - Enemy abilities and crystal drops are data in `world/enemies.json`; new effects go in `GameServer.Fire`.
 - Interiors live outside the map on platforms (the guild at x 420, the trial ground at x 480). Doors are portals.

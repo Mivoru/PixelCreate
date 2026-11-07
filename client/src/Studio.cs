@@ -63,6 +63,7 @@ public partial class Studio : Node
                     "monsters" => Monsters(),
                     "motion" => Motion(),
                     "attacks" => Attacks(),
+                    "weapons" => Weapons(),
                     "models" => Models(),
                     "world" => World(false),
                     "hitboxes" => World(true),
@@ -83,7 +84,7 @@ public partial class Studio : Node
     /// <summary>Removes the old pictures of a job, so a renamed shot cannot linger and mislead.</summary>
     private void Forget(string job)
     {
-        var prefix = job switch { "animals" => "animal_", "monsters" => "monster_", "people" => "person_", "motion" => "motion_", "attacks" => "attack_", "models" => "model_", "world" => "world_", "hitboxes" => "box_", _ => "map_" };
+        var prefix = job switch { "animals" => "animal_", "monsters" => "monster_", "people" => "person_", "motion" => "motion_", "attacks" => "attack_", "weapons" => "weapon_", "models" => "model_", "world" => "world_", "hitboxes" => "box_", _ => "map_" };
         foreach (var file in System.IO.Directory.GetFiles(_folder, prefix + "*.png"))
         {
             System.IO.File.Delete(file);
@@ -324,8 +325,9 @@ public partial class Studio : Node
             {
                 var rig = Rig(RigLook.Player, Vector3.Zero, Mathf.Pi / 2f);
                 rig.SetWeapon(weapon);
-                _stage.Camera.Fov = 28;
-                _stage.Camera.LookAtFromPosition(new Vector3(0, 1.4f, 7f), new Vector3(0, 1.1f, 0));
+                var leap = kind == AttackKind.DaggerLeap;
+                _stage.Camera.Fov = leap ? 36 : 24;
+                _stage.Camera.LookAtFromPosition(new Vector3(0, leap ? 1.8f : 1.4f, 7f), new Vector3(0, leap ? 1.6f : 1.15f, 0));
                 await Wait(20);
                 var attack = Tuning.Attack(kind);
                 for (var tick = 0; tick < attack.Total; tick++)
@@ -379,6 +381,37 @@ public partial class Studio : Node
             }
 
             Dismiss(rig);
+        }
+    }
+
+    /// <summary>Every weapon model up close: its flat, its edge, and from three quarters, as the toon shading shows it.</summary>
+    private async Task Weapons()
+    {
+        Floor().Visible = false;
+        var names = DirAccess.GetFilesAt("res://assets").Where(f => f.StartsWith("weapon_") && f.EndsWith(".glb"))
+            .Select(f => f[7..^4]).OrderBy(n => n).ToArray();
+        foreach (var name in names)
+        {
+            var model = PlayerRig.WeaponModel(name)!;
+            _set.AddChild(model);
+            var bounds = Bounds(model);
+            var middle = bounds.GetCenter();
+            var distance = bounds.Size.Length() * 1.9f;
+            _stage.Camera.Fov = 30;
+            foreach (var (view, eye, up) in new[]
+            {
+                ("flat", new Vector3(0, 1, 0.001f), Vector3.Forward),
+                ("edge", new Vector3(1, 0, 0), Vector3.Up),
+                ("three", new Vector3(0.7f, 0.55f, 0.45f), Vector3.Up),
+            })
+            {
+                _stage.Camera.LookAtFromPosition(middle + eye.Normalized() * distance, middle, up);
+                await Wait(3);
+                Save($"weapon_{name}_{view}");
+            }
+
+            model.QueueFree();
+            await Wait(1);
         }
     }
 
