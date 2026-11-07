@@ -4,6 +4,7 @@ Usage: python tools/sheet.py <folder>
 Pictures are grouped by the first part of their name, or the first three parts for motion strips.
 Sheets are written to <folder>/sheets as <group>-<page>.png.
 """
+import re
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -38,7 +39,7 @@ def main():
     for old in sheets.glob("*.png"):
         old.unlink()
     groups = defaultdict(list)
-    for path in sorted(folder.glob("*.png"), key=lambda p: (len(p.stem), p.stem)):
+    for path in sorted(folder.glob("*.png"), key=lambda p: [int(t) if t.isdigit() else t for t in re.split(r"(\d+)", p.stem)]):
         groups[group_of(path.stem)].append(path)
     for group, paths in groups.items():
         kind = group.split("_")[0]

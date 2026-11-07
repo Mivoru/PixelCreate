@@ -155,7 +155,14 @@ public partial class Studio : Node
     private async Task People()
     {
         Floor();
-        var looks = new[] { ("hero", RigLook.Player) }.Concat(NpcLooks.All).ToArray();
+        var goblin = new Color("7fb04a");
+        var looks = new[] { ("hero", RigLook.Player) }.Concat(NpcLooks.All).Concat(new[]
+        {
+            ("skirmisher", new RigLook("skirmisher", goblin, 0.85f, "dagger")),
+            ("archer", new RigLook("archer", goblin, 0.85f, "bow")),
+            ("brute", new RigLook("brute", goblin, 1.3f, "club")),
+            ("shaman", new RigLook("shaman", goblin, 1f, "staff")),
+        }).ToArray();
         foreach (var (name, look) in looks)
         {
             var rig = Rig(look, Vector3.Zero, 0f);

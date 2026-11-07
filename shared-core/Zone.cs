@@ -438,6 +438,9 @@ public sealed class Zone
         return MathF.Sqrt(u * u + v * v) + Waves(x * 2f, z * 2f) * 0.28f > 1f;
     }
 
+    private static bool TooSteep(HeightField terrain, float x, float z) =>
+        MathF.Abs(terrain.At(x + 1.5f, z) - terrain.At(x - 1.5f, z)) + MathF.Abs(terrain.At(x, z + 1.5f) - terrain.At(x, z - 1.5f)) > 2.4f;
+
     private static bool InClearing(ZoneData data, float x, float z) =>
         (data.Clearings ?? Array.Empty<float[]>()).Any(c => new Vector2(x - c[0], z - c[1]).Length() < c[2]);
 
@@ -456,7 +459,7 @@ public sealed class Zone
             var scale = scatter.MinScale + (float)random.NextDouble() * (scatter.MaxScale - scatter.MinScale);
             var yaw = (float)random.NextDouble() * MathF.Tau;
             if (PathDistance(x, z) < 1.5f || terrain.At(x, z) < -0.3f || props.Any(p => Near(p, x, z, scatter.Spacing)) ||
-                OutsideShape(scatter, x, z) || InClearing(data, x, z) || NearWater(x, z))
+                OutsideShape(scatter, x, z) || InClearing(data, x, z) || NearWater(x, z) || TooSteep(terrain, x, z))
             {
                 continue;
             }

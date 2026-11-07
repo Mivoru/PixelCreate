@@ -50,6 +50,16 @@ Rules:
 - Blender: `D:\Program\Blender Foundation\Blender 5.2\blender.exe -b --factory-startup -P <script>`.
 - Play: `powershell -ExecutionPolicy Bypass -File scripts/play.ps1` starts a local server and the client.
 - Live check: add `-Capture <folder>` to that command. A bot plays, saves frames and prints a `STATS` line.
+- `PIXEL_BOT` picks the bot: `guild` plays the Guild story through the real interface and prints `BOT` stages,
+  with `PIXEL_TEST=1` making the examiner frail. Also `idle`, `talk`, `trial`, `keys`. `PIXEL_YAW` turns the camera.
+- Full check after a change: `powershell -ExecutionPolicy Bypass -File scripts/check.ps1`.
+- Photo studio: `scripts/studio.ps1 -Jobs people,motion,models,world,hitboxes,map` needs no server and writes
+  labelled contact sheets to `export/previews/studio/sheets`. Read them after every visual change. World shots
+  live in `client/studio/shots.json`; add one for each new place.
+- `net-tests/ZoneAuditTests.cs` walks the real zone: keep every door, camp and bridge reachable.
+- Models: edit `asset-pipeline/build_meshes.py`, then `scripts/build_assets.ps1` builds and imports them.
+- Hair and cloth are `ClothChain` grids; the toon shader bends meshes along them. Rig looks live in `Dialogues.cs`.
+- The server waits for a late input instead of skipping it, and catches up at no more than 1.5 times speed.
 
 ## Which tool to draw with
 
