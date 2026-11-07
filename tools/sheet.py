@@ -10,14 +10,14 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw
 
-COLUMNS = {"person": 5, "motion": 8, "model": 6, "world": 3, "box": 3, "map": 2}
-TILE_WIDTH = {"person": 300, "motion": 200, "model": 260, "world": 520, "box": 520, "map": 800}
-ROWS_PER_PAGE = {"person": 4, "motion": 8, "model": 7, "world": 4, "box": 4, "map": 1}
+COLUMNS = {"person": 5, "motion": 8, "model": 6, "world": 3, "box": 3, "map": 2, "window": 4}
+TILE_WIDTH = {"person": 300, "motion": 200, "model": 260, "world": 520, "box": 520, "map": 800, "window": 400}
+ROWS_PER_PAGE = {"person": 4, "motion": 8, "model": 7, "world": 4, "box": 4, "map": 1, "window": 6}
 CROP = {"person": 0.5, "motion": 0.5}
 
 
 def group_of(name):
-    parts = name.split("_")
+    parts = name.replace("-", "_").split("_")
     return "_".join(parts[:3]) if parts[0] == "motion" else parts[0]
 
 
@@ -38,7 +38,7 @@ def main():
     for old in sheets.glob("*.png"):
         old.unlink()
     groups = defaultdict(list)
-    for path in sorted(folder.glob("*.png")):
+    for path in sorted(folder.glob("*.png"), key=lambda p: (len(p.stem), p.stem)):
         groups[group_of(path.stem)].append(path)
     for group, paths in groups.items():
         kind = group.split("_")[0]

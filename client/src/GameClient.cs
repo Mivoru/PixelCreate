@@ -20,6 +20,7 @@ public partial class GameClient : Node
     private const float CameraDistance = 5.2f;
     private const float CameraStep = 0.25f;
     private const float CameraClearance = 0.4f;
+    private const int BotDialogTicks = 70;
     private const float GuildInteriorX = 400f;
     private const float ArenaX = 450f;
     private const float MinPitch = -1.1f;
@@ -63,6 +64,8 @@ public partial class GameClient : Node
     private float _pitch = -0.32f;
     private float _facing;
     private double _clock;
+    private string _botStage = "";
+    private int _botWait;
     private string? _captureDir;
     private int _captureFrames = 8;
     private int _captured;
@@ -441,6 +444,11 @@ public partial class GameClient : Node
     private (sbyte X, sbyte Z, Buttons Buttons) BotInput()
     {
         var mode = OS.GetEnvironment("PIXEL_BOT");
+        if (mode == "guild")
+        {
+            return GuildBot();
+        }
+
         if (mode is "talk" or "trial" && _client.Tick == 60)
         {
             Interact();
@@ -480,6 +488,111 @@ public partial class GameClient : Node
         if (_botRandom.Next(80) == 0) buttons |= Buttons.Jump;
         if (_botRandom.Next(120) == 0) buttons |= Buttons.Dash;
         return ToMove(0, 1, buttons);
+    }
+
+    /// <summary>
+    /// Plays the whole Guild story through the real interface: talk to Mira, win the trial, leave
+    /// the arena, take a job at the board and sell crystals. Each stage is printed as BOT.
+    /// </summary>
+    private (sbyte X, sbyte Z, Buttons Buttons) GuildBot()
+    {
+        var snapshot = _client.Latest;
+        if (snapshot is null || _client.Tick < 60)
+        {
+            return (0, 0, Buttons.None);
+        }
+
+        var mira = _world.Npcs.First(n => n.Role == "receptionist").Position;
+        var board = _world.Npcs.First(n => n.Role == "quest_board").Position;
+        if (snapshot.Rank == GuildRank.Newcomer)
+        {
+            return BotConverse("talk to Mira", new Vector3(mira.X, 0, mira.Z + 2.6f), Command.BeginTrial);
+        }
+
+        if (snapshot.Rank == GuildRank.InTrial)
+        {
+            BotStage("fight the examiner");
+            if (snapshot.Enemies.Length == 0)
+            {
+                return (0, 0, Buttons.None);
+            }
+
+            var foe = snapshot.Enemies[0].Position;
+            return BotWalk(new Vector3(foe.X, 0, foe.Z), 1.6f, _client.Tick % 40 == 0 ? Buttons.Light : Buttons.None);
+        }
+
+        var position = _client.State.Position;
+        if (position.X > ArenaX)
+        {
+            BotStage("leave the arena");
+            var gate = _world.Portals.First(p => p.From.X > ArenaX).From;
+            var walk = BotWalk(new Vector3(gate.X, 0, gate.Z), 1f, Buttons.None);
+            if (walk == (0, 0, Buttons.None) && _client.Tick % 60 == 0)
+            {
+                Interact();
+            }
+
+            return walk;
+        }
+
+        if (snapshot.QuestId == 0)
+        {
+            return BotConverse("take a job", new Vector3(board.X + 2.2f, 0, board.Z), Command.AcceptSlimeQuest);
+        }
+
+        return snapshot.Crystals.Sum() > 0
+            ? BotConverse("sell crystals", new Vector3(mira.X, 0, mira.Z + 2.6f), Command.SellCrystals)
+            : BotDone();
+    }
+
+    private (sbyte X, sbyte Z, Buttons Buttons) BotDone()
+    {
+        BotStage("done");
+        return (0, 0, Buttons.None);
+    }
+
+    private void BotStage(string stage)
+    {
+        if (stage != _botStage)
+        {
+            _botStage = stage;
+            _botWait = 0;
+            GD.Print($"BOT {stage} at tick {_client.Tick}");
+        }
+    }
+
+    /// <summary>Walks to a spot, opens the conversation, holds it for a moment, then picks the wanted choice.</summary>
+    private (sbyte X, sbyte Z, Buttons Buttons) BotConverse(string stage, Vector3 spot, Command wanted)
+    {
+        BotStage(stage);
+        var walk = BotWalk(spot, 0.5f, Buttons.None);
+        if (walk != (0, 0, Buttons.None))
+        {
+            return walk;
+        }
+
+        if (!_hud.DialogOpen)
+        {
+            Interact();
+            _botWait = 0;
+        }
+        else if (++_botWait > BotDialogTicks)
+        {
+            _pendingCommand = _hud.ChooseCommand(wanted);
+            _botWait = 0;
+        }
+
+        return (0, 0, Buttons.None);
+    }
+
+    private (sbyte X, sbyte Z, Buttons Buttons) BotWalk(Vector3 target, float reach, Buttons buttons)
+    {
+        var position = _client.State.Position;
+        var dx = target.X - position.X;
+        var dz = target.Z - position.Z;
+        var distance = Mathf.Sqrt(dx * dx + dz * dz);
+        _yaw = Mathf.Atan2(-dx, -dz);
+        return distance < reach ? ((sbyte)0, (sbyte)0, buttons) : ToMove(0, 1, buttons);
     }
 
     private static void PressKey(Key key, bool pressed)

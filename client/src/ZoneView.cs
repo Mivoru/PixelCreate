@@ -130,7 +130,7 @@ public static class ZoneView
             {
                 Mesh = new QuadMesh { Size = new Vector2(16f, 10f), Orientation = PlaneMesh.OrientationEnum.Z },
                 MaterialOverride = material,
-                Position = new Vector3(foot.X, foot.Y + 8f, foot.Z + 4f),
+                Position = new Vector3(foot.X, foot.Y + 8f, foot.Z + 1f),
                 Rotation = new Vector3(0, 0, Mathf.Pi / 2f),
             };
             root.AddChild(fall);
@@ -165,7 +165,7 @@ public static class ZoneView
             return centre + new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle)) * (radius * 1.12f * ring / rings);
         }
 
-        void Add(int ring, int side) => Vertex(surface, Point(ring, side), Point(ring, side).X * 0.5f, 0.5f + 0.5f * ring / rings);
+        void Add(int ring, int side) => Vertex(surface, Point(ring, side), Point(ring, side).X * 0.5f, 0.5f + 0.5f * Mathf.Pow(ring / (float)rings, 5f));
         for (var ring = 0; ring < rings; ring++)
         {
             for (var side = 0; side < sides; side++)

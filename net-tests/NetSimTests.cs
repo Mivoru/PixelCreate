@@ -153,11 +153,11 @@ public sealed class NetSimTests
     }
 
     [Fact]
-    public void ClockDrift_WithoutClockSync_DelayGrows()
+    public void ClockDrift_WithoutClockSync_IsCaughtUpByTheServer()
     {
         var result = Run(rtt: 80, jitter: 8, loss: 2, enemies: 0, drift: 1.005f);
         _output.WriteLine($"buffered inputs at the end: {string.Join(", ", result.Buffered)}");
-        Assert.All(result.Buffered, count => Assert.True(count > 20));
+        Assert.All(result.Buffered, count => Assert.InRange(count, 0, 12));
     }
 
     [Fact]
@@ -706,6 +706,20 @@ public sealed class GuildTests
             server.Step();
             client.Step(0, 0, buttons, 0, i == 0 ? command : Command.None);
         }
+    }
+
+    [Fact]
+    public void ButtonsPressed_AfterAClientStall_StillCount()
+    {
+        var (server, client, network, _) = Start();
+        for (var i = 0; i < 200; i++)
+        {
+            network.Advance(1000.0 / Tuning.TickRate);
+            server.Step();
+        }
+
+        Run(server, client, network, 60, Command.None, Buttons.Light);
+        Assert.Equal(AttackKind.Light, server.GetPlayer(1)!.Value.Attack);
     }
 
     [Fact]

@@ -55,6 +55,7 @@ public partial class Studio : Node
             foreach (var job in jobs)
             {
                 GD.Print($"STUDIO {job}");
+                Forget(job);
                 await (job switch
                 {
                     "people" => People(),
@@ -74,6 +75,16 @@ public partial class Studio : Node
         }
 
         GetTree().Quit();
+    }
+
+    /// <summary>Removes the old pictures of a job, so a renamed shot cannot linger and mislead.</summary>
+    private void Forget(string job)
+    {
+        var prefix = job switch { "people" => "person_", "motion" => "motion_", "models" => "model_", "world" => "world_", "hitboxes" => "box_", _ => "map_" };
+        foreach (var file in System.IO.Directory.GetFiles(_folder, prefix + "*.png"))
+        {
+            System.IO.File.Delete(file);
+        }
     }
 
     private void Clear()
@@ -313,6 +324,7 @@ public partial class Studio : Node
         var camera = _stage.Camera;
         camera.Projection = Camera3D.ProjectionType.Orthogonal;
         camera.Size = zone.Size;
+        _stage.View.GetChildren().OfType<WorldEnvironment>().First().Environment.FogEnabled = false;
         _stage.View.Size = new Vector2I(1100, 1100);
         camera.Far = 500;
         camera.LookAtFromPosition(new Vector3(0, 200, 0.01f), Vector3.Zero, Vector3.Forward);
@@ -337,6 +349,7 @@ public partial class Studio : Node
         _stage.PostQuad.Visible = false;
         await Wait(4);
         Save("map_marked");
+        _stage.View.GetChildren().OfType<WorldEnvironment>().First().Environment.FogEnabled = true;
         _stage.View.Size = new Vector2I(960, 540);
     }
 

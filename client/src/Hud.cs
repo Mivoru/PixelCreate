@@ -118,6 +118,9 @@ public partial class Hud : Control
 
     public void CloseDialog() => _dialogName = "";
 
+    /// <summary>Picks the option with this command, as a player would by reading the list.</summary>
+    public Command ChooseCommand(Command wanted) => Choose(System.Array.FindIndex(_dialogOptions, o => o.Command == wanted) is var i and >= 0 ? i : int.MaxValue);
+
     /// <summary>Picks an option and closes the conversation, returning the command to send.</summary>
     public Command Choose(int index)
     {

@@ -15,6 +15,9 @@ public sealed class ServerOptions
 
     /// <summary>Starts new players somewhere else, to test a far part of the zone.</summary>
     public Vector3? SpawnOverride { get; init; }
+
+    /// <summary>For scripted live checks: a frail examiner, and crystals in the pocket.</summary>
+    public bool TestMode { get; init; }
 }
 
 public sealed class ServerStats
@@ -63,6 +66,12 @@ public sealed class FireWallHazard
 /// <summary>The authoritative game. It owns every player and enemy, and knows nothing about rendering.</summary>
 public sealed class GameServer : IEnemyEvents
 {
+    /// <summary>Inputs above the normal buffer before the server starts to catch up.</summary>
+    private const int CatchUpSurplus = 4;
+
+    /// <summary>A second press of the key right after a door must not lead straight back out.</summary>
+    private const int DoorCooldownTicks = 45;
+
     private const float SpitSpeed = 13f;
     private const float ArrowSpeed = 22f;
     private const float PowerArrowSpeed = 48f;
@@ -93,9 +102,9 @@ public sealed class GameServer : IEnemyEvents
         public readonly int[] Crystals = new int[Core.Crystals.Tiers];
         public uint NextTick;
         public int WaitTicks;
-        public InputCmd LastInput;
         public readonly Queue<Command> Commands = new();
         public uint LastCommandTick;
+        public uint DoorReadyTick;
         public byte Level = 1;
         public int Xp;
         public uint LastHurtTick;
@@ -288,6 +297,32 @@ public sealed class GameServer : IEnemyEvents
         }
     }
 
+    /// <summary>
+    /// Simulates the next input of a player. When it has not arrived the player simply waits: if
+    /// the server ran on without it, a late input could never be used and its button press would
+    /// be lost. Only an input that is truly gone, with later ones piling up, is skipped.
+    /// </summary>
+    private void RunInput(Player player)
+    {
+        if (!player.Inputs.Remove(player.NextTick, out var command))
+        {
+            Stats.MissedInputs++;
+            if (player.Inputs.Count >= Protocol.InputRedundancy)
+            {
+                player.NextTick = player.Inputs.First().Key;
+            }
+
+            return;
+        }
+
+        player.NextTick++;
+        var landed = Movement.Step(ref player.State, command, _world);
+        if (landed != AttackKind.None)
+        {
+            Strike(player, landed);
+        }
+    }
+
     private void StepPlayer(Player player)
     {
         if (player.WaitTicks > 0)
@@ -296,21 +331,12 @@ public sealed class GameServer : IEnemyEvents
             return;
         }
 
-        if (!player.Inputs.Remove(player.NextTick, out var command))
+        // A client that stalled sends a burst when it recovers. An extra input every second tick
+        // brings it back to the normal delay, and caps how fast a client can ever run at 1.5 times.
+        var inputs = player.Inputs.Count > _options.InputBufferTicks + CatchUpSurplus && Tick % 2 == 0 ? 2 : 1;
+        for (var i = 0; i < inputs; i++)
         {
-            // Keep walking the same way, but never repeat a button press.
-            command = player.LastInput;
-            command.Tick = player.NextTick;
-            command.Buttons = Buttons.None;
-            Stats.MissedInputs++;
-        }
-
-        player.LastInput = command;
-        player.NextTick++;
-        var landed = Movement.Step(ref player.State, command, _world);
-        if (landed != AttackKind.None)
-        {
-            Strike(player, landed);
+            RunInput(player);
         }
 
         while (player.Commands.TryDequeue(out var request))
@@ -340,11 +366,12 @@ public sealed class GameServer : IEnemyEvents
     {
         switch (command)
         {
-            case Command.UseDoor:
+            case Command.UseDoor when Tick >= player.DoorReadyTick:
                 foreach (var portal in _world.Portals)
                 {
                     if (Vector3.Distance(portal.From with { Y = 0 }, player.State.Position with { Y = 0 }) < Guild.DoorRange)
                     {
+                        player.DoorReadyTick = Tick + DoorCooldownTicks;
                         Move(player, portal.To);
                         break;
                     }
@@ -405,6 +432,12 @@ public sealed class GameServer : IEnemyEvents
         };
         examiner.Reset(_random, _world);
         examiner.TargetId = player.Id;
+        if (_options.TestMode)
+        {
+            examiner.Health = 1;
+            player.Crystals[0] += 3;
+        }
+
         _enemies.Add(examiner);
     }
 

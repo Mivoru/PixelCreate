@@ -59,7 +59,8 @@ public sealed class Zone
     private sealed record HillData(float X, float Z, float Radius, float Height);
 
     private const float BedStep = 2f;
-    private const float BridgeRamp = 8f;
+    private const float BridgeRamp = 11f;
+    private const float BridgeRampWidth = 6f;
     private const float BridgeOverlap = 3f;
 
     private sealed record PathData(float Width, float[][] Points);
@@ -144,6 +145,12 @@ public sealed class Zone
 
     /// <summary>Half width, half depth and height of a model's collision, or null when none is listed.</summary>
     public static Vector3? CollisionOf(string model) => Collision.TryGetValue(model, out var shape) ? shape : null;
+
+    /// <summary>Models with holes in them are solid only where their parts stand: centre offset, then size as above.</summary>
+    private static readonly Dictionary<string, (Vector2 Offset, Vector3 Shape)[]> CollisionParts = new()
+    {
+        ["ruin_arch"] = new[] { (new Vector2(-2.6f, 0f), new Vector3(0.9f, 0.9f, 5f)), (new Vector2(2.6f, 0f), new Vector3(0.9f, 0.9f, 5f)) },
+    };
 
     private readonly PathData[] _paths;
     private readonly RegionData[] _regions;
@@ -350,11 +357,11 @@ public sealed class Zone
         {
             var along = MathF.Max(bridge.X0 - x, x - bridge.X1);
             var across = MathF.Max(MathF.Max(bridge.Z0 - z, z - bridge.Z1), 0f);
-            if (along > -BridgeOverlap && along < BridgeRamp && across < 3f)
+            if (along > -BridgeOverlap && along < BridgeRamp && across < BridgeRampWidth)
             {
                 // The rise starts under the deck, because the ground mesh is coarser than the join.
                 var t = 1f - MathF.Max(along, 0f) / BridgeRamp;
-                height += (bridge.Height - height) * t * t * (3f - 2f * t) * (1f - across / 3f);
+                height += (bridge.Height - height) * t * t * (3f - 2f * t) * (1f - across / BridgeRampWidth);
             }
         }
 
@@ -479,6 +486,16 @@ public sealed class Zone
         };
         foreach (var prop in props)
         {
+            foreach (var (offset, part) in CollisionParts.GetValueOrDefault(prop.Model, Array.Empty<(Vector2, Vector3)>()))
+            {
+                var cosine = MathF.Cos(prop.Yaw);
+                var sine = MathF.Sin(prop.Yaw);
+                var x = prop.Position.X + (offset.X * cosine + offset.Y * sine) * prop.Scale;
+                var z = prop.Position.Z + (-offset.X * sine + offset.Y * cosine) * prop.Scale;
+                var extent = part * prop.Scale;
+                boxes.Add(new(new(x - extent.X, prop.Position.Y - 1f, z - extent.Y), new(x + extent.X, prop.Position.Y + extent.Z, z + extent.Y)));
+            }
+
             var shape = Collision[prop.Model] * prop.Scale;
             if (shape.X > 0)
             {
