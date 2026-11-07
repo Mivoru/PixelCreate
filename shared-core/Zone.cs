@@ -514,9 +514,11 @@ public sealed class Zone
             var yaw = (float)random.NextDouble() * MathF.Tau;
             // A tree crown spreads far wider than its trunk, so trees keep more distance from what is built.
             var tree = scatter.Model.Contains("tree") || scatter.Model is "pine" or "pine_b" or "birch" or "willow" or "blossom" or "apple";
-            if (PathDistance(x, z) < (tree ? 3.2f : 1.5f) || (terrain.At(x, z) < -0.3f && !scatter.InWater) || props.Any(p => Near(p, x, z, scatter.Spacing, tree && Footprint(p.Model) > 1.2f ? 3f : 0f)) ||
-                OutsideShape(scatter, x, z) || InClearing(data, x, z) || (NearWater(x, z) && !scatter.InWater) || TooSteep(terrain, x, z) ||
-                !MatchesGround(scatter, terrain, x, z))
+            // Cheap tests first; the distance to every placed prop is the slow one.
+            if (OutsideShape(scatter, x, z) || InClearing(data, x, z) || (terrain.At(x, z) < -0.3f && !scatter.InWater) ||
+                !MatchesGround(scatter, terrain, x, z) || TooSteep(terrain, x, z) || (NearWater(x, z) && !scatter.InWater) ||
+                PathDistance(x, z) < (tree ? 3.2f : 1.5f) ||
+                props.Any(p => Near(p, x, z, scatter.Spacing, tree && Footprint(p.Model) > 1.2f ? 3f : 0f)))
             {
                 continue;
             }

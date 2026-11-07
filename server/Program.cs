@@ -3,8 +3,9 @@ using PixelCreate.Core;
 using PixelCreate.Transport;
 
 var port = args.Length > 0 ? int.Parse(args[0]) : 7777;
-using var transport = UdpTransport.Listen(port);
+// The zone is built before listening, so no client waits on a server that is still loading.
 var zone = Zone.Load("meadow-valley");
+using var transport = UdpTransport.Listen(port);
 var spawn = Environment.GetEnvironmentVariable("PIXEL_SPAWN")?.Split(',').Select(v => float.Parse(v, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
 var server = new GameServer(transport, zone.World, new ServerOptions
 {
