@@ -15,6 +15,8 @@ uniform float back_bias = 0.0;
 uniform float shine = 0.0;
 uniform float sway_top = 0.0;
 uniform float sway_length = 1.0;
+// Takes the colour from the vertices instead (sRGB), shaded towards the same violet as Toon() in code.
+uniform float vertex_tint = 0.0;
 
 vec3 along(int column, float t) {
 	int row = min(int(t), 4);
@@ -32,8 +34,14 @@ void vertex() {
 }
 
 void fragment() {
-	EMISSION = shade;
-	ALBEDO = max(base - shade, vec3(0.0));
+	vec3 b = base;
+	vec3 s = shade;
+	if (vertex_tint > 0.5) {
+		b = pow(COLOR.rgb, vec3(2.2));
+		s = mix(b, pow(vec3(0.29, 0.243, 0.47), vec3(2.2)), 0.3);
+	}
+	EMISSION = s;
+	ALBEDO = max(b - s, vec3(0.0));
 	// Anime hair carries a ring of light across the crown, broken into points along the strands.
 	if (shine > 0.5) {
 		vec3 up = normalize((VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz);
@@ -41,7 +49,7 @@ void fragment() {
 		vec3 world = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz;
 		float teeth = sin(world.x * 140.0 + world.z * 90.0) * 0.05;
 		float ring = smoothstep(0.34, 0.4, lift + teeth) * (1.0 - smoothstep(0.62, 0.68, lift - teeth)) * step(0.15, NORMAL.z);
-		EMISSION = mix(EMISSION, mix(base, vec3(1.0), 0.45), ring * 0.85);
+		EMISSION = mix(EMISSION, mix(b, vec3(1.0), 0.45), ring * 0.85);
 	}
 	ROUGHNESS = 1.0;
 	SPECULAR = 0.0;

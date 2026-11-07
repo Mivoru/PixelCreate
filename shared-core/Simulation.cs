@@ -49,13 +49,31 @@ public static class Tuning
     };
 
     /// <summary>
-    /// Loosing an arrow: the shot leaves on the first tick and the arms recover. Damage is for a
-    /// full draw; the arrow itself is the server's (see GameServer.Loose).
+    /// Loosing an arrow: the shot leaves on the first tick, then the hand fetches and nocks the next
+    /// arrow; no new draw starts before that is done. Damage is for a full draw; the arrow itself is
+    /// the server's (see GameServer.Loose).
     /// </summary>
-    private static readonly AttackDef BowShot = new(14, 1, 30, 0f, 1f, 0f, 0.6f);
+    private static readonly AttackDef BowShot = new(26, 1, 30, 0f, 1f, 0f, 0.6f);
 
     /// <summary>A bow reaches full draw after this many ticks of holding the attack button.</summary>
     public const byte FullDraw = 54;
+
+    /// <summary>
+    /// No arrow leaves before the bow is drawn this far: letting go sooner finishes the short draw
+    /// first. With the nocking time this caps the bow at about 1.4 shots a second.
+    /// </summary>
+    public const byte MinDraw = 18;
+
+    /// <summary>How fast an arrow leaves the bow, how hard it falls, and how far it flies before it is spent.</summary>
+    public static float ArrowSpeed(float drawn) => 22f + 28f * drawn;
+    public const float ArrowGravity = 9.8f;
+    public static float ArrowRange(float drawn) => 18f + 22f * drawn;
+
+    /// <summary>How far the bow is drawn, from nothing to a full draw.</summary>
+    public static float Drawn(byte draw) => Math.Min(draw, FullDraw) / (float)FullDraw;
+
+    /// <summary>The steepest an arrow can be aimed up or down, in radians.</summary>
+    public const float MaxShotPitch = 1.4f;
 
     /// <summary>A quick shot still carries this share of a full draw's damage and speed.</summary>
     public const float MinDrawShare = 0.3f;
@@ -153,6 +171,13 @@ public struct InputCmd
 
     /// <summary>Where the player aims, in 256ths of a full turn.</summary>
     public byte Aim;
+
+    /// <summary>
+    /// The aim to the finer grain an arrow needs: the turn in 65536ths, and how far up (positive) or
+    /// down, in 65536ths of a turn. Only the server's arrows read them; movement uses Aim.
+    /// </summary>
+    public ushort AimYaw;
+    public short AimPitch;
 
     public Command Command;
 }
@@ -504,11 +529,19 @@ public static class Movement
     private static AttackKind StepBow(ref PlayerState state, in InputCmd input, AttackKind landed)
     {
         var holding = input.Buttons.HasFlag(Buttons.Light);
-        if (holding && CanStartAttack(state) && state.Stamina >= Tuning.ShotStamina)
+        if (state.DrawTicks == 0)
+        {
+            // A new draw waits until the last arrow's follow-through and nocking are over.
+            if (holding && state.Attack == AttackKind.None && state.Stamina >= Tuning.ShotStamina)
+            {
+                state.DrawTicks = 1;
+            }
+        }
+        else if (holding || state.DrawTicks < Tuning.MinDraw)
         {
             state.DrawTicks = (byte)Math.Min(state.DrawTicks + 1, Tuning.FullDraw);
         }
-        else if (!holding && state.DrawTicks > 0)
+        else
         {
             state.Attack = AttackKind.BowShot;
             state.AttackTick = 0;

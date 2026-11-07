@@ -285,41 +285,101 @@ public sealed class GearTests
         return (server, client, network);
     }
 
-    /// <summary>Draws for some ticks, lets go, and waits for the arrow. Returns the damage it did.</summary>
-    private static int Shoot(GameServer server, ClientPrediction client, SimNetwork network, int draw, byte aim = 0)
+    /// <summary>
+    /// Draws for some ticks, lets go, and waits for the arrow. Returns the damage it did. The shot is
+    /// aimed at <paramref name="at"/>, lifted for the drop as an archer would, or straight ahead.
+    /// </summary>
+    private static int Shoot(GameServer server, ClientPrediction client, SimNetwork network, int draw, Vector3? at = null)
     {
         var before = server.Enemies[0].Health;
-        for (var tick = 0; tick < draw + 90; tick++)
+        var (yaw, pitch) = at is { } target ? AimAt(client.State.Position, target, draw) : ((ushort)0, (short)0);
+        for (var tick = 0; tick < draw + 150; tick++)
         {
             network.Advance(1000.0 / Tuning.TickRate);
             server.Step();
-            client.Step(0, 0, tick < draw ? Buttons.Light : Buttons.None, aim);
+            client.Step(0, 0, tick < draw ? Buttons.Light : Buttons.None, (byte)(yaw >> 8), Command.None, yaw, pitch);
         }
 
         return before - server.Enemies[0].Health;
     }
 
+    /// <summary>The fine aim from a player's bow at a point, lifted by the drop the arrow will suffer.</summary>
+    private static (ushort Yaw, short Pitch) AimAt(Vector3 feet, Vector3 point, int draw)
+    {
+        var flat = Vector3.Normalize((point - feet) with { Y = 0 });
+        var origin = GameServer.ArrowOrigin(feet, flat);
+        var to = point - origin;
+        var distance = to.Length();
+        var drawn = Tuning.Drawn((byte)Math.Max(draw, Tuning.MinDraw));
+        var time = distance / Tuning.ArrowSpeed(drawn);
+        to.Y += 0.5f * Tuning.ArrowGravity * time * time;
+        var yaw = MathF.Atan2(-to.X, -to.Z);
+        var pitch = MathF.Atan2(to.Y, new Vector2(to.X, to.Z).Length());
+        return ((ushort)MathF.Round((yaw / MathF.Tau + 1f) % 1f * 65536f), (short)MathF.Round(pitch / MathF.Tau * 65536f));
+    }
+
+    private static Vector3 Chest(Vector3 feet) => feet + new Vector3(0, 1.3f * 0.6f, 0);
+
     [Fact]
     public void Arrows_HurtMoreAtFullDraw()
     {
-        var (server, client, network) = StartArcher(new Vector3(0, 0, -14));
-        var quick = Shoot(server, client, network, 4);
-        var (fullServer, fullClient, fullNetwork) = StartArcher(new Vector3(0, 0, -14));
-        var full = Shoot(fullServer, fullClient, fullNetwork, Tuning.FullDraw + 10);
+        var target = new Vector3(0, 0, -14);
+        var (server, client, network) = StartArcher(target);
+        var quick = Shoot(server, client, network, 4, Chest(target));
+        var (fullServer, fullClient, fullNetwork) = StartArcher(target);
+        var full = Shoot(fullServer, fullClient, fullNetwork, Tuning.FullDraw + 10, Chest(target));
         Assert.True(quick > 0, "a quick shot still hits");
-        Assert.True(full > quick * 2, $"a full draw ({full}) hits much harder than a quick shot ({quick})");
+        Assert.True(full > quick * 1.6f, $"a full draw ({full}) hits much harder than a quick shot ({quick})");
     }
 
     [Fact]
-    public void Arrows_BendTowardsAnEnemyNearTheAimOnly()
+    public void Arrows_FlyWhereAimedWithNoHelp()
     {
-        // A little to the side of the aim: the arrow bends onto it.
-        var (server, client, network) = StartArcher(new Vector3(0.8f, 0, -16));
-        Assert.True(Shoot(server, client, network, Tuning.FullDraw) > 0);
+        // Aimed straight at it, up a slope: the arrow hits.
+        var high = new Vector3(3f, 4f, -18);
+        var (server, client, network) = StartArcher(high);
+        Assert.True(Shoot(server, client, network, Tuning.FullDraw, Chest(high)) > 0);
 
-        // Far off to the side: the arrow flies on along the aim.
-        var (wide, wideClient, wideNetwork) = StartArcher(new Vector3(9f, 0, -16));
-        Assert.Equal(0, Shoot(wide, wideClient, wideNetwork, Tuning.FullDraw));
+        // A little to the side of the aim: nothing bends the arrow onto it.
+        var (wide, wideClient, wideNetwork) = StartArcher(new Vector3(2.5f, 0, -16));
+        Assert.Equal(0, Shoot(wide, wideClient, wideNetwork, Tuning.FullDraw, Chest(new Vector3(0, 0, -16))));
+    }
+
+    [Fact]
+    public void Arrows_AreSpentAtTheirRange()
+    {
+        // Even a full draw, aimed with the drop allowed for, does not reach this far.
+        var far = new Vector3(0, 0, -(Tuning.ArrowRange(1f) + 8f));
+        var (server, client, network) = StartArcher(far);
+        Assert.Equal(0, Shoot(server, client, network, Tuning.FullDraw, Chest(far)));
+
+        var near = new Vector3(0, 0, -(Tuning.ArrowRange(1f) - 6f));
+        var (nearServer, nearClient, nearNetwork) = StartArcher(near);
+        Assert.True(Shoot(nearServer, nearClient, nearNetwork, Tuning.FullDraw, Chest(near)) > 0);
+        _output.WriteLine($"range: quick {Tuning.ArrowRange(Tuning.Drawn(Tuning.MinDraw)):0} m, full {Tuning.ArrowRange(1f):0} m");
+    }
+
+    [Fact]
+    public void Bow_CannotBeSpammed()
+    {
+        // Clicking as fast as the input allows: every other tick down, for ten seconds.
+        var world = new World(Array.Empty<Aabb>());
+        var state = PlayerState.Spawn(Vector3.Zero);
+        state.Weapon = Weapons.Bow;
+        var shots = 0;
+        for (var tick = 0; tick < Tuning.TickRate * 10; tick++)
+        {
+            state.Stamina = Tuning.MaxStamina;
+            var input = new InputCmd { Tick = (uint)tick, Buttons = tick % 2 == 0 ? Buttons.Light : Buttons.None };
+            if (Movement.Step(ref state, input, world) == AttackKind.BowShot)
+            {
+                shots++;
+                Assert.True(state.ShotDraw >= Tuning.MinDraw, "no arrow leaves before the minimum draw");
+            }
+        }
+
+        _output.WriteLine($"{shots / 10f:0.0} shots a second when clicking as fast as possible");
+        Assert.InRange(shots, 10, 15);
     }
 
     [Fact]

@@ -86,7 +86,7 @@ public static class Protocol
 
     private const byte InputPacket = 1;
     private const byte SnapshotPacket = 2;
-    private const int InputSize = 9;
+    private const int InputSize = 13;
 
     public static byte[] EncodeInputs(ReadOnlySpan<InputCmd> commands)
     {
@@ -101,6 +101,8 @@ public static class Protocol
             writer.Write(command.MoveZ);
             writer.Write((byte)command.Buttons);
             writer.Write(command.Aim);
+            writer.Write(command.AimYaw);
+            writer.Write(command.AimPitch);
             writer.Write((byte)command.Command);
         }
 
@@ -127,6 +129,8 @@ public static class Protocol
                 MoveZ = reader.ReadSByte(),
                 Buttons = (Buttons)reader.ReadByte(),
                 Aim = reader.ReadByte(),
+                AimYaw = reader.ReadUInt16(),
+                AimPitch = reader.ReadInt16(),
                 Command = (Command)reader.ReadByte(),
             };
         }

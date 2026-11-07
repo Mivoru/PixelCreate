@@ -39,6 +39,16 @@ public partial class GameClient : Node
     private float _cameraReach = -1f;
     private float _cameraRaise;
     private float _cameraLift;
+
+    /// <summary>How far the camera has moved in to aim, from 0 to 1, and how long it stays after a shot.</summary>
+    private float _aimBlend;
+    private float _aimHold;
+
+    /// <summary>A bot's own shot aim, used instead of the crosshair.</summary>
+    private (ushort Yaw, short Pitch)? _botShot;
+
+    /// <summary>How far up the last aim pointed, in radians, for the archer's arms.</summary>
+    private float _shotPitch;
     private const int BotDialogTicks = 70;
     private const int HuntTicks = 1400;
     private const int MaxTicksPerFrame = 6;
@@ -47,6 +57,19 @@ public partial class GameClient : Node
     private const float ArenaX = 450f;
     private const float MinPitch = -1.1f;
     private const float MaxPitch = 0.35f;
+
+    /// <summary>
+    /// Aiming a bow: the camera moves in over the right shoulder, the view narrows as the draw
+    /// fills, and the player may look further up, to shoot at what stands above them.
+    /// </summary>
+    private const float AimMaxPitch = 0.95f;
+    private const float AimReach = 3.1f;
+    private const float AimShoulder = 0.85f;
+    private const float AimSeconds = 0.6f;
+    private const float BaseFov = 58f;
+
+    /// <summary>The furthest the aim looks for something under the crosshair.</summary>
+    private const float AimRayLength = 90f;
     private const float MouseSensitivity = 0.0035f;
     private const float RemoteSmoothing = 18f;
     private const int CaptureEveryTicks = 45;
@@ -155,7 +178,7 @@ public partial class GameClient : Node
         if (@event is InputEventMouseMotion motion && !_hud.InventoryOpen && !_hud.DialogOpen)
         {
             _yaw -= motion.Relative.X * MouseSensitivity;
-            _pitch = Mathf.Clamp(_pitch - motion.Relative.Y * MouseSensitivity, MinPitch, MaxPitch);
+            _pitch = Mathf.Clamp(_pitch - motion.Relative.Y * MouseSensitivity, MinPitch, Mathf.Lerp(MaxPitch, AimMaxPitch, _aimBlend));
         }
         else if (@event is InputEventKey { Pressed: true, Echo: false } key)
         {
@@ -233,7 +256,8 @@ public partial class GameClient : Node
                 _pendingCommand = _hud.TakeCommand();
             }
 
-            _client.Step(x, z, buttons, AimByte(), _pendingCommand);
+            var (aim, aimYaw, aimPitch) = ShotAim();
+            _client.Step(x, z, buttons, aim, _pendingCommand, aimYaw, aimPitch);
             _pendingCommand = Command.None;
             _shownNow = ToGodot(_client.ShownPosition);
             var position = _client.State.Position;
@@ -252,7 +276,9 @@ public partial class GameClient : Node
         PlayerEvents(shown, d);
         UpdateNpcs(shown, d);
         _fx.Update(d);
+        UpdateAim(d);
         PlaceCamera(shown, d);
+        _hud.Aiming = _aimBlend;
         _hud.WorldScale = _stage.PixelScale;
         _hud.Player = _client.State;
         _hud.Snapshot = _client.Latest;
@@ -516,6 +542,77 @@ public partial class GameClient : Node
 
     private byte AimByte() => (byte)Mathf.PosMod(Mathf.Round(_yaw / Mathf.Tau * 256f), 256f);
 
+    /// <summary>
+    /// Where the next arrow would go. With a bow the arrow flies from the bow to whatever lies under
+    /// the crosshair, so the aim is worked out from that point, not from the camera's turn alone.
+    /// Other weapons aim along the camera.
+    /// </summary>
+    private (byte Aim, ushort Yaw, short Pitch) ShotAim()
+    {
+        if (_client.State.Weapon != Weapons.Bow)
+        {
+            var aim = AimByte();
+            return (aim, (ushort)(aim << 8), 0);
+        }
+
+        if (_botShot is { } bot)
+        {
+            _shotPitch = bot.Pitch / 65536f * Mathf.Tau;
+            return ((byte)((bot.Yaw + 128) >> 8), bot.Yaw, bot.Pitch);
+        }
+
+        var camera = _stage.Camera.GlobalTransform;
+        var point = AimPoint(camera.Origin, -camera.Basis.Z);
+        var feet = _client.State.Position;
+        var flatYaw = new System.Numerics.Vector3(-Mathf.Sin(_yaw), 0, -Mathf.Cos(_yaw));
+        var origin = GameServer.ArrowOrigin(feet, flatYaw);
+        var to = new Vector3(point.X - origin.X, point.Y - origin.Y, point.Z - origin.Z);
+        var yaw = Mathf.Atan2(-to.X, -to.Z);
+        var pitch = Mathf.Atan2(to.Y, new Vector2(to.X, to.Z).Length());
+        var fineYaw = (ushort)((int)Mathf.Round(Mathf.PosMod(yaw / Mathf.Tau, 1f) * 65536f) & 0xFFFF);
+        _shotPitch = Mathf.Clamp(pitch, -Tuning.MaxShotPitch, Tuning.MaxShotPitch);
+        return ((byte)((fineYaw + 128) >> 8), fineYaw, (short)Mathf.Round(pitch / Mathf.Tau * 65536f));
+    }
+
+    /// <summary>The first thing along a ray from the camera: the ground, a solid box or an enemy, or the ray's end.</summary>
+    private Vector3 AimPoint(Vector3 from, Vector3 direction)
+    {
+        var enemies = _client.Latest?.Enemies ?? System.Array.Empty<EnemyView>();
+        for (var along = 0.5f; along < AimRayLength; along += 0.2f)
+        {
+            var p = from + direction * along;
+            var point = new System.Numerics.Vector3(p.X, p.Y, p.Z);
+            if (point.Y < _world.GroundHeight(point.X, point.Z) || _world.IsInsideBox(point))
+            {
+                return p;
+            }
+
+            foreach (var enemy in enemies)
+            {
+                var size = EnemyDef.All[enemy.Type].Size;
+                var chest = enemy.Position + new System.Numerics.Vector3(0, size * 0.6f, 0);
+                if (enemy.Action != EnemyAction.Dead && System.Numerics.Vector3.Distance(chest, point) < size * 0.5f)
+                {
+                    return p;
+                }
+            }
+        }
+
+        return from + direction * AimRayLength;
+    }
+
+    /// <summary>Eases the camera into the aim while a bow is drawn, and out again a moment after the last shot.</summary>
+    private void UpdateAim(float delta)
+    {
+        var state = _client.State;
+        var aiming = state.Weapon == Weapons.Bow && (state.DrawTicks > 0 || state.Attack == AttackKind.BowShot);
+        _aimHold = aiming ? AimSeconds : Mathf.Max(0f, _aimHold - delta);
+        _aimBlend = Mathf.MoveToward(_aimBlend, _aimHold > 0f ? 1f : 0f, delta * (_aimHold > 0f ? 5f : 3f));
+        _pitch = Mathf.Min(_pitch, Mathf.Lerp(MaxPitch, AimMaxPitch, _aimBlend));
+        var eased = _aimBlend * _aimBlend * (3f - 2f * _aimBlend);
+        _stage.Camera.Fov = BaseFov - eased * (7f + 7f * Tuning.Drawn(state.DrawTicks));
+    }
+
     private (sbyte X, sbyte Z, Buttons Buttons) ReadInput()
     {
         if (_hud.InventoryOpen || _hud.DialogOpen)
@@ -741,16 +838,30 @@ public partial class GameClient : Node
 
         BotStage("shoot");
         var me = _client.State.Position;
-        if (snapshot.Enemies.Where(e => e.Action != EnemyAction.Dead).OrderBy(e => (e.Position - me).Length()).FirstOrDefault() is { Id: > 0 } target)
-        {
-            var to = target.Position - me;
-            _yaw = Mathf.Atan2(-to.X, -to.Z);
-        }
 
         // Every other shot is a quick one.
         var cycle = (int)(tick % 150);
         var drawFor = tick / 150 % 2 == 0 ? 80 : 15;
+        if (snapshot.Enemies.Where(e => e.Action != EnemyAction.Dead).OrderBy(e => (e.Position - me).Length()).FirstOrDefault() is { Id: > 0 } target)
+        {
+            var to = target.Position - me;
+            _yaw = Mathf.Atan2(-to.X, -to.Z);
+            _botShot = BotAim(me, target.Position + new System.Numerics.Vector3(0, EnemyDef.All[target.Type].Size * 0.6f, 0), drawFor);
+        }
+
         return (0, 0, cycle < drawFor ? Buttons.Light : Buttons.None);
+    }
+
+    /// <summary>The fine aim from the bow at a point, lifted by the drop, as an archer would aim.</summary>
+    private static (ushort Yaw, short Pitch) BotAim(System.Numerics.Vector3 feet, System.Numerics.Vector3 point, int draw)
+    {
+        var flat = System.Numerics.Vector3.Normalize((point - feet) with { Y = 0 });
+        var to = point - GameServer.ArrowOrigin(feet, flat);
+        var time = to.Length() / Tuning.ArrowSpeed(Tuning.Drawn((byte)Math.Min(Math.Max(draw, Tuning.MinDraw), 255)));
+        to.Y += 0.5f * Tuning.ArrowGravity * time * time;
+        var yaw = MathF.Atan2(-to.X, -to.Z);
+        var pitch = MathF.Atan2(to.Y, new Vector2(to.X, to.Z).Length());
+        return ((ushort)((int)MathF.Round(((yaw / MathF.Tau) % 1f + 1f) % 1f * 65536f) & 0xFFFF), (short)MathF.Round(pitch / MathF.Tau * 65536f));
     }
 
     /// <summary>
@@ -897,7 +1008,7 @@ public partial class GameClient : Node
         _player.SwordVisible = _hud.Items.HasWeapon;
         var bow = state.DrawTicks > 0 ? WeaponMove.BowDraw : state.Attack == AttackKind.BowShot ? WeaponMove.BowRelease : WeaponMove.None;
         _player.Animate(new MotionState(flat.Length(), state.Grounded, state.Velocity.Y,
-            state.DashTicks > 0, state.Attack, state.AttackTick, bow), delta);
+            state.DashTicks > 0, state.Attack, state.AttackTick, bow, Tuning.Drawn(state.DrawTicks), _shotPitch), delta);
     }
 
     private static float LerpFacing(float from, float to, float amount) =>
@@ -1345,7 +1456,9 @@ public partial class GameClient : Node
     /// </summary>
     private void PlaceCamera(Vector3 shown, float delta)
     {
-        var target = shown + new Vector3(0, 1.75f, 0);
+        var aim = _aimBlend * _aimBlend * (3f - 2f * _aimBlend);
+        var right = new Vector3(Mathf.Cos(_yaw), 0, -Mathf.Sin(_yaw));
+        var target = shown + new Vector3(0, 1.75f - 0.12f * aim, 0) + right * (AimShoulder * aim);
         var jumped = _cameraTarget is { } last && last.DistanceTo(target) > 6f;
         _cameraTarget = target;
 
@@ -1362,6 +1475,7 @@ public partial class GameClient : Node
             }
         }
 
+        raise *= 1f - aim;
         if (jumped || _cameraReach < 0f)
         {
             _cameraRaise = raise;
@@ -1371,7 +1485,8 @@ public partial class GameClient : Node
         _cameraRaise = Mathf.Lerp(_cameraRaise, raise, 1f - Mathf.Exp(-5f * delta));
         var pitch = _pitch - _cameraRaise;
         reach = CameraReach(target, pitch);
-        var rate = reach < _cameraReach ? CameraPullIn : CameraEaseOut;
+        reach = Mathf.Lerp(reach, Mathf.Min(reach, AimReach), aim);
+        var rate = reach < _cameraReach ? CameraPullIn : Mathf.Lerp(CameraEaseOut, CameraPullIn, aim);
         _cameraReach = Mathf.Lerp(_cameraReach, reach, 1f - Mathf.Exp(-rate * delta));
 
         // However smooth, the camera must never end up inside something.

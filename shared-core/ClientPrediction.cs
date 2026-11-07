@@ -68,7 +68,9 @@ public sealed class ClientPrediction
     }
 
     /// <summary>Runs one client tick: reads snapshots, predicts this input and sends it.</summary>
-    public void Step(sbyte moveX, sbyte moveZ, Buttons buttons, byte aim = 0, Command request = Command.None)
+    /// <param name="aimYaw">The fine aim for arrows, in 65536ths of a turn; by default the coarse aim.</param>
+    /// <param name="aimPitch">How far up the arrows aim, in 65536ths of a turn.</param>
+    public void Step(sbyte moveX, sbyte moveZ, Buttons buttons, byte aim = 0, Command request = Command.None, ushort? aimYaw = null, short aimPitch = 0)
     {
         var shownBefore = ShownPosition;
         var wasSpawned = _spawned;
@@ -81,7 +83,11 @@ public sealed class ClientPrediction
         }
 
         Tick++;
-        var command = new InputCmd { Tick = Tick, MoveX = moveX, MoveZ = moveZ, Buttons = buttons, Aim = aim, Command = request };
+        var command = new InputCmd
+        {
+            Tick = Tick, MoveX = moveX, MoveZ = moveZ, Buttons = buttons, Aim = aim, Command = request,
+            AimYaw = aimYaw ?? (ushort)(aim << 8), AimPitch = aimPitch,
+        };
         _inputs[Tick % HistorySize] = command;
         if (_spawned)
         {

@@ -123,6 +123,9 @@ public partial class Hud : Control
     /// <summary>F3 shows where the player stands, so a problem spot can be reported exactly.</summary>
     public bool ShowPosition { get; set; }
 
+    /// <summary>How far the camera has moved in to aim a bow, from 0 to 1. Above 0 the crosshair shows.</summary>
+    public float Aiming { get; set; }
+
     /// <summary>A short title under the speaker's name, such as Guild Receptionist.</summary>
     public string DialogRole { get; set; } = "";
 
@@ -996,22 +999,36 @@ public partial class Hud : Control
     /// While a bow is drawn, a ring round the middle of the screen fills with the draw and turns
     /// gold at a full draw, so the player knows when to let go.
     /// </summary>
+    /// <summary>
+    /// The bow's crosshair in the middle of the screen, where the arrow will fly. Its four ticks close
+    /// in as the draw fills; they stay dim until the bow is drawn far enough to shoot, and turn gold
+    /// at a full draw.
+    /// </summary>
     private void DrawDraw()
     {
-        if (Player.DrawTicks == 0)
+        if (Aiming <= 0f)
         {
             return;
         }
 
-        var share = Mathf.Clamp(Player.DrawTicks / (float)Tuning.FullDraw, 0f, 1f);
-        var centre = Size / 2f + new Vector2(0, 40);
-        var full = share >= 1f;
-        DrawArc(centre, 22, 0, Mathf.Tau, 40, new Color(0, 0, 0, 0.45f), 5f, true);
-        DrawArc(centre, 22, -Mathf.Pi / 2f, -Mathf.Pi / 2f + Mathf.Tau * share, 40, full ? Accent : new Color(1, 1, 1, 0.85f), 3.5f, true);
-        if (full)
+        var centre = (Size / 2f).Round();
+        var drawn = Tuning.Drawn(Player.DrawTicks);
+        var ready = Player.DrawTicks >= Tuning.MinDraw;
+        var full = Player.DrawTicks >= Tuning.FullDraw;
+        var colour = full ? Accent : new Color(1, 1, 1, ready ? 0.95f : 0.45f);
+        colour.A *= Aiming;
+        var shadow = new Color(0, 0, 0, 0.5f * Aiming);
+        var gap = Player.DrawTicks > 0 ? Mathf.Lerp(22f, 5f, drawn) : 14f;
+        foreach (var direction in new[] { Vector2.Up, Vector2.Down, Vector2.Left, Vector2.Right })
         {
-            DrawCircle(centre, 3f, Accent);
+            var from = centre + direction * gap;
+            var to = centre + direction * (gap + 9f);
+            DrawLine(from, to, shadow, 4f);
+            DrawLine(from, to, colour, 2f);
         }
+
+        DrawCircle(centre, 2.5f, shadow);
+        DrawCircle(centre, 1.5f, colour);
     }
 
     /// <summary>

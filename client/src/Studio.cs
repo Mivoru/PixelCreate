@@ -344,6 +344,42 @@ public partial class Studio : Node
                 Dismiss(rig);
             }
         }
+
+        // The bow: drawing to a full draw, loosing and nocking the next arrow, from the side and over the shoulder.
+        foreach (var (view, eye, look, pitch) in new[]
+        {
+            ("side", new Vector3(0, 1.5f, 4.2f), new Vector3(-0.2f, 1.35f, 0), 0f),
+            ("shoulder", new Vector3(0.62f, 1.68f, 2.3f), new Vector3(0.3f, 1.5f, -6f), 0f),
+            ("top", new Vector3(0.01f, 5.5f, 0f), new Vector3(0, 1f, 0), 0f),
+            ("up", new Vector3(0, 1.5f, 4.2f), new Vector3(-0.2f, 1.5f, 0), 0.6f),
+        })
+        {
+            var rig = Rig(RigLook.Player, Vector3.Zero, view is "side" or "up" ? Mathf.Pi / 2f : 0f);
+            rig.SetWeapon("bow");
+            _stage.Camera.Fov = view == "shoulder" ? 50 : view == "top" ? 30 : 28;
+            _stage.Camera.LookAtFromPosition(eye, look);
+            await Wait(20);
+            for (var tick = 0; tick <= Tuning.FullDraw; tick++)
+            {
+                await Wait(1, new MotionState(0f, true, 0f, false, AttackKind.None, 0, WeaponMove.BowDraw, Tuning.Drawn((byte)tick), pitch));
+                if (tick % 18 == 0)
+                {
+                    Save($"attack_bow_{view}_draw_{tick:00}");
+                }
+            }
+
+            var shot = Tuning.Attack(AttackKind.BowShot);
+            for (var tick = 0; tick < shot.Total && view != "up"; tick++)
+            {
+                await Wait(1, new MotionState(0f, true, 0f, false, AttackKind.BowShot, tick, WeaponMove.BowRelease, 0f, pitch));
+                if (tick % 6 == 2)
+                {
+                    Save($"attack_bow_{view}_loose_{tick:00}");
+                }
+            }
+
+            Dismiss(rig);
+        }
     }
 
     /// <summary>Every model from two sides and from below, with its collision box drawn over it.</summary>

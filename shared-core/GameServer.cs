@@ -155,6 +155,10 @@ public sealed class GameServer : IEnemyEvents
         public readonly HashSet<int> GearChanged = new();
         public int GearCursor;
 
+        /// <summary>The fine aim at the moment the bow was let go, for the arrow that leaves next tick.</summary>
+        public ushort ShotYaw;
+        public short ShotPitch;
+
         /// <summary>What the worn gear adds up to; worked out again whenever it changes.</summary>
         public GearStats Stats = new();
         public float RegenCarry;
@@ -439,7 +443,14 @@ public sealed class GameServer : IEnemyEvents
         }
 
         player.NextTick++;
+        var drawing = player.State.DrawTicks > 0;
         var landed = Movement.Step(ref player.State, command, _world);
+        if (drawing && player.State.DrawTicks == 0)
+        {
+            player.ShotYaw = command.AimYaw;
+            player.ShotPitch = command.AimPitch;
+        }
+
         if (landed == AttackKind.BowShot)
         {
             Loose(player);
@@ -1127,67 +1138,34 @@ public sealed class GameServer : IEnemyEvents
         return distance < FireWallHazard.Reach || Vector3.Dot(offset / distance, wall.Direction) >= MathF.Cos(FireWallHazard.HalfAngle);
     }
 
-    /// <summary>How far a player's arrow looks for something to hit, and how wide the cone it bends towards.</summary>
-    private const float ArrowRange = 45f;
-    private const float ArrowAssist = 0.985f;
-
     /// <summary>
-    /// A player looses an arrow: along the aim, bent a little towards the enemy nearest the line of
-    /// aim when one stands inside a narrow cone, which also aims it up or down at that enemy. A
-    /// fuller draw flies faster and flatter.
+    /// A player looses an arrow exactly where they aimed, up or down as well: no help finds the
+    /// target. A fuller draw flies faster and further; every arrow falls, and is spent at its range.
     /// </summary>
     private void Loose(Player player)
     {
-        var aim = Movement.AimDirection(player.State.AttackAim);
-        var origin = player.State.Position + new Vector3(0, 1.4f, 0) + aim * 0.6f;
-        var draw = Tuning.DrawShare(player.State.ShotDraw);
-        var speed = 16f + 26f * draw;
-        var gravity = 9f - 6f * draw;
-        Vector3? target = null;
-        var best = ArrowAssist;
-        foreach (var enemy in _enemies)
-        {
-            if (!enemy.Alive)
-            {
-                continue;
-            }
-
-            var chest = enemy.Position + new Vector3(0, enemy.Def.Size * 0.6f, 0);
-            var flat = (chest - origin) with { Y = 0 };
-            if (flat.Length() > ArrowRange || flat.Length() < 0.5f)
-            {
-                continue;
-            }
-
-            var alignment = Vector3.Dot(Vector3.Normalize(flat), aim);
-            if (alignment > best)
-            {
-                best = alignment;
-                target = chest;
-            }
-        }
-
-        var velocity = aim * speed;
-        if (target is { } chestOf)
-        {
-            // Aimed at an enemy: straight at it, lifted by the drop it will suffer on the way, as an archer would.
-            var toward = chestOf - origin;
-            velocity = Vector3.Normalize(toward) * speed;
-            velocity.Y += 0.5f * gravity * (toward.Length() / speed);
-        }
-
+        var yaw = player.ShotYaw / 65536f * MathF.Tau;
+        var pitch = Math.Clamp(player.ShotPitch / 65536f * MathF.Tau, -Tuning.MaxShotPitch, Tuning.MaxShotPitch);
+        var flat = new Vector3(-MathF.Sin(yaw), 0, -MathF.Cos(yaw));
+        var aim = flat * MathF.Cos(pitch) + Vector3.UnitY * MathF.Sin(pitch);
+        var drawn = Tuning.Drawn(player.State.ShotDraw);
+        var speed = Tuning.ArrowSpeed(drawn);
         _projectiles.Add(new Projectile
         {
             Id = _nextId++,
             Kind = ProjectileKind.PlayerArrow,
             Damage = 0,
-            Position = origin,
-            Velocity = velocity,
-            Gravity = gravity,
+            Position = ArrowOrigin(player.State.Position, flat),
+            Velocity = aim * speed,
+            Gravity = Tuning.ArrowGravity,
             Shooter = player.Id,
-            Draw = draw,
+            Draw = Tuning.DrawShare(player.State.ShotDraw),
+            Life = (int)MathF.Ceiling(Tuning.ArrowRange(drawn) / speed * Tuning.TickRate),
         });
     }
+
+    /// <summary>Where a player's arrow starts: at the bow, in front of the chest.</summary>
+    public static Vector3 ArrowOrigin(Vector3 feet, Vector3 flatAim) => feet + new Vector3(0, 1.4f, 0) + flatAim * 0.6f;
 
     /// <summary>A player's arrow strikes the first living enemy it reaches.</summary>
     private bool StrikeWithArrow(Projectile shot)

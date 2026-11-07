@@ -21,9 +21,11 @@ public enum WeaponMove
 }
 
 /// <summary>What a character is doing this frame. The rig turns it into a pose.</summary>
+/// <param name="Draw">How far a bow is drawn, from 0 to 1; below 0 when unknown, which shows a full draw.</param>
+/// <param name="AimPitch">How far up (positive) or down the bow aims, in radians.</param>
 public readonly record struct MotionState(
     float Speed, bool Grounded, float VerticalSpeed, bool Dashing, AttackKind Attack, int AttackTick,
-    WeaponMove Move = WeaponMove.None);
+    WeaponMove Move = WeaponMove.None, float Draw = -1f, float AimPitch = 0f);
 
 /// <summary>How a rig looks. Kind picks the body: player, skirmisher, brute, archer, sharpshooter or shaman.</summary>
 public sealed record RigLook(string Kind, Color Skin, float Scale, string Weapon)
@@ -81,6 +83,15 @@ public sealed class PlayerRig
     private readonly Node3D _armL = new(), _armR = new(), _forearmL = new(), _forearmR = new();
     private readonly Node3D _sword = new();
     private readonly Node3D _offhand = new();
+
+    /// <summary>The bow in hand and the quiver on the back, while the weapon is a bow.</summary>
+    private BowView? _bow;
+    private Node3D? _quiver;
+    private MotionState _motion;
+
+    /// <summary>How far the arms follow the archer's reach instead of the blended pose, from 0 to 1.</summary>
+    private float _archer;
+    private Vector3? _drawHand;
     private readonly MeshInstance3D _slash;
     private readonly ShaderMaterial _slashMaterial;
     private readonly CpuParticles3D _sparks;
@@ -505,6 +516,9 @@ public sealed class PlayerRig
 
     private void BuildWeapon(string weapon)
     {
+        _bow = null;
+        _quiver?.QueueFree();
+        _quiver = null;
         var wood = new Color("733e39");
         var dark = new Color("3e2731");
         switch (weapon)
@@ -526,21 +540,16 @@ public sealed class PlayerRig
 
                 break;
             case "bow":
-                // Limbs bend back from the grip, with the string between the tips. The bow stands upright.
+                // The bow stands upright in the fist, its string towards the archer; it bends as it is drawn.
                 _sword.Position = new Vector3(0, -0.32f, 0);
-                _sword.AddChild(Part(new BoxMesh { Size = new Vector3(0.06f, 0.08f, 0.2f) }, dark, Vector3.Zero));
-                foreach (var side in new[] { -1f, 1f })
+                _bow = new BowView(_look.Goblin ? BowLook.Plain with { Length = 1.0f } : BowLook.Plain);
+                _sword.AddChild(_bow);
+                if (!_look.Goblin)
                 {
-                    for (var i = 0; i < 4; i++)
-                    {
-                        var z = side * (0.15f + i * 0.14f);
-                        var limb = Part(new BoxMesh { Size = new Vector3(0.05f, 0.055f, 0.17f) }, wood, new Vector3(0, 0.02f + i * i * 0.016f, z));
-                        limb.Rotation = new Vector3(side * (-0.1f - i * 0.16f), 0, 0);
-                        _sword.AddChild(limb);
-                    }
+                    _quiver = BuildQuiver();
+                    _torso.AddChild(_quiver);
                 }
 
-                _sword.AddChild(Part(new BoxMesh { Size = new Vector3(0.015f, 0.015f, 1.14f) }, new Color("ead4aa"), new Vector3(0, 0.17f, 0)));
                 break;
             case "staff":
                 var pole = Part(new CylinderMesh { TopRadius = 0.04f, BottomRadius = 0.055f, Height = 1.9f, RadialSegments = 6 }, wood, new Vector3(0, 0, -0.45f));
@@ -610,6 +619,7 @@ public sealed class PlayerRig
         }
 
         _slash.Visible = false;
+        _motion = state;
         if (_look.Weapon == "none")
         {
             RestArms();
@@ -645,6 +655,7 @@ public sealed class PlayerRig
         }
 
         Apply();
+        UpdateBow(state, delta);
         if (!_look.Goblin)
         {
             AnimateCloth(state, delta);
@@ -746,31 +757,226 @@ public sealed class PlayerRig
         }
     }
 
+    /// <summary>
+    /// The archer's stance: side on, the bow arm straight out along the aim, and the drawing hand
+    /// travelling from the string in front of the bow back to the cheek as the draw fills. Aiming up
+    /// or down raises or lowers both arms together and tips the head with them.
+    /// </summary>
+    private void BowDrawPose(float draw, float pitch)
+    {
+        var eased = 1f - (1f - draw) * (1f - draw);
+        _target[ArmL] = 1.55f + pitch;
+        _target[ArmLSide] = 0f;
+        _target[ForearmL] = 0f;
+        _target[ArmR] = Mathf.Lerp(1.55f, 1.45f, eased) + pitch;
+        _target[ArmRSide] = Mathf.Lerp(-0.05f, 0.05f, eased);
+        _target[ForearmR] = Mathf.Lerp(-0.25f, -2.15f, eased);
+        _target[SwordTilt] = 0f;
+        _target[SwordYaw] = 0f;
+        _target[Twist] = _look.Goblin ? 0.75f : -0.8f;
+        _target[Head] = -pitch * 0.6f;
+        _target[Lean] = 0.02f - pitch * 0.15f;
+        _target[ThighL] = -0.35f;
+        _target[ThighR] = 0.3f;
+    }
+
+    /// <summary>
+    /// After the arrow leaves: the drawing hand flies back past the ear, then reaches over the
+    /// shoulder into the quiver and brings the next arrow round to the string.
+    /// </summary>
+    private void BowReleasePose(int tick, float pitch)
+    {
+        BowDrawPose(1f, pitch);
+        if (tick < 7)
+        {
+            _target[ArmR] = 1.3f + pitch;
+            _target[ArmRSide] = 0.45f;
+            _target[ForearmR] = -1.4f;
+            _target[Lean] -= 0.04f;
+        }
+        else if (tick < 16)
+        {
+            _target[ArmR] = 2.75f;
+            _target[ArmRSide] = 0.3f;
+            _target[ForearmR] = -2.2f;
+            _target[ArmL] = 1.2f + pitch * 0.5f;
+        }
+        else
+        {
+            _target[ArmR] = 1.5f + pitch;
+            _target[ArmRSide] = -0.05f;
+            _target[ForearmR] = -0.4f;
+        }
+    }
+
+    /// <summary>
+    /// Bends the bow with the draw and keeps its string in the drawing hand: from the moment the
+    /// next arrow is brought to the string until it is loosed.
+    ///
+    /// A player's arms reach for exact points instead of following joint angles. The arrow lies on a
+    /// line from the cheek along the aim: the bow hand grips that line at arm's length, and the
+    /// drawing hand holds the string on it, from the bow at the start of the draw to the cheek at a
+    /// full draw. After the shot the hand flies back, fetches an arrow from the quiver and brings it
+    /// to the string.
+    /// </summary>
+    private void UpdateBow(in MotionState state, float delta)
+    {
+        if (_bow is null)
+        {
+            return;
+        }
+
+        var drawing = state.Move == WeaponMove.BowDraw;
+        var shotTick = state.Attack == AttackKind.BowShot ? state.AttackTick : -1;
+        var draw = drawing ? (state.Draw < 0f ? 1f : state.Draw) : 0f;
+        _bow.Draw = drawing ? draw : Mathf.Lerp(_bow.Draw, 0f, 1f - Mathf.Exp(-40f * delta));
+        _bow.Nocked = drawing || shotTick >= 18;
+        if (_look.Goblin)
+        {
+            _bow.Hand = drawing ? _bow.ToLocal(_forearmR.ToGlobal(new Vector3(0, -0.3f, -0.04f))) : null;
+            _bow.Update();
+            return;
+        }
+
+        var shooting = drawing || shotTick >= 0;
+        _archer = Mathf.MoveToward(_archer, shooting ? 1f : 0f, delta * (shooting ? 7f : 4f));
+        if (_archer <= 0f)
+        {
+            _hips.Rotation = Vector3.Zero;
+            _drawHand = null;
+            _bow.Hand = null;
+            _bow.Update();
+            return;
+        }
+
+        var w = _archer * _archer * (3f - 2f * _archer);
+        var forward = -Root.GlobalBasis.Z.Normalized();
+        var right = forward.Cross(Vector3.Up).Normalized();
+        var aim = (forward * Mathf.Cos(state.AimPitch) + Vector3.Up * Mathf.Sin(state.AimPitch)).Normalized();
+
+        // Side on to the target: the hips turn a little, the chest the rest, the head looks along the aim.
+        _hips.Rotation = new Vector3(0, -0.6f * w, 0);
+        _head.Rotation = new Vector3(_head.Rotation.X, Mathf.Lerp(_head.Rotation.Y, 0.8f + 0.6f, w), 0);
+
+        var scale = Root.Scale.X;
+        var reach = 0.3f * scale;
+        var cheek = _head.GlobalPosition + Vector3.Up * 0.13f * scale + right * 0.05f * scale;
+        var shoulderL = _armL.GlobalPosition;
+        var along = ReachAlong(cheek - shoulderL, aim, 2f * reach * 0.95f);
+        var eased = 1f - (1f - draw) * (1f - draw);
+        var grip = cheek + aim * along * Mathf.Lerp(0.78f, 1f, drawing ? eased : 1f);
+        var brace = 0.168f * scale;
+
+        // Where the drawing hand goes.
+        Vector3 hand;
+        if (drawing)
+        {
+            var pull = Mathf.Max(0f, (grip - cheek).Dot(aim) - brace) * eased;
+            hand = grip - aim * (brace + pull);
+        }
+        else if (shotTick is >= 0 and < 7)
+        {
+            hand = cheek - aim * 0.16f * scale + right * 0.1f * scale;
+        }
+        else if (shotTick is >= 7 and < 16)
+        {
+            hand = _torso.ToGlobal(new Vector3(0.2f, 0.66f, 0.2f));
+        }
+        else
+        {
+            hand = grip - aim * brace;
+        }
+
+        // The hand moves smoothly between those points, but holds the string exactly while drawing.
+        _drawHand = drawing || _drawHand is null ? hand : _drawHand.Value.Lerp(hand, 1f - Mathf.Exp(-22f * delta));
+        Reach(_armL, _forearmL, grip, -Vector3.Up - right * 0.3f, reach, w);
+        Reach(_armR, _forearmR, _drawHand.Value, -aim + Vector3.Up * 0.35f + right * 0.4f, reach, w);
+
+        // The bow stands upright across the line of the arrow, its string towards the archer.
+        var up = (Vector3.Up - aim * aim.Dot(Vector3.Up)).Normalized();
+        var y = -aim;
+        var bowBasis = new Basis(y.Cross(up), y, up).Scaled(Vector3.One * scale);
+        var held = _sword.GlobalTransform;
+        _sword.GlobalTransform = new Transform3D(Blend(held.Basis, bowBasis, w).Scaled(Vector3.One * scale),
+            held.Origin.Lerp(grip, w));
+        _bow.Hand = drawing ? _bow.ToLocal(_drawHand.Value) : null;
+        _bow.Update();
+    }
+
+    /// <summary>How far along the aim from the cheek a hand can reach from the shoulder, at most the arm's length.</summary>
+    private static float ReachAlong(Vector3 cheekFromShoulder, Vector3 aim, float length)
+    {
+        var b = cheekFromShoulder.Dot(aim);
+        var c = cheekFromShoulder.LengthSquared() - length * length;
+        return -b + Mathf.Sqrt(Mathf.Max(0f, b * b - c));
+    }
+
+    /// <summary>
+    /// Points an arm so its hand reaches a point: two bones of equal length, the elbow bending
+    /// towards the pole. It blends from the pose the joints already hold by the weight.
+    /// </summary>
+    private static void Reach(Node3D arm, Node3D forearm, Vector3 target, Vector3 pole, float bone, float weight)
+    {
+        var shoulder = arm.GlobalPosition;
+        var scale = arm.GlobalBasis.Scale;
+        var toTarget = target - shoulder;
+        var distance = Mathf.Clamp(toTarget.Length(), 0.05f, bone * 2f - 0.001f);
+        var direction = toTarget.Normalized();
+        var bend = (pole - direction * pole.Dot(direction)).Normalized();
+        var elbow = shoulder + direction * distance / 2f + bend * Mathf.Sqrt(bone * bone - distance * distance / 4f);
+
+        // The forearm folds towards the arm's -Z, so the arm's +Z points away from the bend.
+        var upper = Bone(shoulder, elbow, -(target - elbow));
+        arm.GlobalTransform = new Transform3D(Blend(arm.GlobalBasis, upper, weight).Scaled(scale), shoulder);
+        var start = forearm.GlobalPosition;
+        var lower = Bone(start, target, arm.GlobalBasis.Z);
+        forearm.GlobalTransform = new Transform3D(Blend(forearm.GlobalBasis, lower, weight).Scaled(scale), start);
+    }
+
+    /// <summary>Turns part of the way from one rotation to another; scale in either is ignored.</summary>
+    private static Basis Blend(Basis from, Basis to, float weight)
+    {
+        var a = new Quaternion(from.Orthonormalized()).Normalized();
+        var b = new Quaternion(to.Orthonormalized()).Normalized();
+        return new Basis(a.Slerp(b, weight).Normalized());
+    }
+
+    /// <summary>A bone's frame: -Y runs from one end to the other, +Z as near the hint as it can.</summary>
+    private static Basis Bone(Vector3 from, Vector3 to, Vector3 zHint)
+    {
+        var y = (from - to).Normalized();
+        var z = zHint - y * y.Dot(zHint);
+        z = z.LengthSquared() < 1e-6f ? y.Cross(Vector3.Right) : z;
+        z = z.Normalized();
+        return new Basis(y.Cross(z), y, z);
+    }
+
+    /// <summary>A leather quiver slung on the back, with the fletchings of a few arrows showing.</summary>
+    private static Node3D BuildQuiver()
+    {
+        var quiver = new Node3D { Position = new Vector3(0.12f, 0.15f, 0.2f), Rotation = new Vector3(0.25f, 0f, -0.45f) };
+        quiver.AddChild(Part(new CylinderMesh { TopRadius = 0.075f, BottomRadius = 0.06f, Height = 0.5f, RadialSegments = 8 }, new Color("733e39"), Vector3.Zero));
+        quiver.AddChild(Part(new CylinderMesh { TopRadius = 0.08f, BottomRadius = 0.08f, Height = 0.05f, RadialSegments = 8 }, new Color("3e2731"), new Vector3(0, 0.23f, 0)));
+        quiver.AddChild(Part(new CylinderMesh { TopRadius = 0.08f, BottomRadius = 0.065f, Height = 0.04f, RadialSegments = 8 }, new Color("3e2731"), new Vector3(0, -0.1f, 0)));
+        foreach (var (x, z, colour) in new[] { (-0.03f, 0.02f, "e43b44"), (0.03f, -0.01f, "ead4aa"), (0f, -0.035f, "e43b44"), (0.035f, 0.035f, "ead4aa") })
+        {
+            quiver.AddChild(Part(new CylinderMesh { TopRadius = 0.008f, BottomRadius = 0.008f, Height = 0.16f, RadialSegments = 4 }, new Color("b86f50"), new Vector3(x, 0.3f, z)));
+            quiver.AddChild(Part(new BoxMesh { Size = new Vector3(0.035f, 0.09f, 0.035f) }, new Color(colour), new Vector3(x, 0.36f, z)));
+        }
+
+        return quiver;
+    }
+
     private void WeaponPose(WeaponMove move)
     {
         const float alongArm = -1.5708f;
         switch (move)
         {
             case WeaponMove.BowDraw:
-                _target[ArmL] = 1.55f;
-                _target[ForearmL] = 0f;
-                _target[ArmR] = 1.5f;
-                _target[ArmRSide] = 0f;
-                _target[ForearmR] = -2.1f;
-                _target[Twist] = 0.75f;
-                _target[Head] = 0f;
-                _target[Lean] = 0.02f;
-                _target[ThighL] = -0.35f;
-                _target[ThighR] = 0.3f;
+                BowDrawPose(_motion.Draw < 0f ? 1f : _motion.Draw, _motion.AimPitch);
                 break;
             case WeaponMove.BowRelease:
-                _target[ArmL] = 1.5f;
-                _target[ForearmL] = 0f;
-                _target[ArmR] = 0.9f;
-                _target[ArmRSide] = 0.5f;
-                _target[ForearmR] = -0.6f;
-                _target[Twist] = 0.75f;
-                _target[Lean] = -0.04f;
+                BowReleasePose(_motion.Attack == AttackKind.BowShot ? _motion.AttackTick : 0, _motion.AimPitch);
                 break;
             case WeaponMove.StabWindup:
                 _target[ArmR] = -0.25f;
