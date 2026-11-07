@@ -33,12 +33,31 @@ public sealed class GoblinView : IEnemyView
         var (kind, cloth) = def.Id switch
         {
             "goblin_brute" => ("brute", "5a4a3a"),
-            "goblin_rapid_archer" => ("archer", "4f6b3a"),
-            "goblin_sharpshooter" => ("sharpshooter", "3e5a68"),
+            "goblin_rapid_archer" => ("archer", "3a5a7a"),
+            "goblin_sharpshooter" => ("sharpshooter", "5a3a5a"),
             "goblin_shaman" => ("shaman", "733e39"),
-            _ => ("skirmisher", "3e7a48"),
+            _ => ("skirmisher", "7a4a2e"),
         };
-        var look = def.Id == Guild.ExaminerId ? NpcLooks.Examiner : new RigLook(kind, new Color("7fb04a"), def.Size, def.Weapon);
+        // Each kind has its own shade of skin, so a camp reads as a crowd and not as copies.
+        var skin = new Color(def.Id switch
+        {
+            "goblin_brute" => "6a9a3a",
+            "goblin_sharpshooter" => "6aa07a",
+            "goblin_shaman" => "8a9a6a",
+            "goblin_rapid_archer" => "8ab04a",
+            _ => "7fb04a",
+        });
+        var clothes = new Color(cloth);
+        var look = def.Id == Guild.ExaminerId ? NpcLooks.Examiner : new RigLook(kind, skin, def.Size, def.Weapon)
+        {
+            Palette = new System.Collections.Generic.Dictionary<string, Color>
+            {
+                ["gob_skin"] = skin,
+                ["gob_skin_dark"] = skin.Darkened(0.25f),
+                ["gob_cloth"] = clothes,
+                ["gob_cloth_dark"] = clothes.Darkened(0.25f),
+            },
+        };
         _rig = new PlayerRig(new Color(cloth), look);
     }
 

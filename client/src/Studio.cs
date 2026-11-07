@@ -45,7 +45,7 @@ public partial class Studio : Node
     {
         var args = OS.GetCmdlineUserArgs();
         _folder = args.ElementAtOrDefault(0) ?? "studio";
-        var jobs = (args.ElementAtOrDefault(1) ?? "people,animals,motion,models,world,hitboxes,map").Split(',');
+        var jobs = (args.ElementAtOrDefault(1) ?? "people,animals,monsters,motion,models,world,hitboxes,map").Split(',');
         System.IO.Directory.CreateDirectory(_folder);
         _stage = new PixelStage(this);
         _set = new Node3D();
@@ -60,6 +60,7 @@ public partial class Studio : Node
                 {
                     "people" => People(),
                     "animals" => Animals(),
+                    "monsters" => Monsters(),
                     "motion" => Motion(),
                     "models" => Models(),
                     "world" => World(false),
@@ -81,7 +82,7 @@ public partial class Studio : Node
     /// <summary>Removes the old pictures of a job, so a renamed shot cannot linger and mislead.</summary>
     private void Forget(string job)
     {
-        var prefix = job switch { "animals" => "animal_", "people" => "person_", "motion" => "motion_", "models" => "model_", "world" => "world_", "hitboxes" => "box_", _ => "map_" };
+        var prefix = job switch { "animals" => "animal_", "monsters" => "monster_", "people" => "person_", "motion" => "motion_", "models" => "model_", "world" => "world_", "hitboxes" => "box_", _ => "map_" };
         foreach (var file in System.IO.Directory.GetFiles(_folder, prefix + "*.png"))
         {
             System.IO.File.Delete(file);
@@ -187,6 +188,60 @@ public partial class Studio : Node
             Save($"person_{name}_face");
             Dismiss(rig);
         }
+    }
+
+    /// <summary>
+    /// Every slime and goblin: a portrait from the front, one at three quarters, the moment before an
+    /// attack, and a lineup of all of them side by side to compare sizes and silhouettes.
+    /// </summary>
+    private async Task Monsters()
+    {
+        Floor();
+        var sfx = new Sfx(this) { Muted = true };
+        var monsters = EnemyDef.All.Select((def, index) => (def, index)).Where(p => p.def.Kind is "slime" or "goblin").ToList();
+        foreach (var (def, index) in monsters)
+        {
+            IEnemyView view = def.Kind == "slime" ? new SlimeView() : new GoblinView(def);
+            _set.AddChild(view.Root);
+            var height = def.Size * 1.1f;
+            foreach (var (pose, yaw, distance, action) in new[]
+            {
+                ("front", 0f, 3.6f, EnemyAction.Idle), ("three", 0.7f, 4.2f, EnemyAction.Idle), ("windup", 0.5f, 4.2f, EnemyAction.Windup),
+            })
+            {
+                for (var frame = 0; frame < 50; frame++)
+                {
+                    var state = new EnemyView(1, (byte)index, 3, default, yaw, 10, 10, action, 0, new System.Numerics.Vector3(0, 0, -2), true);
+                    view.Update(state, Vector3.Zero, Step, sfx);
+                    await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+                }
+
+                _stage.Camera.Fov = 30;
+                _stage.Camera.LookAtFromPosition(new Vector3(0, height * 0.9f + 0.4f, -distance * def.Size), new Vector3(0, height * 0.7f, 0));
+                await Wait(2);
+                Save($"monster_{def.Id}_{pose}");
+            }
+
+            view.Root.QueueFree();
+        }
+
+        // All of them in a row, with the hero for scale.
+        var x = -monsters.Count * 0.9f;
+        var lineup = new List<IEnemyView>();
+        foreach (var (def, index) in monsters)
+        {
+            IEnemyView view = def.Kind == "slime" ? new SlimeView() : new GoblinView(def);
+            _set.AddChild(view.Root);
+            lineup.Add(view);
+            view.Update(new EnemyView(1, (byte)index, 3, default, 0f, 10, 10, EnemyAction.Idle, 0, default, false), new Vector3(x, 0, 0), Step, sfx);
+            x += 1.9f;
+        }
+
+        Rig(RigLook.Player, new Vector3(x, 0, 0), 0f);
+        _stage.Camera.Fov = 40;
+        _stage.Camera.LookAtFromPosition(new Vector3(0, 2.4f, -13f), new Vector3(0, 1f, 0));
+        await Wait(20);
+        Save("monster_lineup");
     }
 
     /// <summary>Every animal standing, grazing and running, from the side and at three quarters.</summary>

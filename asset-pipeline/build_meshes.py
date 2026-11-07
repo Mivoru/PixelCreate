@@ -15,6 +15,7 @@ OUT = Path(__file__).resolve().parent.parent / "client" / "assets"
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import beasts  # noqa: E402
+import goblins  # noqa: E402
 
 COLORS = {
     "grass": "3E8948", "grass_dark": "265C42", "leaf": "63C74D", "path": "D77643",
@@ -30,6 +31,7 @@ COLORS = {
     "hide": "8A6A4A", "hide_dark": "4A3428", "sand": "D8C49A", "crop": "D8B85A", "paper": "EEE4C8", "glass": "CFE6F2", "ember": "B03A1E", "anime_glove": "23252E", "anime_vest": "2F4070", "anime_accent": "C84848", "anime_armor": "B8C4D4", "anime_armor_dark": "7A889C",
 }
 COLORS.update(beasts.COLORS)
+COLORS.update(goblins.COLORS)
 MATERIALS = {}
 
 
@@ -1664,6 +1666,7 @@ MODELS = {
     "ruin": ruin,
 }
 
+MODELS.update(goblins.models(add_object, smooth))
 for beast in beasts.NAMES:
     MODELS["beast_" + beast] = (lambda kind: lambda: beasts.build(kind, add_object, smooth))(beast)
 
