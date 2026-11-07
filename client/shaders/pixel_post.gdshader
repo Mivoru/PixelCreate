@@ -11,6 +11,7 @@ uniform vec3 outline_color;
 uniform float dither_amount = 0.012;
 uniform float palette_strength = 1.0;
 uniform float normal_threshold = 0.75;
+uniform float outline_strength = 0.38;
 
 const float BAYER[16] = float[16](0.0, 8.0, 2.0, 10.0, 12.0, 4.0, 14.0, 6.0,
                                   3.0, 11.0, 1.0, 9.0, 15.0, 7.0, 13.0, 5.0);
@@ -73,8 +74,10 @@ void fragment() {
 	}
 	// Grass shares the normal of the ground, so a depth step alone draws no line around a blade.
 	vec3 final_color = mix(color, best, palette_strength);
+	// A thin, soft line that fades with distance, so far away things do not turn into scribbles.
 	if (depth_edge > 0.5 && normal_gap > 0.5 && depth < 1000.0 && !leaves) {
-		final_color = mix(final_color, outline_color, 0.72);
+		float fade = 1.0 - smoothstep(12.0, 45.0, depth);
+		final_color = mix(final_color, outline_color, outline_strength * fade);
 	}
 	ALBEDO = to_linear(final_color);
 }

@@ -84,7 +84,7 @@ public class ZoneAuditTests
     public void BothBanks_OfEveryBridge_Connect()
     {
         var cells = Walkable(Valley.World.Spawn);
-        foreach (var bridge in Valley.World.Platforms.Where(p => p.MaxX < 400))
+        foreach (var bridge in Valley.Bridges)
         {
             var z = (bridge.MinZ + bridge.MaxZ) / 2;
             Assert.True(cells.Contains(CellOf(new Vector3(bridge.MinX + 1, 0, z))), $"west end of bridge at {bridge.MinX} cannot be reached");
@@ -200,7 +200,7 @@ public class ZoneAuditTests
     [Fact]
     public void Bridges_MeetTheGroundAtBothEnds()
     {
-        foreach (var bridge in Valley.World.Platforms.Where(p => p.MaxX < 400))
+        foreach (var bridge in Valley.Bridges)
         {
             var z = (bridge.MinZ + bridge.MaxZ) / 2;
             foreach (var x in new[] { bridge.MinX - 0.2f, bridge.MaxX + 0.2f })
@@ -214,12 +214,67 @@ public class ZoneAuditTests
     [Fact]
     public void Bridges_CannotBeWalkedOffAtTheSide()
     {
-        foreach (var bridge in Valley.World.Platforms.Where(p => p.MaxX < 400))
+        foreach (var bridge in Valley.Bridges)
         {
             var middle = (bridge.MinX + bridge.MaxX) / 2;
             var edge = new Vector3(middle, bridge.Height + 0.05f, bridge.MinZ);
             Assert.True(Valley.World.OverlapsPlayer(edge), $"the bridge at {bridge.MinX} has no rail");
             Assert.False(Valley.World.OverlapsPlayer(new Vector3(middle, bridge.Height - 2.6f, bridge.MinZ)), "a rail blocks the way under the bridge");
+        }
+    }
+
+    /// <summary>
+    /// Walks across every bridge with the real movement code, along the middle and along both
+    /// sides, in both directions, without jumping. A snag anywhere stops the walker short.
+    /// </summary>
+    [Fact]
+    public void Bridges_CanBeWalkedAcrossWithoutJumping()
+    {
+        var world = Valley.World;
+        foreach (var bridge in Valley.Bridges)
+        {
+            var middle = (bridge.MinZ + bridge.MaxZ) / 2;
+            // Also come at each end from an angle, the way a road bends onto a bridge.
+            foreach (var (endX, outward) in new[] { (bridge.MinX, -1f), (bridge.MaxX, 1f) })
+            {
+                foreach (var angle in new[] { -0.7f, -0.35f, 0.35f, 0.7f })
+                {
+                    var start = new Vector3(endX + outward * MathF.Cos(angle) * 9f, 0, middle + MathF.Sin(angle) * 9f);
+                    start.Y = world.GroundHeight(start.X, start.Z);
+                    var goal = new Vector3((bridge.MinX + bridge.MaxX) / 2, 0, middle);
+                    var state = PlayerState.Spawn(start);
+                    for (var tick = 0; tick < Tuning.TickRate * 12; tick++)
+                    {
+                        var heading = Vector3.Normalize(new Vector3(goal.X - state.Position.X, 0, goal.Z - state.Position.Z));
+                        if (new Vector2(goal.X - state.Position.X, goal.Z - state.Position.Z).Length() < 1f)
+                        {
+                            break;
+                        }
+
+                        Movement.Step(ref state, new InputCmd { Tick = (uint)tick, MoveX = (sbyte)(heading.X * 127), MoveZ = (sbyte)(heading.Z * 127) }, world);
+                    }
+
+                    Assert.True(new Vector2(goal.X - state.Position.X, goal.Z - state.Position.Z).Length() < 1.5f,
+                        $"coming onto the bridge at x {endX} from angle {angle} stopped at {state.Position.X:F1}, {state.Position.Y:F2}, {state.Position.Z:F1}");
+                }
+            }
+
+            foreach (var z in new[] { middle, bridge.MinZ + 0.9f, bridge.MaxZ - 0.9f })
+            {
+                foreach (var (from, to) in new[] { (bridge.MinX - 4f, bridge.MaxX + 4f), (bridge.MaxX + 4f, bridge.MinX - 4f) })
+                {
+                    var state = PlayerState.Spawn(new Vector3(from, world.GroundHeight(from, z), z));
+                    var input = new InputCmd { MoveX = (sbyte)(to > from ? 127 : -127) };
+                    for (var tick = 0; tick < Tuning.TickRate * 12 && MathF.Abs(state.Position.X - to) > 0.5f; tick++)
+                    {
+                        input.Tick = (uint)tick;
+                        Movement.Step(ref state, input, world);
+                    }
+
+                    Assert.True(MathF.Abs(state.Position.X - to) < 1f,
+                        $"walking across the bridge at x {bridge.MinX}..{bridge.MaxX}, z {z:F1} stopped at x {state.Position.X:F1}, y {state.Position.Y:F2}");
+                }
+            }
         }
     }
 }

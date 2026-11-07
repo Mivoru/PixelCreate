@@ -63,6 +63,9 @@ public sealed class Zone
     private const float BridgeRampWidth = 6f;
     private const float BridgeOverlap = 3f;
 
+    /// <summary>The top of the pier deck above the ground at its middle, as build_meshes.py makes it.</summary>
+    private const float PierDeck = 0.63f;
+
     private sealed record PathData(float Width, float[][] Points);
 
     private sealed record PropData(string Model, float X, float Z, float Yaw = 0f);
@@ -92,7 +95,8 @@ public sealed class Zone
         string Name, float Size, int Cells, int Seed, float[] Spawn, HillData[] Hills, PathData[] Paths,
         PropData[] Props, ScatterData[] Scatter, EnemySpawnData[]? Enemies, RegionData[]? Regions,
         RiverData[]? Rivers = null, RectData[]? Platforms = null, RectData[]? Walls = null, PortalData[]? Portals = null,
-        NpcData[]? Npcs = null, float[]? Trial = null, float[]? Waterfall = null, float[][]? Clearings = null, LakeData[]? Lakes = null);
+        NpcData[]? Npcs = null, float[]? Trial = null, float[]? Waterfall = null, float[][]? Clearings = null, LakeData[]? Lakes = null,
+        float[][]? Yards = null);
 
     /// <summary>Half width, half depth and height of each model's collision at scale 1.</summary>
     private static readonly Dictionary<string, Vector3> Collision = new()
@@ -102,7 +106,7 @@ public sealed class Zone
         ["tavern"] = new(4.9f, 3.3f, 9f),
         ["guild_hall"] = new(8.4f, 6.2f, 12f),
         ["cliff"] = new(4.6f, 3.6f, 11f),
-        ["falls_cliff"] = new(21f, 7.5f, 16f),
+        ["falls_cliff"] = new(21f, 9.5f, 16f),
         ["windmill"] = new(2.4f, 2.4f, 10f),
         ["birch"] = new(0.35f, 0.35f, 6f),
         ["blossom"] = new(0.5f, 0.5f, 5f),
@@ -172,9 +176,18 @@ public sealed class Zone
     private static readonly Dictionary<string, (Vector2 Offset, Vector3 Shape)[]> CollisionParts = new()
     {
         ["ruin_arch"] = new[] { (new Vector2(-2.6f, 0f), new Vector3(0.9f, 0.9f, 5f)), (new Vector2(2.6f, 0f), new Vector3(0.9f, 0.9f, 5f)) },
+        ["guild_hall"] = new[]
+        {
+            (new Vector2(-7.8f, 5.4f), new Vector3(2.1f, 2.1f, 13f)), (new Vector2(7.8f, 5.4f), new Vector3(2.1f, 2.1f, 13f)),
+            (new Vector2(0f, 6.4f), new Vector3(2.8f, 0.6f, 5f)),
+        },
     };
 
     private readonly PathData[] _paths;
+    private readonly float[][] _yards;
+
+    /// <summary>The bridges of the open map: authored platforms, without piers or interiors.</summary>
+    public IReadOnlyList<Platform> Bridges { get; }
     private readonly RegionData[] _regions;
 
     public string Name { get; }
@@ -202,6 +215,7 @@ public sealed class Zone
         Name = data.Name;
         Size = data.Size;
         _paths = data.Paths;
+        _yards = data.Yards ?? Array.Empty<float[]>();
         Rivers = data.Rivers ?? Array.Empty<RiverData>();
         Lakes = data.Lakes ?? Array.Empty<LakeData>();
         var beds = (data.Rivers ?? Array.Empty<RiverData>()).Select(r => RiverBed(data, r)).ToArray();
@@ -212,9 +226,20 @@ public sealed class Zone
         var ground = new World(Array.Empty<Aabb>(), terrain) { Platforms = platforms };
         foreach (var prop in data.Props)
         {
-            var position = new Vector3(prop.X, ground.GroundHeight(prop.X, prop.Z), prop.Z);
+            var position = new Vector3(prop.X, Settle(ground, prop.Model, prop.X, prop.Z, prop.Yaw), prop.Z);
             props.Add(new PlacedProp(prop.Model, position, 1f, prop.Yaw));
         }
+
+        Bridges = platforms.Where(p => p.MaxX < data.Size / 2).ToArray();
+
+        // A pier is something to stand on: its deck becomes a platform. Piers lie along an axis.
+        platforms = platforms.Concat(props.Where(p => p.Model == "pier").Select(p =>
+        {
+            var alongX = MathF.Abs(MathF.Cos(p.Yaw)) > 0.5f;
+            var (halfX, halfZ) = alongX ? (5f, 1.2f) : (1.2f, 5f);
+            return new Platform(p.Position.X - halfX, p.Position.Z - halfZ, p.Position.X + halfX, p.Position.Z + halfZ, p.Position.Y + PierDeck);
+        })).ToArray();
+        ground = new World(Array.Empty<Aabb>(), terrain) { Platforms = platforms };
 
         foreach (var scatter in data.Scatter)
         {
@@ -260,7 +285,8 @@ public sealed class Zone
             }
         }
 
-        return Rivers.Any(r => PolylineDistance(r.Points, x, z) < r.Width * 1.45f) || InLake(x, z, 1f);
+        return Rivers.Any(r => PolylineDistance(r.Points, x, z) < r.Width * 1.45f) || InLake(x, z, 1f) ||
+               _yards.Any(y => new Vector2(x - y[0], z - y[1]).Length() < y[2]);
     }
 
     /// <summary>The name of the place at a point, or an empty string in the wilds between places.</summary>
@@ -533,6 +559,30 @@ public sealed class Zone
             props.Add(new PlacedProp(scatter.Model, new Vector3(x, terrain.At(x, z), z), scale, yaw));
             placed++;
         }
+    }
+
+    /// <summary>
+    /// The height a model stands at: the lowest ground under its corners, so on a slope it sinks into
+    /// the uphill side instead of floating over the downhill side. Bridges and piers keep their height.
+    /// </summary>
+    private static float Settle(World ground, string model, float x, float z, float yaw)
+    {
+        var centre = ground.GroundHeight(x, z);
+        if (model is "bridge" or "pier" or "field" || !Collision.TryGetValue(model, out var shape) || shape.X <= 0f)
+        {
+            return centre;
+        }
+
+        var lowest = centre;
+        var (sin, cos) = MathF.SinCos(yaw);
+        foreach (var (sx, sz) in new[] { (-1f, -1f), (1f, -1f), (-1f, 1f), (1f, 1f), (0f, 1f), (0f, -1f), (1f, 0f), (-1f, 0f) })
+        {
+            var dx = sx * shape.X;
+            var dz = sz * shape.Y;
+            lowest = MathF.Min(lowest, ground.GroundHeight(x + dx * cos + dz * sin, z - dx * sin + dz * cos));
+        }
+
+        return MathF.Max(lowest, centre - 2.5f);
     }
 
     /// <summary>How far from its centre a model reaches on the ground, by what it is made of.</summary>

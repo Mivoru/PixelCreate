@@ -7,7 +7,11 @@ namespace PixelCreate;
 public sealed class PixelStage
 {
     /// <summary>The render height to aim for. Lower it for bigger pixels, raise it for a finer picture.</summary>
-    private const float TargetHeight = 540f;
+    /// <summary>
+    /// The 3D view renders at about this many lines and is scaled up by whole pixels. 1080 keeps a
+    /// 1080p window sharp; PIXEL_LINES=540 brings back the chunky look.
+    /// </summary>
+    private static readonly float TargetHeight = float.TryParse(OS.GetEnvironment("PIXEL_LINES"), out var lines) && lines > 100 ? lines : 1080f;
 
     /// <summary>How much the final colours lean towards the palette: 1 is hard pixel art, 0 is none.</summary>
     private const float PaletteStrength = 0.22f;

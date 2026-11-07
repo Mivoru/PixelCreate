@@ -57,6 +57,8 @@ Rules:
 - Live check: add `-Capture <folder>` to that command. A bot plays, saves frames and prints a `STATS` line.
 - `PIXEL_BOT` picks the bot: `hunt` kills animals near the spawn, loots, eats and opens the bag; `guild` plays the Guild story through the real interface and prints `BOT` stages,
   with `PIXEL_TEST=1` making the examiner frail. Also `idle`, `talk`, `trial`, `keys`. `PIXEL_YAW` turns the camera.
+- The 3D view renders at the window resolution (`PIXEL_LINES=540` for the old chunky pixels); outlines are thin and fade
+  with distance. F3 shows the player position, for reporting a problem spot.
 - `STATS` reports draws, objects and `frameMs` away from capture stalls. Earlier runs measured the open
   world at about 18 ms a frame on the RTX 3050 laptop; later runs (hunt bot by the sheep, idle in the
   village) measured 7 to 9 ms, and the reason for the change was never pinned down. Measure before

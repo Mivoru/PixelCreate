@@ -863,7 +863,7 @@ def timber(name, start, end, size, material="wood"):
 def house(width, depth, height, wall, roof_material, door_x=0.0, floors=1):
     """A timber-framed house on a stone footing, with an overhanging roof, shutters and a chimney."""
     w, d = width / 2, depth / 2
-    box("footing", (0, 0, 0.22), (width + 0.25, depth + 0.25, 0.44), "stone_dark")
+    box("footing", (0, 0, -0.18), (width + 0.25, depth + 0.25, 1.24), "stone_dark")
     box("walls", (0, 0, height / 2 + 0.4), (width, depth, height), wall)
     top = height + 0.4
     for x in (-w, w, -w / 3, w / 3):
@@ -1060,39 +1060,122 @@ def anime_skirt():
     loft("skirt", [(-0.5, 0.23, 0.2), (-0.2, 0.205, 0.165), (0.02, 0.185, 0.135), (0.08, 0.15, 0.105)], "anime_cloak", 18)
 
 
+def gable_y(name, center, width, depth, height, material):
+    """A gable roof whose ridge runs front to back (along y), for a cross gable over an entrance."""
+    w, d = width / 2, depth / 2
+    verts = [(-w, -d, 0), (w, -d, 0), (w, d, 0), (-w, d, 0), (0, -d, height), (0, d, height)]
+    add_object(name, mesh_from(name, verts, [(0, 4, 5, 3), (1, 2, 5, 4), (0, 1, 4), (2, 3, 5), (0, 3, 2, 1)]), material, center)
+
+
+def disc_y(name, center, radius, thickness, material, sides=18):
+    """A flat disc standing upright and facing -y, like a round window or a shield."""
+    ring = [(math.cos(i / sides * math.tau) * radius, math.sin(i / sides * math.tau) * radius) for i in range(sides)]
+    verts = [(x, -thickness / 2, z) for x, z in ring] + [(x, thickness / 2, z) for x, z in ring]
+    faces = [tuple(range(sides)), tuple(range(2 * sides - 1, sides - 1, -1))]
+    faces += [(i, (i + 1) % sides, (i + 1) % sides + sides, i + sides) for i in range(sides)]
+    add_object(name, mesh_from(name, verts, faces), material, center)
+
+
 def guild_hall():
-    """The largest building in the valley: stone below, timber above, with a gabled porch and banners."""
-    box("base", (0, 0, 2.2), (15, 11, 4.4), "stone")
-    box("upper", (0, 0, 6.2), (15.8, 11.8, 3.8), "wall")
-    for x in (-7.9, -3.9, 0, 3.9, 7.9):
-        timber("post", (x, -5.95, 4.3), (x, -5.95, 8.1), 0.28)
-        timber("post", (x, 5.95, 4.3), (x, 5.95, 8.1), 0.28)
-    for z in (4.4, 8.1):
-        timber("beam", (-8, -6, z), (8, -6, z), 0.26)
-        timber("beam", (-8, 6, z), (8, 6, z), 0.26)
-        timber("beam", (-8, -6, z), (-8, 6, z), 0.26)
-        timber("beam", (8, -6, z), (8, 6, z), 0.26)
-    roof("roof", (0, 0, 8.1), 17.6, 13.4, 5.4, "roof")
-    timber("ridge", (-8.8, 0, 13.55), (8.8, 0, 13.55), 0.24, "wood_dark")
-    for x in (-5.8, 5.8):
-        box("tower", (x, -5.2, 7), (3.2, 3.2, 14), "stone")
-        roof("tower_roof", (x, -5.2, 14), 4, 4, 2.6, "roof")
-        box("slit", (x, -6.84, 9), (0.4, 0.08, 1.5), "window")
-    box("porch_floor", (0, -6.6, 0.2), (5.4, 3, 0.4), "stone")
-    for x in (-2.4, 2.4):
-        timber("column", (x, -7.8, 0.4), (x, -7.8, 4.4), 0.34, "stone")
-    roof("porch_roof", (0, -6.7, 4.4), 6.2, 3.8, 1.8, "roof")
-    box("doors", (0, -5.56, 1.9), (2.4, 0.12, 3), "wood")
-    box("door_line", (0, -5.64, 1.9), (0.08, 0.05, 3), "wood_dark")
-    for x in (-0.3, 0.3):
-        box("ring", (x, -5.66, 1.8), (0.14, 0.05, 0.14), "gold")
-    for x in (-3.9, 3.9):
-        box("banner", (x, -6.04, 6.4), (1.2, 0.05, 2.6), "cloth_red")
-        box("emblem", (x, -6.08, 6.7), (0.6, 0.04, 0.6), "gold")
-    for x in (-2, 2):
-        box("window", (x, -6, 6.2), (1.5, 0.1, 1.7), "window")
-    box("sign", (0, -8.2, 3.4), (2.8, 0.1, 0.7), "wood_dark")
-    box("sign_face", (0, -8.27, 3.4), (2.4, 0.05, 0.42), "gold")
+    """The Adventurers Guild: a stone hall with a timber upper floor, a cross gable over an arched
+    portal, two round towers with pointed roofs, banners and lanterns. The front faces -y."""
+    rng = random.Random(5)
+    # A plinth that runs into the ground, so the hall never floats on a slope.
+    box("plinth", (0, 0, -0.35), (17.6, 13.0, 1.7), "stone_dark")
+    box("ground_floor", (0, 0, 2.75), (16, 11.4, 4.5), "stone")
+    for x in (-8, 8):
+        for y in (-5.7, 5.7):
+            for k in range(5):
+                box("quoin", (x, y, 0.85 + k * 0.9), (0.9 if k % 2 else 0.6, 0.6 if k % 2 else 0.9, 0.45), "stone_dark")
+    box("string_course", (0, 0, 5.05), (16.6, 12.0, 0.3), "stone_dark")
+
+    # Upper floor: timber frame over plaster, jutting out a little over the stone.
+    box("upper", (0, 0, 7.0), (16.6, 12.0, 3.6), "wall")
+    for x in (-8.3, -5.5, -2.8, 2.8, 5.5, 8.3):
+        for y in (-6.02, 6.02):
+            timber("post", (x, y, 5.2), (x, y, 8.8), 0.24)
+    for z in (5.25, 8.75):
+        for y in (-6.05, 6.05):
+            timber("beam", (-8.4, y, z), (8.4, y, z), 0.24)
+        for x in (-8.35, 8.35):
+            timber("beam", (x, -6.05, z), (x, 6.05, z), 0.24)
+    for x0, x1 in ((-8.3, -5.5), (5.5, 8.3), (-5.5, -2.8), (2.8, 5.5)):
+        timber("brace", (x0, -6.05, 5.3), (x1, -6.05, 8.7), 0.16)
+        timber("brace", (x1, 6.05, 5.3), (x0, 6.05, 8.7), 0.16)
+    for x in (-6.9, -4.15, 4.15, 6.9):
+        box("upper_window", (x, -6.05, 7.0), (1.3, 0.12, 1.5), "window")
+        timber("mullion", (x, -6.12, 6.25), (x, -6.12, 7.75), 0.06, "wood_dark")
+        box("upper_window", (x, 6.05, 7.0), (1.3, 0.12, 1.5), "window")
+    roof("roof", (0, 0, 8.8), 18.4, 13.8, 6.0, "roof")
+    timber("ridge", (-9.2, 0, 14.82), (9.2, 0, 14.82), 0.26, "wood_dark")
+    box("chimney", (4.5, 2.5, 13.2), (1.0, 1.0, 4.0), "stone")
+    box("chimney_cap", (4.5, 2.5, 15.25), (1.3, 1.3, 0.2), "stone_dark")
+
+    # The cross gable over the entrance, with the guild crest in a round frame.
+    box("gable_wall", (0, -6.1, 7.0), (6.4, 0.5, 3.6), "wall")
+    gable_y("gable_roof", (0, -4.6, 8.8), 7.6, 4.2, 4.6, "roof")
+    verts = [(-3.2, -6.36, 8.8), (3.2, -6.36, 8.8), (0, -6.36, 12.4)]
+    add_object("gable_face", mesh_from("gable_face", verts, [(0, 1, 2)]), "wall")
+    timber("gable_edge", (-3.4, -6.4, 8.75), (0, -6.4, 12.5), 0.2)
+    timber("gable_edge", (3.4, -6.4, 8.75), (0, -6.4, 12.5), 0.2)
+    disc_y("crest_ring", (0, -6.4, 9.9), 0.85, 0.12, "wood_dark")
+    disc_y("crest", (0, -6.48, 9.9), 0.68, 0.06, "gold")
+    timber("crest_sword", (-0.42, -6.55, 9.48), (0.42, -6.55, 10.32), 0.07, "stone")
+    timber("crest_sword", (0.42, -6.55, 9.48), (-0.42, -6.55, 10.32), 0.07, "stone")
+
+    # The portal: a stone porch with a round arch, studded double doors, a step and lanterns.
+    box("porch", (0, -6.3, 2.5), (5.6, 1.6, 4.4), "stone")
+    box("porch_cap", (0, -6.35, 4.85), (6.0, 1.8, 0.4), "stone_dark")
+    box("door_recess", (0, -6.95, 1.95), (3.0, 0.4, 3.3), "wood_dark")
+    arc = [(math.cos(i / 10 * math.pi) * 1.7, -7.12, 3.35 + math.sin(i / 10 * math.pi) * 1.1) for i in range(11)]
+    beasts.section_tube("arch", arc, [0.32] * 11, [0.36] * 11, "stone_dark", add_object, smooth, 6)
+    for x in (-1.7, 1.7):
+        box("jamb", (x, -7.12, 1.75), (0.55, 0.6, 3.3), "stone_dark")
+    for x in (-0.66, 0.66):
+        box("door", (x, -7.18, 1.85), (1.24, 0.12, 3.1), "wood")
+        for z in (0.9, 2.7):
+            box("strap", (x, -7.26, z), (1.1, 0.05, 0.14), "stone_dark")
+        box("ring", (x * 0.5, -7.28, 1.8), (0.16, 0.05, 0.16), "gold")
+    box("step", (0, -7.75, 0.12), (4.2, 1.1, 0.25), "stone_dark")
+    box("sign", (0, -7.2, 4.35), (3.4, 0.14, 0.62), "wood_dark")
+    box("sign_face", (0, -7.29, 4.35), (3.0, 0.05, 0.42), "gold")
+    for x in (-2.55, 2.55):
+        timber("lamp_arm", (x, -7.05, 3.2), (x, -7.6, 3.2), 0.06, "stone_dark")
+        box("lamp", (x, -7.65, 2.95), (0.34, 0.34, 0.46), "window")
+        box("lamp_cap", (x, -7.65, 3.22), (0.44, 0.44, 0.08), "stone_dark")
+
+    # Ground floor windows with arched tops.
+    for x in (-5.6, -3.7, 3.7, 5.6):
+        box("window", (x, -5.72, 2.6), (1.0, 0.12, 1.7), "window")
+        disc_y("window_arch", (x, -5.72, 3.45), 0.5, 0.12, "window", 12)
+        box("sill", (x, -5.85, 1.7), (1.3, 0.3, 0.14), "stone_dark")
+    for y in (-3, 0, 3):
+        for x in (-8.02, 8.02):
+            box("side_window", (x, y, 2.6), (0.12, 1.0, 1.7), "window")
+
+    # Round towers at the front corners, with arrow slits, a band and pointed roofs.
+    for x in (-7.8, 7.8):
+        loft("tower", [(-0.8, 2.1, 2.1), (1.0, 2.0, 2.0), (12.0, 1.9, 1.9)], "stone", 14, (x, -5.4, 0))
+        loft("tower_band", [(11.9, 2.1, 2.1), (12.4, 2.1, 2.1)], "stone_dark", 14, (x, -5.4, 0))
+        loft("tower_roof", [(12.4, 2.4, 2.4), (13.4, 1.8, 1.8), (16.6, 0.15, 0.15), (17.0, 0.02, 0.02)], "roof", 14, (x, -5.4, 0))
+        timber("finial", (x, -5.4, 16.8), (x, -5.4, 18.0), 0.06, "gold")
+        box("pennant", (x + 0.45, -5.4, 17.7), (0.9, 0.04, 0.4), "cloth_red")
+        for z in (3.5, 7.0, 10.0):
+            box("slit", (x, -7.32, z), (0.22, 0.12, 0.9), "window")
+        box("banner", (x, -7.35, 8.0), (1.3, 0.06, 4.2), "cloth_red")
+        box("banner_trim", (x, -7.38, 10.05), (1.4, 0.06, 0.16), "gold")
+        box("banner_mark", (x, -7.4, 8.5), (0.6, 0.05, 0.6), "gold")
+        verts = [(x - 0.65, -7.36, 5.9), (x + 0.65, -7.36, 5.9), (x, -7.36, 5.3)]
+        add_object("banner_tail", mesh_from("banner_tail", verts, [(0, 1, 2)]), "cloth_red")
+
+    # Ivy and flower boxes soften the stone.
+    for i in range(6):
+        x = rng.choice((-8.2, 8.2)) * rng.uniform(0.92, 1.0)
+        blob(f"ivy{i}", (x, rng.uniform(-5, 5), rng.uniform(0.6, 3.5)), rng.uniform(0.5, 0.9), "grass_dark" if i % 2 else "grass", 80 + i, 0.6, 2)
+    for x in (-5.6, -3.7, 3.7, 5.6):
+        box("planter", (x, -5.95, 1.6), (1.1, 0.35, 0.25), "wood")
+        for k in range(3):
+            blob(f"bloom{x}{k}", (x - 0.35 + k * 0.35, -5.95, 1.8), 0.15, "flower" if k % 2 else "flower_b", k, 0.8, 1)
 
 
 def disc(name, center, radius, height, material, sides=32):
@@ -1144,6 +1227,8 @@ def guild_interior():
         box("wainscot_cap", (x, 0, 1.42), (0.16, 18, 0.08), "wood")
     for y in (-5.5, 0, 5.5):
         for x in (-10.92, 10.92):
+            if x < 0 and y == 0:
+                continue  # The quest board hangs here.
             box("sill", (x * 0.985, y, 2.45), (0.3, 1.9, 0.08), "wood")
             box("window", (x, y, 3.6), (0.08, 1.7, 2.2), "glass")
             box("frame", (x * 0.995, y, 3.05), (0.1, 1.8, 0.06), "wood_dark")
@@ -1261,6 +1346,20 @@ def guild_interior():
             tube("antler", [(10.85, y, 3.6), (10.7, y + side * 0.25, 3.9), (10.6, y + side * 0.45, 4.3)], [0.04, 0.03, 0.015], "paper", 6)
             tube("tine", [(10.7, y + side * 0.25, 3.9), (10.55, y + side * 0.2, 4.15)], [0.025, 0.01], "paper", 5)
             tube("tine", [(10.65, y + side * 0.36, 4.1), (10.5, y + side * 0.3, 4.4)], [0.02, 0.008], "paper", 5)
+
+    # The way out: a double door in a stone frame on the south wall, under a lamp.
+    box("door_frame", (0, -8.88, 1.75), (3.4, 0.2, 3.5), "stone_dark")
+    box("door_leaf", (-0.62, -8.8, 1.55), (1.2, 0.1, 3.0), "wood")
+    box("door_leaf", (0.62, -8.8, 1.55), (1.2, 0.1, 3.0), "wood")
+    for x in (-1.15, -0.1, 0.1, 1.15):
+        box("door_band", (x * 0.98, -8.74, 1.55), (0.08, 0.04, 3.0), "wood_dark")
+    for z in (0.6, 2.4):
+        box("door_strap", (0, -8.74, z), (2.4, 0.04, 0.12), "stone_dark")
+    for x in (-0.25, 0.25):
+        box("door_ring", (x, -8.72, 1.5), (0.16, 0.05, 0.16), "gold")
+    box("door_lintel", (0, -8.8, 3.6), (3.8, 0.3, 0.35), "stone")
+    box("door_lamp", (0, -8.6, 4.1), (0.35, 0.35, 0.45), "window")
+    box("door_mat", (0, -7.9, 0.02), (2.6, 1.4, 0.03), "hide")
 
     # Swords and spears on a rack by the door, for adventurers who broke their own.
     box("rack_base", (-8.0, -8.05, 0.1), (2.6, 0.9, 0.2), "wood_dark")
@@ -1386,14 +1485,36 @@ def crag(name, width, depth, height, levels, seed, material="stone_dark"):
 
 
 def falls_cliff():
+    """A rock face in a ridge with a worn chute down its middle, where the waterfall runs.
+
+    The chute follows chute_front(t), and the game lays the falling water 0.5 m in front of it, so
+    the water always hugs the rock. Keep the two in step (ZoneView.ChuteFront).
+    """
     crag("wall", 50, 18, 16, 6, 71, "stone")
-    crag("left", 18, 12, 21, 7, 72, "stone_dark")
-    bpy.data.objects["left"].location = (-19, 3, 0)
-    crag("right", 16, 12, 19, 6, 73, "stone_dark")
-    bpy.data.objects["right"].location = (20, 3, 0)
-    for i, (x, y, z, s) in enumerate(((-12, -5.5, 15.5, 1.4), (10, -5.5, 15.5, 1.1), (15, -5, 15, 1.7), (-22, -5, 15, 1.2),
-                                      (-9, -7.5, 8, 0.9), (9, -7.6, 6, 1.1), (-15, -7, 3, 1.2), (13, -7, 11, 0.9))):
+    crag("left", 18, 14, 21, 7, 72, "stone_dark")
+    bpy.data.objects["left"].location = (-19, 2, 0)
+    crag("right", 16, 14, 19, 6, 73, "stone_dark")
+    bpy.data.objects["right"].location = (20, 2, 0)
+
+    def chute_front(t):
+        return 9.8 * (1 - 0.34 * t ** 1.6)
+
+    rows = [i / 8 for i in range(9)]
+    beasts.section_tube("chute", [(0, chute_front(t) - 0.5, t * 16) for t in rows], [4.6] * 9, [0.6] * 9, "stone_dark", add_object, smooth, 8)
+    for side in (-1, 1):
+        beasts.section_tube("rib", [(side * 5.4, chute_front(t) - 0.6, t * 16.6) for t in rows],
+                            [1.6 - t * 0.5 for t in rows], [1.5 - t * 0.4 for t in rows], "stone", add_object, smooth, 7)
+    # The lip the water pours over, and a spring among boulders on top that feeds it.
+    beasts.section_tube("lip", [(-4.4, chute_front(1) + 0.2, 16.1), (4.4, chute_front(1) + 0.2, 16.1)], [0.5, 0.5], [0.35, 0.35], "stone", add_object, smooth, 7)
+    for i, (x, y, r) in enumerate(((-3.5, -2.0, 1.6), (3.2, -2.6, 1.9), (0.0, -4.2, 2.2), (-5.5, 1.0, 1.3), (5.8, 0.6, 1.2))):
+        blob(f"boulder{i}", (x, y, 16.2), r, "stone_dark" if i % 2 else "stone", 40 + i, 0.7, 2)
+    for i, (x, y, z, s) in enumerate(((-12, 7.5, 15.5, 1.6), (11, 7.0, 15.5, 1.3), (16, 5.0, 15, 1.7), (-22, 5.0, 15, 1.4),
+                                      (-9, 9.0, 8, 1.0), (9, 9.2, 6, 1.2), (-15, 8.5, 3, 1.3), (13, 8.5, 11, 1.0),
+                                      (-6.5, 9.6, 1.0, 1.4), (6.8, 9.8, 1.2, 1.5))):
         blob(f"moss{i}", (x, y, z), 1.9 * s, "grass" if i % 2 else "grass_dark", i, 0.45, 2)
+    # Boulders at the foot sink the cliff into the ground.
+    for i, (x, y) in enumerate(((-9, 10.5), (-14, 9.5), (10, 10.8), (15, 9.4), (-20, 8.0), (21, 8.2), (-5.8, 11.4), (6.2, 11.2))):
+        blob(f"foot{i}", (x, y, 0.2), 1.6 + (i % 3) * 0.5, "stone_dark" if i % 2 else "stone", 60 + i, 0.6, 2)
 
 
 def windmill():

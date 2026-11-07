@@ -111,6 +111,9 @@ public partial class Hud : Control
     public Camera3D? Camera { get; set; }
     public string Notice { get; set; } = "";
 
+    /// <summary>F3 shows where the player stands, so a problem spot can be reported exactly.</summary>
+    public bool ShowPosition { get; set; }
+
     /// <summary>A short title under the speaker's name, such as Guild Receptionist.</summary>
     public string DialogRole { get; set; } = "";
 
@@ -310,6 +313,12 @@ public partial class Hud : Control
         DrawHotbar();
         DrawGuide();
         DrawLootFeed();
+        if (ShowPosition)
+        {
+            var p = Player.Position;
+            Label($"x {p.X:F1}   y {p.Y:F1}   z {p.Z:F1}", new Vector2(28, Size.Y - 24), 16, Text, _bold, true);
+        }
+
         DrawMessages();
         DrawDialog();
         if (InventoryOpen)

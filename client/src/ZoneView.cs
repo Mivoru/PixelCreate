@@ -96,6 +96,7 @@ public static class ZoneView
     private static void BuildWater(Zone zone, Node3D root)
     {
         var water = GD.Load<Shader>("res://shaders/water.gdshader");
+        var lakes = zone.LakeSurfaces.Select(l => (Centre: new Vector3(l.Centre.X, l.Centre.Y, l.Centre.Z), l.Radius)).ToList();
         foreach (var (points, width) in zone.RiverCourses)
         {
             var surface = new SurfaceTool();
@@ -114,8 +115,20 @@ public static class ZoneView
                 for (var along = 0f; along < length; along += 2f)
                 {
                     var middle = a.Lerp(b, along / length);
+
+                    // A stream leaving a lake starts under the lake's surface, so no square end shows.
+                    var lake = lakes.FirstOrDefault(l => new Vector2(middle.X - l.Centre.X, middle.Z - l.Centre.Z).Length() < l.Radius * 1.6f);
+                    if (lake.Radius > 0f && new Vector2(middle.X - lake.Centre.X, middle.Z - lake.Centre.Z).Length() < lake.Radius * 1.06f)
+                    {
+                        continue;
+                    }
+
                     // A stream only ever runs downhill, so its surface never climbs a bump in the bed.
                     level = Mathf.Min(level, zone.World.GroundHeight(middle.X, middle.Z) + 1.1f);
+                    if (lake.Radius > 0f)
+                    {
+                        level = Mathf.Min(level, lake.Centre.Y - 0.06f);
+                    }
                     var left = middle - side + Vector3.Up * level;
                     var right = middle + side + Vector3.Up * level;
                     travelled += 2f;
@@ -143,37 +156,101 @@ public static class ZoneView
             root.AddChild(BuildLake(new Vector3(centre.X, centre.Y, centre.Z), radius, water));
         }
 
-        if (zone.Waterfall is { } source)
+        var cliff = zone.Props.FirstOrDefault(p => p.Model == "falls_cliff");
+        if (cliff.Model is not null)
         {
-            var foot = new Vector3(source.X, source.Y, source.Z);
-            var material = new ShaderMaterial { Shader = water };
-            material.SetShaderParameter("flow", 1.1f);
-            material.SetShaderParameter("foam", 0.9f);
-            var fall = new MeshInstance3D
-            {
-                Mesh = new QuadMesh { Size = new Vector2(16f, 10f), Orientation = PlaneMesh.OrientationEnum.Z },
-                MaterialOverride = material,
-                Position = new Vector3(foot.X, foot.Y + 8f, foot.Z + 1f),
-                Rotation = new Vector3(0, 0, Mathf.Pi / 2f),
-            };
-            root.AddChild(fall);
-            root.AddChild(new CpuParticles3D
-            {
-                Amount = 60,
-                Lifetime = 1.1f,
-                Position = foot + Vector3.Up * 1.4f,
-                Direction = Vector3.Up,
-                Spread = 70f,
-                InitialVelocityMin = 1.5f,
-                InitialVelocityMax = 4f,
-                Gravity = new Vector3(0, -4f, 0),
-                EmissionShape = CpuParticles3D.EmissionShapeEnum.Box,
-                EmissionBoxExtents = new Vector3(4f, 0.2f, 1f),
-                Mesh = new SphereMesh { Radius = 0.2f, Height = 0.4f, RadialSegments = 5, Rings = 3 },
-                MaterialOverride = new StandardMaterial3D { AlbedoColor = new Color("e8f6f8"), ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded },
-            });
+            BuildWaterfall(root, new Vector3(cliff.Position.X, cliff.Position.Y, cliff.Position.Z), water);
         }
     }
+
+    /// <summary>How far in front of the cliff's middle its chute is, at height fraction t (see falls_cliff in build_meshes.py).</summary>
+    private static float ChuteFront(float t) => 9.8f * (1f - 0.34f * Mathf.Pow(t, 1.6f));
+
+    /// <summary>
+    /// The waterfall: a stream across the cliff top, a sheet that pours over the lip and then hugs the
+    /// chute all the way down, spray where it lands, and mist that drifts off the pool.
+    /// </summary>
+    private static void BuildWaterfall(Node3D root, Vector3 cliff, Shader water)
+    {
+        const float height = 16f;
+        var fall = new SurfaceTool();
+        fall.Begin(Mesh.PrimitiveType.Triangles);
+        var rows = new List<(Vector3 Left, Vector3 Right, float Along)>();
+        var along = 0f;
+        Vector3? last = null;
+
+        // On top: from the spring to the lip.
+        for (var back = 6f; back > 0f; back -= 1f)
+        {
+            var z = cliff.Z - (ChuteFront(1f) - back);
+            AddRow(new Vector3(cliff.X, cliff.Y + height + 0.25f, z), 2.6f + (6f - back) * 0.12f);
+        }
+
+        // Over the lip: the water first leaves the rock in a short arc.
+        for (var i = 0; i <= 4; i++)
+        {
+            var t = i / 4f;
+            var z = cliff.Z - (ChuteFront(1f) + 0.4f + Mathf.Sin(t * Mathf.Pi * 0.5f) * 0.9f);
+            AddRow(new Vector3(cliff.X, cliff.Y + height + 0.25f - t * t * 1.6f, z), 3.4f + t * 0.4f);
+        }
+
+        // Down the chute, half a metre in front of the rock.
+        for (var i = 1; i <= 24; i++)
+        {
+            var t = 1f - i / 24f;
+            var y = cliff.Y + (height - 1.4f) * t;
+            var z = cliff.Z - (ChuteFront(Mathf.Clamp(y - cliff.Y, 0f, height) / height) + 0.55f + t * 0.5f);
+            AddRow(new Vector3(cliff.X, y, z), 3.8f + (1f - t) * 1.2f);
+        }
+
+        for (var i = 1; i < rows.Count; i++)
+        {
+            var (a, b, u0) = rows[i - 1];
+            var (c, d, u1) = rows[i];
+            Vertex(fall, a, u0, 0f);
+            Vertex(fall, c, u1, 0f);
+            Vertex(fall, d, u1, 1f);
+            Vertex(fall, a, u0, 0f);
+            Vertex(fall, d, u1, 1f);
+            Vertex(fall, b, u0, 1f);
+        }
+
+        var material = new ShaderMaterial { Shader = water };
+        material.SetShaderParameter("flow", 2.2f);
+        material.SetShaderParameter("foam", 0.75f);
+        root.AddChild(new MeshInstance3D { Mesh = fall.Commit(), MaterialOverride = material });
+
+        var foot = new Vector3(cliff.X, cliff.Y + 0.6f, cliff.Z - ChuteFront(0f) - 0.9f);
+        root.AddChild(Spray(foot, new Vector3(2.8f, 0.2f, 0.8f), 70, 1.1f, 4f, 0.22f));
+        root.AddChild(Spray(foot + new Vector3(0, 0.8f, -1.5f), new Vector3(4f, 0.6f, 2f), 24, 3f, 0.8f, 0.6f));
+
+        void AddRow(Vector3 middle, float halfWidth)
+        {
+            if (last is { } previous)
+            {
+                along += previous.DistanceTo(middle);
+            }
+
+            last = middle;
+            rows.Add((middle - Vector3.Right * halfWidth, middle + Vector3.Right * halfWidth, along));
+        }
+    }
+
+    private static CpuParticles3D Spray(Vector3 at, Vector3 extents, int amount, float life, float speed, float size) => new()
+    {
+        Amount = amount,
+        Lifetime = life,
+        Position = at,
+        Direction = Vector3.Up,
+        Spread = 70f,
+        InitialVelocityMin = speed * 0.4f,
+        InitialVelocityMax = speed,
+        Gravity = new Vector3(0.3f, -3f, -0.4f),
+        EmissionShape = CpuParticles3D.EmissionShapeEnum.Box,
+        EmissionBoxExtents = extents,
+        Mesh = new SphereMesh { Radius = size, Height = size * 2f, RadialSegments = 6, Rings = 3 },
+        MaterialOverride = new StandardMaterial3D { AlbedoColor = new Color("eaf7fa"), ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded },
+    };
 
     /// <summary>A round sheet of water: the shader's foam runs along the rim, where V reaches 1.</summary>
     private static MeshInstance3D BuildLake(Vector3 centre, float radius, Shader water)

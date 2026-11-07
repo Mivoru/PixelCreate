@@ -18,7 +18,7 @@ public sealed class AnimalView : IEnemyView
     private readonly Node3D _head;
     private readonly Node3D? _neck;
     private readonly Node3D? _tail;
-    private readonly List<(Node3D Leg, float Phase)> _legs = new();
+    private readonly List<(Node3D Leg, Node3D? Shin, float Phase, bool Front)> _legs = new();
     private readonly List<(Node3D Ear, float Side)> _ears = new();
     private readonly List<(Node3D Wing, float Side)> _wings = new();
     private readonly Vector3 _bodyRest;
@@ -50,11 +50,11 @@ public sealed class AnimalView : IEnemyView
         _neck = Part(scene, "neck");
         _tail = Part(scene, "tail");
         _bodyRest = _body.Position;
-        foreach (var (name, phase) in new[] { ("leg_fl", 0f), ("leg_br", 0f), ("leg_fr", Mathf.Pi), ("leg_bl", Mathf.Pi) })
+        foreach (var (name, phase) in new[] { ("fl", 0f), ("br", 0f), ("fr", Mathf.Pi), ("bl", Mathf.Pi) })
         {
-            if (Part(scene, name) is { } leg)
+            if (Part(scene, "leg_" + name) is { } leg)
             {
-                _legs.Add((leg, phase));
+                _legs.Add((leg, Part(scene, "shin_" + name), phase, name[0] == 'f'));
             }
         }
 
@@ -127,10 +127,27 @@ public sealed class AnimalView : IEnemyView
         var moving = _speed > 0.3f && !dead;
         _phase += delta * (_bird ? 9f + _speed * 3f : 4f + _speed * 2.2f);
         var swing = moving ? (_bird ? 0.6f : 0.35f + gallop * 0.45f) : 0f;
-        foreach (var (leg, offset) in _legs)
+        var follow = 1f - Mathf.Exp(-20f * delta);
+        foreach (var (leg, shin, offset, front) in _legs)
         {
             var target = Mathf.Sin(_phase + offset) * swing;
-            leg.Rotation = new Vector3(Mathf.Lerp(leg.Rotation.X, target, 1f - Mathf.Exp(-20f * delta)), 0, 0);
+            leg.Rotation = new Vector3(Mathf.Lerp(leg.Rotation.X, target, follow), 0, 0);
+            if (shin is null)
+            {
+                continue;
+            }
+
+            // While a leg swings forward its lower part folds: a knee bends back, a hock forward.
+            var lift = moving ? Mathf.Max(0f, Mathf.Cos(_phase + offset)) * (0.5f + gallop * 0.6f) : 0f;
+            var fold = front ? -lift * 1.3f : lift * 0.9f;
+            shin.Rotation = new Vector3(Mathf.Lerp(shin.Rotation.X, fold - target * (front ? 0.2f : 0.5f), follow), 0, 0);
+        }
+
+        // A boar about to strike drops its head and lowers its tusks.
+        if (enemy.Action is EnemyAction.Windup or EnemyAction.Strike)
+        {
+            _alert = 0f;
+            _graze = Mathf.Lerp(_graze, 0.45f, 1f - Mathf.Exp(-12f * delta));
         }
 
         var bob = moving ? Mathf.Abs(Mathf.Sin(_phase)) * (_bird ? 0.03f : 0.03f + gallop * 0.08f) : Mathf.Sin(_clock * 1.6f) * 0.006f;

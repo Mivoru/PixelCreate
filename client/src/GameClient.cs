@@ -162,6 +162,10 @@ public partial class GameClient : Node
                     _pendingCommand = choice;
                 }
             }
+            else if (key.Keycode == Key.F3)
+            {
+                _hud.ShowPosition = !_hud.ShowPosition;
+            }
             else if (key.Keycode == Key.M)
             {
                 _sfx.Muted = !_sfx.Muted;

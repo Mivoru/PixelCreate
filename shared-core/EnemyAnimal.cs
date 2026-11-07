@@ -28,6 +28,7 @@ public sealed partial class Enemy
     private Vector3 _alertAt;
     private Vector3 _goal;
     private int _goalTicks;
+    private bool _rallied;
 
     public bool IsAnimal => Def.Kind == "animal";
 
@@ -38,17 +39,32 @@ public sealed partial class Enemy
 
     private void StepAnimal(World world, Random random, IReadOnlyList<Target> targets, IEnemyEvents events)
     {
-        if (Def.Temper == "neutral" && TaggedBy >= 0)
+        if (Def.Temper == "neutral" && (TaggedBy >= 0 || TargetId >= 0))
         {
             if (TargetId < 0 && !Returning)
             {
                 TargetId = TaggedBy;
             }
 
+            // Hurting one boar brings the whole sounder down on the attacker.
+            if (!_rallied && TargetId >= 0)
+            {
+                _rallied = true;
+                foreach (var mate in Herd)
+                {
+                    if (mate != this && mate.Alive && mate.Def.Temper == "neutral" && mate.TargetId < 0 &&
+                        Flat(mate.Position - Position).Length() < PanicReach)
+                    {
+                        mate.TargetId = TargetId;
+                    }
+                }
+            }
+
             StepGoblin(world, random, targets, events);
             if (TargetId < 0 && !Returning && Action == EnemyAction.Idle)
             {
                 TaggedBy = -1;
+                _rallied = false;
             }
 
             return;

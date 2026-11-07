@@ -117,4 +117,15 @@ public sealed class AnimalTests
         Run(herd, 2, player);
         Assert.Equal(1, boar.TargetId);
     }
+
+    [Fact]
+    public void Boars_DefendEachOther()
+    {
+        var herd = Herd("pig", 3, 2f);
+        Run(herd, 30);
+        var player = new Target(1, herd[0].Position + new Vector3(1.2f, 0, 0), Vector3.Zero);
+        herd[0].TakeHit(1, player.Position, 1);
+        Run(herd, 3, player);
+        Assert.All(herd, boar => Assert.Equal(1, boar.TargetId));
+    }
 }
