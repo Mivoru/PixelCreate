@@ -403,7 +403,20 @@ public partial class GameClient : Node
 
         if (now.Attack != AttackKind.None && now.AttackTick < _last.AttackTick | now.Attack != _last.Attack)
         {
-            _sfx.Play(now.Attack == AttackKind.Heavy ? "swing_heavy" : "swing_light", chest);
+            _sfx.Play(now.Attack is AttackKind.Heavy or AttackKind.DaggerLeap ? "swing_heavy" : "swing_light", chest);
+        }
+
+        // The second stab of a flurry has its own swish; a leap ends in a thump and a ring of dust.
+        var attack = Tuning.Attack(now.Attack);
+        if (now.Attack == AttackKind.DaggerFlurry && now.AttackTick >= attack.SecondHitAt - 3 && _last.AttackTick < attack.SecondHitAt - 3)
+        {
+            _sfx.Play("swing_light", chest, -2f);
+        }
+
+        if (now.Attack == AttackKind.DaggerLeap && now.AttackTick >= attack.HitAt && _last.AttackTick < attack.HitAt)
+        {
+            _sfx.Play("hit_heavy", shown);
+            _fx.Burst(shown + Vector3.Up * 0.05f, new Color("b8a58a"), 26, 5f, 0.45f, 0.09f, -5f, 85f);
         }
 
         if (now.Health < _last.Health && _last.Health > 0)
@@ -634,31 +647,52 @@ public partial class GameClient : Node
     /// </summary>
     private (sbyte X, sbyte Z, Buttons Buttons) GearBot()
     {
-        if (_client.Tick < 90)
+        var tick = _client.Tick;
+        if (tick < 90)
         {
             return (0, 0, Buttons.None);
         }
 
-        if (!_hud.InventoryOpen)
+        if (tick < 260)
+        {
+            if (!_hud.InventoryOpen)
+            {
+                _hud.ToggleInventory();
+                BotStage("open the bag");
+            }
+
+            var legendary = _hud.Items.Bag.FirstOrDefault(i => i?.Gear?.Rarity == Rarity.Legendary);
+            if (legendary is not null && tick == 120)
+            {
+                BotStage("wear the legendary piece");
+                _pendingCommand = GearCommands.Toggle(legendary.Place);
+            }
+
+            var daggers = _hud.Items.Bag.FirstOrDefault(i => i?.Gear?.Def.Weapon == "dagger");
+            if (daggers is not null && tick == 160)
+            {
+                BotStage("take up the daggers");
+                _pendingCommand = GearCommands.Toggle(daggers.Place);
+            }
+
+            var epic = Array.FindIndex(_hud.Items.Bag, i => i?.Gear?.Rarity == Rarity.Epic);
+            if (epic >= 0 && _hud.SlotCentre("bag", epic) is { } slot)
+            {
+                GetViewport().WarpMouse(slot);
+            }
+
+            return (0, 0, Buttons.None);
+        }
+
+        // Then close the bag and fight with the daggers: flurries, and a leap now and then.
+        if (_hud.InventoryOpen)
         {
             _hud.ToggleInventory();
-            BotStage("open the bag");
+            BotStage("fight with the daggers");
         }
 
-        var legendary = _hud.Items.Bag.FirstOrDefault(i => i?.Gear?.Rarity == Rarity.Legendary);
-        if (legendary is not null && _botWait++ == 30)
-        {
-            BotStage("wear the legendary piece");
-            _pendingCommand = GearCommands.Toggle(legendary.Place);
-        }
-
-        var epic = Array.FindIndex(_hud.Items.Bag, i => i?.Gear?.Rarity == Rarity.Epic);
-        if (epic >= 0 && _hud.SlotCentre("bag", epic) is { } slot)
-        {
-            GetViewport().WarpMouse(slot);
-        }
-
-        return (0, 0, Buttons.None);
+        var buttons = tick % 90 == 0 ? Buttons.Heavy : tick % 30 == 0 ? Buttons.Light : Buttons.None;
+        return (0, 0, buttons);
     }
 
     /// <summary>
@@ -796,6 +830,7 @@ public partial class GameClient : Node
         }
 
         _player.Root.Rotation = new Vector3(0, _facing, 0);
+        _player.SetWeapon(Weapons.Name(_client.State.Weapon));
         _player.SwordVisible = _hud.Items.HasWeapon;
         _player.Animate(new MotionState(flat.Length(), state.Grounded, state.Velocity.Y,
             state.DashTicks > 0, state.Attack, state.AttackTick), delta);
@@ -828,6 +863,7 @@ public partial class GameClient : Node
                 rig.Root.Rotation = new Vector3(0, Mathf.Atan2(-flat.X, -flat.Y), 0);
             }
 
+            rig.SetWeapon(Weapons.Name(other.Weapon));
             rig.Animate(new MotionState(flat.Length(), Mathf.Abs(other.Velocity.Y) < 0.5f, other.Velocity.Y,
                 flat.Length() > Tuning.MoveSpeed + 1f, other.Attack, other.AttackTick), delta);
         }

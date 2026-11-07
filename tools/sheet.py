@@ -11,15 +11,15 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw
 
-COLUMNS = {"monster": 3, "animal": 3, "person": 5, "motion": 8, "model": 6, "world": 3, "box": 3, "map": 2, "window": 4}
-TILE_WIDTH = {"monster": 420, "animal": 420, "person": 300, "motion": 200, "model": 260, "world": 520, "box": 520, "map": 800, "window": 400}
-ROWS_PER_PAGE = {"monster": 6, "animal": 6, "person": 4, "motion": 8, "model": 7, "world": 4, "box": 4, "map": 1, "window": 6}
-CROP = {"person": 0.5, "motion": 0.5}
+COLUMNS = {"attack": 7, "monster": 3, "animal": 3, "person": 5, "motion": 8, "model": 6, "world": 3, "box": 3, "map": 2, "window": 4}
+TILE_WIDTH = {"attack": 240, "monster": 420, "animal": 420, "person": 300, "motion": 200, "model": 260, "world": 520, "box": 520, "map": 800, "window": 400}
+ROWS_PER_PAGE = {"attack": 6, "monster": 6, "animal": 6, "person": 4, "motion": 8, "model": 7, "world": 4, "box": 4, "map": 1, "window": 6}
+CROP = {"person": 0.5, "motion": 0.5, "attack": 0.5}
 
 
 def group_of(name):
     parts = name.replace("-", "_").split("_")
-    return "_".join(parts[:3]) if parts[0] == "motion" else parts[0]
+    return "_".join(parts[:3]) if parts[0] in ("motion", "attack") else parts[0]
 
 
 def tile(path, kind):

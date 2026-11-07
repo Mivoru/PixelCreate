@@ -782,6 +782,9 @@ public sealed class GameServer : IEnemyEvents
         player.GearChanged.Add(place);
         player.Stats = GearStats.Of(player.Worn.Select(w => player.Gear[w]!));
         player.State.Health = Math.Min(player.State.Health, MaxHealth(player));
+
+        // The weapon decides the attacks; the client learns it through the next snapshot.
+        player.State.Weapon = Weapons.Of(player.Stats.Weapon);
     }
 
     /// <summary>Rolls an enemy's gear table: maybe one piece, of a rarity picked by the table's weights.</summary>
@@ -1196,7 +1199,7 @@ public sealed class GameServer : IEnemyEvents
                 QuestProgress = (byte)QuestProgress(player),
                 Crystals = player.Crystals.ToArray(),
                 Others = _players.Values.Where(p => p.Id != player.Id).Take(6)
-                    .Select(p => new RemotePlayer(p.Id, p.State.Position, p.State.Velocity, p.State.AttackAim, p.State.Attack, p.State.AttackTick)).ToArray(),
+                    .Select(p => new RemotePlayer(p.Id, p.State.Position, p.State.Velocity, p.State.AttackAim, p.State.Attack, p.State.AttackTick, p.State.Weapon)).ToArray(),
                 Enemies = enemies,
                 Projectiles = shots,
                 Drops = drops,

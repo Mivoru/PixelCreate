@@ -64,10 +64,13 @@ public sealed record RigLook(string Kind, Color Skin, float Scale, string Weapon
 /// </summary>
 public sealed class PlayerRig
 {
-    private const int JointCount = 16;
+    private const int JointCount = 18;
     private const int Lean = 0, Twist = 1, Bob = 2, Head = 3;
     private const int ThighL = 4, ThighR = 5, ShinL = 6, ShinR = 7;
     private const int ArmL = 8, ArmR = 9, ArmRSide = 10, ForearmL = 11, ForearmR = 12, SwordTilt = 13, SwordYaw = 14, ArmLSide = 15;
+
+    /// <summary>The blade in the left hand, when the rig fights with two daggers.</summary>
+    private const int OffTilt = 16, OffYaw = 17;
 
     private readonly float[] _pose = new float[JointCount];
     private readonly float[] _target = new float[JointCount];
@@ -77,6 +80,7 @@ public sealed class PlayerRig
     private readonly Node3D _thighL = new(), _thighR = new(), _shinL = new(), _shinR = new();
     private readonly Node3D _armL = new(), _armR = new(), _forearmL = new(), _forearmR = new();
     private readonly Node3D _sword = new();
+    private readonly Node3D _offhand = new();
     private readonly MeshInstance3D _slash;
     private readonly ShaderMaterial _slashMaterial;
     private readonly CpuParticles3D _sparks;
@@ -104,10 +108,42 @@ public sealed class PlayerRig
         return down;
     }
 
+    /// <summary>
+    /// Changes the weapon in hand: a bow in the left hand, two daggers one in each, anything else in
+    /// the right. A player picks up a new weapon whenever the gear they wear changes.
+    /// </summary>
+    public void SetWeapon(string weapon)
+    {
+        if (_look.Weapon == weapon)
+        {
+            return;
+        }
+
+        _look = _look with { Weapon = weapon };
+        foreach (var child in _sword.GetChildren())
+        {
+            child.QueueFree();
+        }
+
+        foreach (var child in _offhand.GetChildren())
+        {
+            child.QueueFree();
+        }
+
+        _sword.GetParent()?.RemoveChild(_sword);
+        (weapon == "bow" ? _forearmL : _forearmR).AddChild(_sword);
+        _sword.Position = new Vector3(0, -0.3f, -0.04f);
+        BuildWeapon(weapon);
+        if (weapon == "dagger" && !_look.Goblin)
+        {
+            BuildDagger(_offhand);
+        }
+    }
+
     public bool SwordVisible
     {
         get => _sword.Visible;
-        set => _sword.Visible = value;
+        set => _sword.Visible = _offhand.Visible = value;
     }
 
     /// <summary>Set while the figure is hit. It shakes for as long as this is on.</summary>
@@ -139,6 +175,8 @@ public sealed class PlayerRig
         (look.Weapon == "bow" ? _forearmL : _forearmR).AddChild(_sword);
         _sword.Position = new Vector3(0, -0.3f, -0.04f);
         BuildWeapon(look.Weapon);
+        _forearmL.AddChild(_offhand);
+        _offhand.Position = new Vector3(0, -0.3f, -0.04f);
 
         _slashMaterial = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/slash.gdshader") };
         _slash = new MeshInstance3D
@@ -474,12 +512,7 @@ public sealed class PlayerRig
             case "none":
                 break;
             case "dagger":
-                _sword.AddChild(Part(new BoxMesh { Size = new Vector3(0.06f, 0.06f, 0.16f) }, dark, Vector3.Zero));
-                _sword.AddChild(Part(new BoxMesh { Size = new Vector3(0.16f, 0.04f, 0.05f) }, new Color("8b9bb4"), new Vector3(0, 0, -0.1f)));
-                _sword.AddChild(Part(new BoxMesh { Size = new Vector3(0.1f, 0.03f, 0.3f) }, new Color("c0cbdc"), new Vector3(0, 0, -0.26f)));
-                var tip = Part(new BoxMesh { Size = new Vector3(0.08f, 0.03f, 0.22f) }, new Color("ffffff"), new Vector3(0.03f, 0, -0.48f));
-                tip.Rotation = new Vector3(0, 0.45f, 0);
-                _sword.AddChild(tip);
+                BuildDagger(_sword);
                 break;
             case "club":
                 var shaft = Part(new CylinderMesh { TopRadius = 0.22f, BottomRadius = 0.06f, Height = 1.35f, RadialSegments = 7 }, wood, new Vector3(0, 0, -0.62f));
@@ -532,6 +565,17 @@ public sealed class PlayerRig
         }
     }
 
+    /// <summary>A dagger: a wrapped grip, a short guard and a leaf blade with a bright edge.</summary>
+    private static void BuildDagger(Node3D hand)
+    {
+        hand.AddChild(Part(new BoxMesh { Size = new Vector3(0.06f, 0.06f, 0.16f) }, new Color("3e2731"), Vector3.Zero));
+        hand.AddChild(Part(new BoxMesh { Size = new Vector3(0.16f, 0.04f, 0.05f) }, new Color("8b9bb4"), new Vector3(0, 0, -0.1f)));
+        hand.AddChild(Part(new BoxMesh { Size = new Vector3(0.1f, 0.03f, 0.3f) }, new Color("c0cbdc"), new Vector3(0, 0, -0.26f)));
+        var tip = Part(new BoxMesh { Size = new Vector3(0.08f, 0.03f, 0.22f) }, new Color("ffffff"), new Vector3(0.03f, 0, -0.48f));
+        tip.Rotation = new Vector3(0, 0.45f, 0);
+        hand.AddChild(tip);
+    }
+
     /// <summary>Moves the rig towards the pose for this state. Call it once a frame.</summary>
     public void Animate(in MotionState state, float delta)
     {
@@ -566,13 +610,6 @@ public sealed class PlayerRig
         }
 
         _slash.Visible = false;
-        if (state.Attack != AttackKind.None)
-        {
-            AttackPose(state.Attack, state.AttackTick);
-            blend = 34f;
-        }
-
-        _lastAttackTick = state.Attack == AttackKind.None ? -1 : state.AttackTick;
         if (_look.Weapon == "none")
         {
             RestArms();
@@ -581,6 +618,19 @@ public sealed class PlayerRig
         {
             CarryWeapon();
         }
+
+        if (state.Attack is AttackKind.DaggerFlurry or AttackKind.DaggerLeap)
+        {
+            DaggerPose(state.Attack, state.AttackTick);
+            blend = state.Attack == AttackKind.DaggerFlurry ? 40f : 26f;
+        }
+        else if (state.Attack != AttackKind.None)
+        {
+            AttackPose(state.Attack, state.AttackTick);
+            blend = 34f;
+        }
+
+        _lastAttackTick = state.Attack == AttackKind.None ? -1 : state.AttackTick;
 
         if (state.Move != WeaponMove.None)
         {
@@ -672,6 +722,19 @@ public sealed class PlayerRig
                 _target[ForearmR] = -1f;
                 _target[SwordTilt] = 0f;
                 _target[SwordYaw] = 0f;
+                break;
+            case "dagger" when !_look.Goblin:
+                // Two blades held low and forward, point first, ready to strike with either.
+                _target[ArmR] = 0.35f;
+                _target[ArmRSide] = 0.35f;
+                _target[ForearmR] = -1.1f;
+                _target[SwordTilt] = -1.1f;
+                _target[SwordYaw] = -0.2f;
+                _target[ArmL] = 0.35f;
+                _target[ArmLSide] = 0.35f;
+                _target[ForearmL] = -1.1f;
+                _target[OffTilt] = -1.1f;
+                _target[OffYaw] = 0.2f;
                 break;
             default:
                 _target[ArmR] = 0.2f;
@@ -882,6 +945,108 @@ public sealed class PlayerRig
         _target[Lean] = rising ? 0.12f : -0.05f;
     }
 
+    /// <summary>
+    /// The dagger attacks. The flurry drives the right blade forward, then the left, the body
+    /// twisting behind each. The leap crouches, springs with both blades raised over the head, and
+    /// drives them down together as it lands.
+    /// </summary>
+    private void DaggerPose(AttackKind kind, int tick)
+    {
+        const float alongArm = -1.5708f;
+        var attack = Tuning.Attack(kind);
+        if (kind == AttackKind.DaggerFlurry)
+        {
+            // Each hand draws back to the ribs, then punches the blade straight out at the hit.
+            var left = tick > attack.HitAt + 1;
+            var strike = left ? attack.SecondHitAt : attack.HitAt;
+            var drawn = tick < strike - 1;
+            _target[Twist] = left ? (drawn ? -0.35f : 0.55f) : (drawn ? 0.35f : -0.55f);
+            _target[Lean] = drawn ? 0.05f : 0.4f;
+            _target[ThighL] = -0.5f;
+            _target[ThighR] = 0.4f;
+            _target[ShinR] = 0.35f;
+            _target[Bob] = drawn ? -0.03f : -0.09f;
+            var (arm, side, forearm, tilt, yaw, other, otherForearm) = left
+                ? (ArmL, ArmLSide, ForearmL, OffTilt, OffYaw, ArmR, ForearmR)
+                : (ArmR, ArmRSide, ForearmR, SwordTilt, SwordYaw, ArmL, ForearmL);
+            _target[arm] = drawn ? -0.35f : 1.55f;
+            _target[side] = drawn ? 0.25f : -0.05f;
+            _target[forearm] = drawn ? -2.0f : -0.05f;
+            _target[tilt] = alongArm;
+            _target[yaw] = 0f;
+            // The free hand pulls back to guard the chest.
+            _target[other] = 0.4f;
+            _target[otherForearm] = -1.9f;
+            if (tick == strike && _lastAttackTick < strike)
+            {
+                _sparks.Amount = 16;
+                _sparks.Restart();
+                _sparks.Emitting = true;
+            }
+
+            return;
+        }
+
+        var hit = attack.HitAt;
+        if (tick < 4)
+        {
+            // Crouch to spring, blades drawn back.
+            _target[Bob] = -0.22f;
+            _target[Lean] = 0.45f;
+            _target[ThighL] = -0.9f;
+            _target[ThighR] = -0.9f;
+            _target[ShinL] = 1.2f;
+            _target[ShinR] = 1.2f;
+            _target[ArmR] = -0.6f;
+            _target[ArmL] = -0.6f;
+            _target[ForearmR] = -0.8f;
+            _target[ForearmL] = -0.8f;
+        }
+        else if (tick < hit - 3)
+        {
+            // In the air: both daggers raised high in front of the head, points down, knees drawn up.
+            _target[Lean] = -0.1f;
+            _target[ArmR] = 2.5f;
+            _target[ArmL] = 2.5f;
+            _target[ArmRSide] = 0.2f;
+            _target[ArmLSide] = 0.2f;
+            _target[ForearmR] = -0.7f;
+            _target[ForearmL] = -0.7f;
+            _target[SwordTilt] = 2.6f;
+            _target[OffTilt] = 2.6f;
+            _target[ThighL] = -1.1f;
+            _target[ThighR] = -0.5f;
+            _target[ShinL] = 1.3f;
+            _target[ShinR] = 0.9f;
+        }
+        else
+        {
+            // The strike: both blades driven down in front, the body folded over them, one knee down.
+            var recover = Mathf.Clamp((tick - hit) / (float)(attack.Total - hit), 0f, 1f);
+            _target[Lean] = 0.85f * (1f - recover * 0.7f);
+            _target[Bob] = -0.3f * (1f - recover);
+            _target[ArmR] = 1.0f;
+            _target[ArmL] = 1.0f;
+            _target[ArmRSide] = -0.2f;
+            _target[ArmLSide] = -0.2f;
+            _target[ForearmR] = -0.2f;
+            _target[ForearmL] = -0.2f;
+            _target[SwordTilt] = 1.9f;
+            _target[OffTilt] = 1.9f;
+            _target[ThighL] = -0.9f * (1f - recover);
+            _target[ThighR] = 0.4f * (1f - recover);
+            _target[ShinL] = 0.6f * (1f - recover);
+            _target[ShinR] = 1.6f * (1f - recover);
+        }
+
+        if (tick >= hit && _lastAttackTick < hit)
+        {
+            _sparks.Amount = 48;
+            _sparks.Restart();
+            _sparks.Emitting = true;
+        }
+    }
+
     private void AttackPose(AttackKind kind, int tick)
     {
         var attack = Tuning.Attack(kind);
@@ -947,6 +1112,7 @@ public sealed class PlayerRig
         _forearmL.Rotation = new Vector3(-_pose[ForearmL], -_clasp, 0);
         _forearmR.Rotation = new Vector3(-_pose[ForearmR], _clasp, 0);
         _sword.Rotation = new Vector3(_pose[SwordTilt], _pose[SwordYaw], 0);
+        _offhand.Rotation = new Vector3(_pose[OffTilt], _pose[OffYaw], 0);
     }
 
     private void BuildLeg(Node3D thigh, Node3D shin, float x, Color cloth, Color boot, float length, bool claws)

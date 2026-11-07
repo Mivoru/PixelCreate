@@ -39,10 +39,58 @@ public static class Tuning
     /// <summary>Largest drop that keeps a walking player on the ground instead of falling.</summary>
     public const float GroundSnap = 0.35f;
 
-    public static AttackDef Attack(AttackKind kind) => kind == AttackKind.Heavy ? HeavyAttack : LightAttack;
+    public static AttackDef Attack(AttackKind kind) => kind switch
+    {
+        AttackKind.Heavy => HeavyAttack,
+        AttackKind.DaggerFlurry => DaggerFlurry,
+        AttackKind.DaggerLeap => DaggerLeap,
+        _ => LightAttack,
+    };
 
     private static readonly AttackDef LightAttack = new(22, 9, 15, 2.8f, 0.3f, 8f, 0.55f);
     private static readonly AttackDef HeavyAttack = new(46, 26, 40, 3.3f, 0.1f, 25f, 0.25f);
+
+    /// <summary>Two quick stabs, right hand then left, each landing on its own.</summary>
+    private static readonly AttackDef DaggerFlurry = new(24, 6, 9, 2.3f, 0.35f, 9f, 0.75f, 13);
+
+    /// <summary>
+    /// A leap at the enemy with both daggers raised, driving them down on landing. The blow lands
+    /// on everything close round the landing spot.
+    /// </summary>
+    private static readonly AttackDef DaggerLeap = new(50, LeapHitAt, 32, 2.4f, -1f, 28f, 0.1f);
+
+    /// <summary>The leap flies for this many ticks, at this speed along the aim, after this lift.</summary>
+    public const int LeapHitAt = 30;
+    public const float LeapSpeed = 10f;
+    public const float LeapLift = 6.2f;
+}
+
+/// <summary>The kind of weapon a player holds, which decides the attacks. Without gear it is the sword.</summary>
+public static class Weapons
+{
+    public const byte Sword = 0;
+    public const byte Dagger = 1;
+    public const byte Club = 2;
+    public const byte Bow = 3;
+    public const byte Staff = 4;
+
+    public static byte Of(string weapon) => weapon switch
+    {
+        "dagger" => Dagger,
+        "club" => Club,
+        "bow" => Bow,
+        "staff" => Staff,
+        _ => Sword,
+    };
+
+    public static string Name(byte weapon) => weapon switch
+    {
+        Dagger => "dagger",
+        Club => "club",
+        Bow => "bow",
+        Staff => "staff",
+        _ => "sword",
+    };
 }
 
 public enum AttackKind : byte
@@ -50,6 +98,8 @@ public enum AttackKind : byte
     None = 0,
     Light = 1,
     Heavy = 2,
+    DaggerFlurry = 3,
+    DaggerLeap = 4,
 }
 
 /// <param name="Total">Length of the attack in ticks.</param>
@@ -59,7 +109,8 @@ public enum AttackKind : byte
 /// <param name="MinDot">Smallest cosine of the angle to the target: lower is a wider swing.</param>
 /// <param name="Stamina">Stamina the attack costs.</param>
 /// <param name="MoveScale">Share of normal speed while attacking.</param>
-public sealed record AttackDef(int Total, int HitAt, short Damage, float Range, float MinDot, float Stamina, float MoveScale);
+/// <param name="SecondHitAt">Tick of a second blow in the same attack, or 0.</param>
+public sealed record AttackDef(int Total, int HitAt, short Damage, float Range, float MinDot, float Stamina, float MoveScale, int SecondHitAt = 0);
 
 [Flags]
 public enum Buttons : byte
@@ -101,6 +152,9 @@ public struct PlayerState
     public byte AttackTick;
     public byte AttackAim;
     public short Health;
+
+    /// <summary>The kind of weapon held (see <see cref="Weapons"/>). The server sets it when gear changes.</summary>
+    public byte Weapon;
 
     public static PlayerState Spawn(Vector3 position, short health = Tuning.PlayerHealth) => new()
     {
@@ -332,6 +386,18 @@ public static class Movement
             state.Velocity.X = state.DashDirection.X * Tuning.DashSpeed;
             state.Velocity.Z = state.DashDirection.Z * Tuning.DashSpeed;
         }
+        else if (state.Attack == AttackKind.DaggerLeap && state.AttackTick < Tuning.LeapHitAt)
+        {
+            // The leap: a spring off the ground, then a flight along the aim until the daggers land.
+            var aim = AimDirection(state.AttackAim);
+            if (state.AttackTick == 1 && state.Grounded)
+            {
+                state.Velocity.Y = Tuning.LeapLift;
+            }
+
+            state.Velocity.X = aim.X * Tuning.LeapSpeed;
+            state.Velocity.Z = aim.Z * Tuning.LeapSpeed;
+        }
         else
         {
             Accelerate(ref state, wish);
@@ -366,7 +432,7 @@ public static class Movement
         {
             var current = Tuning.Attack(state.Attack);
             state.AttackTick++;
-            if (state.AttackTick == current.HitAt)
+            if (state.AttackTick == current.HitAt || state.AttackTick == current.SecondHitAt)
             {
                 landed = state.Attack;
             }
@@ -380,6 +446,10 @@ public static class Movement
 
         var wanted = input.Buttons.HasFlag(Buttons.Heavy) ? AttackKind.Heavy
             : input.Buttons.HasFlag(Buttons.Light) ? AttackKind.Light : AttackKind.None;
+        if (state.Weapon == Weapons.Dagger && wanted != AttackKind.None)
+        {
+            wanted = wanted == AttackKind.Heavy ? AttackKind.DaggerLeap : AttackKind.DaggerFlurry;
+        }
         if (wanted == AttackKind.None || !CanStartAttack(state))
         {
             return landed;
@@ -405,7 +475,8 @@ public static class Movement
             return true;
         }
 
-        return state.AttackTick > Tuning.Attack(state.Attack).HitAt + 5;
+        var current = Tuning.Attack(state.Attack);
+        return state.AttackTick > Math.Max(current.HitAt, current.SecondHitAt) + 5;
     }
 
     private static void StepDash(ref PlayerState state, in InputCmd input, Vector2 wish)

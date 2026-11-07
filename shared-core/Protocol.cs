@@ -9,7 +9,7 @@ public interface ITransport
     bool TryReceive(out int peer, out byte[] data);
 }
 
-public readonly record struct RemotePlayer(int Id, Vector3 Position, Vector3 Velocity, byte Aim, AttackKind Attack, byte AttackTick);
+public readonly record struct RemotePlayer(int Id, Vector3 Position, Vector3 Velocity, byte Aim, AttackKind Attack, byte AttackTick, byte Weapon = 0);
 
 public readonly record struct EnemyView(
     int Id, byte Type, byte Level, Vector3 Position, float Facing, short Health, short MaxHealth,
@@ -167,6 +167,7 @@ public static class Protocol
             writer.Write(other.Aim);
             writer.Write((byte)other.Attack);
             writer.Write(other.AttackTick);
+            writer.Write(other.Weapon);
         }
 
         writer.Write((byte)snapshot.Enemies.Length);
@@ -279,7 +280,7 @@ public static class Protocol
         for (var i = 0; i < snapshot.Others.Length; i++)
         {
             snapshot.Others[i] = new RemotePlayer(reader.ReadInt32(), ReadVector(reader), ReadVector(reader),
-                reader.ReadByte(), (AttackKind)reader.ReadByte(), reader.ReadByte());
+                reader.ReadByte(), (AttackKind)reader.ReadByte(), reader.ReadByte(), reader.ReadByte());
         }
 
         snapshot.Enemies = new EnemyView[reader.ReadByte()];
@@ -378,6 +379,7 @@ public static class Protocol
         writer.Write(state.AttackTick);
         writer.Write(state.AttackAim);
         writer.Write(state.Health);
+        writer.Write(state.Weapon);
     }
 
     private static PlayerState ReadState(BinaryReader reader) => new()
@@ -395,5 +397,6 @@ public static class Protocol
         AttackTick = reader.ReadByte(),
         AttackAim = reader.ReadByte(),
         Health = reader.ReadInt16(),
+        Weapon = reader.ReadByte(),
     };
 }

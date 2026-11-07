@@ -149,6 +149,15 @@ public sealed class Inventory
             Equipped[EquipSlot.Weapon] = WoodenSword;
         }
 
+        // The hotbar's weapon is whatever weapon is worn.
+        for (var i = 0; i < Hotbar.Length; i++)
+        {
+            if (Hotbar[i]?.Slot == EquipSlot.Weapon && Equipped[EquipSlot.Weapon] is { } weapon)
+            {
+                Hotbar[i] = weapon;
+            }
+        }
+
         return found;
     }
 

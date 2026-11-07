@@ -62,6 +62,7 @@ public partial class Studio : Node
                     "animals" => Animals(),
                     "monsters" => Monsters(),
                     "motion" => Motion(),
+                    "attacks" => Attacks(),
                     "models" => Models(),
                     "world" => World(false),
                     "hitboxes" => World(true),
@@ -82,7 +83,7 @@ public partial class Studio : Node
     /// <summary>Removes the old pictures of a job, so a renamed shot cannot linger and mislead.</summary>
     private void Forget(string job)
     {
-        var prefix = job switch { "animals" => "animal_", "monsters" => "monster_", "people" => "person_", "motion" => "motion_", "models" => "model_", "world" => "world_", "hitboxes" => "box_", _ => "map_" };
+        var prefix = job switch { "animals" => "animal_", "monsters" => "monster_", "people" => "person_", "motion" => "motion_", "attacks" => "attack_", "models" => "model_", "world" => "world_", "hitboxes" => "box_", _ => "map_" };
         foreach (var file in System.IO.Directory.GetFiles(_folder, prefix + "*.png"))
         {
             System.IO.File.Delete(file);
@@ -301,6 +302,42 @@ public partial class Studio : Node
                         {
                             Save($"motion_{name}_{view}_{frame++:00}_{beat.Name}");
                         }
+                    }
+                }
+
+                Dismiss(rig);
+            }
+        }
+    }
+
+    /// <summary>Each weapon's attacks from the side, a frame every few ticks, for checking the poses.</summary>
+    private async Task Attacks()
+    {
+        Floor();
+        foreach (var (weapon, kinds) in new[]
+        {
+            ("sword", new[] { AttackKind.Light, AttackKind.Heavy }),
+            ("dagger", new[] { AttackKind.DaggerFlurry, AttackKind.DaggerLeap }),
+        })
+        {
+            foreach (var kind in kinds)
+            {
+                var rig = Rig(RigLook.Player, Vector3.Zero, Mathf.Pi / 2f);
+                rig.SetWeapon(weapon);
+                _stage.Camera.Fov = 28;
+                _stage.Camera.LookAtFromPosition(new Vector3(0, 1.4f, 7f), new Vector3(0, 1.1f, 0));
+                await Wait(20);
+                var attack = Tuning.Attack(kind);
+                for (var tick = 0; tick < attack.Total; tick++)
+                {
+                    // The leap rises and falls as it would in the game.
+                    var airborne = kind == AttackKind.DaggerLeap && tick is > 2 and < Tuning.LeapHitAt;
+                    var t = (tick - 2) / (float)(Tuning.LeapHitAt - 2);
+                    rig.Root.Position = new Vector3(0, airborne ? 4f * 1.1f * t * (1f - t) : 0f, 0);
+                    await Wait(1, new MotionState(0f, !airborne, 0f, false, kind, tick));
+                    if (tick % 4 == 0)
+                    {
+                        Save($"attack_{weapon}_{kind}_{tick:00}");
                     }
                 }
 

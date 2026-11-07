@@ -165,4 +165,78 @@ public sealed class GearTests
         Assert.True(perHour["goblin_skirmisher"].Sum() > perHour["slime"].Sum(), "goblins drop more gear than slimes");
         Assert.True(EnemyDef.All.Single(d => d.Id == "goblin_shaman").Gear!.Chance >= 0.2, "the rare shaman is worth hunting");
     }
+
+    [Fact]
+    public void DaggerFlurry_StabsTwiceForOnePress()
+    {
+        var world = new World(Array.Empty<Aabb>());
+        var state = PlayerState.Spawn(Vector3.Zero);
+        state.Weapon = Weapons.Dagger;
+        var blows = new List<int>();
+        for (var tick = 0; tick < 40; tick++)
+        {
+            var input = new InputCmd { Tick = (uint)tick, Buttons = tick == 0 ? Buttons.Light : Buttons.None };
+            if (Movement.Step(ref state, input, world) == AttackKind.DaggerFlurry)
+            {
+                blows.Add(tick);
+            }
+        }
+
+        Assert.Equal(2, blows.Count);
+        Assert.True(blows[1] - blows[0] >= 5, "the second stab follows the first, not with it");
+    }
+
+    [Fact]
+    public void DaggerLeap_FliesAlongTheAimAndLandsWithTheBlow()
+    {
+        var world = new World(Array.Empty<Aabb>());
+        var state = PlayerState.Spawn(Vector3.Zero);
+        state.Weapon = Weapons.Dagger;
+        var landedAt = -1;
+        var highest = 0f;
+        for (var tick = 0; tick < 60; tick++)
+        {
+            var input = new InputCmd { Tick = (uint)tick, Buttons = tick == 0 ? Buttons.Heavy : Buttons.None, Aim = 0 };
+            if (Movement.Step(ref state, input, world) == AttackKind.DaggerLeap)
+            {
+                landedAt = tick;
+                Assert.True(state.Position.Y < 0.5f, $"the daggers strike near the ground, not at {state.Position.Y:F2} m");
+            }
+
+            highest = MathF.Max(highest, state.Position.Y);
+        }
+
+        Assert.True(landedAt > 0, "the leap's blow lands");
+        Assert.InRange(-state.Position.Z, 4f, 6.5f);
+        Assert.InRange(highest, 0.5f, 1.5f);
+    }
+
+    [Fact]
+    public void DaggerLeaps_ArePredictedWithoutCorrections()
+    {
+        var network = new SimNetwork(80, 8, 2, 7);
+        var world = new World(Array.Empty<Aabb>());
+        var server = new GameServer(network.Connect(0), world, new ServerOptions { Seed = 3, EnemyCount = 0 });
+        var client = new ClientPrediction(network.Connect(1), world);
+        for (var tick = 0; tick < 30; tick++)
+        {
+            network.Advance(1000.0 / Tuning.TickRate);
+            server.Step();
+            client.Step(0, 0, Buttons.None);
+        }
+
+        var place = server.GiveGear(1, GearPiece.Roll(Item("twin_daggers"), Rarity.Common, 1, new Random(1)));
+        for (var tick = 0; tick < Tuning.TickRate * 8; tick++)
+        {
+            network.Advance(1000.0 / Tuning.TickRate);
+            server.Step();
+            var buttons = tick > 60 && tick % 70 == 0 ? Buttons.Heavy : tick % 23 == 0 ? Buttons.Light : Buttons.None;
+            client.Step(0, 90, buttons, (byte)(tick / 40), tick == 0 ? GearCommands.Toggle(place) : Command.None);
+        }
+
+        Assert.Equal(Weapons.Dagger, server.GetPlayer(1)!.Value.Weapon);
+        Assert.Equal(Weapons.Dagger, client.State.Weapon);
+        // One correction when the server hands over the daggers; leaps themselves must agree.
+        Assert.True(client.Stats.Corrections <= 2, $"{client.Stats.Corrections} corrections while leaping");
+    }
 }

@@ -42,7 +42,7 @@ Rules:
   server owns the bag and sends it in slices; the client only decides which slot shows what. Gear pieces are server-owned instances (`Gear.cs`): base item,
   rarity, level and affixes from `world/affixes.json`; worn gear feeds `GearStats` into every blow and hit. Each enemy's
   `gear` table in `enemies.json` sets its drop chance, rarity weights and base items; `GearTests` prints pieces per hour.
-  Gear commands start at `GearCommands.ToggleBase`. `PIXEL_BOT=gear` with `PIXEL_TEST=1` checks the bag and tooltips. Food is eaten with the command range from `ItemCommands.EatBase`.
+  Gear commands start at `GearCommands.ToggleBase`. The worn weapon sets `PlayerState.Weapon`, which picks the attacks in `Movement.Step` (daggers: a two-stab flurry and a predicted leap). `PIXEL_BOT=gear` with `PIXEL_TEST=1` checks the bag and tooltips. Food is eaten with the command range from `ItemCommands.EatBase`.
 - Item icons: `python asset-pipeline/generate_icons.py --sheet` paints all 16x16 icons from text shapes
   and writes a preview to `export/previews/icons.png`. A test fails if an item has no icon.
 - Test a far area: set `PIXEL_SPAWN=x,z` before starting the server.
@@ -67,7 +67,7 @@ Rules:
   trusting either number. `PIXEL_OFF=fog,ssao,glow,shadow,batches,grass` switches features off.
 - Full check after a change: `powershell -ExecutionPolicy Bypass -File scripts/check.ps1`. It lists script
   exceptions from the live run: one exception a frame freezes the HUD and the player without crashing.
-- Photo studio: `scripts/studio.ps1 -Jobs people,animals,monsters,motion,models,world,hitboxes,map` needs no server and writes
+- Photo studio: `scripts/studio.ps1 -Jobs people,animals,monsters,motion,attacks,models,world,hitboxes,map` needs no server and writes
   labelled contact sheets to `export/previews/studio/sheets`. Read them after every visual change. World shots
   live in `client/studio/shots.json`; add one for each new place. `PIXEL_SHOTS=guild,arena` films only shots
   whose names start with those words.
