@@ -20,6 +20,10 @@ public partial class GameClient : Node
     private const float CameraDistance = 5.2f;
     private const float CameraStep = 0.25f;
     private const float CameraClearance = 0.4f;
+    private const float CameraMargin = 0.6f;
+
+    /// <summary>Closer than this behind the player, the camera rises to find more room.</summary>
+    private const float CameraComfort = 2.6f;
     private const int BotDialogTicks = 70;
     private const int HuntTicks = 1400;
     private const int MaxTicksPerFrame = 6;
@@ -1155,13 +1159,31 @@ public partial class GameClient : Node
     private void PlaceCamera(Vector3 shown)
     {
         var target = shown + new Vector3(0, 1.75f, 0);
-        var flat = Mathf.Cos(_pitch);
-        var back = new Vector3(Mathf.Sin(_yaw) * flat, -Mathf.Sin(_pitch), Mathf.Cos(_yaw) * flat);
+
+        // Against a wall there is no room behind the player, so the camera rises and looks down
+        // over the shoulder instead of pressing into the back of the head.
+        var (position, reach) = CameraAt(target, _pitch);
+        for (var pitch = _pitch - 0.2f; reach < CameraComfort && pitch >= MinPitch - 0.6f; pitch -= 0.2f)
+        {
+            var (higher, higherReach) = CameraAt(target, pitch);
+            if (higherReach > reach)
+            {
+                (position, reach) = (higher, higherReach);
+            }
+        }
+
+        _stage.Camera.LookAtFromPosition(position, target);
+    }
+
+    /// <summary>Where the camera can stand behind the target at a pitch, and how far back that is.</summary>
+    private (Vector3 Position, float Reach) CameraAt(Vector3 target, float pitch)
+    {
+        var flat = Mathf.Cos(pitch);
+        var back = new Vector3(Mathf.Sin(_yaw) * flat, -Mathf.Sin(pitch), Mathf.Cos(_yaw) * flat);
 
         // Walk out from the player: rise over the ground, and stop before any box in the way.
         // A bridge lifts the camera when the player stands on it and keeps it low when passing below.
-        var position = target + back * CameraStep;
-        for (var distance = CameraStep * 2f; distance <= CameraDistance; distance += CameraStep)
+        Vector3 Point(float distance)
         {
             var next = target + back * distance;
             var ground = _world.GroundHeight(next.X, next.Z);
@@ -1169,15 +1191,24 @@ public partial class GameClient : Node
             next.Y = below ? Mathf.Min(next.Y, ground - CameraClearance) : next.Y;
             var floor = below ? _world.Terrain?.At(next.X, next.Z) ?? 0f : ground;
             next.Y = Mathf.Max(next.Y, floor + CameraClearance);
+            return next;
+        }
+
+        // The camera stays a margin short of the first box: the lens sits a little in front of the
+        // camera point, and a door leaf or a wall's trim stands proud of its collision box.
+        var reach = CameraStep;
+        for (var distance = CameraStep * 2f; distance <= CameraDistance + CameraMargin; distance += CameraStep)
+        {
+            var next = Point(distance);
             if (_world.IsInsideBox(new System.Numerics.Vector3(next.X, next.Y, next.Z)))
             {
                 break;
             }
 
-            position = next;
+            reach = Mathf.Max(reach, Mathf.Min(distance - CameraMargin, CameraDistance));
         }
 
-        _stage.Camera.LookAtFromPosition(position, target);
+        return (Point(reach), reach);
     }
 
     private void Capture()

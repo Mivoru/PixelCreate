@@ -310,9 +310,23 @@ public sealed class GameServer : IEnemyEvents
 
         if (!_players.TryGetValue(peer, out var player))
         {
-            var angle = peer * 2.1f;
-            var spawn = (_options.SpawnOverride ?? _world.Spawn) + new Vector3(MathF.Cos(angle) * 3f, 0, MathF.Sin(angle) * 3f);
-            spawn.Y = _world.GroundHeight(spawn.X, spawn.Z);
+            // Players spread round the spawn point, each at the first free spot from their own angle,
+            // so nobody starts inside a wall or a doorway.
+            var centre = _options.SpawnOverride ?? _world.Spawn;
+            var spawn = centre with { Y = _world.GroundHeight(centre.X, centre.Z) };
+            for (var attempt = 0; attempt < 16; attempt++)
+            {
+                var angle = peer * 2.1f + attempt * 0.4f;
+                var reach = 3f - attempt * 0.15f;
+                var spot = centre + new Vector3(MathF.Cos(angle) * reach, 0, MathF.Sin(angle) * reach);
+                spot.Y = _world.GroundHeight(spot.X, spot.Z);
+                if (!_world.OverlapsPlayer(spot))
+                {
+                    spawn = spot;
+                    break;
+                }
+            }
+
             player = new Player
             {
                 Id = peer,

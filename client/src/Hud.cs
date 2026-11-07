@@ -49,6 +49,7 @@ public partial class Hud : Control
     private readonly Queue<Command> _commands = new();
     private Font _font = null!;
     private Font _bold = null!;
+    private TooltipLayer _tooltipLayer = null!;
     private IconLayer _iconLayer = null!;
     private float _shownHealth = 1f;
     private float _ghostHealth = 1f;
@@ -97,6 +98,14 @@ public partial class Hud : Control
         }
     }
 
+    /// <summary>The item card under the pointer draws last, above the icons, so no icon covers it.</summary>
+    private sealed partial class TooltipLayer : Control
+    {
+        public Hud Owner = null!;
+
+        public override void _Draw() => Owner.DrawTooltip(this);
+    }
+
     private readonly List<FloatingText> _floating = new();
 
     public Inventory Items { get; } = new();
@@ -129,6 +138,8 @@ public partial class Hud : Control
         MouseFilter = MouseFilterEnum.Stop;
         _iconLayer = new IconLayer { Owner = this, TextureFilter = TextureFilterEnum.Nearest, MouseFilter = MouseFilterEnum.Ignore };
         AddChild(_iconLayer);
+        _tooltipLayer = new TooltipLayer { Owner = this, TextureFilter = TextureFilterEnum.Linear, MouseFilter = MouseFilterEnum.Ignore };
+        AddChild(_tooltipLayer);
         GetViewport().SizeChanged += FitWindow;
         FitWindow();
     }
@@ -301,6 +312,7 @@ public partial class Hud : Control
         _ghostHealth = health > _ghostHealth ? health : Mathf.MoveToward(_ghostHealth, health, d * 0.35f);
         QueueRedraw();
         _iconLayer.QueueRedraw();
+        _tooltipLayer.QueueRedraw();
     }
 
     public override void _Draw()
@@ -883,15 +895,14 @@ public partial class Hud : Control
         Label("Left click: move    Right click: eat", bottom, 15, Muted);
         Keycap("I", new Vector2(window.End.X - 120, bottom.Y - 22), 14);
         Label("close", new Vector2(window.End.X - 86, bottom.Y), 15, Muted);
-        DrawTooltip();
     }
 
-    /// <summary>A small card next to the pointer naming the item under it.</summary>
-    private void DrawTooltip()
+    /// <summary>A small card next to the pointer naming the item under it, drawn on the given layer.</summary>
+    private void DrawTooltip(CanvasItem canvas)
     {
         var mouse = GetLocalMousePosition();
         var hovered = _slots.Where(s => s.Rect.HasPoint(mouse)).Select(s => Read(s.Slot)).FirstOrDefault(i => i is not null);
-        if (hovered is not { } item || Items.Held is not null)
+        if (!InventoryOpen || hovered is not { } item || Items.Held is not null)
         {
             return;
         }
@@ -911,15 +922,23 @@ public partial class Hud : Control
         at.X = Mathf.Min(at.X, Size.X - width - 12);
         at.Y = Mathf.Min(at.Y, Size.Y - height - 12);
         var rect = new Rect2(at, width, height);
-        Card(rect, 14, new Color(0.03f, 0.035f, 0.055f, 0.97f));
-        Pill(new Rect2(rect.Position + new Vector2(0, 14), 3, 30), tier.Color);
-        Label(item.Name, rect.Position + new Vector2(18, 32), 20, tier.Color, _bold);
-        Label($"{tier.Name.ToUpperInvariant()}  ·  {kind}", rect.Position + new Vector2(18, 56), 13, Muted, _bold);
-        DrawMultilineString(_font, rect.Position + new Vector2(18, 84), item.Description, HorizontalAlignment.Left, width - 36, 16, -1, Text);
+        var shadow = new StyleBoxFlat { BgColor = new Color(0, 0, 0, 0.3f), AntiAliasing = true, ShadowColor = new Color(0, 0, 0, 0.22f), ShadowSize = 14 };
+        shadow.SetCornerRadiusAll(16);
+        canvas.DrawStyleBox(shadow, new Rect2(rect.Position + new Vector2(0, 5), rect.Size));
+        var box = new StyleBoxFlat { BgColor = new Color(0.03f, 0.035f, 0.055f, 0.97f), BorderColor = Rim, AntiAliasing = true };
+        box.SetBorderWidthAll(1);
+        box.SetCornerRadiusAll(14);
+        canvas.DrawStyleBox(box, rect);
+        var pill = new StyleBoxFlat { BgColor = tier.Color, AntiAliasing = true };
+        pill.SetCornerRadiusAll(1);
+        canvas.DrawStyleBox(pill, new Rect2(rect.Position + new Vector2(0, 14), 3, 30));
+        canvas.DrawString(_bold, rect.Position + new Vector2(18, 32), item.Name, HorizontalAlignment.Left, -1, 20, tier.Color);
+        canvas.DrawString(_bold, rect.Position + new Vector2(18, 56), $"{tier.Name.ToUpperInvariant()}  ·  {kind}", HorizontalAlignment.Left, -1, 13, Muted);
+        canvas.DrawMultilineString(_font, rect.Position + new Vector2(18, 84), item.Description, HorizontalAlignment.Left, width - 36, 16, -1, Text);
         if (price.Length > 0)
         {
-            DrawCircle(rect.Position + new Vector2(25, height - 24), 6, Accent);
-            Label(price, rect.Position + new Vector2(38, height - 18), 15, Accent, _bold);
+            canvas.DrawCircle(rect.Position + new Vector2(25, height - 24), 6, Accent);
+            canvas.DrawString(_bold, rect.Position + new Vector2(38, height - 18), price, HorizontalAlignment.Left, -1, 15, Accent);
         }
     }
 

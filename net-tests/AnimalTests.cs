@@ -82,7 +82,8 @@ public sealed class AnimalTests
         Run(herd, 30);
         var cow = herd[0];
         var walker = new Target(1, cow.Position + new Vector3(3f, 0, 0), Vector3.Zero);
-        Run(herd, 5, walker);
+        // The head comes round over a moment rather than in one jump.
+        Run(herd, 90, walker);
         Assert.Equal(EnemyAction.Alert, cow.Action);
         Assert.False(cow.Fleeing);
         var look = new Vector3(-MathF.Sin(cow.Facing), 0, -MathF.Cos(cow.Facing));
@@ -171,5 +172,36 @@ public sealed class AnimalTests
             Assert.True(Vector3.Dot(Vector3.Normalize(toPlayer with { Y = 0 }), facing) > 0.7f,
                 $"boar {animal.Id} is not facing the attacker one second after the hit");
         }
+    }
+
+    /// <summary>
+    /// Deer bolting past a rock never swing their bodies round faster than an animal can turn.
+    /// Steering used to flick a running deer about 90 degrees and back from one tick to the next.
+    /// </summary>
+    [Fact]
+    public void BoltingDeer_TurnSmoothly()
+    {
+        var rock = new Aabb(new Vector3(-4f, -1f, 3f), new Vector3(4f, 2f, 5f));
+        var world = new World(new[] { rock }, null, Vector3.Zero, Array.Empty<EnemySpawn>());
+        var herd = Herd("deer", 4, 3f);
+        var random = new Random(5);
+        var events = new Quiet();
+        var hunter = new Target(1, new Vector3(0, 0, -8f), new Vector3(0, 0, 7f));
+        var worst = 0f;
+        for (var tick = 0; tick < Tuning.TickRate * 6; tick++)
+        {
+            hunter = hunter with { Position = hunter.Position + hunter.Velocity / Tuning.TickRate };
+            foreach (var deer in herd)
+            {
+                var before = deer.Facing;
+                deer.Step(world, random, new[] { hunter }, events);
+                if (deer.Fleeing)
+                {
+                    worst = MathF.Max(worst, MathF.Abs(MathF.IEEERemainder(deer.Facing - before, MathF.Tau)));
+                }
+            }
+        }
+
+        Assert.True(worst <= 4f / Tuning.TickRate + 0.001f, $"a fleeing deer turned {worst:F2} rad in one tick");
     }
 }

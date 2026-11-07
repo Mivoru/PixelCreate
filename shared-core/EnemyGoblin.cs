@@ -165,11 +165,30 @@ public sealed partial class Enemy
         }
 
         var heading = Steer(world, Vector3.Normalize(flat));
+        if (IsAnimal)
+        {
+            // An animal turns its body; it cannot snap round. Steering that flickers between two
+            // ways round an obstacle from tick to tick then averages into one smooth curve.
+            heading = TurnToward(heading, AnimalTurnRate * Tuning.TickSeconds);
+        }
+
         Facing = MathF.Atan2(-heading.X, -heading.Z);
         Action = EnemyAction.Walk;
         ActionTicks = 14;
         Velocity.X = heading.X * Def.Speed * speedFactor;
         Velocity.Z = heading.Z * Def.Speed * speedFactor;
+    }
+
+    /// <summary>How fast an animal can swing round while it walks or runs, in radians a second.</summary>
+    private const float AnimalTurnRate = 4f;
+
+    /// <summary>The heading after turning from the current facing towards a wanted one by at most a step.</summary>
+    private Vector3 TurnToward(Vector3 wanted, float step)
+    {
+        var current = MathF.Atan2(-wanted.X, -wanted.Z);
+        var difference = MathF.IEEERemainder(current - Facing, MathF.Tau);
+        var angle = Facing + Math.Clamp(difference, -step, step);
+        return new Vector3(-MathF.Sin(angle), 0, -MathF.Cos(angle));
     }
 
     private void Cast(byte index, Ability ability, Target target, World world, Random random)

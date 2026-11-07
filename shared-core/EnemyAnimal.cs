@@ -176,7 +176,10 @@ public sealed partial class Enemy
         var look = Flat(_alertAt - Position);
         if (look != Vector3.Zero)
         {
-            Facing = MathF.Atan2(-look.X, -look.Z);
+            // The head comes round to the noise over a moment, not in one jump.
+            var wanted = MathF.Atan2(-look.X, -look.Z);
+            var step = AnimalTurnRate * 0.6f * Tuning.TickSeconds;
+            Facing += Math.Clamp(MathF.IEEERemainder(wanted - Facing, MathF.Tau), -step, step);
         }
 
         Action = EnemyAction.Alert;
