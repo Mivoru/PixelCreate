@@ -98,6 +98,10 @@ public sealed class GameServer : IEnemyEvents
         public int Xp;
         public uint LastHurtTick;
         public byte Dodges;
+        public GuildRank Rank;
+        public int Gold;
+        public byte QuestId;
+        public byte QuestProgress;
     }
 
     private sealed class Projectile
@@ -132,6 +136,8 @@ public sealed class GameServer : IEnemyEvents
     private readonly List<Projectile> _projectiles = new();
     private readonly List<Crystal> _crystals = new();
     private readonly List<FireWallHazard> _walls = new();
+    private readonly List<Enemy> _finishedTrials = new();
+    private int _nextEnemyId;
     private int _nextId;
 
     public uint Tick { get; private set; }
@@ -154,7 +160,7 @@ public sealed class GameServer : IEnemyEvents
         {
             for (var i = 0; i < spawn.Count; i++)
             {
-                var enemy = new Enemy { Id = _enemies.Count, Type = 0, Home = spawn };
+                var enemy = new Enemy { Id = _nextEnemyId++, Type = 0, Home = spawn };
                 enemy.Reset(_random, world);
                 _enemies.Add(enemy);
             }
@@ -168,6 +174,17 @@ public sealed class GameServer : IEnemyEvents
     public int GetXp(int id) => _players[id].Xp;
 
     public int GetCrystals(int id, CrystalRarity rarity) => _players[id].Crystals[(int)rarity];
+
+    public GuildRank GetRank(int id) => _players[id].Rank;
+
+    public int GetGold(int id) => _players[id].Gold;
+
+    public byte GetQuest(int id) => _players[id].QuestId;
+
+    public int GetQuestProgress(int id) => _players[id].QuestProgress;
+
+    /// <summary>For tests: gives a player crystals as if looted.</summary>
+    public void GiveCrystals(int id, CrystalRarity rarity, int count) => _players[id].Crystals[(int)rarity] += count;
 
     public int ProjectileCount => _projectiles.Count;
 
@@ -206,6 +223,12 @@ public sealed class GameServer : IEnemyEvents
         }
 
         StepCrystals();
+        foreach (var finished in _finishedTrials)
+        {
+            _enemies.Remove(finished);
+        }
+
+        _finishedTrials.Clear();
         if (!EnemiesFrozen)
         {
             var targets = _players.Values.OrderBy(p => p.Id)
@@ -281,9 +304,16 @@ public sealed class GameServer : IEnemyEvents
             Strike(player, landed);
         }
 
+        Obey(player, command.Command);
         var maxHealth = Progression.MaxHealth(player.Level);
         if (player.State.Health <= 0)
         {
+            if (player.Rank == GuildRank.InTrial)
+            {
+                EndTrial(player);
+                player.Rank = GuildRank.Newcomer;
+            }
+
             player.State = PlayerState.Spawn(_world.Spawn, maxHealth);
         }
         else if (Tick - player.LastHurtTick > RegenDelayTicks && Tick % RegenIntervalTicks == 0 && player.State.Health < maxHealth)
@@ -291,6 +321,81 @@ public sealed class GameServer : IEnemyEvents
             player.State.Health++;
         }
     }
+
+    /// <summary>Carries out what a player asked for, when the player is allowed to and close enough.</summary>
+    private void Obey(Player player, Command command)
+    {
+        switch (command)
+        {
+            case Command.UseDoor:
+                foreach (var portal in _world.Portals)
+                {
+                    if (Vector3.Distance(portal.From with { Y = 0 }, player.State.Position with { Y = 0 }) < Guild.DoorRange)
+                    {
+                        Move(player, portal.To);
+                        break;
+                    }
+                }
+
+                break;
+            case Command.BeginTrial when player.Rank == GuildRank.Newcomer && Near(player, "receptionist"):
+                BeginTrial(player);
+                break;
+            case Command.SellCrystals when player.Rank == GuildRank.Adventurer && Near(player, "receptionist"):
+                for (var i = 0; i < player.Crystals.Length; i++)
+                {
+                    player.Gold += player.Crystals[i] * Guild.CrystalPrices[i];
+                    player.Crystals[i] = 0;
+                }
+
+                break;
+            case Command.AcceptSlimeQuest when player.Rank == GuildRank.Adventurer && player.QuestId == 0 && Near(player, "quest_board"):
+                player.QuestId = 1;
+                player.QuestProgress = 0;
+                break;
+            case Command.AcceptGoblinQuest when player.Rank == GuildRank.Adventurer && player.QuestId == 0 && Near(player, "quest_board"):
+                player.QuestId = 2;
+                player.QuestProgress = 0;
+                break;
+            case Command.TurnInQuest when Guild.Quest(player.QuestId) is { } quest && player.QuestProgress >= quest.Count && Near(player, "receptionist"):
+                player.Gold += quest.Gold;
+                player.QuestId = 0;
+                player.QuestProgress = 0;
+                AwardXp(player.Id, quest.Xp);
+                break;
+        }
+    }
+
+    private bool Near(Player player, string role) => _world.Npcs.Any(n => n.Role == role &&
+        Vector3.Distance(n.Position with { Y = 0 }, player.State.Position with { Y = 0 }) < Guild.TalkRange + 1f);
+
+    private void Move(Player player, Vector3 to)
+    {
+        to.Y = _world.GroundHeight(to.X, to.Z);
+        player.State.Position = to;
+        player.State.Velocity = Vector3.Zero;
+    }
+
+    private void BeginTrial(Player player)
+    {
+        player.Rank = GuildRank.InTrial;
+        player.State.Health = Progression.MaxHealth(player.Level);
+        var ground = _world.TrialGround;
+        Move(player, ground + new Vector3(0, 0, 7));
+        var type = (byte)EnemyDef.All.ToList().FindIndex(d => d.Id == Guild.ExaminerId);
+        var examiner = new Enemy
+        {
+            Id = _nextEnemyId++,
+            Type = type,
+            Home = new EnemySpawn(ground, 2f, 1, 2, 2, int.MaxValue, false, new[] { Guild.ExaminerId }),
+            TrialOf = player.Id,
+        };
+        examiner.Reset(_random, _world);
+        examiner.TargetId = player.Id;
+        _enemies.Add(examiner);
+    }
+
+    private void EndTrial(Player player) => _enemies.RemoveAll(e => e.TrialOf == player.Id);
 
     /// <summary>Hurts a player, unless a dash avoids it. Returns true when the attack connects.</summary>
     private bool Hurt(Player player, short damage, byte slowTicks)
@@ -348,6 +453,20 @@ public sealed class GameServer : IEnemyEvents
     private void OnKilled(Enemy enemy, Player killer)
     {
         Stats.EnemiesKilled++;
+        if (enemy.TrialOf >= 0)
+        {
+            killer.Rank = GuildRank.Adventurer;
+            killer.Gold += 25;
+            AwardXp(killer.Id, 60);
+            _finishedTrials.Add(enemy);
+            return;
+        }
+
+        if (Guild.Quest(killer.QuestId) is { } quest && quest.Matches(enemy.Def.Id) && killer.QuestProgress < quest.Count)
+        {
+            killer.QuestProgress++;
+        }
+
         var winner = _players.TryGetValue(enemy.TaggedBy, out var tagged) ? tagged : killer;
         AwardXp(winner.Id, Progression.KillXp(enemy.Level, winner.Level, enemy.Def.Rare));
         foreach (var drop in enemy.Def.Drops ?? Array.Empty<DropEntry>())
@@ -628,6 +747,10 @@ public sealed class GameServer : IEnemyEvents
                 XpToNext = Progression.XpToNext(player.Level),
                 MaxHealth = Progression.MaxHealth(player.Level),
                 Dodges = player.Dodges,
+                Rank = player.Rank,
+                Gold = player.Gold,
+                QuestId = player.QuestId,
+                QuestProgress = player.QuestProgress,
                 Crystals = player.Crystals.ToArray(),
                 Others = _players.Values.Where(p => p.Id != player.Id).Take(6)
                     .Select(p => new RemotePlayer(p.Id, p.State.Position, p.State.Velocity, p.State.AttackAim, p.State.Attack, p.State.AttackTick)).ToArray(),

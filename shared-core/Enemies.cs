@@ -122,6 +122,9 @@ public sealed partial class Enemy
     /// <summary>The first player to hit this enemy gets the experience for it.</summary>
     public int TaggedBy = -1;
 
+    /// <summary>The player taking the guild trial against this enemy, or -1.</summary>
+    public int TrialOf = -1;
+
     public bool Returning;
     private int _detour;
     private float _detourSide = 1f;
@@ -184,7 +187,7 @@ public sealed partial class Enemy
         if (SpitCooldown > 0) SpitCooldown--;
         ActionTicks--;
 
-        if (Def.Kind == "goblin" && Action != EnemyAction.Dead)
+        if (Def.Kind != "slime" && Action != EnemyAction.Dead)
         {
             StepGoblin(world, random, targets, events);
             return;
@@ -617,7 +620,7 @@ public sealed partial class Enemy
             return;
         }
 
-        if (Def.Kind == "goblin")
+        if (Def.Kind != "slime")
         {
             return;
         }

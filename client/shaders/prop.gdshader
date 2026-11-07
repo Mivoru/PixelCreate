@@ -1,5 +1,6 @@
 // Props: a flat colour with a world-aligned pixel detail texture, and optional sway for leaves.
 shader_type spatial;
+render_mode cull_disabled;
 
 uniform vec3 tint : source_color = vec3(1.0);
 uniform sampler2D detail : source_color, filter_linear_mipmap_anisotropic, repeat_enable;

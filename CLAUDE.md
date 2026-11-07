@@ -40,6 +40,8 @@ Rules:
 - All game text is English. Enemy types live in `world/enemies.json`; items are a local UI model for now.
 - Test a far area: set `PIXEL_SPAWN=x,z` before starting the server.
 - Enemy abilities and crystal drops are data in `world/enemies.json`; new effects go in `GameServer.Fire`.
+- Interiors live outside the map on platforms (the guild at x 420, the trial ground at x 480). Doors are portals.
+- Character models come from Blender (`anime_*`) and use `toon.gdshader`, which also bends hair and cloth.
 - Sound effects come from ElevenLabs: `python asset-pipeline/generate_sounds.py` (cached, keys stay outside the repo).
 - A snapshot must fit one UDP packet, so the server sends each player only nearby enemies.
 - Pose check: run the Godot console executable with `--path client res://scenes/pose_test.tscn -- <folder>`.

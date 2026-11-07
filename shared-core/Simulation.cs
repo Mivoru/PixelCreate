@@ -81,6 +81,8 @@ public struct InputCmd
 
     /// <summary>Where the player aims, in 256ths of a full turn.</summary>
     public byte Aim;
+
+    public Command Command;
 }
 
 /// <summary>Everything that decides how a player moves next. Position is the centre of the feet.</summary>
@@ -118,6 +120,12 @@ public sealed class World
     public HeightField? Terrain { get; }
     public Vector3 Spawn { get; }
     public IReadOnlyList<EnemySpawn> EnemySpawns { get; }
+    public IReadOnlyList<Platform> Platforms { get; init; } = Array.Empty<Platform>();
+    public IReadOnlyList<Portal> Portals { get; init; } = Array.Empty<Portal>();
+    public IReadOnlyList<Npc> Npcs { get; init; } = Array.Empty<Npc>();
+
+    /// <summary>Where a trial takes place, and where the examiner waits.</summary>
+    public Vector3 TrialGround { get; init; }
 
     public World(IReadOnlyList<Aabb> boxes, HeightField? terrain = null, Vector3 spawn = default,
                  IReadOnlyList<EnemySpawn>? enemySpawns = null)
@@ -128,7 +136,18 @@ public sealed class World
         EnemySpawns = enemySpawns ?? Array.Empty<EnemySpawn>();
     }
 
-    public float GroundHeight(float x, float z) => Terrain?.At(x, z) ?? 0f;
+    public float GroundHeight(float x, float z)
+    {
+        foreach (var platform in Platforms)
+        {
+            if (x >= platform.MinX && x <= platform.MaxX && z >= platform.MinZ && z <= platform.MaxZ)
+            {
+                return platform.Height;
+            }
+        }
+
+        return Terrain?.At(x, z) ?? 0f;
+    }
 
     /// <summary>True when a player standing at this position would be inside a box.</summary>
     public bool OverlapsPlayer(Vector3 position)

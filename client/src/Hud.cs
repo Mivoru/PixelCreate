@@ -35,6 +35,11 @@ public partial class Hud : Control
     private Item? _held;
     private float _shownXp;
     private int _uiScale = 2;
+    private string _dialogName = "";
+    private string _dialogText = "";
+    private (string Label, Command Command)[] _dialogOptions = System.Array.Empty<(string, Command)>();
+    private string[] _story = System.Array.Empty<string>();
+    private float _storyTime;
     private float _bannerTime;
     private string _banner = "";
     private Color _bannerColor = Colors.White;
@@ -97,6 +102,42 @@ public partial class Hud : Control
         _bannerTime = 3f;
     }
 
+    public string Prompt { get; set; } = "";
+
+    public string Objective { get; set; } = "";
+
+    public bool DialogOpen => _dialogName.Length > 0;
+
+    /// <summary>Opens a conversation. Options are chosen with the number keys.</summary>
+    public void ShowDialog(string name, string text, params (string Label, Command Command)[] options)
+    {
+        _dialogName = name;
+        _dialogText = text;
+        _dialogOptions = options;
+    }
+
+    public void CloseDialog() => _dialogName = "";
+
+    /// <summary>Picks an option and closes the conversation, returning the command to send.</summary>
+    public Command Choose(int index)
+    {
+        if (index >= _dialogOptions.Length)
+        {
+            return Command.None;
+        }
+
+        var command = _dialogOptions[index].Command;
+        CloseDialog();
+        return command;
+    }
+
+    /// <summary>Shows lines of the story one after another in the middle of the screen.</summary>
+    public void ShowStory(string[] lines)
+    {
+        _story = lines;
+        _storyTime = 0f;
+    }
+
     public void ToggleInventory()
     {
         InventoryOpen = !InventoryOpen;
@@ -112,6 +153,7 @@ public partial class Hud : Control
         var xp = Snapshot is { XpToNext: > 0 } current ? current.Xp / (float)current.XpToNext : 0f;
         _shownXp = xp < _shownXp ? xp : Mathf.Lerp(_shownXp, xp, 1f - Mathf.Exp(-8f * d));
         _bannerTime = Mathf.Max(0f, _bannerTime - d);
+        _storyTime += d;
         foreach (var text in _floating)
         {
             text.Age += d;
@@ -134,6 +176,7 @@ public partial class Hud : Control
         DrawFloating();
         DrawStatus();
         DrawHotbar();
+        DrawGuide();
         if (InventoryOpen)
         {
             DrawInventory();
@@ -226,6 +269,48 @@ public partial class Hud : Control
             var at = new Vector2((Size.X - size.X) / 2f, 62f - Mathf.Min(_bannerTime - 2.7f, 0f) * 0f);
             DrawString(_font, at + Vector2.One, _banner, HorizontalAlignment.Left, -1, 22, Ink);
             DrawString(_font, at, _banner, HorizontalAlignment.Left, -1, 22, _bannerColor);
+        }
+    }
+
+    private void DrawGuide()
+    {
+        var gold = $"{Snapshot?.Gold ?? 0} gold";
+        var goldWidth = _font.GetStringSize(gold, HorizontalAlignment.Left, -1, 11).X;
+        DrawOutlined(gold, new Vector2(Size.X - goldWidth - 8, 16), new Color("feae34"));
+        if (Objective.Length > 0)
+        {
+            var width = _font.GetStringSize(Objective, HorizontalAlignment.Left, -1, 11).X;
+            DrawPanel(new Rect2(Size.X - width - 16, 22, width + 10, 14));
+            DrawString(_font, new Vector2(Size.X - width - 11, 33), Objective, HorizontalAlignment.Left, -1, 11, Text);
+        }
+
+        if (Prompt.Length > 0 && !DialogOpen)
+        {
+            var width = _font.GetStringSize(Prompt, HorizontalAlignment.Left, -1, 11).X;
+            DrawOutlined(Prompt, new Vector2((Size.X - width) / 2f, Size.Y - 70f), new Color("fee761"));
+        }
+
+        var line = (int)(_storyTime / 4f);
+        if (line < _story.Length)
+        {
+            var text = _story[line];
+            var width = _font.GetStringSize(text, HorizontalAlignment.Left, -1, 11).X;
+            DrawPanel(new Rect2((Size.X - width) / 2f - 8, 92, width + 16, 16));
+            DrawString(_font, new Vector2((Size.X - width) / 2f, 104), text, HorizontalAlignment.Left, -1, 11, Text);
+        }
+
+        if (!DialogOpen)
+        {
+            return;
+        }
+
+        var box = new Rect2((Size.X - 380f) / 2f, Size.Y - 142f, 380, 84);
+        DrawPanel(box);
+        DrawString(_font, box.Position + new Vector2(8, 12), _dialogName, HorizontalAlignment.Left, -1, 11, new Color("fee761"));
+        DrawString(_font, box.Position + new Vector2(8, 25), _dialogText, HorizontalAlignment.Left, 364, 11, Text);
+        for (var i = 0; i < _dialogOptions.Length; i++)
+        {
+            DrawString(_font, box.Position + new Vector2(8, 49 + i * 11), $"[{i + 1}] {_dialogOptions[i].Label}", HorizontalAlignment.Left, -1, 11, Colors.White);
         }
     }
 

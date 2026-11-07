@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Godot;
 using PixelCreate.Core;
 
@@ -29,7 +30,18 @@ public sealed record RigLook(string Kind, Color Skin, float Scale, string Weapon
 {
     public static readonly RigLook Player = new("player", new Color("e8b796"), 1f, "sword");
 
-    public bool Goblin => Kind != "player";
+    public bool Goblin => Kind is "skirmisher" or "brute" or "archer" or "sharpshooter" or "shaman";
+
+    /// <summary>Colours that replace the hero's, by Blender material name.</summary>
+    public System.Collections.Generic.Dictionary<string, Color> Palette { get; init; } = new();
+
+    public bool LongHair { get; init; }
+
+    public bool Skirt { get; init; }
+
+    public bool Cloak { get; init; } = true;
+
+    public Color Eyes { get; init; } = new("2f8f62");
 }
 
 /// <summary>
@@ -56,6 +68,8 @@ public sealed class PlayerRig
     private readonly CpuParticles3D _sparks;
     private readonly CpuParticles3D _wind;
     private RigLook _look = RigLook.Player;
+    private readonly System.Collections.Generic.List<ShaderMaterial> _hairCloth = new();
+    private readonly System.Collections.Generic.List<ShaderMaterial> _cloakCloth = new();
     private readonly Node3D _hairRoot = new();
     private readonly Node3D _cape = new();
     private readonly System.Collections.Generic.List<Node3D> _eyes = new();
@@ -170,18 +184,31 @@ public sealed class PlayerRig
     private void BuildHuman()
     {
         _hips.AddChild(Model("anime_pelvis"));
+        if (_look.Skirt)
+        {
+            _hips.AddChild(Model("anime_skirt"));
+        }
+
         _torso.AddChild(Model("anime_torso"));
         var head = Model("anime_head");
         head.Position = new Vector3(0, 0.3f, 0);
         _head.AddChild(head);
         _head.AddChild(_hairRoot);
         _hairRoot.Position = head.Position;
-        _hairRoot.AddChild(Model("anime_hair"));
+        _hairRoot.AddChild(Model("anime_hair", _hairCloth, 0.12f, 0.32f));
+        if (_look.LongHair)
+        {
+            _hairRoot.AddChild(Model("anime_hair_long", _hairCloth, 0.12f, 0.32f));
+        }
+
         BuildEyes(head);
 
-        _cape.Position = new Vector3(0, 0.44f, 0.02f);
-        _cape.AddChild(Model("anime_cloak"));
-        _torso.AddChild(_cape);
+        if (_look.Cloak)
+        {
+            _cape.Position = new Vector3(0, 0.44f, 0.02f);
+            _cape.AddChild(Model("anime_cloak", _cloakCloth, 0.02f, 0.85f));
+            _torso.AddChild(_cape);
+        }
 
         foreach (var (thigh, shin, x) in new[] { (_thighL, _shinL, -0.085f), (_thighR, _shinR, 0.085f) })
         {
@@ -213,7 +240,7 @@ public sealed class PlayerRig
             var eye = new Node3D { Position = new Vector3(side * 0.057f, -0.018f, -0.118f) };
             eye.Rotation = new Vector3(0, side * -0.32f, 0);
             eye.AddChild(Flat(new Vector3(0.03f, 0.031f, 0.006f), new Color("f8f4ee"), Vector3.Zero));
-            eye.AddChild(Flat(new Vector3(0.021f, 0.029f, 0.006f), new Color("2f8f62"), new Vector3(side * -0.003f, -0.002f, -0.005f)));
+            eye.AddChild(Flat(new Vector3(0.021f, 0.029f, 0.006f), _look.Eyes, new Vector3(side * -0.003f, -0.002f, -0.005f)));
             eye.AddChild(Flat(new Vector3(0.012f, 0.017f, 0.005f), new Color("15382c"), new Vector3(side * -0.003f, 0.001f, -0.009f)));
             eye.AddChild(Flat(new Vector3(0.0085f, 0.0085f, 0.004f), Colors.White, new Vector3(side * 0.006f, 0.012f, -0.0125f)));
             var lash = Flat(new Vector3(0.036f, 0.0075f, 0.008f), new Color("1c1a24"), new Vector3(0, 0.031f, -0.006f));
@@ -243,14 +270,14 @@ public sealed class PlayerRig
     }
 
     /// <summary>Loads a Blender part and gives it the cel shader.</summary>
-    private static Node3D Model(string name)
+    private Node3D Model(string name, System.Collections.Generic.List<ShaderMaterial>? cloth = null, float top = 0f, float length = 1f)
     {
         var model = GD.Load<PackedScene>($"res://assets/{name}.glb").Instantiate<Node3D>();
-        Toonify(model);
+        Toonify(model, cloth, top, length);
         return model;
     }
 
-    private static void Toonify(Node node)
+    private void Toonify(Node node, System.Collections.Generic.List<ShaderMaterial>? cloth, float top, float length)
     {
         if (node is MeshInstance3D mesh && mesh.Mesh is not null)
         {
@@ -258,14 +285,19 @@ public sealed class PlayerRig
             {
                 if (mesh.Mesh.SurfaceGetMaterial(surface) is StandardMaterial3D original)
                 {
-                    mesh.SetSurfaceOverrideMaterial(surface, Toon(original.AlbedoColor));
+                    var color = _look.Palette.GetValueOrDefault(original.ResourceName, original.AlbedoColor);
+                    var material = Toon(color);
+                    material.SetShaderParameter("sway_top", top);
+                    material.SetShaderParameter("sway_length", length);
+                    mesh.SetSurfaceOverrideMaterial(surface, material);
+                    cloth?.Add(material);
                 }
             }
         }
 
         foreach (var child in node.GetChildren())
         {
-            Toonify(child);
+            Toonify(child, cloth, top, length);
         }
     }
 
@@ -289,10 +321,21 @@ public sealed class PlayerRig
         var turn = Mathf.Clamp((_lastYaw - Root.Rotation.Y) / Mathf.Max(delta, 0.001f), -6f, 6f);
         _hairSide = Mathf.Lerp(_hairSide, turn * 0.07f, 1f - Mathf.Exp(-9f * delta));
         _lastYaw = Root.Rotation.Y;
-        // The cloak trails the body and the hair bobs a little, both from the same spring.
-        var ripple = Mathf.Sin(_phase * 1.5f) * Mathf.Min(state.Speed * 0.012f, 0.1f);
-        _cape.Rotation = new Vector3(_hairAngle * 0.9f + ripple, 0, _hairSide * 0.6f);
-        _hairRoot.Rotation = new Vector3(_hairAngle * 0.07f, 0, _hairSide * 0.1f);
+        // Cloth stays attached at the top and bends more towards its ends, which a rigid turn cannot do.
+        var speed = Mathf.Clamp(state.Speed / Tuning.MoveSpeed, 0f, 1.6f);
+        var cloak = new Vector3(_hairSide * 0.16f, _hairAngle * 0.22f, _hairAngle * 0.62f);
+        foreach (var material in _cloakCloth)
+        {
+            material.SetShaderParameter("sway", cloak);
+            material.SetShaderParameter("flutter", 0.012f + speed * 0.05f);
+        }
+
+        var hair = new Vector3(_hairSide * 0.05f, _hairAngle * 0.04f, _hairAngle * 0.14f);
+        foreach (var material in _hairCloth)
+        {
+            material.SetShaderParameter("sway", hair);
+            material.SetShaderParameter("flutter", 0.002f + speed * 0.012f);
+        }
 
         _blinkClock -= delta;
         if (_blinkClock < -0.12f)
@@ -461,6 +504,8 @@ public sealed class PlayerRig
         var dark = new Color("3e2731");
         switch (weapon)
         {
+            case "none":
+                break;
             case "dagger":
                 _sword.AddChild(Part(new BoxMesh { Size = new Vector3(0.06f, 0.06f, 0.16f) }, dark, Vector3.Zero));
                 _sword.AddChild(Part(new BoxMesh { Size = new Vector3(0.16f, 0.04f, 0.05f) }, new Color("8b9bb4"), new Vector3(0, 0, -0.1f)));

@@ -63,7 +63,7 @@ public sealed class ClientPrediction
     }
 
     /// <summary>Runs one client tick: reads snapshots, predicts this input and sends it.</summary>
-    public void Step(sbyte moveX, sbyte moveZ, Buttons buttons, byte aim = 0)
+    public void Step(sbyte moveX, sbyte moveZ, Buttons buttons, byte aim = 0, Command request = Command.None)
     {
         var shownBefore = ShownPosition;
         var wasSpawned = _spawned;
@@ -76,7 +76,7 @@ public sealed class ClientPrediction
         }
 
         Tick++;
-        var command = new InputCmd { Tick = Tick, MoveX = moveX, MoveZ = moveZ, Buttons = buttons, Aim = aim };
+        var command = new InputCmd { Tick = Tick, MoveX = moveX, MoveZ = moveZ, Buttons = buttons, Aim = aim, Command = request };
         _inputs[Tick % HistorySize] = command;
         if (_spawned)
         {

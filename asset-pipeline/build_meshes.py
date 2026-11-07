@@ -531,6 +531,173 @@ def camp_set():
     blob("pack", (1, 0.7, 0.3), 0.35, "sack", 3, 0.95, 2)
 
 
+def anime_hair_long():
+    """Long hair falling down the back, added to the short hair."""
+    bm = bmesh.new()
+    rng = random.Random(23)
+    for index in range(22):
+        angle = rng.uniform(0.1, math.pi - 0.1)
+        x, y = math.cos(angle) * 0.125, -math.sin(angle) * 0.125
+        strand(bm, (x, y, 0.08), (x * 1.3, y * 1.45, rng.uniform(-0.52, -0.38)), (x * 0.3, y * 0.3, 0), 0.04)
+    mesh = bpy.data.meshes.new("long")
+    bm.to_mesh(mesh)
+    bm.free()
+    smooth(mesh)
+    add_object("long", mesh, "anime_hair")
+
+
+def anime_skirt():
+    loft("skirt", [(-0.46, 0.2, 0.17), (-0.2, 0.17, 0.14), (0.02, 0.135, 0.1), (0.08, 0.125, 0.09)], "anime_cloak", 18)
+
+
+def guild_hall():
+    """The largest building in the valley: stone below, timber above, with a gabled porch and banners."""
+    box("base", (0, 0, 2.2), (15, 11, 4.4), "stone")
+    box("upper", (0, 0, 6.2), (15.8, 11.8, 3.8), "wall")
+    for x in (-7.9, -3.9, 0, 3.9, 7.9):
+        timber("post", (x, -5.95, 4.3), (x, -5.95, 8.1), 0.28)
+        timber("post", (x, 5.95, 4.3), (x, 5.95, 8.1), 0.28)
+    for z in (4.4, 8.1):
+        timber("beam", (-8, -6, z), (8, -6, z), 0.26)
+        timber("beam", (-8, 6, z), (8, 6, z), 0.26)
+        timber("beam", (-8, -6, z), (-8, 6, z), 0.26)
+        timber("beam", (8, -6, z), (8, 6, z), 0.26)
+    roof("roof", (0, 0, 8.1), 17.6, 13.4, 5.4, "roof")
+    timber("ridge", (-8.8, 0, 13.55), (8.8, 0, 13.55), 0.24, "wood_dark")
+    for x in (-5.8, 5.8):
+        box("tower", (x, -5.2, 7), (3.2, 3.2, 14), "stone")
+        roof("tower_roof", (x, -5.2, 14), 4, 4, 2.6, "roof")
+        box("slit", (x, -6.84, 9), (0.4, 0.08, 1.5), "window")
+    box("porch_floor", (0, -6.6, 0.2), (5.4, 3, 0.4), "stone")
+    for x in (-2.4, 2.4):
+        timber("column", (x, -7.8, 0.4), (x, -7.8, 4.4), 0.34, "stone")
+    roof("porch_roof", (0, -6.7, 4.4), 6.2, 3.8, 1.8, "roof")
+    box("doors", (0, -5.56, 1.9), (2.4, 0.12, 3), "wood")
+    box("door_line", (0, -5.64, 1.9), (0.08, 0.05, 3), "wood_dark")
+    for x in (-0.3, 0.3):
+        box("ring", (x, -5.66, 1.8), (0.14, 0.05, 0.14), "gold")
+    for x in (-3.9, 3.9):
+        box("banner", (x, -6.04, 6.4), (1.2, 0.05, 2.6), "cloth_red")
+        box("emblem", (x, -6.08, 6.7), (0.6, 0.04, 0.6), "gold")
+    for x in (-2, 2):
+        box("window", (x, -6, 6.2), (1.5, 0.1, 1.7), "window")
+    box("sign", (0, -8.2, 3.4), (2.8, 0.1, 0.7), "wood_dark")
+    box("sign_face", (0, -8.27, 3.4), (2.4, 0.05, 0.42), "gold")
+
+
+def guild_interior():
+    box("floor", (0, 0, -0.05), (26, 22, 0.1), "wood")
+    box("ceiling", (0, 0, 7), (26, 22, 0.2), "wood_dark")
+    for y, width in ((-9.5, 24), (9.5, 24)):
+        box("wall", (0, y, 3.5), (width, 1, 7), "wall")
+    for x in (-11.5, 11.5):
+        box("wall", (x, 0, 3.5), (1, 20, 7), "wall")
+    for x in (-8, -3, 3, 8):
+        timber("pillar", (x, -8.8, 0), (x, -8.8, 7), 0.35)
+        timber("pillar", (x, 8.8, 0), (x, 8.8, 7), 0.35)
+        timber("rafter", (x, -9, 6.7), (x, 9, 6.7), 0.3, "wood_dark")
+    box("carpet", (0, 1, 0.02), (4, 15, 0.04), "cloth_red")
+    box("counter", (0, 4.8, 0.43), (14, 1.2, 0.86), "wood")
+    box("counter_top", (0, 4.8, 0.9), (14.4, 1.4, 0.1), "wood_dark")
+    box("shelf", (0, 8.7, 2.1), (11, 0.5, 4.2), "wood_dark")
+    for row in range(3):
+        for i in range(11):
+            color = ("cloth_red", "shutter", "gold", "sack")[(i + row) % 4]
+            box("book", (-5 + i, 8.42, 1 + row * 1.2), (0.7, 0.2, 0.8), color)
+    box("emblem", (0, 8.94, 5.2), (2.4, 0.1, 1.4), "gold")
+    box("board", (-11.0, 2, 2.2), (0.12, 4.6, 2.6), "wood")
+    for i, (y, z) in enumerate(((1, 2.6), (2.2, 2.9), (3.1, 2.2), (0.8, 1.7), (2.6, 1.6))):
+        box("notice", (-10.92, y - 0.2, z), (0.05, 0.7, 0.9), "sack")
+    for x, y in ((-6.5, -4.5), (6.5, -4.5), (-6.5, 0.5), (6.5, 0.5)):
+        loft("table", [(0.9, 1.0, 1.0), (1.0, 1.0, 1.0)], "wood", 12, (x, y, 0))
+        timber("leg", (x, y, 0), (x, y, 0.9), 0.22, "wood_dark")
+        for dx, dy in ((1.3, 0), (-1.3, 0), (0, 1.3), (0, -1.3)):
+            loft("stool", [(0, 0.2, 0.2), (0.5, 0.26, 0.26)], "wood_dark", 8, (x + dx, y + dy, 0))
+        loft("mug", [(1.0, 0.1, 0.1), (1.24, 0.11, 0.11)], "gold", 8, (x + 0.3, y, 0))
+    box("hearth", (11, -3, 1.2), (0.8, 3, 2.4), "stone_dark")
+    box("embers", (10.6, -3, 0.5), (0.4, 2, 0.6), "window")
+    for x, y in ((-4, -2), (4, -2), (-4, 4), (4, 4)):
+        timber("chain", (x, y, 7), (x, y, 5.4), 0.04, "stone_dark")
+        box("lamp", (x, y, 5.2), (0.42, 0.42, 0.5), "window")
+
+
+def trial_arena():
+    box("sand", (0, 0, -0.05), (56, 52, 0.1), "path")
+    for x, y, w, d in ((0, 21, 46, 1), (0, -21, 46, 1), (-22, 0, 1, 42), (22, 0, 1, 42)):
+        box("wall", (x, y, 3), (w, d, 6), "stone")
+    loft("ring", [(0.0, 11, 11), (0.03, 11, 11)], "sack", 24)
+    for x in (-18, -9, 0, 9, 18):
+        box("banner", (x, 20.4, 4), (2, 0.06, 3), "cloth_red" if int(x / 9) % 2 == 0 else "shutter")
+    box("gate", (0, -20.3, 1.8), (4, 0.3, 3.6), "wood")
+
+
+def bridge():
+    box("deck", (0, 0, -0.08), (19, 6.4, 0.16), "wood")
+    for i in range(-8, 9):
+        timber("plank", (i, -3.1, 0.02), (i, 3.1, 0.02), 0.16, "wood_dark")
+    for y in (-3.1, 3.1):
+        for x in (-8.5, -4.2, 0, 4.2, 8.5):
+            timber("post", (x, y, -2.6), (x, y, 1.2), 0.3)
+        timber("rail", (-9, y, 1.15), (9, y, 1.15), 0.14)
+
+
+def cliff():
+    bm = bmesh.new()
+    bmesh.ops.create_icosphere(bm, subdivisions=3, radius=1)
+    rng = random.Random(40)
+    for vert in bm.verts:
+        layer = math.floor((vert.co.z + 1) * 3.5) / 3.5
+        jag = 1 + rng.uniform(-0.12, 0.12)
+        vert.co = (vert.co.x * 5.5 * jag, vert.co.y * 4.4 * jag, (layer + 0.3) * 6.6)
+    mesh = bpy.data.meshes.new("cliff")
+    bm.to_mesh(mesh)
+    bm.free()
+    add_object("cliff", mesh, "stone_dark")
+
+
+def ruin_arch():
+    for x in (-2.6, 2.6):
+        box("base", (x, 0, 0.3), (1.8, 1.8, 0.6), "stone_dark")
+        cylinder(f"column{x}", (x, 0, 2.6), 0.6, 4.2, "stone", 8)
+    for i in range(7):
+        a = i / 6 * math.pi
+        blob(f"arch{i}", (math.cos(a) * 2.7, 0, 4.7 + math.sin(a) * 1.5), 0.62, "stone", i, 0.9, 1)
+    blob("fallen", (3.6, 1.8, 0.4), 0.8, "stone_dark", 3, 0.6, 2)
+
+
+def ruin_wall():
+    rng = random.Random(11)
+    for row in range(5):
+        for i in range(8 - row):
+            x = -2.6 + i * 0.75 + row * 0.15
+            box(f"block{row}_{i}", (x, rng.uniform(-0.05, 0.05), 0.35 + row * 0.7), (0.7, 0.8, 0.64), "stone" if (i + row) % 3 else "stone_dark")
+
+
+def jungle_tree():
+    cylinder("trunk", (0, 0, 4), 0.55, 8, "wood_dark", 9)
+    for i, (x, y, z, r) in enumerate(((0, 0, 9, 3), (2.2, 0.8, 8.2, 2), (-2, 1, 8.4, 2.2), (0.6, -2.2, 8.2, 2), (-0.8, 1.8, 10, 1.8))):
+        blob(f"crown{i}", (x, y, z), r, "grass_dark" if i % 2 else "grass", i + 60, 0.62, 2)
+    for i in range(5):
+        a = i * 1.26
+        timber(f"vine{i}", (math.cos(a) * 2, math.sin(a) * 2, 7.5), (math.cos(a) * 2.1, math.sin(a) * 2.1, 3), 0.06, "grass_dark")
+    for i in range(4):
+        a = i * 1.57
+        timber(f"root{i}", (0, 0, 0.9), (math.cos(a) * 1.4, math.sin(a) * 1.4, 0), 0.24, "wood_dark")
+
+
+def fern():
+    for i in range(7):
+        a = i / 7 * math.tau
+        timber(f"frond{i}", (0, 0, 0.05), (math.cos(a) * 0.9, math.sin(a) * 0.9, 0.5), 0.09, "leaf" if i % 2 else "grass")
+
+
+def training_dummy():
+    timber("pole", (0, 0, 0), (0, 0, 1.8), 0.14)
+    timber("arms", (-0.7, 0, 1.3), (0.7, 0, 1.3), 0.11)
+    blob("head", (0, 0, 1.75), 0.26, "sack", 2, 1, 2)
+    box("torso", (0, 0, 1.15), (0.5, 0.34, 0.8), "sack")
+
+
 def tent():
     roof("canvas", (0, 0, 0), 3.6, 4.2, 2.8, "wall")
     box("pole", (0, 0, 1.4), (0.12, 0.12, 2.8), "wood_dark")
@@ -567,6 +734,18 @@ MODELS = {
     "anime_pelvis": anime_pelvis,
     "anime_cloak": anime_cloak,
     "anime_upper_arm": anime_upper_arm,
+    "anime_hair_long": anime_hair_long,
+    "anime_skirt": anime_skirt,
+    "guild_hall": guild_hall,
+    "guild_interior": guild_interior,
+    "trial_arena": trial_arena,
+    "bridge": bridge,
+    "cliff": cliff,
+    "ruin_arch": ruin_arch,
+    "ruin_wall": ruin_wall,
+    "jungle_tree": jungle_tree,
+    "fern": fern,
+    "training_dummy": training_dummy,
     "anime_forearm": anime_forearm,
     "anime_thigh": anime_thigh,
     "anime_shin": anime_shin,

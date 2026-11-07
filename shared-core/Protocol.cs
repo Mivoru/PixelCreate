@@ -39,6 +39,10 @@ public sealed class Snapshot
 
     /// <summary>Counts attacks avoided with a dash, so the client can show each one.</summary>
     public byte Dodges;
+    public GuildRank Rank;
+    public int Gold;
+    public byte QuestId;
+    public byte QuestProgress;
 
     /// <summary>Magic crystals held, by rarity.</summary>
     public int[] Crystals = new int[Core.Crystals.Tiers];
@@ -57,7 +61,7 @@ public static class Protocol
 
     private const byte InputPacket = 1;
     private const byte SnapshotPacket = 2;
-    private const int InputSize = 8;
+    private const int InputSize = 9;
 
     public static byte[] EncodeInputs(ReadOnlySpan<InputCmd> commands)
     {
@@ -72,6 +76,7 @@ public static class Protocol
             writer.Write(command.MoveZ);
             writer.Write((byte)command.Buttons);
             writer.Write(command.Aim);
+            writer.Write((byte)command.Command);
         }
 
         writer.Flush();
@@ -97,6 +102,7 @@ public static class Protocol
                 MoveZ = reader.ReadSByte(),
                 Buttons = (Buttons)reader.ReadByte(),
                 Aim = reader.ReadByte(),
+                Command = (Command)reader.ReadByte(),
             };
         }
 
@@ -118,6 +124,10 @@ public static class Protocol
         writer.Write(snapshot.XpToNext);
         writer.Write(snapshot.MaxHealth);
         writer.Write(snapshot.Dodges);
+        writer.Write((byte)snapshot.Rank);
+        writer.Write(snapshot.Gold);
+        writer.Write(snapshot.QuestId);
+        writer.Write(snapshot.QuestProgress);
         foreach (var count in snapshot.Crystals)
         {
             writer.Write((ushort)count);
@@ -204,6 +214,10 @@ public static class Protocol
         snapshot.XpToNext = reader.ReadInt32();
         snapshot.MaxHealth = reader.ReadInt16();
         snapshot.Dodges = reader.ReadByte();
+        snapshot.Rank = (GuildRank)reader.ReadByte();
+        snapshot.Gold = reader.ReadInt32();
+        snapshot.QuestId = reader.ReadByte();
+        snapshot.QuestProgress = reader.ReadByte();
         for (var i = 0; i < snapshot.Crystals.Length; i++)
         {
             snapshot.Crystals[i] = reader.ReadUInt16();

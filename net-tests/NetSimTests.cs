@@ -651,7 +651,7 @@ public sealed class EnemyTests
     {
         Assert.Equal(new[] { "Common", "Rare", "Epic", "Legendary" }, Crystals.All.Select(c => c.Rarity.ToString()));
         Assert.True(Crystals.All.Zip(Crystals.All.Skip(1)).All(p => p.First.Weight < p.Second.Weight));
-        Assert.All(EnemyDef.All, def => Assert.NotEmpty(def.Drops!));
+        Assert.All(EnemyDef.All.Where(d => d.Id != Guild.ExaminerId), def => Assert.NotEmpty(def.Drops!));
     }
 
     [Fact]
@@ -674,6 +674,157 @@ public sealed class EnemyTests
     public void Threat_FollowsLevels(int enemy, int player, Threat expected)
     {
         Assert.Equal(expected, ThreatRules.Compare(enemy, player));
+    }
+}
+
+public sealed class GuildTests
+{
+    private static (GameServer Server, ClientPrediction Client, SimNetwork Network, World World) Start()
+    {
+        var world = new World(Array.Empty<Aabb>(), null, Vector3.Zero, new[] { new EnemySpawn(new Vector3(200, 0, 0), 1f, 1) })
+        {
+            Npcs = new[]
+            {
+                new Npc("mira", "Mira", "receptionist", new Vector3(0, 0, 1), 0),
+                new Npc("board", "Quest Board", "quest_board", new Vector3(1, 0, 0), 0),
+            },
+            Portals = new[] { new Portal(new Vector3(-1.5f, 0, 2.6f), new Vector3(50, 0, 50)) },
+            TrialGround = new Vector3(0, 0, 40),
+        };
+        var network = new SimNetwork(1, 0, 0, 0);
+        var server = new GameServer(network.Connect(0), world, new ServerOptions { Seed = 2, SpawnOverride = Vector3.Zero });
+        var client = new ClientPrediction(network.Connect(1), world);
+        Run(server, client, network, 20);
+        return (server, client, network, world);
+    }
+
+    private static void Run(GameServer server, ClientPrediction client, SimNetwork network, int ticks, Command command = Command.None, Buttons buttons = Buttons.None)
+    {
+        for (var i = 0; i < ticks; i++)
+        {
+            network.Advance(1000.0 / Tuning.TickRate);
+            server.Step();
+            client.Step(0, 0, buttons, 0, i == 0 ? command : Command.None);
+        }
+    }
+
+    [Fact]
+    public void Door_TakesThePlayerThrough()
+    {
+        var (server, client, network, _) = Start();
+        Run(server, client, network, 12, Command.UseDoor);
+        Assert.Equal(50f, server.GetPlayer(1)!.Value.Position.X);
+    }
+
+    [Fact]
+    public void Newcomer_CannotSellOrTakeQuests()
+    {
+        var (server, client, network, _) = Start();
+        server.GiveCrystals(1, CrystalRarity.Common, 3);
+        Run(server, client, network, 12, Command.SellCrystals);
+        Run(server, client, network, 12, Command.AcceptSlimeQuest);
+        Assert.Equal(0, server.GetGold(1));
+        Assert.Equal(0, server.GetQuest(1));
+    }
+
+    [Fact]
+    public void BeatingTheExaminer_MakesAnAdventurer()
+    {
+        var (server, client, network, _) = Start();
+        Run(server, client, network, 12, Command.BeginTrial);
+        Assert.Equal(GuildRank.InTrial, server.GetRank(1));
+        var examiner = server.Enemies.Single(e => e.TrialOf == 1);
+        Assert.Equal(Guild.ExaminerId, examiner.Def.Id);
+        server.EnemiesFrozen = true;
+        examiner.Health = 1;
+        examiner.Position = server.GetPlayer(1)!.Value.Position + new Vector3(0, 0, -2);
+        Run(server, client, network, 30, Command.None, Buttons.Light);
+        Assert.Equal(GuildRank.Adventurer, server.GetRank(1));
+        Assert.DoesNotContain(server.Enemies, e => e.TrialOf == 1);
+        Assert.True(server.GetGold(1) > 0);
+    }
+
+    [Fact]
+    public void LosingTheTrial_ResetsTheRank()
+    {
+        var (server, client, network, _) = Start();
+        Run(server, client, network, 12, Command.BeginTrial);
+        var examiner = server.Enemies.Single(e => e.TrialOf == 1);
+        Run(server, client, network, 60 * 90);
+        Assert.Equal(GuildRank.Newcomer, server.GetRank(1));
+        Assert.DoesNotContain(server.Enemies, e => e.TrialOf == 1);
+    }
+
+    private static void Promote(GameServer server, ClientPrediction client, SimNetwork network)
+    {
+        Run(server, client, network, 12, Command.BeginTrial);
+        server.EnemiesFrozen = true;
+        var examiner = server.Enemies.Single(e => e.TrialOf == 1);
+        examiner.Health = 1;
+        examiner.Position = server.GetPlayer(1)!.Value.Position + new Vector3(0, 0, -2);
+        Run(server, client, network, 30, Command.None, Buttons.Light);
+    }
+
+    [Fact]
+    public void Crystals_SellForGold()
+    {
+        var (server, client, network, _) = Start();
+        Promote(server, client, network);
+        var start = server.GetGold(1);
+        server.GiveCrystals(1, CrystalRarity.Common, 2);
+        server.GiveCrystals(1, CrystalRarity.Rare, 1);
+
+        // Far from the receptionist nothing happens; after the walk back the sale goes through.
+        Run(server, client, network, 12, Command.SellCrystals);
+        Assert.Equal(start, server.GetGold(1));
+        WalkTo(server, client, network, Vector3.Zero);
+        Run(server, client, network, 12, Command.SellCrystals);
+        Assert.Equal(start + 2 * Guild.CrystalPrices[0] + Guild.CrystalPrices[1], server.GetGold(1));
+        Assert.Equal(0, server.GetCrystals(1, CrystalRarity.Common));
+    }
+
+    private static void WalkTo(GameServer server, ClientPrediction client, SimNetwork network, Vector3 goal)
+    {
+        for (var i = 0; i < 60 * 12; i++)
+        {
+            var offset = goal - server.GetPlayer(1)!.Value.Position;
+            offset.Y = 0;
+            if (offset.Length() < 1f)
+            {
+                break;
+            }
+
+            var heading = Vector3.Normalize(offset) * 127f;
+            network.Advance(1000.0 / Tuning.TickRate);
+            server.Step();
+            client.Step((sbyte)heading.X, (sbyte)heading.Z, Buttons.None);
+        }
+    }
+
+    [Fact]
+    public void Quest_CountsKillsAndPaysOut()
+    {
+        var (server, client, network, _) = Start();
+        Promote(server, client, network);
+        WalkTo(server, client, network, Vector3.Zero);
+        Run(server, client, network, 12, Command.AcceptSlimeQuest);
+        Assert.Equal(1, server.GetQuest(1));
+
+        var slime = server.Enemies[0];
+        var position = server.GetPlayer(1)!.Value.Position;
+        for (var kill = 0; kill < 5; kill++)
+        {
+            slime.Reset(new Random(kill), new World(Array.Empty<Aabb>()));
+            slime.Health = 1;
+            slime.Position = position + new Vector3(0, 0, -2);
+            Run(server, client, network, 30, Command.None, Buttons.Light);
+        }
+
+        Assert.Equal(5, server.GetQuestProgress(1));
+        var gold = server.GetGold(1);
+        Run(server, client, network, 12, Command.TurnInQuest);
+        Assert.True(server.GetGold(1) > gold);
+        Assert.Equal(0, server.GetQuest(1));
     }
 }
 

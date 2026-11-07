@@ -35,6 +35,8 @@ public static class ZoneView
         var root = new Node3D { Name = zone.Name };
         root.AddChild(BuildTerrain(zone));
         root.AddChild(BuildGrass(zone));
+        BuildWater(zone, root);
+        BuildInteriorLights(root);
 
         var models = new Dictionary<string, PackedScene>();
         var shader = GD.Load<Shader>("res://shaders/prop.gdshader");
@@ -56,6 +58,98 @@ public static class ZoneView
         }
 
         return root;
+    }
+
+    private static void BuildWater(Zone zone, Node3D root)
+    {
+        var water = GD.Load<Shader>("res://shaders/water.gdshader");
+        foreach (var (points, width) in zone.RiverCourses)
+        {
+            var surface = new SurfaceTool();
+            surface.Begin(Mesh.PrimitiveType.Triangles);
+            var travelled = 0f;
+            Vector3? lastLeft = null;
+            Vector3? lastRight = null;
+            var lastTravelled = 0f;
+            var level = float.MaxValue;
+            for (var i = 0; i + 1 < points.Length; i++)
+            {
+                var a = new Vector3(points[i].X, 0, points[i].Y);
+                var b = new Vector3(points[i + 1].X, 0, points[i + 1].Y);
+                var length = a.DistanceTo(b);
+                var side = new Vector3(-(b - a).Normalized().Z, 0, (b - a).Normalized().X) * width * 1.25f;
+                for (var along = 0f; along < length; along += 2f)
+                {
+                    var middle = a.Lerp(b, along / length);
+                    // A stream only ever runs downhill, so its surface never climbs a bump in the bed.
+                    level = Mathf.Min(level, zone.World.GroundHeight(middle.X, middle.Z) + 1.1f);
+                    var left = middle - side + Vector3.Up * level;
+                    var right = middle + side + Vector3.Up * level;
+                    travelled += 2f;
+                    if (lastLeft is { } previousLeft && lastRight is { } previousRight)
+                    {
+                        Vertex(surface, previousLeft, lastTravelled, 0f);
+                        Vertex(surface, left, travelled, 0f);
+                        Vertex(surface, right, travelled, 1f);
+                        Vertex(surface, previousLeft, lastTravelled, 0f);
+                        Vertex(surface, right, travelled, 1f);
+                        Vertex(surface, previousRight, lastTravelled, 1f);
+                    }
+
+                    lastLeft = left;
+                    lastRight = right;
+                    lastTravelled = travelled;
+                }
+            }
+
+            root.AddChild(new MeshInstance3D { Mesh = surface.Commit(), MaterialOverride = new ShaderMaterial { Shader = water } });
+        }
+
+        if (zone.Waterfall is { } source)
+        {
+            var foot = new Vector3(source.X, source.Y, source.Z);
+            var material = new ShaderMaterial { Shader = water };
+            material.SetShaderParameter("flow", 1.1f);
+            material.SetShaderParameter("foam", 0.9f);
+            var fall = new MeshInstance3D
+            {
+                Mesh = new QuadMesh { Size = new Vector2(16f, 9f), Orientation = PlaneMesh.OrientationEnum.Z },
+                MaterialOverride = material,
+                Position = new Vector3(foot.X, foot.Y + 8f, foot.Z + 1.5f),
+                Rotation = new Vector3(0, 0, Mathf.Pi / 2f),
+            };
+            root.AddChild(fall);
+            root.AddChild(new CpuParticles3D
+            {
+                Amount = 60,
+                Lifetime = 1.1f,
+                Position = foot + Vector3.Up * 1.4f,
+                Direction = Vector3.Up,
+                Spread = 70f,
+                InitialVelocityMin = 1.5f,
+                InitialVelocityMax = 4f,
+                Gravity = new Vector3(0, -4f, 0),
+                EmissionShape = CpuParticles3D.EmissionShapeEnum.Box,
+                EmissionBoxExtents = new Vector3(4f, 0.2f, 1f),
+                Mesh = new SphereMesh { Radius = 0.2f, Height = 0.4f, RadialSegments = 5, Rings = 3 },
+                MaterialOverride = new StandardMaterial3D { AlbedoColor = new Color("e8f6f8"), ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded },
+            });
+        }
+    }
+
+    private static void Vertex(SurfaceTool surface, Vector3 position, float u, float v)
+    {
+        surface.SetUV(new Vector2(u * 0.14f, v));
+        surface.AddVertex(position);
+    }
+
+    /// <summary>The guild hall and the trial ground lie outside the map, under their own lamps.</summary>
+    private static void BuildInteriorLights(Node3D root)
+    {
+        foreach (var (x, z) in new[] { (416f, 2f), (424f, 2f), (416f, -4f), (424f, -4f) })
+        {
+            root.AddChild(new OmniLight3D { Position = new Vector3(x, 5f, z), LightColor = new Color("ffcf8a"), LightEnergy = 2.4f, OmniRange = 13f });
+        }
     }
 
     /// <summary>Swaps the flat Blender materials for the textured prop shader.</summary>
@@ -173,7 +267,7 @@ public static class ZoneView
             var spread = attempt % 2 == 0 ? 0.5f : 1f;
             var x = ((float)random.NextDouble() * 2 - 1) * half * spread;
             var z = ((float)random.NextDouble() * 2 - 1) * half * spread;
-            if (zone.PathDistance(x, z) < 0.6f)
+            if (zone.PathDistance(x, z) < 0.6f || zone.IsBare(x, z))
             {
                 continue;
             }

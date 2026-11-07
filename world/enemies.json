@@ -56,6 +56,17 @@
     "drops": [{ "rarity": 0, "chance": 1 }, { "rarity": 1, "chance": 0.05 }]
   },
   {
+    "id": "guild_examiner", "name": "Examiner Rhea", "kind": "human", "weapon": "sword",
+    "minLevel": 2, "maxLevel": 2, "health": 170, "healthPerLevel": 0, "speed": 5, "size": 1.0,
+    "aggroRange": 40, "preferredRange": 2,
+    "abilities": [
+      { "effect": "melee", "range": 2.4, "windupTicks": 22, "recoverTicks": 26, "cooldownTicks": 60, "damage": 8, "radius": 1.6 },
+      { "effect": "dashStrike", "range": 9, "minRange": 3.5, "windupTicks": 34, "recoverTicks": 30, "cooldownTicks": 260, "damage": 12, "radius": 1.8, "telegraph": "line" },
+      { "effect": "slam", "range": 3.4, "windupTicks": 50, "recoverTicks": 36, "cooldownTicks": 300, "damage": 16, "radius": 2, "telegraph": "circle" }
+    ],
+    "drops": []
+  },
+  {
     "id": "goblin_shaman", "name": "Goblin Shaman", "kind": "goblin", "weapon": "staff", "rare": true,
     "minLevel": 7, "maxLevel": 7, "health": 240, "healthPerLevel": 30, "speed": 3.6, "size": 1.0,
     "aggroRange": 16, "preferredRange": 10,

@@ -38,7 +38,8 @@ public sealed class GoblinView : IEnemyView
             "goblin_shaman" => ("shaman", "733e39"),
             _ => ("skirmisher", "3e7a48"),
         };
-        _rig = new PlayerRig(new Color(cloth), new RigLook(kind, new Color("7fb04a"), def.Size, def.Weapon));
+        var look = def.Id == Guild.ExaminerId ? NpcLooks.Examiner : new RigLook(kind, new Color("7fb04a"), def.Size, def.Weapon);
+        _rig = new PlayerRig(new Color(cloth), look);
     }
 
     public void Update(in EnemyView enemy, Vector3 position, float delta, Sfx sfx)

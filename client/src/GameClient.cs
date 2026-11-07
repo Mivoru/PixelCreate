@@ -45,6 +45,9 @@ public partial class GameClient : Node
     private Fx _fx = null!;
     private PlayerState _last;
     private byte _lastLevel = 1;
+    private Command _pendingCommand;
+    private GuildRank _lastRank;
+    private readonly Dictionary<string, PlayerRig> _npcs = new();
     private byte _lastDodges;
     private int _lastXp;
     private bool _rareSeen;
@@ -86,6 +89,24 @@ public partial class GameClient : Node
 
         _hud = new Hud { Camera = _stage.Camera };
         AddChild(_hud);
+        foreach (var npc in _world.Npcs)
+        {
+            if (NpcLooks.For(npc.Role) is { } look)
+            {
+                var rig = new PlayerRig(new Color("0099db"), look);
+                rig.Root.Position = ToGodot(npc.Position);
+                rig.Root.Rotation = new Vector3(0, npc.Yaw, 0);
+                _stage.View.AddChild(rig.Root);
+                _npcs.Add(npc.Id, rig);
+            }
+        }
+
+        _hud.ShowStory(new[]
+        {
+            "The last thing you remember is a blinding light.",
+            "You wake on a road in a world you do not know.",
+            "People here speak of adventurers, and of a Guild to the west.",
+        });
 
         _transport = UdpTransport.Connect(host, port);
         _client = new ClientPrediction(_transport, _world);
@@ -106,7 +127,25 @@ public partial class GameClient : Node
         {
             if (key.Keycode == Key.Escape)
             {
+                if (_hud.DialogOpen)
+                {
+                    _hud.CloseDialog();
+                    return;
+                }
+
                 GetTree().Quit();
+            }
+            else if (key.Keycode == Key.E)
+            {
+                Interact();
+            }
+            else if (_hud.DialogOpen && key.Keycode >= Key.Key1 && key.Keycode <= Key.Key4)
+            {
+                var choice = _hud.Choose((int)(key.Keycode - Key.Key1));
+                if (choice != Command.None)
+                {
+                    _pendingCommand = choice;
+                }
             }
             else if (key.Keycode == Key.M)
             {
@@ -140,7 +179,8 @@ public partial class GameClient : Node
             _clock -= tickLength;
             var (x, z, buttons) = _captureDir is null ? ReadInput() : BotInput();
             _shownBefore = _shownNow;
-            _client.Step(x, z, buttons, AimByte());
+            _client.Step(x, z, buttons, AimByte(), _pendingCommand);
+            _pendingCommand = Command.None;
             _shownNow = ToGodot(_client.ShownPosition);
             var position = _client.State.Position;
             _maxHeight = Mathf.Max(_maxHeight, position.Y - _world.GroundHeight(position.X, position.Z));
@@ -156,11 +196,115 @@ public partial class GameClient : Node
         DrawPlayer(shown, d);
         DrawSnapshot(d);
         PlayerEvents(shown, d);
+        UpdateNpcs(shown, d);
         _fx.Update(d);
         PlaceCamera(shown);
         _hud.WorldScale = _stage.PixelScale;
         _hud.Player = _client.State;
         _hud.Snapshot = _client.Latest;
+    }
+
+    private void UpdateNpcs(Vector3 shown, float delta)
+    {
+        Npc? nearest = null;
+        var best = Guild.TalkRange;
+        foreach (var npc in _world.Npcs)
+        {
+            var position = ToGodot(npc.Position);
+            var distance = new Vector2(position.X - shown.X, position.Z - shown.Z).Length();
+            if (_npcs.TryGetValue(npc.Id, out var rig))
+            {
+                rig.Animate(new MotionState(0f, true, 0f, false, AttackKind.None, 0), delta);
+                if (distance < 6f)
+                {
+                    rig.Root.Rotation = new Vector3(0, LerpFacing(rig.Root.Rotation.Y, Mathf.Atan2(position.X - shown.X, position.Z - shown.Z), 6f * delta), 0);
+                }
+            }
+
+            if (distance < best)
+            {
+                best = distance;
+                nearest = npc;
+            }
+        }
+
+        var door = _world.Portals.Any(p => new Vector2(p.From.X - shown.X, p.From.Z - shown.Z).Length() < Guild.DoorRange);
+        _hud.Prompt = nearest is { } target ? $"[E] Talk to {target.Name}" : door ? "[E] Use door" : "";
+        if (_hud.DialogOpen && nearest is null)
+        {
+            _hud.CloseDialog();
+        }
+
+        var snapshot = _client.Latest;
+        if (snapshot is not null && snapshot.Rank != _lastRank)
+        {
+            if (snapshot.Rank == GuildRank.Adventurer)
+            {
+                _hud.ShowBanner("You are now an Adventurer!", new Color("fee761"));
+                _sfx.Play("level_up", shown);
+                _fx.LevelUp(shown);
+            }
+            else if (snapshot.Rank == GuildRank.InTrial)
+            {
+                _hud.ShowBanner("Trial: defeat Examiner Rhea", new Color("f6757a"));
+            }
+            else if (_lastRank == GuildRank.InTrial)
+            {
+                _hud.ShowBanner("Trial failed. Try again at the Guild.", new Color("e43b44"));
+            }
+
+            _lastRank = snapshot.Rank;
+        }
+
+        _hud.Objective = Objective(snapshot);
+    }
+
+    private static string Objective(Snapshot? snapshot)
+    {
+        if (snapshot is null)
+        {
+            return "";
+        }
+
+        if (snapshot.Rank == GuildRank.Newcomer)
+        {
+            return "Find the Adventurers Guild in the west";
+        }
+
+        if (snapshot.Rank == GuildRank.InTrial)
+        {
+            return "Defeat Examiner Rhea";
+        }
+
+        if (Guild.Quest(snapshot.QuestId) is { } quest)
+        {
+            return snapshot.QuestProgress >= quest.Count
+                ? $"{quest.Name}: report to Mira"
+                : $"{quest.Name}: {snapshot.QuestProgress} / {quest.Count}";
+        }
+
+        return "Take a job from the Quest Board";
+    }
+
+    /// <summary>E talks to whoever is close, or goes through a door.</summary>
+    private void Interact()
+    {
+        if (_hud.DialogOpen)
+        {
+            _hud.CloseDialog();
+            return;
+        }
+
+        var position = ToGodot(_client.State.Position);
+        var npc = _world.Npcs.Where(n => new Vector2(n.Position.X - position.X, n.Position.Z - position.Z).Length() < Guild.TalkRange)
+            .OrderBy(n => new Vector2(n.Position.X - position.X, n.Position.Z - position.Z).Length()).Cast<Npc?>().FirstOrDefault();
+        if (npc is { } target)
+        {
+            Dialogues.Open(_hud, target, _client.Latest);
+            return;
+        }
+
+        _pendingCommand = Command.UseDoor;
     }
 
     /// <summary>Turns changes in the player state into sounds and effects.</summary>
@@ -270,7 +414,7 @@ public partial class GameClient : Node
 
     private (sbyte X, sbyte Z, Buttons Buttons) ReadInput()
     {
-        if (_hud.InventoryOpen)
+        if (_hud.InventoryOpen || _hud.DialogOpen)
         {
             return (0, 0, Buttons.None);
         }
@@ -288,7 +432,12 @@ public partial class GameClient : Node
     private (sbyte X, sbyte Z, Buttons Buttons) BotInput()
     {
         var mode = OS.GetEnvironment("PIXEL_BOT");
-        if (mode == "idle")
+        if (mode == "talk" && _client.Tick == 60)
+        {
+            Interact();
+        }
+
+        if (mode is "idle" or "talk")
         {
             return (0, 0, Buttons.None);
         }
@@ -394,7 +543,7 @@ public partial class GameClient : Node
 
             if (!_enemies.TryGetValue(enemy.Id, out var slime))
             {
-                slime = def.Kind == "goblin" ? new GoblinView(def) : new SlimeView();
+                slime = def.Kind == "slime" ? new SlimeView() : new GoblinView(def);
                 _enemies.Add(enemy.Id, slime);
                 _enemyTypes[enemy.Id] = enemy.Type;
                 _stage.View.AddChild(slime.Root);
@@ -465,7 +614,7 @@ public partial class GameClient : Node
     {
         var telegraph = _telegraphs[enemy.Id];
         var target = ToGodot(enemy.LeapTarget);
-        if (def.Kind != "goblin")
+        if (def.Kind == "slime")
         {
             if (enemy.Action is EnemyAction.Windup or EnemyAction.Leap)
             {
