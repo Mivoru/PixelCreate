@@ -24,7 +24,7 @@ COLORS = {
     "foliage_oak": "5F9A3C", "foliage_oak_b": "6FA63E", "foliage_birch": "A8C850", "foliage_blossom": "F4A8C0", "foliage_pine": "2F6A58",
     "foliage_willow": "8FB84A", "foliage_bush": "4F8E42", "foliage_jungle": "3F9048", "foliage_core": "1F4A3A",
     "bark": "6E4E3C", "bark_dark": "4A3634", "bark_birch": "E0DACC", "bark_grey": "8A8078", "reed": "9AA850", "grass_tall": "7FBF52",
-    "hide": "8A6A4A", "hide_dark": "4A3428", "sand": "D8C49A", "crop": "D8B85A", "paper": "EEE4C8", "anime_glove": "23252E", "anime_vest": "2F4070", "anime_accent": "C84848", "anime_armor": "B8C4D4", "anime_armor_dark": "7A889C",
+    "hide": "8A6A4A", "hide_dark": "4A3428", "sand": "D8C49A", "crop": "D8B85A", "paper": "EEE4C8", "glass": "CFE6F2", "ember": "B03A1E", "anime_glove": "23252E", "anime_vest": "2F4070", "anime_accent": "C84848", "anime_armor": "B8C4D4", "anime_armor_dark": "7A889C",
 }
 MATERIALS = {}
 
@@ -1127,9 +1127,21 @@ def guild_interior():
         timber("rafter", (x, -9, 6.7), (x, 9, 6.7), 0.3, "wood_dark")
     for y in (-5, 0, 5):
         timber("beam", (-11, y, 6.45), (11, y, 6.45), 0.22, "wood_dark")
+    # Upright boards along the lower walls.
+    for k in range(-21, 22):
+        box("wainscot_line", (k * 0.5, 8.88, 0.7), (0.03, 0.02, 1.36), "bark_dark")
+    for k in range(-17, 18):
+        for x in (-10.88, 10.88):
+            box("wainscot_line", (x, k * 0.5, 0.7), (0.02, 0.03, 1.36), "bark_dark")
+    box("wainscot_cap", (0, 8.86, 1.42), (22, 0.16, 0.08), "wood")
+    for x in (-10.86, 10.86):
+        box("wainscot_cap", (x, 0, 1.42), (0.16, 18, 0.08), "wood")
     for y in (-5.5, 0, 5.5):
         for x in (-10.92, 10.92):
-            box("window", (x, y, 3.6), (0.08, 1.7, 2.2), "window")
+            box("sill", (x * 0.985, y, 2.45), (0.3, 1.9, 0.08), "wood")
+            box("window", (x, y, 3.6), (0.08, 1.7, 2.2), "glass")
+            box("frame", (x * 0.995, y, 3.05), (0.1, 1.8, 0.06), "wood_dark")
+            box("frame", (x * 0.995, y, 4.15), (0.1, 1.8, 0.06), "wood_dark")
             box("frame", (x * 0.995, y, 3.6), (0.1, 0.12, 2.3), "wood_dark")
             box("frame", (x * 0.995, y, 3.6), (0.1, 1.8, 0.12), "wood_dark")
     box("carpet", (0, 1, 0.02), (4, 15, 0.04), "cloth_red")
@@ -1185,18 +1197,87 @@ def guild_interior():
         box("pin", (-10.89, y, z + 0.36), (0.05, 0.06, 0.06), "cloth_red")
     box("board_sign", (-10.9, 2, 3.85), (0.1, 2, 0.36), "gold")
 
-    for x, y in ((-6.5, -4.5), (6.5, -4.5), (-6.5, 0.5), (6.5, 0.5)):
+    for x, y in ((-6.5, -4.5), (6.5, -4.5), (-6.5, 0.5)):
+        disc("rug", (x, y, 0.0), 2.1, 0.03, "anime_vest", 24)
+        disc("rug_rim", (x, y, 0.005), 1.9, 0.03, "gold", 24)
+        disc("rug_core", (x, y, 0.01), 1.82, 0.03, "anime_vest", 24)
         disc("table", (x, y, 0.88), 1.0, 0.12, "wood", 14)
-        timber("leg", (x, y, 0), (x, y, 0.9), 0.22, "wood_dark")
+        loft("table_foot", [(0, 0.34, 0.34), (0.1, 0.2, 0.2), (0.8, 0.14, 0.14), (0.9, 0.24, 0.24)], "wood_dark", 10, (x, y, 0))
         for dx, dy in ((1.3, 0), (-1.3, 0), (0, 1.3), (0, -1.3)):
-            disc("stool", (x + dx, y + dy, 0), 0.24, 0.5, "wood_dark", 8)
-        loft("mug", [(1.0, 0.1, 0.1), (1.24, 0.11, 0.11)], "gold", 8, (x + 0.3, y, 0))
-        box("plate", (x - 0.3, y + 0.2, 1.02), (0.34, 0.34, 0.03), "stone")
+            disc("stool", (x + dx, y + dy, 0.46), 0.25, 0.08, "wood", 10)
+            for leg in range(3):
+                a = leg * math.tau / 3
+                timber("stool_leg", (x + dx + math.cos(a) * 0.17, y + dy + math.sin(a) * 0.17, 0),
+                       (x + dx + math.cos(a) * 0.1, y + dy + math.sin(a) * 0.1, 0.46), 0.05, "wood_dark")
+        loft("mug", [(0.94, 0.09, 0.09), (1.18, 0.1, 0.1)], "wood_dark", 8, (x + 0.3, y, 0))
+        loft("foam", [(1.18, 0.1, 0.1), (1.22, 0.08, 0.08)], "paper", 8, (x + 0.3, y, 0))
+        box("plate", (x - 0.3, y + 0.2, 1.0), (0.34, 0.34, 0.03), "stone")
+        loft("bread", [(1.01, 0.1, 0.07), (1.08, 0.09, 0.06), (1.1, 0.05, 0.03)], "hat", 8, (x - 0.3, y + 0.2, 0))
+
+    # The appraiser's stall: a U-shaped counter where Hollis weighs what adventurers bring back.
+    box("stall_front", (8.4, 1.0, 0.45), (0.6, 3.2, 0.9), "wood")
+    box("stall_top", (8.4, 1.0, 0.93), (0.8, 3.4, 0.08), "wood_dark")
+    for y in (-0.6, 2.6):
+        box("stall_end", (9.65, y, 0.45), (2.5, 0.5, 0.9), "wood")
+        box("stall_end_top", (9.65, y, 0.93), (2.7, 0.7, 0.08), "wood_dark")
+    for y in (0.0, 1.0, 2.0):
+        box("stall_panel", (8.08, y, 0.45), (0.04, 0.8, 0.6), "wood_dark")
+    timber("scale_post", (8.4, 1.6, 0.97), (8.4, 1.6, 1.62), 0.05, "gold")
+    timber("scale_arm", (8.4, 1.15, 1.6), (8.4, 2.05, 1.6), 0.03, "gold")
+    for y in (1.15, 2.05):
+        timber("cord", (8.4, y, 1.6), (8.4, y, 1.25), 0.012, "gold")
+        loft("pan", [(1.22, 0.15, 0.15), (1.25, 0.16, 0.16)], "gold", 10, (8.4, y, 0))
+    loft("tusk_on_pan", [(1.25, 0.03, 0.03), (1.36, 0.02, 0.02)], "paper", 6, (8.4, 1.15, 0))
+    for i, (y, colour) in enumerate(((0.0, "leaf"), (0.32, "tunic"), (0.64, "flower"))):
+        loft("jar", [(0.97, 0.09, 0.09), (1.15, 0.1, 0.1), (1.22, 0.06, 0.06), (1.26, 0.07, 0.07)], colour, 10, (8.35, y, 0))
+        loft("lid", [(1.26, 0.075, 0.075), (1.29, 0.075, 0.075)], "wood_dark", 10, (8.35, y, 0))
+    for k, colour in enumerate(("hide", "hide_dark", "wall_b", "hide")):
+        box("pelt", (9.7, 2.6, 0.99 + k * 0.06), (1.3 - k * 0.12, 0.6 - k * 0.05, 0.06), colour)
+    for k in range(3):
+        tube("horn", [(9.3 + k * 0.4, -0.6, 1.0), (9.4 + k * 0.4, -0.75, 1.12), (9.5 + k * 0.4, -0.7, 1.26)], [0.06, 0.04, 0.01], "paper" if k != 1 else "bark", 6)
+    box("ledger", (10.4, -0.6, 1.0), (0.5, 0.4, 0.06), "cloth_red")
+    for y, z in ((0.3, 0), (1.6, 0), (0.95, 0.6)):
+        box("crate", (10.5, y, 0.3 + z), (0.6, 0.6, 0.6), "wood")
+        box("crate_band", (10.5, y, 0.3 + z), (0.62, 0.62, 0.08), "wood_dark")
+
+    # Trophies between the windows over the stall: a boar's head between two sets of antlers.
+    box("trophy_board", (10.9, 2.75, 3.4), (0.1, 1.3, 1.5), "wood_dark")
+    box("trophy_plate", (10.86, 2.75, 3.4), (0.08, 1.1, 1.3), "wood")
+    blob("boar_head", (10.55, 2.75, 3.35), 0.38, "hide_dark", 5, 0.95, 2)
+    loft("boar_snout", [(0, 0.17, 0.14), (0.28, 0.15, 0.12), (0.34, 0.1, 0.08)], "hide", 10, (10.25, 2.75, 3.25))
+    for side in (-1, 1):
+        tube("boar_tusk", [(10.05, 2.75 + side * 0.12, 3.15), (9.95, 2.75 + side * 0.18, 3.3), (9.98, 2.75 + side * 0.2, 3.42)], [0.035, 0.025, 0.008], "paper", 6)
+        blob("boar_ear", (10.6, 2.75 + side * 0.32, 3.7), 0.11, "hide_dark", 2, 0.5, 1)
+        blob("boar_eye", (10.27, 2.75 + side * 0.17, 3.48), 0.035, "anime_dark", 1, 1, 1)
+    for y in (1.6, 3.9):
+        box("antler_plate", (10.9, y, 3.6), (0.1, 0.5, 0.5), "wood")
+        for side in (-1, 1):
+            tube("antler", [(10.85, y, 3.6), (10.7, y + side * 0.25, 3.9), (10.6, y + side * 0.45, 4.3)], [0.04, 0.03, 0.015], "paper", 6)
+            tube("tine", [(10.7, y + side * 0.25, 3.9), (10.55, y + side * 0.2, 4.15)], [0.025, 0.01], "paper", 5)
+            tube("tine", [(10.65, y + side * 0.36, 4.1), (10.5, y + side * 0.3, 4.4)], [0.02, 0.008], "paper", 5)
+
+    # Swords and spears on a rack by the door, for adventurers who broke their own.
+    box("rack_base", (-8.0, -8.05, 0.1), (2.6, 0.9, 0.2), "wood_dark")
+    for x in (-9.2, -6.8):
+        timber("rack_post", (x, -8.3, 0), (x, -8.3, 2.0), 0.12, "wood")
+    timber("rack_bar", (-9.3, -8.3, 1.6), (-6.7, -8.3, 1.6), 0.1, "wood")
+    for i, x in enumerate((-8.8, -8.4, -8.0, -7.6, -7.2)):
+        if i % 2 == 0:
+            timber("rack_spear", (x, -7.9, 0.2), (x, -8.2, 2.5), 0.05, "wood")
+            loft("spear_head", [(0, 0.05, 0.02), (0.28, 0.0, 0.0)], "stone", 4, (x, -8.22, 2.5))
+        else:
+            box("rack_blade", (x, -8.0, 1.05), (0.09, 0.03, 1.3), "stone")
+            box("rack_guard", (x, -8.03, 1.72), (0.3, 0.08, 0.06), "wood_dark")
+            timber("rack_grip", (x, -8.05, 1.74), (x, -8.1, 2.0), 0.05, "anime_leather")
 
     # A hearth with a stone hood, and barrels beside it.
     box("hearth", (11, -3, 1.2), (0.8, 3, 2.4), "stone_dark")
-    box("hood", (10.8, -3, 3.4), (1.2, 2.6, 2.2), "stone")
-    box("embers", (10.6, -3, 0.5), (0.4, 2, 0.6), "window")
+    loft("hood", [(2.4, 0.7, 1.6, 0, 0), (3.3, 0.55, 1.15, 0.1, 0), (4.4, 0.45, 0.8, 0.15, 0), (7.0, 0.45, 0.8, 0.15, 0)], "stone", 4, (10.8, -3, 0))
+    box("mantel", (10.35, -3, 2.45), (0.6, 2.8, 0.14), "wood")
+    for k in range(5):
+        loft("mantel_jar", [(2.52, 0.06, 0.06), (2.7, 0.07, 0.07), (2.75, 0.04, 0.04)], ("gold", "flower", "leaf", "tunic", "paper")[k], 8, (10.35, -4.1 + k * 0.55, 0))
+    box("logs", (10.6, -3, 0.25), (0.5, 1.5, 0.3), "wood_dark")
+    box("embers", (10.6, -3, 0.12), (0.5, 1.8, 0.1), "ember")
     for y in (-0.8, -5.2):
         loft("barrel", [(0, 0.34, 0.34), (0.5, 0.42, 0.42), (1, 0.34, 0.34)], "wood", 10, (10.2, y, 0))
     for x, y in ((-10.2, -8.2), (10.2, 8.2), (-10.2, 8.2)):
@@ -1204,11 +1285,20 @@ def guild_interior():
         for i in range(6):
             a = i * 1.05
             blob("plant", (x + math.cos(a) * 0.2, y + math.sin(a) * 0.2, 0.9 + (i % 3) * 0.25), 0.3, "grass" if i % 2 else "leaf", i, 1, 1)
+    # Wheel chandeliers with candles hang where the lights are.
     for x, y in ((-4, -2), (4, -2), (-4, 4), (4, 4)):
-        timber("chain", (x, y, 7), (x, y, 5.4), 0.04, "stone_dark")
-        box("lamp", (x, y, 5.2), (0.42, 0.42, 0.5), "window")
-        box("lamp_cap", (x, y, 5.5), (0.56, 0.56, 0.08), "stone_dark")
-        box("lamp_foot", (x, y, 4.92), (0.5, 0.5, 0.06), "stone_dark")
+        for k in range(3):
+            a = k * math.tau / 3
+            timber("chain", (x, y, 7), (x + math.cos(a) * 0.75, y + math.sin(a) * 0.75, 5.25), 0.025, "stone_dark")
+        for k in range(10):
+            a0, a1 = k * math.tau / 10, (k + 1) * math.tau / 10
+            timber("wheel", (x + math.cos(a0) * 0.8, y + math.sin(a0) * 0.8, 5.2), (x + math.cos(a1) * 0.8, y + math.sin(a1) * 0.8, 5.2), 0.09, "wood_dark")
+        for k in range(6):
+            a = k * math.tau / 6 + 0.3
+            cx, cy = x + math.cos(a) * 0.8, y + math.sin(a) * 0.8
+            loft("candle", [(5.24, 0.04, 0.04), (5.44, 0.035, 0.035)], "paper", 6, (cx, cy, 0))
+            loft("flame", [(5.45, 0.02, 0.02), (5.5, 0.035, 0.035), (5.58, 0.0, 0.0)], "window", 6, (cx, cy, 0))
+        timber("hub", (x, y, 5.12), (x, y, 5.3), 0.14, "stone_dark")
 
 
 def trial_arena():
@@ -1570,7 +1660,12 @@ MODELS = {
     "ruin": ruin,
 }
 
+# Arguments after "--" pick models by name, so one change does not rebuild everything.
+import sys
+WANTED = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
 for model_name, build in MODELS.items():
+    if WANTED and model_name not in WANTED:
+        continue
     start_scene()
     build()
     export(model_name)

@@ -50,7 +50,7 @@ Rules:
 - Blender: `D:\Program\Blender Foundation\Blender 5.2\blender.exe -b --factory-startup -P <script>`.
 - Play: `powershell -ExecutionPolicy Bypass -File scripts/play.ps1` starts a local server and the client.
 - Live check: add `-Capture <folder>` to that command. A bot plays, saves frames and prints a `STATS` line.
-- `PIXEL_BOT` picks the bot: `guild` plays the Guild story through the real interface and prints `BOT` stages,
+- `PIXEL_BOT` picks the bot: `hunt` kills animals near the spawn, loots, eats and opens the bag; `guild` plays the Guild story through the real interface and prints `BOT` stages,
   with `PIXEL_TEST=1` making the examiner frail. Also `idle`, `talk`, `trial`, `keys`. `PIXEL_YAW` turns the camera.
 - `STATS` reports draws, objects and `frameMs` away from capture stalls. The open world runs at about
   18 ms a frame on the RTX 3050 laptop (the Guild at 7 ms); switching single features off barely changes

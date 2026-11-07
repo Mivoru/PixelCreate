@@ -647,6 +647,60 @@ public sealed class EnemyTests
     }
 
     [Fact]
+    public void Kills_DropLootThatReachesTheClientBag()
+    {
+        var (server, client, network) = Start();
+        Play(server, client, network, 60);
+        server.EnemiesFrozen = true;
+        for (var round = 0; round < 6; round++)
+        {
+            var enemy = server.Enemies.First(e => e.Alive);
+            enemy.Health = 1;
+            enemy.Position = server.GetPlayer(1)!.Value.Position + new Vector3(0, 0, -2);
+            Play(server, client, network, 40, Buttons.Light);
+        }
+
+        Play(server, client, network, 30);
+        Assert.True(server.Stats.ItemsDropped > 0, "Slimes drop gel most of the time.");
+        Assert.True(server.Stats.ItemsLooted > 0, "Loot near the player is picked up by walking over it.");
+        Assert.Equal(server.Stats.ItemsDropped, server.Stats.ItemsLooted + server.LootOnGround - server.CrystalsOnGround);
+        var gel = ItemDef.Index("slime_gel");
+        Assert.Contains(client.Latest!.Bag, e => e.Item == gel && e.Count == server.GetItem(1, "slime_gel"));
+    }
+
+    [Fact]
+    public void LootTables_NameRealItemsWithIcons()
+    {
+        var icons = Path.Combine(FindRoot(), "client", "assets", "ui", "icons");
+        foreach (var def in EnemyDef.All)
+        {
+            foreach (var entry in def.Loot ?? Array.Empty<LootEntry>())
+            {
+                var item = ItemDef.All[ItemDef.Index(entry.Item)];
+                Assert.InRange(entry.Chance, 0.0001, 1);
+                Assert.InRange(entry.Min, 1, entry.Max);
+                Assert.False(item.IsCrystal, $"{def.Id}: crystals drop through 'drops', not 'loot'.");
+            }
+        }
+
+        Assert.All(ItemDef.All, item => Assert.True(File.Exists(Path.Combine(icons, item.Icon + ".png")), $"No icon for {item.Id}"));
+        Assert.All(ItemDef.All.Where(i => i.IsFood), food => Assert.True(food.Heal > 0));
+        Assert.All(ItemDef.All.Where(i => i.IsEquipment), gear => Assert.NotEmpty(gear.Slot));
+        Assert.True(ItemCommands.EatBase + ItemDef.All.Count <= byte.MaxValue, "Eat commands must fit one byte.");
+    }
+
+    private static string FindRoot()
+    {
+        var folder = AppContext.BaseDirectory;
+        while (!File.Exists(Path.Combine(folder, "world", "items.json")))
+        {
+            folder = Path.GetDirectoryName(folder)!;
+        }
+
+        return folder;
+    }
+
+    [Fact]
     public void Crystals_HaveFourTiersAndGetHeavier()
     {
         Assert.Equal(new[] { "Common", "Rare", "Epic", "Legendary" }, Crystals.All.Select(c => c.Rarity.ToString()));
@@ -687,6 +741,7 @@ public sealed class GuildTests
             {
                 new Npc("mira", "Mira", "receptionist", new Vector3(0, 0, 1), 0),
                 new Npc("board", "Quest Board", "quest_board", new Vector3(1, 0, 0), 0),
+                new Npc("hollis", "Hollis", "appraiser", new Vector3(-1, 0, 0), 0),
             },
             Portals = new[] { new Portal(new Vector3(-1.5f, 0, 2.6f), new Vector3(50, 0, 50)) },
             TrialGround = new Vector3(0, 0, 40),
@@ -832,6 +887,65 @@ public sealed class GuildTests
         Run(server, client, network, 12, Command.SellCrystals);
         Assert.Equal(start + 2 * Guild.CrystalPrices[0] + Guild.CrystalPrices[1], server.GetGold(1));
         Assert.Equal(0, server.GetCrystals(1, CrystalRarity.Common));
+    }
+
+    [Fact]
+    public void Materials_SellToTheAppraiser_ButEquipmentStays()
+    {
+        var (server, client, network, _) = Start();
+        Promote(server, client, network);
+        WalkTo(server, client, network, Vector3.Zero);
+        var start = server.GetGold(1);
+        server.GiveItem(1, "slime_gel", 4);
+        server.GiveItem(1, "raw_beef", 1);
+        server.GiveItem(1, "rusty_dagger", 1);
+        Run(server, client, network, 12, Command.SellLoot);
+        var price = 4 * ItemDef.All[ItemDef.Index("slime_gel")].Price + ItemDef.All[ItemDef.Index("raw_beef")].Price;
+        Assert.Equal(start + price, server.GetGold(1));
+        Assert.Equal(0, server.GetItem(1, "slime_gel"));
+        Assert.Equal(1, server.GetItem(1, "rusty_dagger"));
+
+        // The client hears that the gel is gone, not only what is left.
+        Assert.Contains(client.Latest!.Bag, e => e.Item == ItemDef.Index("slime_gel") && e.Count == 0);
+    }
+
+    [Fact]
+    public void DeliveryJob_TakesTheItemsAndPays()
+    {
+        var (server, client, network, _) = Start();
+        Promote(server, client, network);
+        WalkTo(server, client, network, Vector3.Zero);
+        Run(server, client, network, 12, QuestCommands.Accept(3));
+        Assert.Equal(3, server.GetQuest(1));
+        server.GiveItem(1, "slime_gel", 4);
+        Run(server, client, network, 12, Command.TurnInQuest);
+        Assert.Equal(3, server.GetQuest(1));
+        Assert.Equal(4, server.GetQuestProgress(1));
+
+        var start = server.GetGold(1);
+        server.GiveItem(1, "slime_gel", 3);
+        Run(server, client, network, 12, Command.TurnInQuest);
+        Assert.Equal(0, server.GetQuest(1));
+        Assert.Equal(start + Guild.Quest(3)!.Gold, server.GetGold(1));
+        Assert.Equal(1, server.GetItem(1, "slime_gel"));
+    }
+
+    [Fact]
+    public void Eating_HealsAndUsesUpTheFood()
+    {
+        var (server, client, network, _) = Start();
+        server.GiveItem(1, "raw_beef", 2);
+        server.GiveItem(1, "rusty_dagger", 1);
+        var beef = ItemDef.Index("raw_beef");
+        server.HurtForTest(1, 50);
+        var hurt = server.GetPlayer(1)!.Value.Health;
+        Run(server, client, network, 12, ItemCommands.Eat(beef));
+        Assert.Equal(hurt + ItemDef.All[beef].Heal, server.GetPlayer(1)!.Value.Health);
+        Assert.Equal(1, server.GetItem(1, "raw_beef"));
+
+        // Equipment is not food.
+        Run(server, client, network, 12, ItemCommands.Eat(ItemDef.Index("rusty_dagger")));
+        Assert.Equal(1, server.GetItem(1, "rusty_dagger"));
     }
 
     private static void WalkTo(GameServer server, ClientPrediction client, SimNetwork network, Vector3 goal)
@@ -1139,7 +1253,8 @@ public sealed class MovementTests
             Others = new[] { new RemotePlayer(1, Vector3.One, Vector3.UnitX, 9, AttackKind.Heavy, 3) },
             Enemies = new[] { new EnemyView(4, 1, 3, Vector3.UnitZ, 1.5f, 30, 40, EnemyAction.Leap, 2, Vector3.UnitX, true) },
             Projectiles = new[] { new ProjectileView(7, ProjectileKind.Arrow, Vector3.UnitY) },
-            Drops = new[] { new CrystalView(8, CrystalRarity.Epic, Vector3.UnitX) },
+            Drops = new[] { new LootView(8, 2, Vector3.UnitX) },
+            Bag = new[] { new BagEntry(5, 3), new BagEntry(9, 0) },
         };
         Assert.True(Protocol.TryDecodeSnapshot(Protocol.EncodeSnapshot(snapshot), out var decoded));
         Assert.Equal(snapshot.Self, decoded.Self);
@@ -1147,5 +1262,6 @@ public sealed class MovementTests
         Assert.Equal(snapshot.Enemies, decoded.Enemies);
         Assert.Equal(snapshot.Projectiles, decoded.Projectiles);
         Assert.Equal(snapshot.Drops, decoded.Drops);
+        Assert.Equal(snapshot.Bag, decoded.Bag);
     }
 }

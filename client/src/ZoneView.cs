@@ -341,6 +341,9 @@ public static class ZoneView
         {
             root.AddChild(new OmniLight3D { Position = new Vector3(x, 5f, z), LightColor = new Color("ffcf8a"), LightEnergy = 2.4f, OmniRange = 13f });
         }
+
+        // A real fire burns in the guild hearth.
+        root.AddChild(BuildCampFlames(new Vector3(430.55f, 0.15f, 3f)));
     }
 
     /// <summary>Swaps the flat Blender materials for the textured prop shader.</summary>

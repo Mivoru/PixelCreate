@@ -19,7 +19,11 @@ public readonly record struct ProjectileView(int Id, ProjectileKind Kind, Vector
 
 public readonly record struct FireWallView(int Id, Vector3 Origin, float Yaw, float Length);
 
-public readonly record struct CrystalView(int Id, CrystalRarity Rarity, Vector3 Position);
+/// <summary>Something lying on the ground for one player: a crystal or another item from items.json.</summary>
+public readonly record struct LootView(int Id, ushort Item, Vector3 Position);
+
+/// <summary>How many of one item a player holds. A count of zero means the player no longer has it.</summary>
+public readonly record struct BagEntry(ushort Item, ushort Count);
 
 public sealed class Snapshot
 {
@@ -49,7 +53,13 @@ public sealed class Snapshot
     public RemotePlayer[] Others = Array.Empty<RemotePlayer>();
     public EnemyView[] Enemies = Array.Empty<EnemyView>();
     public ProjectileView[] Projectiles = Array.Empty<ProjectileView>();
-    public CrystalView[] Drops = Array.Empty<CrystalView>();
+    public LootView[] Drops = Array.Empty<LootView>();
+
+    /// <summary>
+    /// Part of the bag: changed items first, then a rotating slice of the rest, so the whole bag
+    /// reaches the client over a few snapshots without making any one of them big.
+    /// </summary>
+    public BagEntry[] Bag = Array.Empty<BagEntry>();
     public FireWallView[] FireWalls = Array.Empty<FireWallView>();
 }
 
@@ -175,11 +185,18 @@ public static class Protocol
         }
 
         writer.Write((byte)snapshot.Drops.Length);
-        foreach (var crystal in snapshot.Drops)
+        foreach (var drop in snapshot.Drops)
         {
-            writer.Write(crystal.Id);
-            writer.Write((byte)crystal.Rarity);
-            WriteVector(writer, crystal.Position);
+            writer.Write(drop.Id);
+            writer.Write(drop.Item);
+            WriteVector(writer, drop.Position);
+        }
+
+        writer.Write((byte)snapshot.Bag.Length);
+        foreach (var entry in snapshot.Bag)
+        {
+            writer.Write(entry.Item);
+            writer.Write(entry.Count);
         }
 
         writer.Write((byte)snapshot.FireWalls.Length);
@@ -254,10 +271,16 @@ public static class Protocol
             snapshot.Projectiles[i] = new ProjectileView(reader.ReadInt32(), (ProjectileKind)reader.ReadByte(), ReadVector(reader));
         }
 
-        snapshot.Drops = new CrystalView[reader.ReadByte()];
+        snapshot.Drops = new LootView[reader.ReadByte()];
         for (var i = 0; i < snapshot.Drops.Length; i++)
         {
-            snapshot.Drops[i] = new CrystalView(reader.ReadInt32(), (CrystalRarity)reader.ReadByte(), ReadVector(reader));
+            snapshot.Drops[i] = new LootView(reader.ReadInt32(), reader.ReadUInt16(), ReadVector(reader));
+        }
+
+        snapshot.Bag = new BagEntry[reader.ReadByte()];
+        for (var i = 0; i < snapshot.Bag.Length; i++)
+        {
+            snapshot.Bag[i] = new BagEntry(reader.ReadUInt16(), reader.ReadUInt16());
         }
 
         snapshot.FireWalls = new FireWallView[reader.ReadByte()];

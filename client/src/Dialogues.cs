@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Godot;
 using PixelCreate.Core;
 
@@ -111,6 +112,25 @@ public static class NpcLooks
         },
     };
 
+    private static readonly RigLook Appraiser = new("appraiser", new Color("e0b494"), 1.02f, "none")
+    {
+        Hair = "short",
+        Cloak = false,
+        Stoop = 0.08f,
+        Rest = "behind",
+        Extras = new[] { "apron", "beard" },
+        Eyes = new Color("5a4a3a"),
+        Brows = new Color("8a8a90"),
+        Palette = new Dictionary<string, Color>
+        {
+            ["anime_hair"] = new("8a8a90"),
+            ["anime_shirt"] = new("6a4a3a"),
+            ["anime_cloak"] = new("3a2a24"),
+            ["anime_trousers"] = new("3a3440"),
+            ["anime_vest"] = new("c8b48c"),
+        },
+    };
+
     private static readonly RigLook Guard = new("guard", new Color("e8c0a4"), 1.04f, "sword")
     {
         Hair = "short",
@@ -206,7 +226,7 @@ public static class NpcLooks
     public static readonly (string Name, RigLook Look)[] All =
     {
         ("rhea", Examiner), ("mira", Receptionist), ("bram", Villager), ("tess", VillagerB), ("lina", Merchant),
-        ("garrick", Guard), ("elda", Baker), ("pip", Farmer), ("sora", Mage), ("kai", Swordsman),
+        ("garrick", Guard), ("hollis", Appraiser), ("elda", Baker), ("pip", Farmer), ("sora", Mage), ("kai", Swordsman),
     };
 
     public static RigLook? For(string role) => role switch
@@ -216,6 +236,7 @@ public static class NpcLooks
         "villager_b" => VillagerB,
         "merchant" => Merchant,
         "guard" => Guard,
+        "appraiser" => Appraiser,
         "baker" => Baker,
         "farmer" => Farmer,
         "adventurer_a" => Mage,
@@ -227,9 +248,24 @@ public static class NpcLooks
 /// <summary>What people say, which depends on how far the player has come.</summary>
 public static class Dialogues
 {
+    /// <summary>The line under a speaker's name.</summary>
+    public static string Title(string role) => role switch
+    {
+        "receptionist" => "Guild Receptionist",
+        "appraiser" => "Guild Appraiser",
+        "quest_board" => "Jobs and Bounties",
+        "merchant" => "Merchant",
+        "guard" => "Village Guard",
+        "baker" => "Baker",
+        "farmer" => "Farmer",
+        "adventurer_a" or "adventurer_b" => "Adventurer",
+        _ => "Villager",
+    };
+
     public static void Open(Hud hud, Npc npc, Snapshot? snapshot)
     {
         var rank = snapshot?.Rank ?? GuildRank.Newcomer;
+        hud.DialogRole = Title(npc.Role);
         switch (npc.Role)
         {
             case "receptionist":
@@ -238,17 +274,20 @@ public static class Dialogues
             case "quest_board":
                 Board(hud, npc, snapshot, rank);
                 break;
+            case "appraiser":
+                Appraiser(hud, npc, rank);
+                break;
             case "villager":
                 hud.ShowDialog(npc.Name, "You have a strange look, stranger. Lost? The Guild in the west takes in folk like you.", ("Goodbye", Command.None));
                 break;
             case "merchant":
-                hud.ShowDialog(npc.Name, "Fresh from the mill and the orchard! Once you carry some gold, come back and we will talk prices.", ("Goodbye", Command.None));
+                hud.ShowDialog(npc.Name, "Fresh from the mill and the orchard! Hides and horns? Take those to Hollis at the Guild, he pays fair.", ("Goodbye", Command.None));
                 break;
             case "guard":
                 hud.ShowDialog(npc.Name, "The south road leads to Goblin Hollow. Do not go there before the Guild gives you its badge.", ("Understood", Command.None));
                 break;
             case "baker":
-                hud.ShowDialog(npc.Name, "Another one who fell from the sky? You are the third this year. Eat something first, the Guild can wait a moment.", ("Thank you", Command.None));
+                hud.ShowDialog(npc.Name, "Another one who fell from the sky? You are the third this year. If you are hurt, eat something: a good steak mends more than any potion.", ("Thank you", Command.None));
                 break;
             case "farmer":
                 hud.ShowDialog(npc.Name, "Boars dig up the jungle edge again. And the cows are scared of anyone who runs at them, so walk slowly, please.", ("Goodbye", Command.None));
@@ -282,13 +321,34 @@ public static class Dialogues
 
         if (snapshot is not null && Guild.Quest(snapshot.QuestId) is { } quest && snapshot.QuestProgress >= quest.Count)
         {
-            hud.ShowDialog(npc.Name, $"Well done! Here is your pay for {quest.Name}: {quest.Gold} gold.",
+            var line = quest.IsDelivery ? $"You brought everything for {quest.Name}! Here is your pay: {quest.Gold} gold."
+                : $"Well done! Here is your pay for {quest.Name}: {quest.Gold} gold.";
+            hud.ShowDialog(npc.Name, line,
                 ("Hand in the job", Command.TurnInQuest), ($"Sell all crystals ({worth} gold)", Command.SellCrystals), ("Goodbye", Command.None));
             return;
         }
 
-        hud.ShowDialog(npc.Name, "Good to see you. The Guild buys every magic crystal you bring.",
+        hud.ShowDialog(npc.Name, "Good to see you. The Guild buys every magic crystal you bring. Hides, teeth and the like go to Hollis at the side counter.",
             ($"Sell all crystals ({worth} gold)", Command.SellCrystals), ("Goodbye", Command.None));
+    }
+
+    private static void Appraiser(Hud hud, Npc npc, GuildRank rank)
+    {
+        if (rank != GuildRank.Adventurer)
+        {
+            hud.ShowDialog(npc.Name, "I only trade with registered adventurers. Pass Rhea's trial first, then bring me what you hunt.", ("Goodbye", Command.None));
+            return;
+        }
+
+        var worth = hud.Items.SaleValue();
+        if (worth == 0)
+        {
+            hud.ShowDialog(npc.Name, "Nothing to sell? Bring me gel, teeth, hides, horns, meat. I pay for all of it. Gear you find, you keep.", ("Goodbye", Command.None));
+            return;
+        }
+
+        hud.ShowDialog(npc.Name, "Let me have a look... good, good. I will take the materials and the meat. Your gear stays with you.",
+            ($"Sell materials and food ({worth} gold)", Command.SellLoot), ("Keep everything", Command.None));
     }
 
     private static void Board(Hud hud, Npc npc, Snapshot? snapshot, GuildRank rank)
@@ -305,11 +365,9 @@ public static class Dialogues
             return;
         }
 
-        var slime = Guild.Quests[0];
-        var goblin = Guild.Quests[1];
-        hud.ShowDialog(npc.Name, "Notices flutter on the board.",
-            ($"{slime.Name}: kill {slime.Count} slimes ({slime.Gold} gold)", Command.AcceptSlimeQuest),
-            ($"{goblin.Name}: kill {goblin.Count} goblins ({goblin.Gold} gold)", Command.AcceptGoblinQuest),
-            ("Leave", Command.None));
+        var options = Guild.Quests
+            .Select(q => ($"{q.Name}: {q.Brief} ({q.Gold} gold)", q.Id switch { 1 => Command.AcceptSlimeQuest, 2 => Command.AcceptGoblinQuest, _ => QuestCommands.Accept(q.Id) }))
+            .Append(("Leave", Command.None)).ToArray();
+        hud.ShowDialog(npc.Name, "Notices flutter on the board. Some ask for heads, some only for what the beasts leave behind.", options);
     }
 }

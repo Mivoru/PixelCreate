@@ -341,8 +341,15 @@ public partial class Studio : Node
 
         var text = FileAccess.GetFileAsString("res://studio/shots.json");
         var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        // PIXEL_SHOTS=guild,arena films only the shots whose names start with one of those words.
+        var only = (System.Environment.GetEnvironmentVariable("PIXEL_SHOTS") ?? "").Split(',', System.StringSplitOptions.RemoveEmptyEntries);
         foreach (var shot in JsonSerializer.Deserialize<ShotData[]>(text, options)!)
         {
+            if (only.Length > 0 && !only.Any(prefix => shot.Name.StartsWith(prefix, System.StringComparison.Ordinal)))
+            {
+                continue;
+            }
+
             var eye = new Vector3(shot.Eye[0], zone.World.GroundHeight(shot.Eye[0], shot.Eye[2]) + shot.Eye[1], shot.Eye[2]);
             var at = new Vector3(shot.At[0], zone.World.GroundHeight(shot.At[0], shot.At[2]) + shot.At[1], shot.At[2]);
             _stage.Camera.LookAtFromPosition(eye, at);

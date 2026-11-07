@@ -33,6 +33,10 @@ public sealed class ServerStats
     public long LevelUps;
     public long CrystalsDropped;
     public long CrystalsLooted;
+    public long ItemsDropped;
+    public long ItemsLooted;
+    public long ItemsSold;
+    public long MealsEaten;
 }
 
 public enum ProjectileKind : byte
@@ -102,7 +106,9 @@ public sealed class GameServer : IEnemyEvents
     /// <summary>Animals are less urgent than enemies, so they count as this much further away.</summary>
     private const float AnimalInterestPenalty = 20f;
     private const int MaxProjectilesPerSnapshot = 16;
-    private const int MaxDropsPerSnapshot = 6;
+    private const int MaxDropsPerSnapshot = 8;
+    private const int BagEntriesPerSnapshot = 6;
+    private const int MaxStack = 999;
 
     private sealed class Player
     {
@@ -124,6 +130,11 @@ public sealed class GameServer : IEnemyEvents
         public int Gold;
         public byte QuestId;
         public byte QuestProgress;
+
+        /// <summary>Items held, by index. An item stays listed at zero so the client hears that it is gone.</summary>
+        public readonly SortedDictionary<ushort, int> Bag = new();
+        public readonly HashSet<ushort> BagChanged = new();
+        public int BagCursor;
     }
 
     private sealed class Projectile
@@ -140,10 +151,11 @@ public sealed class GameServer : IEnemyEvents
         public int Life = ProjectileLifeTicks;
     }
 
-    private sealed class Crystal
+    /// <summary>A crystal or item on the ground. Only the player who earned it sees it and can pick it up.</summary>
+    private sealed class Loot
     {
         public required int Id;
-        public required CrystalRarity Rarity;
+        public required ushort Item;
         public required int Owner;
         public Vector3 Position;
         public int Life = CrystalLifeTicks;
@@ -156,7 +168,7 @@ public sealed class GameServer : IEnemyEvents
     private readonly Dictionary<int, Player> _players = new();
     private readonly List<Enemy> _enemies = new();
     private readonly List<Projectile> _projectiles = new();
-    private readonly List<Crystal> _crystals = new();
+    private readonly List<Loot> _loot = new();
     private readonly List<FireWallHazard> _walls = new();
     private readonly List<Enemy> _finishedTrials = new();
     private int _nextEnemyId;
@@ -203,7 +215,7 @@ public sealed class GameServer : IEnemyEvents
 
     public byte GetQuest(int id) => _players[id].QuestId;
 
-    public int GetQuestProgress(int id) => _players[id].QuestProgress;
+    public int GetQuestProgress(int id) => QuestProgress(_players[id]);
 
     /// <summary>For tests: gives a player crystals as if looted.</summary>
     public void GiveCrystals(int id, CrystalRarity rarity, int count) => _players[id].Crystals[(int)rarity] += count;
@@ -212,7 +224,24 @@ public sealed class GameServer : IEnemyEvents
 
     public int FireWallCount => _walls.Count;
 
-    public int CrystalsOnGround => _crystals.Count;
+    public int CrystalsOnGround => _loot.Count(l => ItemDef.All[l.Item].IsCrystal);
+
+    public int LootOnGround => _loot.Count;
+
+    /// <summary>For tests: wounds a player without an enemy.</summary>
+    public void HurtForTest(int id, short damage) => _players[id].State.Health -= damage;
+
+    /// <summary>How many of an item a player holds.</summary>
+    public int GetItem(int id, string item) => _players[id].Bag.GetValueOrDefault(ItemDef.Index(item));
+
+    /// <summary>For tests: gives a player items as if looted.</summary>
+    public void GiveItem(int id, string item, int count) => AddItem(_players[id], ItemDef.Index(item), count);
+
+    private static void AddItem(Player player, ushort item, int count)
+    {
+        player.Bag[item] = Math.Clamp(player.Bag.GetValueOrDefault(item) + count, 0, MaxStack);
+        player.BagChanged.Add(item);
+    }
 
     /// <summary>Gives a player experience and raises the level as often as it allows.</summary>
     public void AwardXp(int id, int amount)
@@ -244,7 +273,7 @@ public sealed class GameServer : IEnemyEvents
             StepPlayer(player);
         }
 
-        StepCrystals();
+        StepLoot();
         foreach (var finished in _finishedTrials)
         {
             _enemies.Remove(finished);
@@ -419,7 +448,32 @@ public sealed class GameServer : IEnemyEvents
                 player.QuestId = 2;
                 player.QuestProgress = 0;
                 break;
-            case Command.TurnInQuest when Guild.Quest(player.QuestId) is { } quest && player.QuestProgress >= quest.Count && Near(player, "receptionist"):
+            case var take when QuestCommands.TryAccept(take, out var job) && player.Rank == GuildRank.Adventurer &&
+                               player.QuestId == 0 && Near(player, "quest_board"):
+                player.QuestId = job;
+                player.QuestProgress = 0;
+                break;
+            case Command.SellLoot when player.Rank == GuildRank.Adventurer && Near(player, "appraiser"):
+                foreach (var (item, count) in player.Bag.Where(p => p.Value > 0 && ItemDef.All[p.Key].Sellable).ToList())
+                {
+                    player.Gold += count * ItemDef.All[item].Price;
+                    Stats.ItemsSold += count;
+                    AddItem(player, item, -count);
+                }
+
+                break;
+            case var eat when ItemCommands.TryEat(eat, out var food) && ItemDef.All[food].IsFood &&
+                              player.Bag.GetValueOrDefault(food) > 0 && player.State.Health > 0:
+                AddItem(player, food, -1);
+                player.State.Health = (short)Math.Min(player.State.Health + ItemDef.All[food].Heal, Progression.MaxHealth(player.Level));
+                Stats.MealsEaten++;
+                break;
+            case Command.TurnInQuest when Guild.Quest(player.QuestId) is { } quest && QuestProgress(player) >= quest.Count && Near(player, "receptionist"):
+                if (quest.IsDelivery)
+                {
+                    AddItem(player, ItemDef.Index(quest.Item), -quest.Count);
+                }
+
                 player.Gold += quest.Gold;
                 player.QuestId = 0;
                 player.QuestProgress = 0;
@@ -427,6 +481,11 @@ public sealed class GameServer : IEnemyEvents
                 break;
         }
     }
+
+    /// <summary>Kills counted so far, or for a delivery the items in the bag, up to what the job asks.</summary>
+    private static int QuestProgress(Player player) => Guild.Quest(player.QuestId) is { IsDelivery: true } quest
+        ? Math.Min(player.Bag.GetValueOrDefault(ItemDef.Index(quest.Item)), quest.Count)
+        : player.QuestProgress;
 
     private bool Near(Player player, string role) => _world.Npcs.Any(n => n.Role == role &&
         Vector3.Distance(n.Position with { Y = 0 }, player.State.Position with { Y = 0 }) < Guild.TalkRange + 1f);
@@ -539,34 +598,89 @@ public sealed class GameServer : IEnemyEvents
         AwardXp(winner.Id, Progression.KillXp(enemy.Level, winner.Level, enemy.Def.Rare));
         foreach (var drop in enemy.Def.Drops ?? Array.Empty<DropEntry>())
         {
-            if (_random.NextDouble() >= drop.Chance)
+            if (_random.NextDouble() < drop.Chance)
+            {
+                Drop(enemy, winner, ItemDef.CrystalIndex(drop.Rarity));
+                Stats.CrystalsDropped++;
+            }
+        }
+
+        foreach (var entry in enemy.Def.Loot ?? Array.Empty<LootEntry>())
+        {
+            if (_random.NextDouble() >= entry.Chance)
             {
                 continue;
             }
 
-            var angle = (float)(_random.NextDouble() * Math.Tau);
-            var spot = enemy.Position + new Vector3(MathF.Cos(angle) * 0.8f, 0, MathF.Sin(angle) * 0.8f);
-            spot.Y = _world.GroundHeight(spot.X, spot.Z);
-            _crystals.Add(new Crystal { Id = _nextId++, Rarity = drop.Rarity, Owner = winner.Id, Position = spot });
-            Stats.CrystalsDropped++;
+            var item = ItemDef.Index(entry.Item);
+            var count = _random.Next(entry.Min, entry.Max + 1);
+            for (var i = 0; i < count; i++)
+            {
+                Drop(enemy, winner, item);
+                Stats.ItemsDropped++;
+            }
         }
     }
 
-    private void StepCrystals()
+    private void Drop(Enemy enemy, Player owner, ushort item)
     {
-        foreach (var crystal in _crystals)
+        var angle = (float)(_random.NextDouble() * Math.Tau);
+        var reach = 0.5f + (float)_random.NextDouble() * 0.6f;
+        var spot = enemy.Position + new Vector3(MathF.Cos(angle) * reach, 0, MathF.Sin(angle) * reach);
+        spot.Y = _world.GroundHeight(spot.X, spot.Z);
+        _loot.Add(new Loot { Id = _nextId++, Item = item, Owner = owner.Id, Position = spot });
+    }
+
+    private void StepLoot()
+    {
+        foreach (var loot in _loot)
         {
-            crystal.Life--;
-            if (_players.TryGetValue(crystal.Owner, out var owner) &&
-                Vector3.Distance(owner.State.Position, crystal.Position) < LootRadius)
+            loot.Life--;
+            if (!_players.TryGetValue(loot.Owner, out var owner) ||
+                Vector3.Distance(owner.State.Position, loot.Position) >= LootRadius)
             {
-                owner.Crystals[(int)crystal.Rarity]++;
-                crystal.Life = 0;
+                continue;
+            }
+
+            var def = ItemDef.All[loot.Item];
+            if (def.IsCrystal)
+            {
+                owner.Crystals[def.Crystal]++;
                 Stats.CrystalsLooted++;
+            }
+            else
+            {
+                AddItem(owner, loot.Item, 1);
+                Stats.ItemsLooted++;
+            }
+
+            loot.Life = 0;
+        }
+
+        _loot.RemoveAll(l => l.Life <= 0);
+    }
+
+    /// <summary>Changed items first, then a slice of the rest that moves on with every snapshot.</summary>
+    private static BagEntry[] BagSlice(Player player)
+    {
+        var entries = new List<BagEntry>(BagEntriesPerSnapshot);
+        foreach (var item in player.BagChanged.Take(BagEntriesPerSnapshot).ToList())
+        {
+            entries.Add(new BagEntry(item, (ushort)player.Bag[item]));
+            player.BagChanged.Remove(item);
+        }
+
+        var keys = player.Bag.Keys.ToList();
+        for (var i = 0; i < keys.Count && entries.Count < BagEntriesPerSnapshot; i++)
+        {
+            var item = keys[player.BagCursor++ % keys.Count];
+            if (entries.All(e => e.Item != item))
+            {
+                entries.Add(new BagEntry(item, (ushort)player.Bag[item]));
             }
         }
 
-        _crystals.RemoveAll(c => c.Life <= 0);
+        return entries.ToArray();
     }
 
     void IEnemyEvents.CallForHelp(Enemy enemy, int targetId) => CallForHelp(enemy, targetId);
@@ -800,9 +914,9 @@ public sealed class GameServer : IEnemyEvents
             var shots = _projectiles
                 .OrderBy(s => Vector3.Distance(s.Position, origin)).Take(MaxProjectilesPerSnapshot)
                 .Select(s => new ProjectileView(s.Id, s.Kind, s.Position)).ToArray();
-            var crystals = _crystals.Where(c => c.Owner == player.Id)
-                .OrderBy(c => Vector3.Distance(c.Position, origin)).Take(MaxDropsPerSnapshot)
-                .Select(c => new CrystalView(c.Id, c.Rarity, c.Position)).ToArray();
+            var drops = _loot.Where(l => l.Owner == player.Id)
+                .OrderBy(l => Vector3.Distance(l.Position, origin)).Take(MaxDropsPerSnapshot)
+                .Select(l => new LootView(l.Id, l.Item, l.Position)).ToArray();
             var snapshot = new Snapshot
             {
                 ServerTick = Tick,
@@ -818,13 +932,14 @@ public sealed class GameServer : IEnemyEvents
                 Rank = player.Rank,
                 Gold = player.Gold,
                 QuestId = player.QuestId,
-                QuestProgress = player.QuestProgress,
+                QuestProgress = (byte)QuestProgress(player),
                 Crystals = player.Crystals.ToArray(),
                 Others = _players.Values.Where(p => p.Id != player.Id).Take(6)
                     .Select(p => new RemotePlayer(p.Id, p.State.Position, p.State.Velocity, p.State.AttackAim, p.State.Attack, p.State.AttackTick)).ToArray(),
                 Enemies = enemies,
                 Projectiles = shots,
-                Drops = crystals,
+                Drops = drops,
+                Bag = BagSlice(player),
                 FireWalls = _walls.Where(w => Vector3.Distance(w.Origin, origin) < InterestRange).Take(2)
                     .Select(w => new FireWallView(w.Id, w.Origin, MathF.Atan2(-w.Direction.X, -w.Direction.Z), w.Length)).ToArray(),
             };

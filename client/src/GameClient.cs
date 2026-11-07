@@ -21,6 +21,7 @@ public partial class GameClient : Node
     private const float CameraStep = 0.25f;
     private const float CameraClearance = 0.4f;
     private const int BotDialogTicks = 70;
+    private const int HuntTicks = 1400;
     private const int MaxTicksPerFrame = 6;
     private const float FigureRange = 60f;
     private const float GuildInteriorX = 400f;
@@ -39,6 +40,7 @@ public partial class GameClient : Node
     private readonly Dictionary<int, ProjectileKind> _spitKinds = new();
     private readonly Dictionary<int, Node3D> _crystals = new();
     private readonly int[] _lastCrystals = new int[Crystals.Tiers];
+    private Snapshot? _lastSnapshot;
     private readonly Dictionary<int, FireWallNode> _walls = new();
     private Zone _zone = null!;
     private string _region = "";
@@ -131,7 +133,7 @@ public partial class GameClient : Node
 
     public override void _Input(InputEvent @event)
     {
-        if (@event is InputEventMouseMotion motion && !_hud.InventoryOpen)
+        if (@event is InputEventMouseMotion motion && !_hud.InventoryOpen && !_hud.DialogOpen)
         {
             _yaw -= motion.Relative.X * MouseSensitivity;
             _pitch = Mathf.Clamp(_pitch - motion.Relative.Y * MouseSensitivity, MinPitch, MaxPitch);
@@ -152,7 +154,7 @@ public partial class GameClient : Node
             {
                 Interact();
             }
-            else if (_hud.DialogOpen && key.Keycode >= Key.Key1 && key.Keycode <= Key.Key4)
+            else if (_hud.DialogOpen && key.Keycode >= Key.Key1 && key.Keycode <= Key.Key9)
             {
                 var choice = _hud.Choose((int)(key.Keycode - Key.Key1));
                 if (choice != Command.None)
@@ -201,6 +203,11 @@ public partial class GameClient : Node
             _clock -= tickLength;
             var (x, z, buttons) = _captureDir is null ? ReadInput() : BotInput();
             _shownBefore = _shownNow;
+            if (_pendingCommand == Command.None)
+            {
+                _pendingCommand = _hud.TakeCommand();
+            }
+
             _client.Step(x, z, buttons, AimByte(), _pendingCommand);
             _pendingCommand = Command.None;
             _shownNow = ToGodot(_client.ShownPosition);
@@ -381,6 +388,12 @@ public partial class GameClient : Node
             _sfx.Play("hurt", chest);
             _hud.AddFloating($"-{_last.Health - now.Health}", chest + Vector3.Up, new Color("e43b44"));
         }
+        else if (now.Health > _last.Health + 3 && _last.Health > 0)
+        {
+            // Regeneration adds one point at a time; a bigger jump is a meal.
+            _hud.AddFloating($"+{now.Health - _last.Health}", chest + Vector3.Up, new Color("63c74d"));
+            _fx.Burst(chest, new Color("63c74d"), 10, 2f, 0.5f, 0.06f, 1f);
+        }
 
         _last = now;
         if (_client.Latest is not { } snapshot)
@@ -419,13 +432,29 @@ public partial class GameClient : Node
         _rareSeen = rareAlive;
         for (var i = 0; i < Crystals.Tiers; i++)
         {
-            if (snapshot.Crystals[i] > _lastCrystals[i])
+            if (snapshot.Crystals[i] > _lastCrystals[i] && _lastSnapshot is not null)
             {
                 _sfx.Play("crystal", chest);
-                _hud.AddFloating($"+{Crystals.All[i].Name}", chest + Vector3.Up * 1.7f, new Color(Crystals.All[i].Color));
+                _hud.AddLoot(Inventory.Def(i), snapshot.Crystals[i] - _lastCrystals[i]);
             }
 
             _lastCrystals[i] = snapshot.Crystals[i];
+        }
+
+        // Each snapshot carries part of the bag; new items join the bag and are announced.
+        if (!ReferenceEquals(snapshot, _lastSnapshot))
+        {
+            var first = _lastSnapshot is null;
+            foreach (var (item, gained) in _hud.Items.Apply(snapshot.Bag))
+            {
+                if (!first)
+                {
+                    _hud.AddLoot(item, gained);
+                    _sfx.Play("crystal", chest, -8f);
+                }
+            }
+
+            _lastSnapshot = snapshot;
         }
 
         var region = _zone.RegionAt(shown.X, shown.Z);
@@ -462,6 +491,11 @@ public partial class GameClient : Node
         if (mode == "guild")
         {
             return GuildBot();
+        }
+
+        if (mode == "hunt")
+        {
+            return HuntBot();
         }
 
         if (mode is "talk" or "trial" && _client.Tick == 60)
@@ -558,6 +592,61 @@ public partial class GameClient : Node
         return snapshot.Crystals.Sum() > 0
             ? BotConverse("sell crystals", new Vector3(mira.X, 0, mira.Z + 2.6f), Command.SellCrystals)
             : BotDone();
+    }
+
+    /// <summary>
+    /// Hunts whatever lives nearby, walks over the loot, eats once, then opens the bag and points at
+    /// the first slot so the capture shows the inventory and a tooltip. Start it near a camp.
+    /// </summary>
+    private (sbyte X, sbyte Z, Buttons Buttons) HuntBot()
+    {
+        var snapshot = _client.Latest;
+        if (snapshot is null || _client.Tick < 60)
+        {
+            return (0, 0, Buttons.None);
+        }
+
+        var position = ToGodot(_client.State.Position);
+        if (_client.Tick > HuntTicks)
+        {
+            BotStage("show the bag");
+            if (!_hud.InventoryOpen)
+            {
+                _hud.ToggleInventory();
+            }
+
+            if (_hud.SlotCentre("bag", 0) is { } slot)
+            {
+                GetViewport().WarpMouse(slot);
+            }
+
+            return (0, 0, Buttons.None);
+        }
+
+        if (_hud.Items.Counts.FirstOrDefault(p => p.Value > 0 && ItemDef.All[p.Key].IsFood) is { Value: > 0 } food &&
+            _client.State.Health < snapshot.MaxHealth && _botWait++ % 120 == 0)
+        {
+            _pendingCommand = ItemCommands.Eat((ushort)food.Key);
+        }
+
+        if (snapshot.Drops.Length > 0)
+        {
+            BotStage("pick up loot");
+            var drop = snapshot.Drops.OrderBy(d => ToGodot(d.Position).DistanceTo(position)).First();
+            return BotWalk(ToGodot(drop.Position), 0.3f, Buttons.None);
+        }
+
+        var prey = snapshot.Enemies.Where(e => e.Action != EnemyAction.Dead)
+            .OrderBy(e => ToGodot(e.Position).DistanceTo(position)).Cast<EnemyView?>().FirstOrDefault();
+        if (prey is not { } target)
+        {
+            BotStage("look for prey");
+            return ToMove(0, 1, Buttons.None);
+        }
+
+        BotStage($"hunt {EnemyDef.All[target.Type].Id}");
+        var at = ToGodot(target.Position);
+        return BotWalk(at, 1.5f, at.DistanceTo(position) < 2.2f && _client.Tick % 18 == 0 ? Buttons.Light : Buttons.None);
     }
 
     private (sbyte X, sbyte Z, Buttons Buttons) BotDone()
@@ -835,23 +924,73 @@ public partial class GameClient : Node
         }
     }
 
-    private Node3D BuildCrystal(in CrystalView drop)
+    /// <summary>
+    /// A crystal is a spinning gem. Any other item floats as its own pixel icon, always facing the
+    /// camera, over a small glowing ring in its tier colour; good finds also throw a beam of light.
+    /// </summary>
+    private Node3D BuildCrystal(in LootView drop)
     {
-        var color = new Color(Crystals.All[(int)drop.Rarity].Color);
+        var def = ItemDef.All[drop.Item];
+        if (!def.IsCrystal)
+        {
+            return BuildItemDrop(def);
+        }
+
+        var rarity = def.Crystal;
+        var color = new Color(Crystals.All[rarity].Color);
         var root = new Node3D();
-        var size = 0.26f + (int)drop.Rarity * 0.06f;
+        var size = 0.26f + rarity * 0.06f;
         var material = new StandardMaterial3D { AlbedoColor = color, EmissionEnabled = true, Emission = color, EmissionEnergyMultiplier = 0.4f, Roughness = 0.2f };
         var top = new MeshInstance3D { Mesh = new CylinderMesh { TopRadius = 0f, BottomRadius = size, Height = size * 1.6f, RadialSegments = 5 }, MaterialOverride = material, Position = new Vector3(0, size * 0.8f, 0) };
         var bottom = new MeshInstance3D { Mesh = new CylinderMesh { TopRadius = size, BottomRadius = 0f, Height = size * 1.1f, RadialSegments = 5 }, MaterialOverride = material, Position = new Vector3(0, -size * 0.55f, 0) };
         root.AddChild(top);
         root.AddChild(bottom);
-        if (drop.Rarity != CrystalRarity.Common)
+        if (rarity != (int)CrystalRarity.Common)
         {
             root.AddChild(new MeshInstance3D
             {
                 Mesh = new CylinderMesh { TopRadius = 0.05f, BottomRadius = 0.32f, Height = 6f, RadialSegments = 8 },
                 MaterialOverride = _fx.Stipple(color, 0.3f),
                 Position = new Vector3(0, 3f, 0),
+            });
+        }
+
+        return root;
+    }
+
+    private static readonly Color[] TierGlow = { new("e8eef6"), new("58b4ff"), new("d77be0"), new("feae34") };
+
+    private Node3D BuildItemDrop(ItemDef def)
+    {
+        var root = new Node3D();
+        var color = TierGlow[Math.Clamp(def.Tier, 0, 3)];
+        root.AddChild(new Sprite3D
+        {
+            Texture = GD.Load<Texture2D>($"res://assets/ui/icons/{def.Icon}.png"),
+            PixelSize = 0.032f,
+            Billboard = BaseMaterial3D.BillboardModeEnum.Enabled,
+            TextureFilter = BaseMaterial3D.TextureFilterEnum.Nearest,
+            AlphaCut = SpriteBase3D.AlphaCutMode.Discard,
+            Shaded = false,
+        });
+        var ring = new MeshInstance3D
+        {
+            Mesh = new TorusMesh { InnerRadius = 0.26f, OuterRadius = 0.32f, Rings = 18, RingSegments = 4 },
+            MaterialOverride = new StandardMaterial3D
+            {
+                AlbedoColor = color, EmissionEnabled = true, Emission = color, EmissionEnergyMultiplier = 0.8f,
+                ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
+            },
+            Position = new Vector3(0, -0.5f, 0),
+        };
+        root.AddChild(ring);
+        if (def.Tier > 0 || def.IsEquipment)
+        {
+            root.AddChild(new MeshInstance3D
+            {
+                Mesh = new CylinderMesh { TopRadius = 0.04f, BottomRadius = 0.26f, Height = 4f + def.Tier, RadialSegments = 8 },
+                MaterialOverride = _fx.Stipple(color, 0.25f),
+                Position = new Vector3(0, (4f + def.Tier) / 2f - 0.5f, 0),
             });
         }
 

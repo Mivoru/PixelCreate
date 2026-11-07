@@ -12,6 +12,7 @@ public enum Command : byte
     AcceptSlimeQuest = 4,
     AcceptGoblinQuest = 5,
     TurnInQuest = 6,
+    SellLoot = 7,
 }
 
 /// <summary>A newcomer must beat the guild examiner to become an adventurer.</summary>
@@ -22,11 +23,32 @@ public enum GuildRank : byte
     Adventurer = 2,
 }
 
-/// <param name="Target">The enemy id to kill, or a kind prefix ending in * such as goblin_*.</param>
-public sealed record QuestDef(byte Id, string Name, string Target, int Count, int Gold, int Xp)
+/// <param name="Target">
+/// The enemy id to kill, a kind prefix ending in * such as goblin_*, or item:id for a job that asks
+/// the player to bring items, which the receptionist takes at the end.
+/// </param>
+public sealed record QuestDef(byte Id, string Name, string Target, int Count, int Gold, int Xp, string Brief)
 {
     public bool Matches(string enemyId) =>
-        Target.EndsWith('*') ? enemyId.StartsWith(Target[..^1], StringComparison.Ordinal) : enemyId == Target;
+        !IsDelivery && (Target.EndsWith('*') ? enemyId.StartsWith(Target[..^1], StringComparison.Ordinal) : enemyId == Target);
+
+    public bool IsDelivery => Target.StartsWith("item:", StringComparison.Ordinal);
+
+    public string Item => IsDelivery ? Target[5..] : "";
+}
+
+/// <summary>Taking a job: commands from <see cref="AcceptBase"/> up name the quest by its id.</summary>
+public static class QuestCommands
+{
+    public const int AcceptBase = 32;
+
+    public static Command Accept(byte quest) => (Command)(AcceptBase + quest);
+
+    public static bool TryAccept(Command command, out byte quest)
+    {
+        quest = (byte)Math.Max(0, (int)command - AcceptBase);
+        return (int)command > AcceptBase && (int)command < ItemCommands.EatBase && Guild.Quest(quest) is not null;
+    }
 }
 
 public static class Guild
@@ -39,8 +61,11 @@ public static class Guild
 
     public static readonly QuestDef[] Quests =
     {
-        new(1, "Clear the Slimes", "slime", 5, 40, 60),
-        new(2, "Goblin Bounty", "goblin_*", 3, 120, 180),
+        new(1, "Clear the Slimes", "slime", 5, 40, 60, "kill 5 slimes"),
+        new(2, "Goblin Bounty", "goblin_*", 3, 120, 180, "kill 3 goblins"),
+        new(3, "Gel for the Alchemist", "item:slime_gel", 6, 45, 50, "bring 6 Slime Gel"),
+        new(4, "Hides for the Tanner", "item:deer_hide", 2, 60, 70, "bring 2 Deer Hides"),
+        new(5, "Proof of the Hunt", "item:goblin_tooth", 4, 90, 120, "bring 4 Goblin Teeth"),
     };
 
     public static QuestDef? Quest(byte id) => Quests.FirstOrDefault(q => q.Id == id);

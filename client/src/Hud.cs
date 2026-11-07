@@ -1,14 +1,15 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Godot;
 using PixelCreate.Core;
 
 namespace PixelCreate;
 
 /// <summary>
-/// The game interface: clean glass panels, rounded bars and a smooth font, drawn at the full window
-/// resolution over the pixel-art world. Sizes are given for a 1080 pixel tall window and scale with
-/// it. All text is English.
+/// The game interface: dark glass panels with a warm gold trim, rounded bars and a smooth font, drawn
+/// at the full window resolution over the pixel-art world. Sizes are given for a 1080 pixel tall window
+/// and scale with it. All text is English.
 /// </summary>
 public partial class Hud : Control
 {
@@ -16,22 +17,36 @@ public partial class Hud : Control
     private const float SlotSize = 64f;
     private const float SlotGap = 8f;
     private const float TagRange = 34f;
+    private const float LootFeedSeconds = 4.5f;
 
-    private static readonly Color Glass = new(0.06f, 0.08f, 0.12f, 0.74f);
-    private static readonly Color GlassDeep = new(0.04f, 0.05f, 0.08f, 0.88f);
-    private static readonly Color Rim = new(1f, 1f, 1f, 0.1f);
+    private static readonly Color Glass = new(0.055f, 0.065f, 0.095f, 0.8f);
+    private static readonly Color GlassDeep = new(0.045f, 0.05f, 0.075f, 0.93f);
+    private static readonly Color Rim = new(1f, 1f, 1f, 0.11f);
     private static readonly Color Text = new("eef1f6");
     private static readonly Color Muted = new("9aa4b5");
     private static readonly Color Accent = new("f2c35b");
+    private static readonly Color AccentDim = new(0.95f, 0.76f, 0.36f, 0.35f);
     private static readonly Color HealthColor = new("e5484d");
     private static readonly Color HealthLight = new("ff7a7e");
     private static readonly Color StaminaColor = new("3fbf7a");
     private static readonly Color Track = new(1f, 1f, 1f, 0.08f);
     private static readonly Color Shadow = new(0f, 0f, 0f, 0.55f);
+    private static readonly Color Ink = new("1d1608");
+
+    /// <summary>Item tiers share the crystal names and colours.</summary>
+    private static readonly (string Name, Color Color)[] Tiers =
+    {
+        ("Common", new Color("c9d1dc")),
+        ("Rare", new Color("58b4ff")),
+        ("Epic", new Color("d77be0")),
+        ("Legendary", new Color("feae34")),
+    };
 
     private readonly Dictionary<string, Texture2D> _icons = new();
     private readonly List<(Rect2 Rect, SlotRef Slot)> _slots = new();
-    private readonly List<(Rect2 Rect, string Icon)> _iconDraws = new();
+    private readonly List<(Rect2 Rect, string Icon, float Alpha)> _iconDraws = new();
+    private readonly List<LootLine> _lootFeed = new();
+    private readonly Queue<Command> _commands = new();
     private Font _font = null!;
     private Font _bold = null!;
     private IconLayer _iconLayer = null!;
@@ -39,14 +54,13 @@ public partial class Hud : Control
     private float _ghostHealth = 1f;
     private float _shownStamina = 1f;
     private float _time;
-    private Item? _held;
     private float _shownXp;
     private float _scale = 1f;
     private string _dialogName = "";
     private string _dialogText = "";
     private float _dialogAge;
-    private (string Label, Command Command)[] _dialogOptions = System.Array.Empty<(string, Command)>();
-    private string[] _story = System.Array.Empty<string>();
+    private (string Label, Command Command)[] _dialogOptions = Array.Empty<(string, Command)>();
+    private string[] _story = Array.Empty<string>();
     private float _storyTime;
     private float _bannerTime;
     private string _banner = "";
@@ -62,6 +76,13 @@ public partial class Hud : Control
         public float Age;
     }
 
+    private sealed class LootLine
+    {
+        public required Item Item;
+        public int Count;
+        public float Age;
+    }
+
     /// <summary>Pixel-art icons need nearest filtering, unlike the smooth text, so they draw on their own layer.</summary>
     private sealed partial class IconLayer : Control
     {
@@ -69,9 +90,9 @@ public partial class Hud : Control
 
         public override void _Draw()
         {
-            foreach (var (rect, icon) in Owner._iconDraws)
+            foreach (var (rect, icon, alpha) in Owner._iconDraws)
             {
-                DrawTextureRect(Owner._icons[icon], rect, false);
+                DrawTextureRect(Owner.Icon(icon), rect, false, new Color(1, 1, 1, alpha));
             }
         }
     }
@@ -90,6 +111,9 @@ public partial class Hud : Control
     public Camera3D? Camera { get; set; }
     public string Notice { get; set; } = "";
 
+    /// <summary>A short title under the speaker's name, such as Guild Receptionist.</summary>
+    public string DialogRole { get; set; } = "";
+
     /// <summary>World positions shown this frame, by enemy id, so tags follow the drawn enemies.</summary>
     public Dictionary<int, Vector3> EnemyPositions { get; } = new();
 
@@ -98,13 +122,24 @@ public partial class Hud : Control
         var file = GD.Load<FontFile>("res://assets/ui/Nunito.ttf");
         _font = Weight(file, 600);
         _bold = Weight(file, 800);
-        _icons["wooden_sword"] = GD.Load<Texture2D>("res://assets/ui/wooden_sword.png");
         TextureFilter = TextureFilterEnum.Linear;
         MouseFilter = MouseFilterEnum.Stop;
         _iconLayer = new IconLayer { Owner = this, TextureFilter = TextureFilterEnum.Nearest, MouseFilter = MouseFilterEnum.Ignore };
         AddChild(_iconLayer);
         GetViewport().SizeChanged += FitWindow;
         FitWindow();
+    }
+
+    private Texture2D Icon(string name)
+    {
+        if (!_icons.TryGetValue(name, out var texture))
+        {
+            var path = $"res://assets/ui/icons/{name}.png";
+            texture = GD.Load<Texture2D>(ResourceLoader.Exists(path) ? path : $"res://assets/ui/{name}.png");
+            _icons[name] = texture;
+        }
+
+        return texture;
     }
 
     private static FontVariation Weight(FontFile file, int weight)
@@ -129,6 +164,26 @@ public partial class Hud : Control
     public void AddFloating(string text, Vector3 position, Color color) =>
         _floating.Add(new FloatingText { Text = text, Position = position, Color = color });
 
+    /// <summary>Lists picked up items on the right, merging repeats of the same item.</summary>
+    public void AddLoot(Item item, int count)
+    {
+        if (_lootFeed.FirstOrDefault(l => l.Item == item && l.Age < LootFeedSeconds - 1f) is { } line)
+        {
+            line.Count += count;
+            line.Age = Mathf.Min(line.Age, 0.3f);
+            return;
+        }
+
+        _lootFeed.Add(new LootLine { Item = item, Count = count });
+        if (_lootFeed.Count > 6)
+        {
+            _lootFeed.RemoveAt(0);
+        }
+    }
+
+    /// <summary>Commands the interface itself asks for, such as eating, for the client to send.</summary>
+    public Command TakeCommand() => _commands.Count > 0 ? _commands.Dequeue() : Command.None;
+
     /// <summary>Shows a large message across the top of the screen for a few seconds.</summary>
     public void ShowBanner(string text, Color color)
     {
@@ -150,19 +205,28 @@ public partial class Hud : Control
 
     public bool DialogOpen => _dialogName.Length > 0;
 
-    /// <summary>Opens a conversation. Options are chosen with the number keys.</summary>
+    /// <summary>Opens a conversation. Options are chosen with the number keys or the mouse.</summary>
     public void ShowDialog(string name, string text, params (string Label, Command Command)[] options)
     {
         _dialogName = name;
         _dialogText = text;
         _dialogOptions = options;
         _dialogAge = 0f;
+        Input.MouseMode = Input.MouseModeEnum.Visible;
     }
 
-    public void CloseDialog() => _dialogName = "";
+    public void CloseDialog()
+    {
+        _dialogName = "";
+        DialogRole = "";
+        if (!InventoryOpen && Camera is not null)
+        {
+            Input.MouseMode = Input.MouseModeEnum.Captured;
+        }
+    }
 
     /// <summary>Picks the option with this command, as a player would by reading the list.</summary>
-    public Command ChooseCommand(Command wanted) => Choose(System.Array.FindIndex(_dialogOptions, o => o.Command == wanted) is var i and >= 0 ? i : int.MaxValue);
+    public Command ChooseCommand(Command wanted) => Choose(Array.FindIndex(_dialogOptions, o => o.Command == wanted) is var i and >= 0 ? i : int.MaxValue);
 
     /// <summary>Picks an option and closes the conversation, returning the command to send.</summary>
     public Command Choose(int index)
@@ -187,7 +251,19 @@ public partial class Hud : Control
     public void ToggleInventory()
     {
         InventoryOpen = !InventoryOpen;
-        Input.MouseMode = InventoryOpen ? Input.MouseModeEnum.Visible : Input.MouseModeEnum.Captured;
+        if (!InventoryOpen && Items.Held is { } held)
+        {
+            // Whatever is still in hand goes back to the first free place.
+            var free = Array.IndexOf(Items.Bag, null);
+            if (free >= 0)
+            {
+                Items.Bag[free] = held;
+            }
+
+            Items.Held = null;
+        }
+
+        Input.MouseMode = InventoryOpen || DialogOpen ? Input.MouseModeEnum.Visible : Input.MouseModeEnum.Captured;
     }
 
     public override void _Process(double delta)
@@ -207,7 +283,13 @@ public partial class Hud : Control
             text.Age += d;
         }
 
+        foreach (var line in _lootFeed)
+        {
+            line.Age += d;
+        }
+
         _floating.RemoveAll(t => t.Age > 1.2f);
+        _lootFeed.RemoveAll(l => l.Age > LootFeedSeconds);
         var stamina = Mathf.Clamp(Player.Stamina / Tuning.MaxStamina, 0f, 1f);
         _shownHealth = Mathf.Lerp(_shownHealth, health, 1f - Mathf.Exp(-16f * d));
         _shownStamina = Mathf.Lerp(_shownStamina, stamina, 1f - Mathf.Exp(-22f * d));
@@ -227,6 +309,7 @@ public partial class Hud : Control
         DrawStatus();
         DrawHotbar();
         DrawGuide();
+        DrawLootFeed();
         DrawMessages();
         DrawDialog();
         if (InventoryOpen)
@@ -234,42 +317,105 @@ public partial class Hud : Control
             DrawInventory();
         }
 
-        if (_held is not null)
+        if (Items.Held is { } held)
         {
-            _iconDraws.Add((new Rect2(GetLocalMousePosition() - new Vector2(24, 24), 48, 48), _held.Icon));
+            _iconDraws.Add((new Rect2(GetLocalMousePosition() - new Vector2(24, 24), 48, 48), held.Icon, 1f));
         }
     }
 
     public override void _GuiInput(InputEvent @event)
     {
-        if (!InventoryOpen || @event is not InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left } click)
+        if (@event is not InputEventMouseButton { Pressed: true } click)
         {
             return;
         }
 
-        var point = click.Position;
+        if (DialogOpen && !InventoryOpen && click.ButtonIndex == MouseButton.Left)
+        {
+            for (var i = 0; i < _optionRects.Count; i++)
+            {
+                if (_optionRects[i].HasPoint(click.Position))
+                {
+                    var command = Choose(i);
+                    if (command != Command.None)
+                    {
+                        _commands.Enqueue(command);
+                    }
+
+                    return;
+                }
+            }
+        }
+
+        if (!InventoryOpen)
+        {
+            return;
+        }
+
         foreach (var (rect, slot) in _slots)
         {
-            if (rect.HasPoint(point))
+            if (!rect.HasPoint(click.Position))
+            {
+                continue;
+            }
+
+            if (click.ButtonIndex == MouseButton.Right)
+            {
+                Use(Read(slot));
+            }
+            else if (click.ButtonIndex == MouseButton.Left)
             {
                 Exchange(slot);
-                return;
             }
+
+            return;
         }
     }
 
-    public void SelectHotbar(int index) => Items.SelectedHotbar = index;
+    /// <summary>Where a slot was drawn last frame, in window pixels, for bots that point at it.</summary>
+    public Vector2? SlotCentre(string area, int index)
+    {
+        foreach (var (rect, slot) in _slots)
+        {
+            if (slot.Area == area && slot.Index == index)
+            {
+                return (rect.Position + rect.Size / 2f) * _scale;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>The number keys pick a hotbar slot; food in that slot is eaten instead.</summary>
+    public void SelectHotbar(int index)
+    {
+        if (Items.Hotbar[index] is { IsFood: true } food)
+        {
+            Use(food);
+            return;
+        }
+
+        Items.SelectedHotbar = index;
+    }
+
+    private void Use(Item? item)
+    {
+        if (item is { IsFood: true, Index: >= 0 } food && Items.Count(food) > 0)
+        {
+            _commands.Enqueue(ItemCommands.Eat((ushort)food.Index));
+        }
+    }
 
     private void Exchange(SlotRef slot)
     {
         var current = Read(slot);
-        if (_held is not null && slot.Equip != EquipSlot.None && _held.Slot != slot.Equip)
+        if (Items.Held is { } held && slot.Equip != EquipSlot.None && held.Slot != slot.Equip)
         {
             return;
         }
 
-        Write(slot, _held);
-        _held = current;
+        Write(slot, Items.Held);
+        Items.Held = current;
     }
 
     private Item? Read(SlotRef slot) => slot.Area switch
@@ -297,21 +443,50 @@ public partial class Hud : Control
 
     // --- Drawing helpers -------------------------------------------------------------------------
 
-    private void Card(Rect2 rect, float radius = 14f, Color? fill = null)
+    /// <summary>
+    /// A glass panel: a soft drop shadow, a body that is a little lighter at the top, a hairline rim
+    /// and, for the main windows, a gold rule along the top with small diamonds at its ends.
+    /// </summary>
+    private void Card(Rect2 rect, float radius = 14f, Color? fill = null, bool trim = false)
     {
-        var shadow = new StyleBoxFlat { BgColor = new Color(0, 0, 0, 0.28f), AntiAliasing = true };
+        var shadow = new StyleBoxFlat { BgColor = new Color(0, 0, 0, 0.3f), AntiAliasing = true, ShadowColor = new Color(0, 0, 0, 0.22f), ShadowSize = 14 };
         shadow.SetCornerRadiusAll((int)radius + 2);
-        DrawStyleBox(shadow, new Rect2(rect.Position + new Vector2(0, 4), rect.Size));
+        DrawStyleBox(shadow, new Rect2(rect.Position + new Vector2(0, 5), rect.Size));
         var box = new StyleBoxFlat { BgColor = fill ?? Glass, BorderColor = Rim, AntiAliasing = true };
         box.SetBorderWidthAll(1);
         box.SetCornerRadiusAll((int)radius);
         DrawStyleBox(box, rect);
+
+        // A sheen over the upper part, as light falling on glass.
+        var sheen = new StyleBoxFlat { BgColor = new Color(1, 1, 1, 0.035f), AntiAliasing = true };
+        sheen.CornerRadiusTopLeft = sheen.CornerRadiusTopRight = (int)radius;
+        DrawStyleBox(sheen, new Rect2(rect.Position + Vector2.One, rect.Size.X - 2, Mathf.Min(rect.Size.Y * 0.45f, 60f)));
+        if (trim)
+        {
+            var y = rect.Position.Y + 1.5f;
+            DrawLine(new Vector2(rect.Position.X + radius + 14, y), new Vector2(rect.End.X - radius - 14, y), AccentDim, 2f, true);
+            foreach (var x in new[] { rect.Position.X + radius + 8, rect.End.X - radius - 8 })
+            {
+                Diamond(new Vector2(x, y), 5f, Accent);
+            }
+        }
     }
+
+    private void Diamond(Vector2 at, float size, Color color) =>
+        DrawColoredPolygon(new[] { at + new Vector2(0, -size), at + new Vector2(size, 0), at + new Vector2(0, size), at + new Vector2(-size, 0) }, color);
 
     private void Pill(Rect2 rect, Color color)
     {
         var box = new StyleBoxFlat { BgColor = color, AntiAliasing = true };
         box.SetCornerRadiusAll((int)(rect.Size.Y / 2f));
+        DrawStyleBox(box, rect);
+    }
+
+    private void Rounded(Rect2 rect, float radius, Color fill, Color border, int width = 1)
+    {
+        var box = new StyleBoxFlat { BgColor = fill, BorderColor = border, AntiAliasing = true };
+        box.SetCornerRadiusAll((int)radius);
+        box.SetBorderWidthAll(width);
         DrawStyleBox(box, rect);
     }
 
@@ -361,6 +536,8 @@ public partial class Hud : Control
         Label(key, new Vector2(at.X + (width - Width(key, size, _bold)) / 2f, at.Y + size + 2f), size, new Color("161a22"), _bold);
     }
 
+    private static Color TierColor(int tier) => Tiers[Math.Clamp(tier, 0, Tiers.Length - 1)].Color;
+
     // --- Screens ----------------------------------------------------------------------------------
 
     private void DrawStatus()
@@ -371,7 +548,7 @@ public partial class Hud : Control
         var level = $"Lv {Level}";
         var levelWidth = Width(level, 15, _bold) + 20;
         Pill(new Rect2(card.End.X - levelWidth - 18, card.Position.Y + 18, levelWidth, 26), Accent);
-        Label(level, new Vector2(card.End.X - levelWidth - 8, card.Position.Y + 37), 15, new Color("1d1608"), _bold);
+        Label(level, new Vector2(card.End.X - levelWidth - 8, card.Position.Y + 37), 15, Ink, _bold);
 
         // Health is the wide bar with its numbers inside; stamina is the thin bar under it.
         var maxHealth = Snapshot?.MaxHealth ?? Tuning.PlayerHealth;
@@ -426,10 +603,36 @@ public partial class Hud : Control
         }
     }
 
+    /// <summary>Picked up items slide in on the right under the objective, then fade.</summary>
+    private void DrawLootFeed()
+    {
+        var y = 180f;
+        foreach (var line in _lootFeed.AsEnumerable().Reverse())
+        {
+            var slide = 1f - Mathf.Clamp(line.Age * 5f, 0f, 1f);
+            var alpha = Mathf.Clamp((LootFeedSeconds - line.Age) * 1.5f, 0f, 1f);
+            var name = line.Item.Name;
+            var count = line.Count > 1 ? $"x{line.Count}" : "";
+            var width = 74f + Width(name, 17, _bold) + (count.Length > 0 ? Width(count, 15, _bold) + 10 : 0);
+            var rect = new Rect2(Size.X - 28 - width + slide * 60f, y, width, 44);
+            var color = TierColor(line.Item.Tier);
+            Card(rect, 12, new Color(Glass.R, Glass.G, Glass.B, Glass.A * alpha));
+            Pill(new Rect2(rect.Position + new Vector2(6, 8), 3, 28), new Color(color.R, color.G, color.B, alpha));
+            _iconDraws.Add((new Rect2(rect.Position + new Vector2(16, 6), 32, 32), line.Item.Icon, alpha));
+            Label(name, rect.Position + new Vector2(58, 28), 17, new Color(color.R, color.G, color.B, alpha), _bold);
+            if (count.Length > 0)
+            {
+                Label(count, rect.Position + new Vector2(64 + Width(name, 17, _bold), 28), 15, new Color(Text.R, Text.G, Text.B, alpha * 0.8f), _bold);
+            }
+
+            y += 52f;
+        }
+    }
+
     private void DrawMessages()
     {
         var line = (int)(_storyTime / 4f);
-        if (line < _story.Length)
+        if (line < _story.Length && !DialogOpen)
         {
             var within = _storyTime - line * 4f;
             var alpha = Mathf.Clamp(within * 2f, 0f, 1f) * Mathf.Clamp((4f - within) * 2f, 0f, 1f);
@@ -443,9 +646,11 @@ public partial class Hud : Control
             var width = Width(_place, 40, _bold);
             Centered(_place, y, 40, new Color(1, 1, 1, alpha), _bold);
             var middle = Size.X / 2f;
-            var line_color = new Color(1, 1, 1, alpha * 0.7f);
-            DrawLine(new Vector2(middle - width / 2f - 90, y - 13), new Vector2(middle - width / 2f - 18, y - 13), line_color, 2f, true);
-            DrawLine(new Vector2(middle + width / 2f + 18, y - 13), new Vector2(middle + width / 2f + 90, y - 13), line_color, 2f, true);
+            var lineColor = new Color(1, 1, 1, alpha * 0.7f);
+            DrawLine(new Vector2(middle - width / 2f - 90, y - 13), new Vector2(middle - width / 2f - 26, y - 13), lineColor, 2f, true);
+            DrawLine(new Vector2(middle + width / 2f + 26, y - 13), new Vector2(middle + width / 2f + 90, y - 13), lineColor, 2f, true);
+            Diamond(new Vector2(middle - width / 2f - 16, y - 13), 5f, new Color(Accent.R, Accent.G, Accent.B, alpha));
+            Diamond(new Vector2(middle + width / 2f + 16, y - 13), 5f, new Color(Accent.R, Accent.G, Accent.B, alpha));
         }
 
         if (_bannerTime > 0f)
@@ -456,38 +661,75 @@ public partial class Hud : Control
         }
     }
 
+    private readonly List<Rect2> _optionRects = new();
+
+    /// <summary>
+    /// The conversation window: a name plate with the speaker's title, text that types itself out
+    /// word by word, and choices as buttons that answer to the mouse and to the number keys.
+    /// </summary>
     private void DrawDialog()
     {
+        _optionRects.Clear();
         if (!DialogOpen)
         {
             return;
         }
 
-        const float width = 860f;
-        const int size = 20;
-        var textHeight = _font.GetMultilineStringSize(_dialogText, HorizontalAlignment.Left, width - 64, size).Y;
-        var height = 92f + textHeight + _dialogOptions.Length * 44f;
+        const float width = 900f;
+        const int size = 21;
+        const float pad = 36f;
+        var textHeight = _font.GetMultilineStringSize(_dialogText, HorizontalAlignment.Left, width - pad * 2, size).Y;
+        const float row = 48f;
+        var height = 88f + textHeight + 22f + _dialogOptions.Length * row + 18f;
         var rise = (1f - Mathf.Clamp(_dialogAge * 6f, 0f, 1f)) * 20f;
-        var box = new Rect2((Size.X - width) / 2f, Size.Y - 220 - height + rise, width, height);
-        Card(box, 18, GlassDeep);
+        var box = new Rect2((Size.X - width) / 2f, Size.Y - 200 - height + rise, width, height);
+        Card(box, 20, GlassDeep, true);
 
-        var nameWidth = Width(_dialogName, 18, _bold) + 32;
-        Pill(new Rect2(box.Position + new Vector2(28, -18), nameWidth, 38), Accent);
-        Label(_dialogName, box.Position + new Vector2(44, 7), 18, new Color("1d1608"), _bold);
+        // The name plate sits on the top edge, the title beside it.
+        var nameWidth = Width(_dialogName, 19, _bold) + 36;
+        var plate = new Rect2(box.Position + new Vector2(30, -20), nameWidth, 40);
+        Rounded(plate, 12, Accent, new Color(1, 1, 1, 0.35f));
+        Label(_dialogName, plate.Position + new Vector2(18, 27), 19, Ink, _bold);
+        if (DialogRole.Length > 0)
+        {
+            Label(DialogRole.ToUpperInvariant(), new Vector2(plate.End.X + 14, plate.Position.Y + 34), 13, AccentDim with { A = 0.9f }, _bold);
+        }
 
-        DrawMultilineString(_font, box.Position + new Vector2(32, 54), _dialogText, HorizontalAlignment.Left, width - 64, size, -1, Text);
+        // Words appear one at a time, so a line never jumps when a long word wraps.
+        var shown = Typed(_dialogText, _dialogAge * 70f);
+        DrawMultilineString(_font, box.Position + new Vector2(pad, 62), shown, HorizontalAlignment.Left, width - pad * 2, size, -1, Text);
+
+        var top = box.Position.Y + 62 + textHeight + 6;
+        DrawLine(new Vector2(box.Position.X + pad, top), new Vector2(box.End.X - pad, top), Rim, 1f);
         var mouse = GetLocalMousePosition();
+        var ready = shown.Length == _dialogText.Length;
         for (var i = 0; i < _dialogOptions.Length; i++)
         {
-            var row = new Rect2(box.Position + new Vector2(22, 66 + textHeight + i * 44), width - 44, 38);
-            if (row.HasPoint(mouse))
+            var rect = new Rect2(box.Position.X + pad - 10, top + 14 + i * row, width - pad * 2 + 20, row - 8);
+            _optionRects.Add(rect);
+            var hover = rect.HasPoint(mouse);
+            var appear = ready ? 1f : 0.35f;
+            Rounded(rect, 12, new Color(1, 1, 1, hover ? 0.1f : 0.04f), hover ? AccentDim : new Color(1, 1, 1, 0.07f));
+            Keycap((i + 1).ToString(), rect.Position + new Vector2(10, 7), 14);
+            var color = _dialogOptions[i].Command == Command.None ? Muted : Text;
+            Label(_dialogOptions[i].Label, rect.Position + new Vector2(52, 27), 19, color with { A = appear }, hover ? _bold : _font);
+            if (hover)
             {
-                Pill(row, new Color(1, 1, 1, 0.07f));
+                Diamond(new Vector2(rect.End.X - 20, rect.Position.Y + rect.Size.Y / 2f), 4f, Accent);
             }
-
-            Keycap((i + 1).ToString(), row.Position + new Vector2(8, 6), 14);
-            Label(_dialogOptions[i].Label, row.Position + new Vector2(48, 26), 19, Text);
         }
+    }
+
+    /// <summary>The start of a text up to whole words, revealing about this many characters.</summary>
+    private static string Typed(string text, float characters)
+    {
+        if (characters >= text.Length)
+        {
+            return text;
+        }
+
+        var end = text.LastIndexOf(' ', Math.Max(0, (int)characters));
+        return end <= 0 ? "" : text[..end];
     }
 
     private void DrawFloating()
@@ -536,60 +778,76 @@ public partial class Hud : Control
         Label($"Level {Level}", new Vector2(bar.Position.X, bar.Position.Y - 8), 14, Accent, _bold, true);
     }
 
+    /// <summary>A slot: its rim takes the item's tier colour, and a stack shows its count in the corner.</summary>
     private void DrawSlot(Rect2 rect, Item? item, SlotRef slot, bool selected = false)
     {
         _slots.Add((rect, slot));
-        var box = new StyleBoxFlat { BgColor = new Color(1, 1, 1, 0.06f), BorderColor = selected ? Accent : new Color(1, 1, 1, 0.1f), AntiAliasing = true };
-        box.SetCornerRadiusAll(12);
-        box.SetBorderWidthAll(selected ? 3 : 1);
-        if (InventoryOpen && rect.HasPoint(GetLocalMousePosition()))
+        var hover = InventoryOpen && rect.HasPoint(GetLocalMousePosition());
+        var tier = item is null ? new Color(1, 1, 1, 0.1f) : TierColor(item.Tier) with { A = item.Tier > 0 ? 0.75f : 0.22f };
+        var fill = new Color(1, 1, 1, hover ? 0.14f : 0.055f);
+        if (item is { Tier: > 0 })
         {
-            box.BgColor = new Color(1, 1, 1, 0.14f);
+            // Better items glow faintly from the bottom of the slot.
+            var glow = TierColor(item.Tier);
+            Rounded(rect, 12, fill, Colors.Transparent, 0);
+            var shine = new StyleBoxFlat { BgColor = glow with { A = 0.16f }, AntiAliasing = true };
+            shine.CornerRadiusBottomLeft = shine.CornerRadiusBottomRight = 12;
+            DrawStyleBox(shine, new Rect2(rect.Position.X, rect.Position.Y + rect.Size.Y * 0.55f, rect.Size.X, rect.Size.Y * 0.45f));
+            fill = Colors.Transparent;
         }
 
-        DrawStyleBox(box, rect);
-        if (item is not null)
+        Rounded(rect, 12, fill, selected ? Accent : tier, selected ? 3 : item is { Tier: > 0 } ? 2 : 1);
+        if (item is null)
         {
-            _iconDraws.Add((rect.Grow(-10), item.Icon));
+            return;
+        }
+
+        var count = Items.Count(item);
+        _iconDraws.Add((rect.Grow(-10), item.Icon, count > 0 ? 1f : 0.35f));
+        if (count > 1)
+        {
+            var text = count.ToString();
+            var at = new Vector2(rect.End.X - 6 - Width(text, 15, _bold), rect.End.Y - 7);
+            DrawStringOutline(_bold, at, text, HorizontalAlignment.Left, -1, 15, 5, new Color(0, 0, 0, 0.8f));
+            Label(text, at, 15, Colors.White, _bold);
         }
     }
 
-    private void DrawCrystals(Rect2 window)
+    private void DrawCrystals(Rect2 area)
     {
         var counts = Snapshot?.Crystals ?? new int[Crystals.Tiers];
         var weight = 0f;
-        var y = window.Position.Y + 330;
-        Label("MAGIC CRYSTALS", new Vector2(window.Position.X + 340, y), 13, Accent, _bold);
+        Label("MAGIC CRYSTALS", area.Position, 13, Accent, _bold);
         for (var i = 0; i < Crystals.Tiers; i++)
         {
             var def = Crystals.All[i];
             weight += counts[i] * def.Weight;
-            var x = window.Position.X + 340 + i * 92;
-            var gem = new Vector2(x + 12, y + 32);
-            DrawColoredPolygon(new[] { gem + new Vector2(0, -12), gem + new Vector2(9, 0), gem + new Vector2(0, 12), gem + new Vector2(-9, 0) }, new Color(def.Color));
-            DrawColoredPolygon(new[] { gem + new Vector2(0, -12), gem + new Vector2(4, -2), gem + new Vector2(-4, -2) }, new Color(1, 1, 1, 0.6f));
-            Label(counts[i].ToString(), new Vector2(x + 30, y + 40), 20, Text, _bold);
+            var x = area.Position.X + i * 96;
+            _iconDraws.Add((new Rect2(x, area.Position.Y + 12, 36, 36), ItemDef.All[i].Icon, counts[i] > 0 ? 1f : 0.4f));
+            Label(counts[i].ToString(), new Vector2(x + 42, area.Position.Y + 38), 20, counts[i] > 0 ? Text : Muted, _bold);
         }
 
-        Label($"{weight:F1} kg carried", new Vector2(window.Position.X + 340, y + 76), 15, Muted);
+        Label($"{weight:F1} kg of crystals", new Vector2(area.Position.X, area.Position.Y + 76), 15, Muted);
     }
 
     private void DrawInventory()
     {
-        var window = new Rect2((Size.X - 820f) / 2f, (Size.Y - 520f) / 2f, 820, 520);
-        Card(window, 22, GlassDeep);
-        Label("Equipment", window.Position + new Vector2(34, 52), 24, Text, _bold);
-        Label("Bag", window.Position + new Vector2(340, 52), 24, Text, _bold);
-        DrawLine(window.Position + new Vector2(310, 30), window.Position + new Vector2(310, window.Size.Y - 70), Rim, 1f);
+        var window = new Rect2((Size.X - 940f) / 2f, (Size.Y - 640f) / 2f, 940, 640);
+        Card(window, 22, GlassDeep, true);
+        Label("Equipment", window.Position + new Vector2(34, 56), 24, Text, _bold);
+        Label("Bag", window.Position + new Vector2(340, 56), 24, Text, _bold);
+        var used = Items.Bag.Count(i => i is not null);
+        Label($"{used} / {Inventory.BagSlots}", window.Position + new Vector2(340 + Width("Bag", 24, _bold) + 12, 56), 15, Muted, _bold);
+        DrawLine(window.Position + new Vector2(310, 34), window.Position + new Vector2(310, window.Size.Y - 34), Rim, 1f);
 
         var equip = new (EquipSlot Slot, string Label, int X, int Y)[]
         {
-            (EquipSlot.Head, "Head", 120, 80),
-            (EquipSlot.Chest, "Chest", 120, 170),
-            (EquipSlot.Legs, "Legs", 120, 260),
-            (EquipSlot.Boots, "Boots", 120, 350),
-            (EquipSlot.Weapon, "Weapon", 34, 170),
-            (EquipSlot.Ring, "Ring", 206, 170),
+            (EquipSlot.Head, "Head", 120, 86),
+            (EquipSlot.Chest, "Chest", 120, 178),
+            (EquipSlot.Legs, "Legs", 120, 270),
+            (EquipSlot.Boots, "Boots", 120, 362),
+            (EquipSlot.Weapon, "Weapon", 34, 178),
+            (EquipSlot.Ring, "Ring", 206, 178),
         };
         foreach (var (slot, label, x, y) in equip)
         {
@@ -598,33 +856,62 @@ public partial class Hud : Control
             Label(label, rect.Position + new Vector2((SlotSize - Width(label, 13)) / 2f, SlotSize + 18), 13, Muted);
         }
 
+        const int columns = 8;
         for (var i = 0; i < Inventory.BagSlots; i++)
         {
-            var rect = new Rect2(window.Position + new Vector2(340 + i % 6 * (SlotSize + 10), 80 + i / 6 * (SlotSize + 10)), SlotSize, SlotSize);
+            var rect = new Rect2(window.Position + new Vector2(340 + i % columns * (SlotSize + 9), 86 + i / columns * (SlotSize + 9)), SlotSize, SlotSize);
             DrawSlot(rect, Items.Bag[i], new SlotRef("bag", i));
         }
 
-        DrawCrystals(window);
-        DrawTooltip(window);
-    }
-
-    private void DrawTooltip(Rect2 window)
-    {
-        var mouse = GetLocalMousePosition();
-        var bottom = window.Position + new Vector2(34, window.Size.Y - 34);
-        foreach (var (rect, slot) in _slots)
+        DrawCrystals(new Rect2(window.Position + new Vector2(34, 500), 260, 90));
+        var worth = Items.SaleValue();
+        if (worth > 0)
         {
-            if (rect.HasPoint(mouse) && Read(slot) is { } item)
-            {
-                Label(item.Name, bottom + new Vector2(0, -20), 18, Accent, _bold);
-                Label(item.Description, bottom + new Vector2(Width(item.Name, 18, _bold) + 14, -20), 16, Text);
-                return;
-            }
+            Label($"Materials worth {worth} gold to the appraiser", window.Position + new Vector2(340, 400), 15, Muted);
         }
 
-        Label("Click to pick up and place items", bottom + new Vector2(0, -20), 15, Muted);
-        Keycap("I", bottom + new Vector2(window.Size.X - 160, -42), 14);
-        Label("close", bottom + new Vector2(window.Size.X - 126, -20), 15, Muted);
+        var bottom = window.Position + new Vector2(340, window.Size.Y - 30);
+        Label("Left click: move    Right click: eat", bottom, 15, Muted);
+        Keycap("I", new Vector2(window.End.X - 120, bottom.Y - 22), 14);
+        Label("close", new Vector2(window.End.X - 86, bottom.Y), 15, Muted);
+        DrawTooltip();
+    }
+
+    /// <summary>A small card next to the pointer naming the item under it.</summary>
+    private void DrawTooltip()
+    {
+        var mouse = GetLocalMousePosition();
+        var hovered = _slots.Where(s => s.Rect.HasPoint(mouse)).Select(s => Read(s.Slot)).FirstOrDefault(i => i is not null);
+        if (hovered is not { } item || Items.Held is not null)
+        {
+            return;
+        }
+
+        var tier = Tiers[Math.Clamp(item.Tier, 0, 3)];
+        var kind = item.Kind switch
+        {
+            "food" => $"Food  ·  restores {item.Heal} health",
+            "material" => "Material",
+            _ => item.Slot == EquipSlot.None ? "Item" : $"{item.Slot} equipment",
+        };
+        var price = item.Price > 0 && item.Kind != "equipment" ? $"Sells for {item.Price} gold" : item.Price > 0 ? $"Worth {item.Price} gold" : "";
+        const float width = 340f;
+        var textHeight = _font.GetMultilineStringSize(item.Description, HorizontalAlignment.Left, width - 36, 16).Y;
+        var height = 92f + textHeight + (price.Length > 0 ? 26f : 0f);
+        var at = mouse + new Vector2(22, 10);
+        at.X = Mathf.Min(at.X, Size.X - width - 12);
+        at.Y = Mathf.Min(at.Y, Size.Y - height - 12);
+        var rect = new Rect2(at, width, height);
+        Card(rect, 14, new Color(0.03f, 0.035f, 0.055f, 0.97f));
+        Pill(new Rect2(rect.Position + new Vector2(0, 14), 3, 30), tier.Color);
+        Label(item.Name, rect.Position + new Vector2(18, 32), 20, tier.Color, _bold);
+        Label($"{tier.Name.ToUpperInvariant()}  ·  {kind}", rect.Position + new Vector2(18, 56), 13, Muted, _bold);
+        DrawMultilineString(_font, rect.Position + new Vector2(18, 84), item.Description, HorizontalAlignment.Left, width - 36, 16, -1, Text);
+        if (price.Length > 0)
+        {
+            DrawCircle(rect.Position + new Vector2(25, height - 24), 6, Accent);
+            Label(price, rect.Position + new Vector2(38, height - 18), 15, Accent, _bold);
+        }
     }
 
     private void DrawNametags()
