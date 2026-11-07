@@ -24,6 +24,21 @@ public partial class GameClient : Node
 
     /// <summary>Closer than this behind the player, the camera rises to find more room.</summary>
     private const float CameraComfort = 2.6f;
+
+    /// <summary>Blocked stretches shorter than this along the camera's line are looked past.</summary>
+    private const float ThinObstacle = 0.9f;
+
+    /// <summary>Only boxes no wider than this from above (trunks, posts, bits of fence) count as thin.</summary>
+    private const float ThinFootprint = 1.6f;
+
+    /// <summary>How fast the camera closes in on an obstacle, and how slowly it backs out again.</summary>
+    private const float CameraPullIn = 18f;
+    private const float CameraEaseOut = 2.5f;
+
+    private Vector3? _cameraTarget;
+    private float _cameraReach = -1f;
+    private float _cameraRaise;
+    private float _cameraLift;
     private const int BotDialogTicks = 70;
     private const int HuntTicks = 1400;
     private const int MaxTicksPerFrame = 6;
@@ -235,7 +250,7 @@ public partial class GameClient : Node
         PlayerEvents(shown, d);
         UpdateNpcs(shown, d);
         _fx.Update(d);
-        PlaceCamera(shown);
+        PlaceCamera(shown, d);
         _hud.WorldScale = _stage.PixelScale;
         _hud.Player = _client.State;
         _hud.Snapshot = _client.Latest;
@@ -1156,59 +1171,151 @@ public partial class GameClient : Node
         return ball;
     }
 
-    private void PlaceCamera(Vector3 shown)
+    /// <summary>
+    /// A third-person camera that never jerks. It works out where it would like to stand, then
+    /// moves there smoothly: it pulls in quickly when something comes between it and the player,
+    /// so it never sits in a wall, and eases back out slowly once the way is clear. Posts, trunks
+    /// and fences are thin enough to see past, so they do not pull it in at all. Rising over a
+    /// hill and looking down in a tight spot are eased too.
+    /// </summary>
+    private void PlaceCamera(Vector3 shown, float delta)
     {
         var target = shown + new Vector3(0, 1.75f, 0);
+        var jumped = _cameraTarget is { } last && last.DistanceTo(target) > 6f;
+        _cameraTarget = target;
 
         // Against a wall there is no room behind the player, so the camera rises and looks down
         // over the shoulder instead of pressing into the back of the head.
-        var (position, reach) = CameraAt(target, _pitch);
-        for (var pitch = _pitch - 0.2f; reach < CameraComfort && pitch >= MinPitch - 0.6f; pitch -= 0.2f)
+        var raise = 0f;
+        var reach = CameraReach(target, _pitch);
+        for (var extra = 0.2f; reach < CameraComfort && _pitch - extra >= MinPitch - 0.6f; extra += 0.2f)
         {
-            var (higher, higherReach) = CameraAt(target, pitch);
-            if (higherReach > reach)
+            var higher = CameraReach(target, _pitch - extra);
+            if (higher > reach)
             {
-                (position, reach) = (higher, higherReach);
+                (raise, reach) = (extra, higher);
             }
         }
 
+        if (jumped || _cameraReach < 0f)
+        {
+            _cameraRaise = raise;
+            _cameraReach = reach;
+        }
+
+        _cameraRaise = Mathf.Lerp(_cameraRaise, raise, 1f - Mathf.Exp(-5f * delta));
+        var pitch = _pitch - _cameraRaise;
+        reach = CameraReach(target, pitch);
+        var rate = reach < _cameraReach ? CameraPullIn : CameraEaseOut;
+        _cameraReach = Mathf.Lerp(_cameraReach, reach, 1f - Mathf.Exp(-rate * delta));
+
+        // However smooth, the camera must never end up inside something.
+        var back = CameraBack(pitch);
+        if (!CameraFree(target + back * _cameraReach))
+        {
+            _cameraReach = reach;
+        }
+
+        var position = target + back * _cameraReach;
+        var lift = CameraLift(target, position);
+        _cameraLift = jumped ? lift : Mathf.Lerp(_cameraLift, lift, 1f - Mathf.Exp(-(lift > _cameraLift ? 10f : 4f) * delta));
+        position.Y += _cameraLift;
         _stage.Camera.LookAtFromPosition(position, target);
+        NoteCameraJerk(position, target, jumped);
     }
 
-    /// <summary>Where the camera can stand behind the target at a pitch, and how far back that is.</summary>
-    private (Vector3 Position, float Reach) CameraAt(Vector3 target, float pitch)
+    private Vector3? _lastCameraOffset;
+
+    /// <summary>The biggest jump of the camera relative to the player in one frame, for STATS.</summary>
+    private float _cameraJerk;
+
+    /// <summary>
+    /// Records how far the camera lurched toward or away from the player, or up and down, in one
+    /// frame. Turning the camera is the player's own doing and does not count.
+    /// </summary>
+    private void NoteCameraJerk(Vector3 position, Vector3 target, bool jumped)
+    {
+        var offset = position - target;
+        if (_lastCameraOffset is { } last && !jumped && _client.Tick > 30)
+        {
+            var lurch = Mathf.Abs(offset.Length() - last.Length()) + Mathf.Abs(offset.Y - last.Y);
+            _cameraJerk = Mathf.Max(_cameraJerk, lurch);
+        }
+
+        _lastCameraOffset = offset;
+    }
+
+    private Vector3 CameraBack(float pitch)
     {
         var flat = Mathf.Cos(pitch);
-        var back = new Vector3(Mathf.Sin(_yaw) * flat, -Mathf.Sin(pitch), Mathf.Cos(_yaw) * flat);
+        return new Vector3(Mathf.Sin(_yaw) * flat, -Mathf.Sin(pitch), Mathf.Cos(_yaw) * flat);
+    }
 
-        // Walk out from the player: rise over the ground, and stop before any box in the way.
-        // A bridge lifts the camera when the player stands on it and keeps it low when passing below.
-        Vector3 Point(float distance)
-        {
-            var next = target + back * distance;
-            var ground = _world.GroundHeight(next.X, next.Z);
-            var below = target.Y < ground;
-            next.Y = below ? Mathf.Min(next.Y, ground - CameraClearance) : next.Y;
-            var floor = below ? _world.Terrain?.At(next.X, next.Z) ?? 0f : ground;
-            next.Y = Mathf.Max(next.Y, floor + CameraClearance);
-            return next;
-        }
+    private bool CameraFree(Vector3 point) => !_world.IsInsideBox(new System.Numerics.Vector3(point.X, point.Y, point.Z));
 
-        // The camera stays a margin short of the first box: the lens sits a little in front of the
-        // camera point, and a door leaf or a wall's trim stands proud of its collision box.
+    /// <summary>
+    /// How far behind the target the camera can stand at a pitch. A run of blocked points shorter
+    /// than a thin obstacle (a trunk, a post, a fence) is looked past; the camera itself still
+    /// keeps a margin from every box, because its lens sits a little in front of it.
+    /// </summary>
+    private float CameraReach(Vector3 target, float pitch)
+    {
+        var back = CameraBack(pitch);
         var reach = CameraStep;
+        var blockedFrom = -1f;
+        var clearSince = 0f;
         for (var distance = CameraStep * 2f; distance <= CameraDistance + CameraMargin; distance += CameraStep)
         {
-            var next = Point(distance);
-            if (_world.IsInsideBox(new System.Numerics.Vector3(next.X, next.Y, next.Z)))
+            var point = target + back * distance;
+            point.Y += CameraLift(target, point);
+            var footprint = _world.FootprintAt(new System.Numerics.Vector3(point.X, point.Y, point.Z));
+            if (footprint > 0f)
             {
-                break;
+                if (blockedFrom < 0f)
+                {
+                    blockedFrom = distance;
+                }
+
+                // A wall or a building stops the camera; only something narrow seen from above
+                // and short along the line of sight, a post or a trunk, is looked past.
+                if (footprint > ThinFootprint || distance - blockedFrom > ThinObstacle)
+                {
+                    break;
+                }
+
+                continue;
             }
 
-            reach = Mathf.Max(reach, Mathf.Min(distance - CameraMargin, CameraDistance));
+            if (blockedFrom >= 0f)
+            {
+                blockedFrom = -1f;
+                clearSince = distance;
+            }
+
+            // A spot counts once there is a margin of clear space on both sides of it.
+            var spot = distance - CameraMargin;
+            if (spot >= CameraStep && spot - clearSince >= CameraMargin)
+            {
+                reach = Mathf.Max(reach, Mathf.Min(spot, CameraDistance));
+            }
         }
 
-        return (Point(reach), reach);
+        return reach;
+    }
+
+    /// <summary>
+    /// How far a camera point must rise to stay above the ground. Under a bridge the camera keeps
+    /// below its deck instead.
+    /// </summary>
+    private float CameraLift(Vector3 target, Vector3 point)
+    {
+        var ground = _world.GroundHeight(point.X, point.Z);
+        var y = point.Y;
+        var below = target.Y < ground;
+        y = below ? Mathf.Min(y, ground - CameraClearance) : y;
+        var floor = below ? _world.Terrain?.At(point.X, point.Z) ?? 0f : ground;
+        y = Mathf.Max(y, floor + CameraClearance);
+        return y - point.Y;
     }
 
     private void Capture()
@@ -1225,7 +1332,7 @@ public partial class GameClient : Node
         GD.Print($"STATS snapshots={stats.Snapshots} corrections={stats.Corrections} " +
                  $"maxError={stats.MaxError:F3} buffered={_client.Latest?.BufferedInputs} " +
                  $"tickScale={_client.TickScale:F3} enemies={enemies.Length} rare={enemies.Count(e => e.Type == 1)} " +
-                 $"fps={(_measuredFrames > 0 ? _measuredFrames / _frameSeconds : 0):F0} draws={Performance.GetMonitor(Performance.Monitor.RenderTotalDrawCallsInFrame)} objects={Performance.GetMonitor(Performance.Monitor.RenderTotalObjectsInFrame)} tris={Performance.GetMonitor(Performance.Monitor.RenderTotalPrimitivesInFrame) / 1000:F0}k nodes={Performance.GetMonitor(Performance.Monitor.ObjectNodeCount)} frameMs={_frameSeconds * 1000 / Math.Max(_measuredFrames, 1):F1} sounds={_sfx.Played} level={_client.Latest?.Level} xp={_client.Latest?.Xp} hp={_client.State.Health} stamina={_client.State.Stamina:F0} maxHeight={_maxHeight:F2} travelled={_travelled:F0}");
+                 $"fps={(_measuredFrames > 0 ? _measuredFrames / _frameSeconds : 0):F0} draws={Performance.GetMonitor(Performance.Monitor.RenderTotalDrawCallsInFrame)} objects={Performance.GetMonitor(Performance.Monitor.RenderTotalObjectsInFrame)} tris={Performance.GetMonitor(Performance.Monitor.RenderTotalPrimitivesInFrame) / 1000:F0}k nodes={Performance.GetMonitor(Performance.Monitor.ObjectNodeCount)} frameMs={_frameSeconds * 1000 / Math.Max(_measuredFrames, 1):F1} sounds={_sfx.Played} level={_client.Latest?.Level} xp={_client.Latest?.Xp} hp={_client.State.Health} stamina={_client.State.Stamina:F0} maxHeight={_maxHeight:F2} travelled={_travelled:F0} cameraJerk={_cameraJerk:F2}");
         GetTree().Quit();
     }
 

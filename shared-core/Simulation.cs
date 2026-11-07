@@ -259,6 +259,22 @@ public sealed class World
         return false;
     }
 
+    /// <summary>The largest footprint, seen from above, of the boxes a point is inside; 0 when it is free.</summary>
+    public float FootprintAt(Vector3 point)
+    {
+        var largest = 0f;
+        foreach (var box in BoxesNear(point.X, point.Z, point.X, point.Z))
+        {
+            if (point.X > box.Min.X && point.X < box.Max.X && point.Y > box.Min.Y && point.Y < box.Max.Y &&
+                point.Z > box.Min.Z && point.Z < box.Max.Z)
+            {
+                largest = MathF.Max(largest, MathF.Max(box.Max.X - box.Min.X, box.Max.Z - box.Min.Z));
+            }
+        }
+
+        return largest;
+    }
+
     /// <summary>A walled 40 x 40 m arena with four pillars.</summary>
     public static World Arena()
     {
