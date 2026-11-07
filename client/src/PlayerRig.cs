@@ -35,13 +35,27 @@ public sealed record RigLook(string Kind, Color Skin, float Scale, string Weapon
     /// <summary>Colours that replace the hero's, by Blender material name.</summary>
     public System.Collections.Generic.Dictionary<string, Color> Palette { get; init; } = new();
 
-    public bool LongHair { get; init; }
+    /// <summary>The hair model: hero, mira, rhea, bram or tess.</summary>
+    public string Hair { get; init; } = "hero";
+
+    public bool Feminine { get; init; }
 
     public bool Skirt { get; init; }
 
     public bool Cloak { get; init; } = true;
 
+    /// <summary>Extra Blender parts: "vest", "bow", "armor", "apron", "robe", "beard".</summary>
+    public string[] Extras { get; init; } = System.Array.Empty<string>();
+
     public Color Eyes { get; init; } = new("2f8f62");
+
+    public Color Brows { get; init; } = new("2b3044");
+
+    /// <summary>How the arms rest when the hands are free: relaxed, clasped or behind.</summary>
+    public string Rest { get; init; } = "relaxed";
+
+    /// <summary>A permanent stoop, for the old.</summary>
+    public float Stoop { get; init; }
 }
 
 /// <summary>
@@ -50,10 +64,10 @@ public sealed record RigLook(string Kind, Color Skin, float Scale, string Weapon
 /// </summary>
 public sealed class PlayerRig
 {
-    private const int JointCount = 15;
+    private const int JointCount = 16;
     private const int Lean = 0, Twist = 1, Bob = 2, Head = 3;
     private const int ThighL = 4, ThighR = 5, ShinL = 6, ShinR = 7;
-    private const int ArmL = 8, ArmR = 9, ArmRSide = 10, ForearmL = 11, ForearmR = 12, SwordTilt = 13, SwordYaw = 14;
+    private const int ArmL = 8, ArmR = 9, ArmRSide = 10, ForearmL = 11, ForearmR = 12, SwordTilt = 13, SwordYaw = 14, ArmLSide = 15;
 
     private readonly float[] _pose = new float[JointCount];
     private readonly float[] _target = new float[JointCount];
@@ -68,16 +82,12 @@ public sealed class PlayerRig
     private readonly CpuParticles3D _sparks;
     private readonly CpuParticles3D _wind;
     private RigLook _look = RigLook.Player;
-    private readonly System.Collections.Generic.List<ShaderMaterial> _hairCloth = new();
-    private readonly System.Collections.Generic.List<ShaderMaterial> _cloakCloth = new();
+    private readonly System.Collections.Generic.List<ClothChain> _cloth = new();
     private readonly Node3D _hairRoot = new();
     private readonly Node3D _cape = new();
     private readonly System.Collections.Generic.List<Node3D> _eyes = new();
-    private float _hairAngle;
-    private float _hairVelocity;
-    private float _hairSide;
-    private float _lastYaw;
     private float _blinkClock = 3f;
+    private float _clasp;
     private float _hipHeight = 0.92f;
     private float _phase;
     private float _lastStride;
@@ -189,25 +199,27 @@ public sealed class PlayerRig
             _hips.AddChild(Model("anime_skirt"));
         }
 
-        _torso.AddChild(Model("anime_torso"));
+        _torso.AddChild(Model(_look.Feminine ? "anime_torso_f" : "anime_torso"));
+        foreach (var extra in _look.Extras)
+        {
+            (extra is "beard" ? _hairRoot : extra is "robe" or "apron" ? _hips : _torso).AddChild(Model($"anime_{extra}"));
+        }
+
         var head = Model("anime_head");
         head.Position = new Vector3(0, 0.3f, 0);
         _head.AddChild(head);
         _head.AddChild(_hairRoot);
         _hairRoot.Position = head.Position;
-        _hairRoot.AddChild(Model("anime_hair", _hairCloth, 0.12f, 0.32f));
-        if (_look.LongHair)
-        {
-            _hairRoot.AddChild(Model("anime_hair_long", _hairCloth, 0.12f, 0.32f));
-        }
-
+        BuildHair();
         BuildEyes(head);
 
         if (_look.Cloak)
         {
             _cape.Position = new Vector3(0, 0.44f, 0.02f);
-            _cape.AddChild(Model("anime_cloak", _cloakCloth, 0.02f, 0.85f));
+            var cloak = new ClothChain(new ClothShape(0.86f, 0.22f, 0.1f, 0.21f, 3.2f, 9.8f, 0.004f, 0.2f, 0.13f), _cape, Root);
+            _cape.AddChild(Cloth("anime_cloak", cloak, 0.02f, 0.86f));
             _torso.AddChild(_cape);
+            _cloth.Add(cloak);
         }
 
         foreach (var (thigh, shin, x) in new[] { (_thighL, _shinL, -0.085f), (_thighR, _shinR, 0.085f) })
@@ -231,6 +243,32 @@ public sealed class PlayerRig
         }
     }
 
+    /// <summary>Each hair style: a cap that moves a little, and for some a long part that swings freely.</summary>
+    private void BuildHair()
+    {
+        var cap = new ClothChain(new ClothShape(0.3f, 0.15f, 0.13f, 0.17f, 2.6f, 6f, 0.03f, 0.13f, 0.13f, 1f), _hairRoot, Root);
+        _hairRoot.AddChild(Cloth($"anime_hair_{_look.Hair}", cap, 0.12f, 0.3f));
+        _cloth.Add(cap);
+        var free = _look.Hair switch
+        {
+            "mira" => ("anime_hair_long", new ClothShape(0.58f, 0.14f, 0.13f, 0.17f, 2.4f, 9.8f, 0.006f, 0.15f, 0.11f), 0.08f),
+            "rhea" => ("anime_ponytail", new ClothShape(0.5f, 0.05f, 0.17f, 0.2f, 2.6f, 9.8f, 0.004f, 0.13f, 0.13f), 0.13f),
+            "tess" => ("anime_braids", new ClothShape(0.44f, 0.16f, 0.02f, 0.04f, 2f, 9.8f, 0.01f, 0.13f, 0.09f), -0.02f),
+            _ => default,
+        };
+        if (free.Item1 is not null)
+        {
+            var chain = new ClothChain(free.Item2, _hairRoot, Root);
+            _hairRoot.AddChild(Cloth(free.Item1, chain, free.Item3, free.Item2.Length));
+            _cloth.Add(chain);
+        }
+    }
+
+    private Node3D Cloth(string name, ClothChain chain, float top, float length)
+    {
+        return Model(name, chain.Materials, top, length);
+    }
+
     /// <summary>Large eyes with a dark lash, a coloured iris and a highlight, and a small mouth and nose.</summary>
     private void BuildEyes(Node3D head)
     {
@@ -240,21 +278,38 @@ public sealed class PlayerRig
             var eye = new Node3D { Position = new Vector3(side * 0.057f, -0.018f, -0.118f) };
             eye.Rotation = new Vector3(0, side * -0.32f, 0);
             eye.AddChild(Flat(new Vector3(0.03f, 0.031f, 0.006f), new Color("f8f4ee"), Vector3.Zero));
-            eye.AddChild(Flat(new Vector3(0.021f, 0.029f, 0.006f), _look.Eyes, new Vector3(side * -0.003f, -0.002f, -0.005f)));
-            eye.AddChild(Flat(new Vector3(0.012f, 0.017f, 0.005f), new Color("15382c"), new Vector3(side * -0.003f, 0.001f, -0.009f)));
-            eye.AddChild(Flat(new Vector3(0.0085f, 0.0085f, 0.004f), Colors.White, new Vector3(side * 0.006f, 0.012f, -0.0125f)));
-            var lash = Flat(new Vector3(0.036f, 0.0075f, 0.008f), new Color("1c1a24"), new Vector3(0, 0.031f, -0.006f));
-            lash.Rotation = new Vector3(0, 0, side * -0.14f);
+            eye.AddChild(Flat(new Vector3(0.024f, 0.03f, 0.006f), _look.Eyes, new Vector3(side * -0.002f, -0.002f, -0.005f)));
+            eye.AddChild(Flat(new Vector3(0.024f, 0.012f, 0.0055f), _look.Eyes.Darkened(0.4f), new Vector3(side * -0.002f, 0.014f, -0.0065f)));
+            eye.AddChild(Flat(new Vector3(0.012f, 0.017f, 0.005f), new Color("15202c"), new Vector3(side * -0.002f, 0.001f, -0.009f)));
+            eye.AddChild(Flat(new Vector3(0.0085f, 0.0085f, 0.004f), Colors.White, new Vector3(side * 0.008f, 0.012f, -0.0125f)));
+            eye.AddChild(Flat(new Vector3(0.0045f, 0.0045f, 0.003f), Colors.White, new Vector3(side * -0.009f, -0.014f, -0.0125f)));
+
+            // The lash lifts at the outer end, which reads as awake and friendly.
+            var lash = Flat(new Vector3(0.037f, 0.0075f, 0.008f), new Color("1c1a24"), new Vector3(side * 0.002f, 0.031f, -0.006f));
+            lash.Rotation = new Vector3(0, 0, side * 0.07f);
             eye.AddChild(lash);
+            if (_look.Feminine)
+            {
+                var wing = Flat(new Vector3(0.012f, 0.004f, 0.006f), new Color("1c1a24"), new Vector3(side * 0.037f, 0.031f, -0.003f));
+                wing.Rotation = new Vector3(0, 0, side * 0.6f);
+                eye.AddChild(wing);
+                head.AddChild(Flat(new Vector3(0.026f, 0.012f, 0.004f), new Color("f4b0a8"), new Vector3(side * 0.07f, -0.062f, -0.106f)));
+            }
+
             head.AddChild(eye);
             _eyes.Add(eye);
-            var brow = Flat(new Vector3(0.028f, 0.0045f, 0.004f), new Color("2b3044"), new Vector3(side * 0.06f, 0.05f, -0.122f));
-            brow.Rotation = new Vector3(0, side * -0.3f, side * 0.14f);
+            var brow = Flat(new Vector3(0.03f, _look.Feminine ? 0.0035f : 0.0055f, 0.004f), _look.Brows, new Vector3(side * 0.06f, 0.056f, -0.122f));
+            brow.Rotation = new Vector3(0, side * -0.3f, side * -0.08f);
             head.AddChild(brow);
         }
 
         head.AddChild(Flat(new Vector3(0.0065f, 0.004f, 0.005f), skinShade, new Vector3(0, -0.058f, -0.14f)));
-        head.AddChild(Flat(new Vector3(0.016f, 0.0035f, 0.004f), new Color("b86a60"), new Vector3(0, -0.098f, -0.116f)));
+        var mouth = Flat(new Vector3(0.017f, 0.0035f, 0.004f), new Color("b05a58"), new Vector3(0, -0.098f, -0.116f));
+        head.AddChild(mouth);
+        if (_look.Feminine)
+        {
+            head.AddChild(Flat(new Vector3(0.008f, 0.003f, 0.004f), new Color("d88078"), new Vector3(0, -0.103f, -0.115f)));
+        }
     }
 
     private static MeshInstance3D Flat(Vector3 radius, Color color, Vector3 position)
@@ -286,7 +341,16 @@ public sealed class PlayerRig
                 if (mesh.Mesh.SurfaceGetMaterial(surface) is StandardMaterial3D original)
                 {
                     var color = _look.Palette.GetValueOrDefault(original.ResourceName, original.AlbedoColor);
-                    var material = Toon(color);
+                    var skin = original.ResourceName == "anime_skin";
+                    var material = Toon(skin ? _look.Skin : color);
+                    if (skin)
+                    {
+                        // Faces stay almost fully lit, with a warm shadow, as drawn anime faces do.
+                        material.SetShaderParameter("shade", _look.Skin * new Color(0.95f, 0.78f, 0.76f));
+                        material.SetShaderParameter("threshold", -0.45f);
+                        material.SetShaderParameter("rim_strength", 0.08f);
+                    }
+
                     material.SetShaderParameter("sway_top", top);
                     material.SetShaderParameter("sway_length", length);
                     mesh.SetSurfaceOverrideMaterial(surface, material);
@@ -306,35 +370,27 @@ public sealed class PlayerRig
     {
         var material = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/toon.gdshader") };
         material.SetShaderParameter("base", color);
-        material.SetShaderParameter("shade", color.Lerp(new Color("3a3060"), 0.38f));
+        material.SetShaderParameter("shade", color.Lerp(new Color("4a3e78"), 0.3f));
         return material;
     }
 
-    /// <summary>Hair lags behind the head: it streams back with speed, lifts when falling and settles slowly.</summary>
-    private void AnimateHair(in MotionState state, float delta)
+    /// <summary>Lets hair and cloth hang still, for a character that was just placed.</summary>
+    public void ResetCloth()
     {
-        var target = Mathf.Clamp(state.Speed * 0.075f, 0f, 1.25f) + (state.Grounded ? 0f : Mathf.Clamp(-state.VerticalSpeed * 0.06f, -0.3f, 0.7f));
-        target += Mathf.Sin(_phase * 2f) * Mathf.Min(state.Speed * 0.012f, 0.1f);
-        var force = (target - _hairAngle) * 95f - _hairVelocity * 11f;
-        _hairVelocity += force * delta;
-        _hairAngle += _hairVelocity * delta;
-        var turn = Mathf.Clamp((_lastYaw - Root.Rotation.Y) / Mathf.Max(delta, 0.001f), -6f, 6f);
-        _hairSide = Mathf.Lerp(_hairSide, turn * 0.07f, 1f - Mathf.Exp(-9f * delta));
-        _lastYaw = Root.Rotation.Y;
-        // Cloth stays attached at the top and bends more towards its ends, which a rigid turn cannot do.
-        var speed = Mathf.Clamp(state.Speed / Tuning.MoveSpeed, 0f, 1.6f);
-        var cloak = new Vector3(_hairSide * 0.16f, _hairAngle * 0.22f, _hairAngle * 0.62f);
-        foreach (var material in _cloakCloth)
+        foreach (var cloth in _cloth)
         {
-            material.SetShaderParameter("sway", cloak);
-            material.SetShaderParameter("flutter", 0.012f + speed * 0.05f);
+            cloth.Reset();
         }
+    }
 
-        var hair = new Vector3(_hairSide * 0.05f, _hairAngle * 0.04f, _hairAngle * 0.14f);
-        foreach (var material in _hairCloth)
+    /// <summary>Moves hair and cloth for this frame and blinks now and then.</summary>
+    private void AnimateCloth(in MotionState state, float delta)
+    {
+        var velocity = Root.GlobalBasis.Orthonormalized() * new Vector3(0, 0, -state.Speed);
+        velocity.Y = state.Grounded ? 0f : state.VerticalSpeed;
+        foreach (var cloth in _cloth)
         {
-            material.SetShaderParameter("sway", hair);
-            material.SetShaderParameter("flutter", 0.002f + speed * 0.012f);
+            cloth.Step(velocity, delta);
         }
 
         _blinkClock -= delta;
@@ -606,7 +662,11 @@ public sealed class PlayerRig
         }
 
         _lastAttackTick = state.Attack == AttackKind.None ? -1 : state.AttackTick;
-        if (_look.Weapon != "sword")
+        if (_look.Weapon == "none")
+        {
+            RestArms();
+        }
+        else if (_look.Weapon != "sword")
         {
             CarryWeapon();
         }
@@ -617,11 +677,6 @@ public sealed class PlayerRig
             blend = 26f;
         }
 
-        if (!_look.Goblin)
-        {
-            AnimateHair(state, delta);
-        }
-
         var weight = 1f - Mathf.Exp(-blend * delta);
         for (var i = 0; i < JointCount; i++)
         {
@@ -629,6 +684,10 @@ public sealed class PlayerRig
         }
 
         Apply();
+        if (!_look.Goblin)
+        {
+            AnimateCloth(state, delta);
+        }
     }
 
     /// <summary>The ready grip: the hand out from the hip and the blade angled forward and away from the body.</summary>
@@ -639,6 +698,40 @@ public sealed class PlayerRig
         _target[ForearmR] = -0.75f;
         _target[SwordTilt] = -0.55f;
         _target[SwordYaw] = -0.55f;
+    }
+
+    /// <summary>Where free hands go: down by the sides, folded in front, or behind the back.</summary>
+    private void RestArms()
+    {
+        _target[Lean] += _look.Stoop;
+        _target[Head] -= _look.Stoop * 0.8f;
+        switch (_look.Rest)
+        {
+            case "clasped":
+                _target[ArmL] = 0.14f;
+                _target[ArmR] = 0.14f;
+                _target[ArmLSide] = -0.1f;
+                _target[ArmRSide] = -0.1f;
+                _target[ForearmL] = -0.8f;
+                _target[ForearmR] = -0.8f;
+                _clasp = 0.95f;
+                break;
+            case "behind":
+                _target[ArmL] = -0.42f;
+                _target[ArmR] = -0.42f;
+                _target[ArmLSide] = -0.12f;
+                _target[ArmRSide] = -0.12f;
+                _target[ForearmL] = -0.75f;
+                _target[ForearmR] = -0.75f;
+                break;
+            default:
+                _target[ArmL] = 0.04f;
+                _target[ArmR] = 0.04f;
+                _target[ArmRSide] = 0f;
+                _target[ForearmL] = -0.22f;
+                _target[ForearmR] = -0.22f;
+                break;
+        }
     }
 
     /// <summary>How each weapon rests in the hand while walking.</summary>
@@ -938,10 +1031,10 @@ public sealed class PlayerRig
         _thighR.Rotation = new Vector3(_pose[ThighR], 0, 0);
         _shinL.Rotation = new Vector3(-_pose[ShinL], 0, 0);
         _shinR.Rotation = new Vector3(-_pose[ShinR], 0, 0);
-        _armL.Rotation = new Vector3(_pose[ArmL], 0, -0.08f);
+        _armL.Rotation = new Vector3(_pose[ArmL], 0, -0.08f - _pose[ArmLSide]);
         _armR.Rotation = new Vector3(_pose[ArmR], 0, 0.08f + _pose[ArmRSide]);
-        _forearmL.Rotation = new Vector3(-_pose[ForearmL], 0, 0);
-        _forearmR.Rotation = new Vector3(-_pose[ForearmR], 0, 0);
+        _forearmL.Rotation = new Vector3(-_pose[ForearmL], -_clasp, 0);
+        _forearmR.Rotation = new Vector3(-_pose[ForearmR], _clasp, 0);
         _sword.Rotation = new Vector3(_pose[SwordTilt], _pose[SwordYaw], 0);
     }
 

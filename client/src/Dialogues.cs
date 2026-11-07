@@ -11,55 +11,81 @@ public static class NpcLooks
 
     public static readonly RigLook Examiner = new("examiner", Skin, 1f, "sword")
     {
+        Hair = "rhea",
+        Feminine = true,
+        Extras = new[] { "armor" },
         Eyes = new Color("b8552a"),
+        Brows = new Color("7a2420"),
         Palette = new Dictionary<string, Color>
         {
             ["anime_hair"] = new("a8362e"),
-            ["anime_shirt"] = new("8b9bb4"),
+            ["anime_shirt"] = new("3a3440"),
             ["anime_cloak"] = new("7a2430"),
             ["anime_trousers"] = new("3a3440"),
         },
     };
 
-    private static readonly RigLook Receptionist = new("receptionist", Skin, 0.96f, "none")
+    private static readonly RigLook Receptionist = new("receptionist", Skin, 0.95f, "none")
     {
-        LongHair = true,
+        Hair = "mira",
+        Feminine = true,
         Skirt = true,
         Cloak = false,
+        Rest = "clasped",
+        Extras = new[] { "vest", "bow" },
         Eyes = new Color("3f6fa8"),
+        Brows = new Color("9a5028"),
         Palette = new Dictionary<string, Color>
         {
             ["anime_hair"] = new("c8703a"),
-            ["anime_shirt"] = new("f0ece2"),
+            ["anime_shirt"] = new("f4f0e6"),
+            ["anime_vest"] = new("2f4070"),
             ["anime_cloak"] = new("2f4070"),
-            ["anime_trousers"] = new("2f4070"),
-            ["anime_dark"] = new("2f4070"),
+            ["anime_trousers"] = new("f0dcc8"),
+            ["anime_dark"] = new("f4f0e6"),
+            ["anime_glove"] = Skin,
+            ["anime_accent"] = new("c84848"),
         },
     };
 
-    private static readonly RigLook Villager = new("villager", new Color("e8c0a4"), 1f, "none")
+    private static readonly RigLook Villager = new("villager", new Color("e8c0a4"), 0.97f, "none")
     {
+        Hair = "bram",
         Cloak = false,
+        Stoop = 0.16f,
+        Rest = "behind",
+        Extras = new[] { "robe", "beard" },
         Eyes = new Color("6a4a30"),
+        Brows = new Color("d8d8e0"),
         Palette = new Dictionary<string, Color>
         {
-            ["anime_hair"] = new("a8a8b0"),
-            ["anime_shirt"] = new("8a7a5a"),
+            ["anime_hair"] = new("d8d8e0"),
+            ["anime_shirt"] = new("7a6a4a"),
+            ["anime_cloak"] = new("6a5a3e"),
             ["anime_trousers"] = new("4a4038"),
+            ["anime_dark"] = new("6a5a3e"),
+            ["anime_glove"] = new("e8c0a4"),
         },
     };
 
-    private static readonly RigLook VillagerB = new("villager_b", Skin, 0.95f, "none")
+    private static readonly RigLook VillagerB = new("villager_b", Skin, 0.93f, "none")
     {
-        LongHair = true,
+        Hair = "tess",
+        Feminine = true,
         Skirt = true,
         Cloak = false,
+        Extras = new[] { "apron" },
         Eyes = new Color("3f8f6a"),
+        Brows = new Color("a88838"),
         Palette = new Dictionary<string, Color>
         {
             ["anime_hair"] = new("e0c060"),
             ["anime_shirt"] = new("c86a5a"),
-            ["anime_cloak"] = new("6a4a70"),
+            ["anime_cloak"] = new("7a4a58"),
+            ["anime_trousers"] = new("f0dcc8"),
+            ["anime_dark"] = new("c86a5a"),
+            ["anime_glove"] = Skin,
+            ["anime_vest"] = new("f0e8d8"),
         },
     };
 

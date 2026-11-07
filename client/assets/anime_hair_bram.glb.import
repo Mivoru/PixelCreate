@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://cp8sn4385soxy"
-path="res://.godot/imported/anime_hair.glb-5d7bd00add5cad2f24f1c0350ad9348c.scn"
+uid="uid://bbj6uatfc7eom"
+path="res://.godot/imported/anime_hair_bram.glb-5bed4c2180cc11aebc4ae97e5feefdc2.scn"
 
 [deps]
 
-source_file="res://assets/anime_hair.glb"
-dest_files=["res://.godot/imported/anime_hair.glb-5d7bd00add5cad2f24f1c0350ad9348c.scn"]
+source_file="res://assets/anime_hair_bram.glb"
+dest_files=["res://.godot/imported/anime_hair_bram.glb-5bed4c2180cc11aebc4ae97e5feefdc2.scn"]
 
 [params]
 

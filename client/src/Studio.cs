@@ -153,16 +153,18 @@ public partial class Studio : Node
             foreach (var (side, yaw) in new[] { ("front", 0f), ("three", 0.7f), ("side", Mathf.Pi / 2f), ("back", Mathf.Pi) })
             {
                 rig.Root.Rotation = new Vector3(0, yaw, 0);
+                rig.ResetCloth();
                 _stage.Camera.LookAtFromPosition(new Vector3(0, 1.25f, -7.5f), new Vector3(0, 0.95f, 0));
-                await Wait(4);
+                await Wait(8);
                 Save($"person_{name}_{side}");
             }
 
             rig.Root.Rotation = new Vector3(0, 0.35f, 0);
+            rig.ResetCloth();
             _stage.Camera.Fov = 10;
             var head = look.Scale * 1.68f;
             _stage.Camera.LookAtFromPosition(new Vector3(0, head + 0.05f, -4.2f), new Vector3(0, head, 0));
-            await Wait(4);
+            await Wait(8);
             Save($"person_{name}_face");
             Dismiss(rig);
         }

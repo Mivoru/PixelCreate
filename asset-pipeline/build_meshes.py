@@ -21,6 +21,7 @@ COLORS = {
     "flower": "E8506A", "flower_b": "F0C040", "hay": "D8B85A", "sack": "C8B48C", "cloth_red": "B84040",
     "anime_skin": "F6D8C4", "anime_hair": "2B3044", "anime_shirt": "D8D0C2", "anime_dark": "23252E",
     "anime_trousers": "2E3040", "anime_leather": "5A3A2C", "anime_cloak": "2F4A3C", "anime_gold": "D8A23C",
+    "anime_glove": "23252E", "anime_vest": "2F4070", "anime_accent": "C84848", "anime_armor": "B8C4D4", "anime_armor_dark": "7A889C",
 }
 MATERIALS = {}
 
@@ -215,13 +216,26 @@ def strand(bm, start, end, bend, width, sides=5, steps=6):
             bm.faces.new((rings[r][i], rings[r + 1][i], rings[r + 1][j], rings[r][j]))
 
 
-def anime_hair():
-    """A cap of hair and many sharp clumps that fall around the face and over the brow."""
-    bm = bmesh.new()
-    bmesh.ops.create_icosphere(bm, subdivisions=4, radius=1)
-    bmesh.ops.delete(bm, geom=[v for v in bm.verts if v.co.z < (0.18 if v.co.y > 0.2 else -0.42)], context="VERTS")
+def hair_cap(bm, back=-0.42):
+    """The solid part of the hair: a shell over the skull, open over the face."""
+    made = bmesh.ops.create_icosphere(bm, subdivisions=4, radius=1)["verts"]
+    bmesh.ops.delete(bm, geom=[v for v in made if v.co.z < (0.18 if v.co.y > 0.2 else back)], context="VERTS")
     for vert in bm.verts:
         vert.co = (vert.co.x * 0.139, vert.co.y * 0.146, vert.co.z * 0.164 + 0.008)
+
+
+def finish_hair(bm, name="hair"):
+    mesh = bpy.data.meshes.new(name)
+    bm.to_mesh(mesh)
+    bm.free()
+    smooth(mesh)
+    add_object(name, mesh, "anime_hair")
+
+
+def anime_hair_hero():
+    """A cap of hair and many sharp clumps that fall around the face and over the brow."""
+    bm = bmesh.new()
+    hair_cap(bm)
     rng = random.Random(14)
     for index in range(11):
         # The fringe: uneven points over the forehead.
@@ -241,27 +255,155 @@ def anime_hair():
         x, y = math.cos(angle) * 0.13, -math.sin(angle) * 0.13
         length = rng.uniform(0.09, 0.17)
         strand(bm, (x, y, height), (x * 1.5, y * 1.5, height - length), (x * 0.25, y * 0.25, 0.015), 0.034)
-    for index in range(9):
-        # Tufts that stick out at the crown.
+    for index in range(6):
+        # Short tufts at the crown, swept back so the outline stays calm.
         angle = rng.uniform(0, math.tau)
-        x, y = math.cos(angle) * 0.075, math.sin(angle) * 0.075 - 0.02
-        strand(bm, (x, y, 0.15), (x * 2.1, y * 2.1 - 0.02, 0.2 + rng.uniform(-0.02, 0.05)), (0, 0, 0.012), 0.024)
-    strand(bm, (0.0, 0.03, 0.17), (0.05, 0.08, 0.26), (0.03, -0.02, 0.02), 0.012)
-    mesh = bpy.data.meshes.new("hair")
-    bm.to_mesh(mesh)
-    bm.free()
-    smooth(mesh)
-    add_object("hair", mesh, "anime_hair")
+        x, y = math.cos(angle) * 0.075, math.sin(angle) * 0.07 - 0.03
+        strand(bm, (x, y, 0.15), (x * 1.5, y * 1.4 - 0.05, 0.17 + rng.uniform(-0.01, 0.025)), (0, 0, 0.01), 0.026)
+    finish_hair(bm)
+
+
+def anime_hair_mira():
+    """Soft bangs swept to one side, with long locks in front of the ears."""
+    bm = bmesh.new()
+    hair_cap(bm, -0.6)
+    rng = random.Random(31)
+    for index in range(13):
+        x = -0.125 + index * 0.021
+        drop = 0.1 + 0.05 * math.sin(index * 0.55) + rng.uniform(-0.008, 0.008)
+        strand(bm, (x - 0.03, 0.118, 0.11), (x + 0.03, 0.142, 0.1 - drop), (0.012, 0.016, 0), 0.026, steps=7)
+    for side in (-1, 1):
+        for index in range(4):
+            y = 0.05 + index * 0.012
+            strand(bm, (side * 0.118, y, 0.07), (side * (0.135 + index * 0.004), y + 0.01, -0.22 - index * 0.03), (side * 0.016, 0, 0), 0.026, steps=7)
+    finish_hair(bm)
+
+
+def anime_hair_rhea():
+    """Short and sharp, pulled away from the face, with a band at the back of the head."""
+    bm = bmesh.new()
+    hair_cap(bm, -0.55)
+    rng = random.Random(52)
+    for index in range(8):
+        x = -0.11 + index * 0.031
+        strand(bm, (x, 0.12, 0.11), (x * 1.3, 0.15, 0.06 - rng.uniform(0.01, 0.05)), (0, 0.014, 0.01), 0.03)
+    for index in range(14):
+        angle = rng.uniform(0.2, math.pi - 0.2)
+        x, y = math.cos(angle) * 0.125, -math.sin(angle) * 0.125
+        strand(bm, (x, y, 0.06), (x * 1.3, y * 1.3, -0.06 - rng.uniform(0, 0.05)), (x * 0.2, y * 0.2, 0), 0.03)
+    for side in (-1, 1):
+        strand(bm, (side * 0.118, 0.06, 0.07), (side * 0.14, 0.07, -0.12), (side * 0.012, 0, 0), 0.024)
+    finish_hair(bm)
+
+
+def anime_hair_bram():
+    """Thin white hair around a bald crown."""
+    bm = bmesh.new()
+    rng = random.Random(61)
+    for index in range(20):
+        angle = rng.uniform(-0.25, math.pi + 0.25)
+        x, y = math.cos(angle) * 0.13, -math.sin(angle) * 0.13
+        strand(bm, (x, y, 0.05), (x * 1.22, y * 1.22, -0.09 - rng.uniform(0, 0.04)), (x * 0.12, y * 0.12, 0), 0.028)
+    finish_hair(bm)
+
+
+def anime_beard():
+    bm = bmesh.new()
+    rng = random.Random(62)
+    for index in range(16):
+        x = -0.085 + index * 0.0113
+        strand(bm, (x, 0.09 - abs(x) * 0.4, -0.085 + abs(x) * 0.4), (x * 0.5, 0.125, -0.27 - rng.uniform(0, 0.05) + abs(x) * 0.5), (0, 0.016, 0), 0.026)
+    for side in (-1, 1):
+        strand(bm, (side * 0.012, 0.13, -0.075), (side * 0.07, 0.112, -0.11), (0, 0.008, -0.01), 0.016)
+    finish_hair(bm, "beard")
+
+
+def anime_hair_tess():
+    """Straight bangs and a parting, with hair drawn back to the two braids."""
+    bm = bmesh.new()
+    hair_cap(bm, -0.62)
+    for index in range(12):
+        x = -0.118 + index * 0.0215
+        strand(bm, (x, 0.118, 0.11), (x, 0.142, 0.03 - 0.008 * (index % 3)), (0, 0.014, 0), 0.026)
+    finish_hair(bm)
+
+
+def anime_braids():
+    bm = bmesh.new()
+    for side in (-1, 1):
+        for index in range(8):
+            z = -0.03 - index * 0.055
+            radius = 0.033 - index * 0.002
+            sway = 0.008 * (1 if index % 2 else -1)
+            sphere = bmesh.ops.create_uvsphere(bm, u_segments=8, v_segments=5, radius=radius)["verts"]
+            for vert in sphere:
+                vert.co = (vert.co.x + side * (0.135 + index * 0.002) + sway, vert.co.y + 0.02, vert.co.z * 1.25 + z)
+    finish_hair(bm, "braids")
+
+
+def anime_ponytail():
+    bm = bmesh.new()
+    rng = random.Random(53)
+    for index in range(12):
+        x = rng.uniform(-0.03, 0.03)
+        strand(bm, (x * 0.7, -0.15, 0.11), (x * 2.6, -0.2 - abs(x), -0.34 - rng.uniform(0, 0.09)), (x, -0.05, 0.02), 0.03, steps=8)
+    finish_hair(bm, "tail")
+    loft("band", [(0.09, 0.034, 0.03, 0, -0.15), (0.13, 0.034, 0.03, 0, -0.15)], "anime_accent", 8)
 
 
 def anime_torso():
     """Lean shoulders, a shirt tucked at the belt and a soft collar."""
-    loft("shirt", [(-0.12, 0.138, 0.095), (0, 0.118, 0.082), (0.14, 0.12, 0.085), (0.3, 0.15, 0.092), (0.385, 0.17, 0.088),
-                   (0.44, 0.14, 0.07), (0.47, 0.07, 0.06)], "anime_shirt", 18)
+    loft("shirt", [(-0.12, 0.138, 0.095), (0, 0.118, 0.082), (0.14, 0.122, 0.087), (0.26, 0.146, 0.098), (0.34, 0.168, 0.1), (0.4, 0.168, 0.086),
+                   (0.44, 0.128, 0.07), (0.47, 0.066, 0.056)], "anime_shirt", 22)
     loft("collar", [(0.44, 0.075, 0.07), (0.5, 0.058, 0.058), (0.54, 0.062, 0.062)], "anime_dark", 14)
     loft("belt", [(-0.03, 0.128, 0.09), (0.03, 0.123, 0.087)], "anime_leather", 18)
     box("buckle", (0, 0.092, 0.0), (0.052, 0.012, 0.05), "anime_gold")
     loft("sash", [(-0.32, 0.03, 0.012, 0.09, 0.082), (-0.03, 0.04, 0.014, 0.09, 0.09)], "anime_cloak", 8)
+
+
+def anime_torso_f():
+    """A narrow waist, a bust and sloping shoulders."""
+    loft("shirt", [(-0.12, 0.135, 0.095), (-0.03, 0.112, 0.082), (0.06, 0.092, 0.072), (0.14, 0.098, 0.075, 0, 0.004), (0.22, 0.118, 0.098, 0, 0.022),
+                   (0.28, 0.126, 0.1, 0, 0.024), (0.34, 0.136, 0.082, 0, 0.006), (0.395, 0.142, 0.072), (0.44, 0.11, 0.06), (0.47, 0.058, 0.05)], "anime_shirt", 22)
+    loft("collar", [(0.44, 0.066, 0.06), (0.5, 0.05, 0.05), (0.535, 0.054, 0.054)], "anime_dark", 14)
+    loft("belt", [(-0.03, 0.118, 0.087), (0.02, 0.108, 0.081)], "anime_leather", 18)
+    box("buckle", (0, 0.088, -0.005), (0.04, 0.012, 0.038), "anime_gold")
+
+
+def anime_vest():
+    """A fitted waistcoat over the blouse, open at the neck, with gold buttons."""
+    loft("vest", [(-0.04, 0.122, 0.09), (0.06, 0.1, 0.08), (0.14, 0.106, 0.083, 0, 0.004), (0.22, 0.126, 0.106, 0, 0.022), (0.3, 0.134, 0.108, 0, 0.022)], "anime_vest", 22)
+    for z in (0.02, 0.09, 0.16):
+        box("button", (0, 0.086 + (z - 0.02) * 0.04, z), (0.014, 0.012, 0.014), "anime_gold")
+
+
+def anime_bow():
+    """A small ribbon at the collar, with the Guild pin."""
+    for side in (-1, 1):
+        loft("loop", [(0.0, 0.006, 0.006, side * 0.008, 0), (0.0, 0.03, 0.012, side * 0.038, 0)], "anime_accent", 6, (0, 0.074, 0.42))
+        loft("tail", [(-0.07, 0.016, 0.004, side * 0.022, 0), (0, 0.006, 0.004, side * 0.006, 0)], "anime_accent", 6, (0, 0.074, 0.415))
+    box("knot", (0, 0.078, 0.42), (0.018, 0.012, 0.022), "anime_accent")
+    box("pin", (0.07, 0.112, 0.25), (0.022, 0.008, 0.026), "anime_gold")
+
+
+def anime_armor():
+    """A breastplate and rounded pauldrons, worn over a dark tunic."""
+    loft("plate", [(0.04, 0.114, 0.09), (0.14, 0.11, 0.09, 0, 0.004), (0.22, 0.13, 0.11, 0, 0.022), (0.3, 0.14, 0.112, 0, 0.022), (0.38, 0.145, 0.086), (0.42, 0.11, 0.07)], "anime_armor", 22)
+    box("ridge", (0, 0.122, 0.22), (0.012, 0.01, 0.22), "anime_armor_dark")
+    for side in (-1, 1):
+        blob("pauldron", (side * 0.195, 0, 0.405), 0.075, "anime_armor", 7, 0.8, 2)
+        blob("rim", (side * 0.2, 0, 0.375), 0.07, "anime_armor_dark", 8, 0.45, 2)
+
+
+def anime_apron():
+    loft("apron", [(-0.46, 0.13, 0.028, 0, 0.17), (-0.2, 0.115, 0.024, 0, 0.142), (0.04, 0.09, 0.018, 0, 0.106)], "anime_vest", 12)
+    loft("waist", [(0.03, 0.116, 0.088), (0.07, 0.11, 0.084)], "anime_vest", 18)
+
+
+def anime_robe():
+    """A long coat that falls past the knees."""
+    loft("robe", [(-0.74, 0.17, 0.15), (-0.4, 0.16, 0.135), (-0.1, 0.15, 0.115), (0.1, 0.14, 0.1)], "anime_cloak", 18)
+    loft("sash", [(0.0, 0.15, 0.116), (0.05, 0.146, 0.112)], "anime_leather", 18)
 
 
 def anime_pelvis():
@@ -298,14 +440,14 @@ def anime_cloak():
 
 
 def anime_upper_arm():
-    loft("upper", [(-0.3, 0.036, 0.036), (-0.16, 0.044, 0.044), (-0.02, 0.05, 0.05), (0.03, 0.03, 0.03)], "anime_shirt", 12)
+    loft("upper", [(-0.3, 0.036, 0.036), (-0.16, 0.044, 0.044), (-0.03, 0.054, 0.054), (0.02, 0.054, 0.054), (0.055, 0.04, 0.04), (0.07, 0.016, 0.016)], "anime_shirt", 14)
 
 
 def anime_forearm():
     loft("sleeve", [(-0.14, 0.034, 0.034), (0, 0.036, 0.036)], "anime_shirt", 12)
-    loft("glove", [(-0.255, 0.031, 0.029), (-0.2, 0.031, 0.03), (-0.13, 0.04, 0.04), (-0.1, 0.042, 0.042)], "anime_dark", 12)
-    loft("hand", [(-0.345, 0.022, 0.016), (-0.3, 0.036, 0.019), (-0.255, 0.033, 0.022)], "anime_dark", 10)
-    loft("thumb", [(-0.31, 0.009, 0.009, 0.032, 0.016), (-0.27, 0.013, 0.013, 0.03, 0.012)], "anime_dark", 8)
+    loft("glove", [(-0.255, 0.031, 0.029), (-0.2, 0.031, 0.03), (-0.13, 0.04, 0.04), (-0.1, 0.042, 0.042)], "anime_glove", 12)
+    loft("hand", [(-0.345, 0.022, 0.016), (-0.3, 0.036, 0.019), (-0.255, 0.033, 0.022)], "anime_glove", 10)
+    loft("thumb", [(-0.31, 0.009, 0.009, 0.032, 0.016), (-0.27, 0.013, 0.013, 0.03, 0.012)], "anime_glove", 8)
 
 
 def anime_thigh():
@@ -532,22 +674,18 @@ def camp_set():
 
 
 def anime_hair_long():
-    """Long hair falling down the back, added to the short hair."""
+    """Long hair falling down the back, added to the cap."""
     bm = bmesh.new()
     rng = random.Random(23)
-    for index in range(22):
-        angle = rng.uniform(0.1, math.pi - 0.1)
-        x, y = math.cos(angle) * 0.125, -math.sin(angle) * 0.125
-        strand(bm, (x, y, 0.08), (x * 1.3, y * 1.45, rng.uniform(-0.52, -0.38)), (x * 0.3, y * 0.3, 0), 0.04)
-    mesh = bpy.data.meshes.new("long")
-    bm.to_mesh(mesh)
-    bm.free()
-    smooth(mesh)
-    add_object("long", mesh, "anime_hair")
+    for index in range(26):
+        angle = rng.uniform(0.05, math.pi - 0.05)
+        x, y = math.cos(angle) * 0.128, -math.sin(angle) * 0.128
+        strand(bm, (x, y, 0.08), (x * 1.15, y * 1.35, rng.uniform(-0.56, -0.44)), (x * 0.28, y * 0.2, 0), 0.042, steps=8)
+    finish_hair(bm, "long")
 
 
 def anime_skirt():
-    loft("skirt", [(-0.46, 0.2, 0.17), (-0.2, 0.17, 0.14), (0.02, 0.135, 0.1), (0.08, 0.125, 0.09)], "anime_cloak", 18)
+    loft("skirt", [(-0.5, 0.23, 0.2), (-0.2, 0.205, 0.165), (0.02, 0.185, 0.135), (0.08, 0.15, 0.105)], "anime_cloak", 18)
 
 
 def guild_hall():
@@ -729,7 +867,20 @@ MODELS = {
     "rock": rock,
     "bush": bush,
     "anime_head": anime_head,
-    "anime_hair": anime_hair,
+    "anime_hair_hero": anime_hair_hero,
+    "anime_hair_mira": anime_hair_mira,
+    "anime_hair_rhea": anime_hair_rhea,
+    "anime_hair_bram": anime_hair_bram,
+    "anime_hair_tess": anime_hair_tess,
+    "anime_beard": anime_beard,
+    "anime_braids": anime_braids,
+    "anime_ponytail": anime_ponytail,
+    "anime_torso_f": anime_torso_f,
+    "anime_vest": anime_vest,
+    "anime_bow": anime_bow,
+    "anime_armor": anime_armor,
+    "anime_apron": anime_apron,
+    "anime_robe": anime_robe,
     "anime_torso": anime_torso,
     "anime_pelvis": anime_pelvis,
     "anime_cloak": anime_cloak,
