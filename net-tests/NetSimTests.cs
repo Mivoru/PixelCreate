@@ -846,6 +846,28 @@ public sealed class ZoneTests
 {
     private static readonly Zone Valley = Zone.Load("meadow-valley");
 
+    [Fact]
+    public void Rivers_HaveWaterAlongTheWholeValley()
+    {
+        foreach (var (points, _) in Valley.RiverCourses)
+        {
+            var level = float.MaxValue;
+            for (var i = 0; i + 1 < points.Length; i++)
+            {
+                for (var t = 0f; t < 1f; t += 0.05f)
+                {
+                    var point = Vector2.Lerp(points[i], points[i + 1], t);
+                    var bed = Valley.World.Terrain!.At(point.X, point.Y);
+                    level = MathF.Min(level, bed + 1.1f);
+                    if (MathF.Max(MathF.Abs(point.X), MathF.Abs(point.Y)) < 150f)
+                    {
+                        Assert.True(level > bed + 0.3f, $"dry river at {point}: bed {bed}, water {level}");
+                    }
+                }
+            }
+        }
+    }
+
     private static PlayerState Walk(World world, Vector3 start, sbyte x, sbyte z, int ticks)
     {
         var state = PlayerState.Spawn(start with { Y = world.GroundHeight(start.X, start.Z) });

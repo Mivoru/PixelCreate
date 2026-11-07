@@ -58,6 +58,8 @@ public sealed class Zone
 {
     private sealed record HillData(float X, float Z, float Radius, float Height);
 
+    private const float BedStep = 2f;
+
     private sealed record PathData(float Width, float[][] Points);
 
     private sealed record PropData(string Model, float X, float Z, float Yaw = 0f);
@@ -150,7 +152,8 @@ public sealed class Zone
         Name = data.Name;
         Size = data.Size;
         _paths = data.Paths;
-        var terrain = new HeightField(data.Size, data.Cells, (x, z) => TerrainHeight(data, x, z));
+        var beds = (data.Rivers ?? Array.Empty<RiverData>()).Select(r => RiverBed(data, r)).ToArray();
+        var terrain = new HeightField(data.Size, data.Cells, (x, z) => TerrainHeight(data, beds, x, z));
         var random = new Random(data.Seed);
         var props = new List<PlacedProp>();
         var platforms = (data.Platforms ?? Array.Empty<RectData>()).Select(p => new Platform(p.X0, p.Z0, p.X1, p.Z1, p.Height)).ToArray();
@@ -242,7 +245,8 @@ public sealed class Zone
         return nearest;
     }
 
-    private static float TerrainHeight(ZoneData data, float x, float z)
+    /// <summary>The height of the hills alone, before rivers and mountains shape them.</summary>
+    private static float HillHeight(ZoneData data, float x, float z)
     {
         var height = 0f;
         foreach (var hill in data.Hills)
@@ -255,14 +259,55 @@ public sealed class Zone
             }
         }
 
-        foreach (var river in data.Rivers ?? Array.Empty<RiverData>())
+        return height;
+    }
+
+    /// <summary>The bed height every few metres along a river. It only ever falls, so water can flow.</summary>
+    private static float[] RiverBed(ZoneData data, RiverData river)
+    {
+        var bed = new List<float>();
+        var lowest = float.MaxValue;
+        for (var i = 0; i + 1 < river.Points.Length; i++)
         {
-            var distance = PolylineDistance(river.Points, x, z);
-            var bank = river.Width * 1.8f;
+            var a = new Vector2(river.Points[i][0], river.Points[i][1]);
+            var b = new Vector2(river.Points[i + 1][0], river.Points[i + 1][1]);
+            var length = Vector2.Distance(a, b);
+            for (var along = bed.Count * BedStep - Travelled(river.Points, i); along < length; along += BedStep)
+            {
+                var point = a + (b - a) * (along / length);
+                lowest = MathF.Min(lowest, HillHeight(data, point.X, point.Y) - river.Depth);
+                bed.Add(lowest);
+            }
+        }
+
+        return bed.ToArray();
+    }
+
+    private static float Travelled(float[][] points, int segment)
+    {
+        var travelled = 0f;
+        for (var i = 0; i < segment; i++)
+        {
+            travelled += Vector2.Distance(new Vector2(points[i][0], points[i][1]), new Vector2(points[i + 1][0], points[i + 1][1]));
+        }
+
+        return travelled;
+    }
+
+    private static float TerrainHeight(ZoneData data, float[][] beds, float x, float z)
+    {
+        var height = HillHeight(data, x, z);
+        var rivers = data.Rivers ?? Array.Empty<RiverData>();
+        for (var r = 0; r < rivers.Length; r++)
+        {
+            var (distance, travelled) = NearestOnPolyline(rivers[r].Points, x, z);
+            var bank = rivers[r].Width * 1.8f;
             if (distance < bank)
             {
                 var t = 1f - distance / bank;
-                height -= river.Depth * t * t * (3f - 2f * t);
+                var index = Math.Min((int)(travelled / BedStep), beds[r].Length - 1);
+                var cut = MathF.Min(height, beds[r][index]);
+                height += (cut - height) * t * t * (3f - 2f * t);
             }
         }
 
@@ -277,19 +322,32 @@ public sealed class Zone
         return height + Bumps(data.Seed, x, z);
     }
 
-    private static float PolylineDistance(float[][] points, float x, float z)
+    private static float PolylineDistance(float[][] points, float x, float z) => NearestOnPolyline(points, x, z).Distance;
+
+    /// <summary>How far a point lies from a polyline, and how far along the line that nearest spot is.</summary>
+    private static (float Distance, float Travelled) NearestOnPolyline(float[][] points, float x, float z)
     {
         var point = new Vector2(x, z);
         var nearest = float.MaxValue;
+        var nearestTravelled = 0f;
+        var travelled = 0f;
         for (var i = 0; i + 1 < points.Length; i++)
         {
             var a = new Vector2(points[i][0], points[i][1]);
             var b = new Vector2(points[i + 1][0], points[i + 1][1]);
+            var length = Vector2.Distance(a, b);
             var along = Math.Clamp(Vector2.Dot(point - a, b - a) / (b - a).LengthSquared(), 0f, 1f);
-            nearest = MathF.Min(nearest, Vector2.Distance(point, a + (b - a) * along));
+            var distance = Vector2.Distance(point, a + (b - a) * along);
+            if (distance < nearest)
+            {
+                nearest = distance;
+                nearestTravelled = travelled + along * length;
+            }
+
+            travelled += length;
         }
 
-        return nearest;
+        return (nearest, nearestTravelled);
     }
 
     /// <summary>Small uneven ground from a position hash, so it does not depend on visit order.</summary>

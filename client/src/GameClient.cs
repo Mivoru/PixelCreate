@@ -19,6 +19,7 @@ public partial class GameClient : Node
 {
     private const float CameraDistance = 5.2f;
     private const float CameraStep = 0.25f;
+    private const float CameraClearance = 0.4f;
     private const float MinPitch = -1.1f;
     private const float MaxPitch = 0.35f;
     private const float MouseSensitivity = 0.0035f;
@@ -865,20 +866,26 @@ public partial class GameClient : Node
         var flat = Mathf.Cos(_pitch);
         var back = new Vector3(Mathf.Sin(_yaw) * flat, -Mathf.Sin(_pitch), Mathf.Cos(_yaw) * flat);
 
-        // Walk out from the player and stop before the first thing in the way.
-        var distance = CameraStep;
-        while (distance < CameraDistance)
+        // Walk out from the player: rise over the ground, and stop before any box in the way.
+        // A bridge lifts the camera when the player stands on it and keeps it low when passing below.
+        var position = target + back * CameraStep;
+        for (var distance = CameraStep * 2f; distance <= CameraDistance; distance += CameraStep)
         {
-            var next = target + back * (distance + CameraStep);
-            if (_world.IsBlocked(new System.Numerics.Vector3(next.X, next.Y, next.Z)))
+            var next = target + back * distance;
+            var ground = _world.GroundHeight(next.X, next.Z);
+            var below = target.Y < ground;
+            next.Y = below ? Mathf.Min(next.Y, ground - CameraClearance) : next.Y;
+            var floor = below ? _world.Terrain?.At(next.X, next.Z) ?? 0f : ground;
+            next.Y = Mathf.Max(next.Y, floor + CameraClearance);
+            if (_world.IsInsideBox(new System.Numerics.Vector3(next.X, next.Y, next.Z)))
             {
                 break;
             }
 
-            distance += CameraStep;
+            position = next;
         }
 
-        _stage.Camera.LookAtFromPosition(target + back * distance, target);
+        _stage.Camera.LookAtFromPosition(position, target);
     }
 
     private void Capture()

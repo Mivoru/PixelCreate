@@ -169,11 +169,12 @@ public sealed class World
     /// <summary>True when a point is under the ground or inside a box.</summary>
     public bool IsBlocked(Vector3 point)
     {
-        if (point.Y < GroundHeight(point.X, point.Z) + 0.2f)
-        {
-            return true;
-        }
+        return point.Y < GroundHeight(point.X, point.Z) + 0.2f || IsInsideBox(point);
+    }
 
+    /// <summary>True when a point is inside a solid box. The ground does not count.</summary>
+    public bool IsInsideBox(Vector3 point)
+    {
         foreach (var box in Boxes)
         {
             if (point.X > box.Min.X && point.X < box.Max.X && point.Y > box.Min.Y && point.Y < box.Max.Y &&
