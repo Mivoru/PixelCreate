@@ -39,8 +39,10 @@ Rules:
   many corrections and no hits means client and server simulate differently.
 - All game text is English. Enemy types live in `world/enemies.json`. Items live in `world/items.json`
   (crystals first, then materials, food and equipment); each enemy's `loot` table names them. The
-  server owns the bag and sends it in slices; the client only decides which slot shows what. Gear can be
-  equipped but does not change combat yet. Food is eaten with the command range from `ItemCommands.EatBase`.
+  server owns the bag and sends it in slices; the client only decides which slot shows what. Gear pieces are server-owned instances (`Gear.cs`): base item,
+  rarity, level and affixes from `world/affixes.json`; worn gear feeds `GearStats` into every blow and hit. Each enemy's
+  `gear` table in `enemies.json` sets its drop chance, rarity weights and base items; `GearTests` prints pieces per hour.
+  Gear commands start at `GearCommands.ToggleBase`. `PIXEL_BOT=gear` with `PIXEL_TEST=1` checks the bag and tooltips. Food is eaten with the command range from `ItemCommands.EatBase`.
 - Item icons: `python asset-pipeline/generate_icons.py --sheet` paints all 16x16 icons from text shapes
   and writes a preview to `export/previews/icons.png`. A test fails if an item has no icon.
 - Test a far area: set `PIXEL_SPAWN=x,z` before starting the server.
