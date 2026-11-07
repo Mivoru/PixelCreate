@@ -255,6 +255,28 @@ public sealed class Zone
         return "";
     }
 
+    /// <summary>The middle line of each road.</summary>
+    public IEnumerable<Vector2[]> RoadCourses => _paths.Select(p => p.Points.Select(q => new Vector2(q[0], q[1])).ToArray());
+
+    /// <summary>The two ends of each road.</summary>
+    public IEnumerable<Vector2> RoadEnds => RoadCourses.SelectMany(r => new[] { r[0], r[^1] });
+
+    /// <summary>Distance from a road end to the nearest other road, ignoring the road it belongs to.</summary>
+    public float PathDistanceExcept(Vector2 end)
+    {
+        var nearest = float.MaxValue;
+        foreach (var path in _paths)
+        {
+            var own = new Vector2(path.Points[0][0], path.Points[0][1]) == end || new Vector2(path.Points[^1][0], path.Points[^1][1]) == end;
+            if (!own)
+            {
+                nearest = MathF.Min(nearest, PolylineDistance(path.Points, end.X, end.Y));
+            }
+        }
+
+        return nearest;
+    }
+
     /// <summary>Distance from a point to the edge of the nearest path; negative means on the path.</summary>
     public float PathDistance(float x, float z)
     {
@@ -458,7 +480,9 @@ public sealed class Zone
             var z = scatter.Area[1] + (float)random.NextDouble() * (scatter.Area[3] - scatter.Area[1]);
             var scale = scatter.MinScale + (float)random.NextDouble() * (scatter.MaxScale - scatter.MinScale);
             var yaw = (float)random.NextDouble() * MathF.Tau;
-            if (PathDistance(x, z) < 1.5f || terrain.At(x, z) < -0.3f || props.Any(p => Near(p, x, z, scatter.Spacing)) ||
+            // A tree crown spreads far wider than its trunk, so trees keep more distance from what is built.
+            var tree = scatter.Model.Contains("tree") || scatter.Model is "pine" or "birch" or "willow" or "oak";
+            if (PathDistance(x, z) < (tree ? 3.2f : 1.5f) || terrain.At(x, z) < -0.3f || props.Any(p => Near(p, x, z, scatter.Spacing, tree && Footprint(p.Model) > 1.2f ? 3f : 0f)) ||
                 OutsideShape(scatter, x, z) || InClearing(data, x, z) || NearWater(x, z) || TooSteep(terrain, x, z))
             {
                 continue;
@@ -469,9 +493,20 @@ public sealed class Zone
         }
     }
 
-    private static bool Near(PlacedProp prop, float x, float z, float spacing)
+    /// <summary>How far from its centre a model reaches on the ground, by what it is made of.</summary>
+    private static float Footprint(string model) => model switch
     {
-        var reach = spacing + (prop.Model is "cottage" or "cottage_b" or "tavern" or "stall" or "tent" ? 5f : prop.Model == "guild_hall" ? 10f : 0f);
+        "field" => 8f,
+        "pier" => 6f,
+        "bridge" => 11f,
+        "camp_set" => 3f,
+        "ruin_arch" => 4f,
+        _ => Collision.TryGetValue(model, out var shape) ? MathF.Max(shape.X, shape.Y) : 0f,
+    };
+
+    private static bool Near(PlacedProp prop, float x, float z, float spacing, float extra)
+    {
+        var reach = spacing + (Footprint(prop.Model) + extra) * prop.Scale;
         return new Vector2(prop.Position.X - x, prop.Position.Z - z).LengthSquared() < reach * reach;
     }
 

@@ -123,6 +123,80 @@ public class ZoneAuditTests
         }
     }
 
+    private static bool IsTree(string model) => model.Contains("tree") || model is "pine" or "birch" or "willow" or "oak";
+
+    [Fact]
+    public void Roads_CrossWaterOnlyOnBridges()
+    {
+        foreach (var (x, z) in RoadPoints())
+        {
+            var onBridge = Valley.World.Platforms.Any(p => x >= p.MinX - 3 && x <= p.MaxX + 3 && z >= p.MinZ - 3 && z <= p.MaxZ + 3);
+            Assert.True(onBridge || !Valley.IsBare(x, z), $"a road runs through water at {x:F0}, {z:F0}");
+        }
+    }
+
+    [Fact]
+    public void Roads_AreNotBlockedBySolidThings()
+    {
+        foreach (var (x, z) in RoadPoints())
+        {
+            var y = Valley.World.GroundHeight(x, z) + 0.05f;
+            Assert.False(Valley.World.OverlapsPlayer(new Vector3(x, y, z)), $"something stands on the road at {x:F0}, {z:F0}");
+        }
+    }
+
+    [Fact]
+    public void Roads_LeadFromPlaceToPlace()
+    {
+        foreach (var end in Valley.RoadEnds)
+        {
+            var known = Valley.RegionAt(end.X, end.Y).Length > 0 || Valley.PathDistanceExcept(end) < 3f ||
+                Valley.Props.Any(p => Vector2.Distance(new Vector2(p.Position.X, p.Position.Z), end) < 8f && p.Model is not ("rock" or "bush" or "flowers" or "fern"));
+            Assert.True(known, $"a road ends at nothing at {end}");
+        }
+    }
+
+    [Fact]
+    public void Trees_KeepClearOfBridgesRoadsAndBuildings()
+    {
+        var built = Valley.Props.Where(p => p.Model is "bridge" or "cottage" or "cottage_b" or "tavern" or "guild_hall" or "windmill" or "watchtower" or "well" or "stall" or "field").ToArray();
+        foreach (var tree in Valley.Props.Where(p => IsTree(p.Model) && p.Scale > 0f && !Authored(p)))
+        {
+            Assert.True(Valley.PathDistance(tree.Position.X, tree.Position.Z) > 2.5f, $"a tree stands on the road at {tree.Position}");
+            foreach (var thing in built)
+            {
+                var gap = Vector2.Distance(new Vector2(tree.Position.X, tree.Position.Z), new Vector2(thing.Position.X, thing.Position.Z));
+                Assert.True(gap > 5f, $"a tree at {tree.Position} grows into the {thing.Model} at {thing.Position}");
+            }
+        }
+    }
+
+    [Fact]
+    public void BuiltThings_StandBesideTheRoads()
+    {
+        foreach (var prop in Valley.Props.Where(p => Authored(p) && p.Model is "lantern_post" or "signpost" or "barrel" or "crate" or "bench" or "well" or "cart" or "fence"))
+        {
+            Assert.True(Valley.PathDistance(prop.Position.X, prop.Position.Z) > 0.3f, $"the {prop.Model} at {prop.Position} stands in the road");
+        }
+    }
+
+    private static bool Authored(PlacedProp prop) => prop.Scale == 1f;
+
+    private static IEnumerable<(float X, float Z)> RoadPoints()
+    {
+        foreach (var points in Valley.RoadCourses)
+        {
+            for (var i = 0; i + 1 < points.Length; i++)
+            {
+                for (var t = 0f; t < 1f; t += 0.1f)
+                {
+                    var point = Vector2.Lerp(points[i], points[i + 1], t);
+                    yield return (point.X, point.Y);
+                }
+            }
+        }
+    }
+
     [Fact]
     public void Bridges_MeetTheGroundAtBothEnds()
     {
