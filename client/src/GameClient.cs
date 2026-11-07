@@ -416,7 +416,7 @@ public partial class GameClient : Node
         var region = _zone.RegionAt(shown.X, shown.Z);
         if (region != _region && region.Length > 0)
         {
-            _hud.ShowBanner(region, new Color("ead4aa"));
+            _hud.ShowPlace(region);
         }
 
         _region = region.Length > 0 ? region : _region;

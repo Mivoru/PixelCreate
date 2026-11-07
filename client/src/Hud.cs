@@ -6,43 +6,53 @@ using PixelCreate.Core;
 namespace PixelCreate;
 
 /// <summary>
-/// The game interface, drawn in the same 640 x 360 pixels as the world and scaled up with it.
-/// All text is English.
+/// The game interface: clean glass panels, rounded bars and a smooth font, drawn at the full window
+/// resolution over the pixel-art world. Sizes are given for a 1080 pixel tall window and scale with
+/// it. All text is English.
 /// </summary>
 public partial class Hud : Control
 {
-    private const float UiHeight = 360f;
-    private const int Slot = 22;
+    private const float DesignHeight = 1080f;
+    private const float SlotSize = 64f;
+    private const float SlotGap = 8f;
     private const float TagRange = 34f;
 
-    private static readonly Color Panel = new("262b44");
-    private static readonly Color PanelLight = new("3a4466");
-    private static readonly Color Edge = new("8b9bb4");
-    private static readonly Color Ink = new("181425");
-    private static readonly Color Text = new("ead4aa");
-    private static readonly Color HealthColor = new("e43b44");
-    private static readonly Color HealthDark = new("a22633");
-    private static readonly Color StaminaColor = new("63c74d");
-    private static readonly Color StaminaDark = new("3e8948");
+    private static readonly Color Glass = new(0.06f, 0.08f, 0.12f, 0.74f);
+    private static readonly Color GlassDeep = new(0.04f, 0.05f, 0.08f, 0.88f);
+    private static readonly Color Rim = new(1f, 1f, 1f, 0.1f);
+    private static readonly Color Text = new("eef1f6");
+    private static readonly Color Muted = new("9aa4b5");
+    private static readonly Color Accent = new("f2c35b");
+    private static readonly Color HealthColor = new("e5484d");
+    private static readonly Color HealthLight = new("ff7a7e");
+    private static readonly Color StaminaColor = new("3fbf7a");
+    private static readonly Color Track = new(1f, 1f, 1f, 0.08f);
+    private static readonly Color Shadow = new(0f, 0f, 0f, 0.55f);
 
     private readonly Dictionary<string, Texture2D> _icons = new();
     private readonly List<(Rect2 Rect, SlotRef Slot)> _slots = new();
+    private readonly List<(Rect2 Rect, string Icon)> _iconDraws = new();
     private Font _font = null!;
+    private Font _bold = null!;
+    private IconLayer _iconLayer = null!;
     private float _shownHealth = 1f;
     private float _ghostHealth = 1f;
     private float _shownStamina = 1f;
     private float _time;
     private Item? _held;
     private float _shownXp;
-    private int _uiScale = 2;
+    private float _scale = 1f;
     private string _dialogName = "";
     private string _dialogText = "";
+    private float _dialogAge;
     private (string Label, Command Command)[] _dialogOptions = System.Array.Empty<(string, Command)>();
     private string[] _story = System.Array.Empty<string>();
     private float _storyTime;
     private float _bannerTime;
     private string _banner = "";
     private Color _bannerColor = Colors.White;
+    private float _placeTime;
+    private string _place = "";
 
     private sealed class FloatingText
     {
@@ -50,6 +60,20 @@ public partial class Hud : Control
         public required Vector3 Position;
         public required Color Color;
         public float Age;
+    }
+
+    /// <summary>Pixel-art icons need nearest filtering, unlike the smooth text, so they draw on their own layer.</summary>
+    private sealed partial class IconLayer : Control
+    {
+        public Hud Owner = null!;
+
+        public override void _Draw()
+        {
+            foreach (var (rect, icon) in Owner._iconDraws)
+            {
+                DrawTextureRect(Owner._icons[icon], rect, false);
+            }
+        }
     }
 
     private readonly List<FloatingText> _floating = new();
@@ -71,24 +95,35 @@ public partial class Hud : Control
 
     public override void _Ready()
     {
-        _font = GD.Load<Font>("res://assets/ui/pixel_font.fnt");
+        var file = GD.Load<FontFile>("res://assets/ui/Nunito.ttf");
+        _font = Weight(file, 600);
+        _bold = Weight(file, 800);
         _icons["wooden_sword"] = GD.Load<Texture2D>("res://assets/ui/wooden_sword.png");
-        TextureFilter = TextureFilterEnum.Nearest;
+        TextureFilter = TextureFilterEnum.Linear;
         MouseFilter = MouseFilterEnum.Stop;
+        _iconLayer = new IconLayer { Owner = this, TextureFilter = TextureFilterEnum.Nearest, MouseFilter = MouseFilterEnum.Ignore };
+        AddChild(_iconLayer);
         GetViewport().SizeChanged += FitWindow;
         FitWindow();
+    }
+
+    private static FontVariation Weight(FontFile file, int weight)
+    {
+        var tag = TextServerManager.GetPrimaryInterface().NameToTag("wght");
+        return new FontVariation { BaseFont = file, VariationOpentype = new Godot.Collections.Dictionary { [tag] = weight } };
     }
 
     private void FitWindow()
     {
         var window = GetViewport().GetVisibleRect().Size;
-        _uiScale = Mathf.Max(1, Mathf.RoundToInt(window.Y / UiHeight));
-        Scale = Vector2.One * _uiScale;
-        Size = window / _uiScale;
+        _scale = window.Y / DesignHeight;
+        Scale = Vector2.One * _scale;
+        Size = window / _scale;
+        _iconLayer.Size = Size;
     }
 
     /// <summary>Turns a position in the 3D view into a position in this interface.</summary>
-    private Vector2 ToHud(Vector3 world) => Camera!.UnprojectPosition(world) * WorldScale / _uiScale;
+    private Vector2 ToHud(Vector3 world) => Camera!.UnprojectPosition(world) * WorldScale / _scale;
 
     /// <summary>Shows a line of text in the world that rises and fades.</summary>
     public void AddFloating(string text, Vector3 position, Color color) =>
@@ -99,7 +134,14 @@ public partial class Hud : Control
     {
         _banner = text;
         _bannerColor = color;
-        _bannerTime = 3f;
+        _bannerTime = 3.2f;
+    }
+
+    /// <summary>Names the place the player has just entered.</summary>
+    public void ShowPlace(string name)
+    {
+        _place = name;
+        _placeTime = 3.6f;
     }
 
     public string Prompt { get; set; } = "";
@@ -114,6 +156,7 @@ public partial class Hud : Control
         _dialogName = name;
         _dialogText = text;
         _dialogOptions = options;
+        _dialogAge = 0f;
     }
 
     public void CloseDialog() => _dialogName = "";
@@ -151,18 +194,20 @@ public partial class Hud : Control
     {
         var d = (float)delta;
         _time += d;
+        _dialogAge += d;
         var maxHealth = Snapshot?.MaxHealth ?? Tuning.PlayerHealth;
         var health = Mathf.Clamp(Player.Health / (float)maxHealth, 0f, 1f);
         var xp = Snapshot is { XpToNext: > 0 } current ? current.Xp / (float)current.XpToNext : 0f;
         _shownXp = xp < _shownXp ? xp : Mathf.Lerp(_shownXp, xp, 1f - Mathf.Exp(-8f * d));
         _bannerTime = Mathf.Max(0f, _bannerTime - d);
+        _placeTime = Mathf.Max(0f, _placeTime - d);
         _storyTime += d;
         foreach (var text in _floating)
         {
             text.Age += d;
         }
 
-        _floating.RemoveAll(t => t.Age > 1.1f);
+        _floating.RemoveAll(t => t.Age > 1.2f);
         var stamina = Mathf.Clamp(Player.Stamina / Tuning.MaxStamina, 0f, 1f);
         _shownHealth = Mathf.Lerp(_shownHealth, health, 1f - Mathf.Exp(-16f * d));
         _shownStamina = Mathf.Lerp(_shownStamina, stamina, 1f - Mathf.Exp(-22f * d));
@@ -170,16 +215,20 @@ public partial class Hud : Control
         // The pale part of the bar shows the damage just taken, then drains away.
         _ghostHealth = health > _ghostHealth ? health : Mathf.MoveToward(_ghostHealth, health, d * 0.35f);
         QueueRedraw();
+        _iconLayer.QueueRedraw();
     }
 
     public override void _Draw()
     {
         _slots.Clear();
+        _iconDraws.Clear();
         DrawNametags();
         DrawFloating();
         DrawStatus();
         DrawHotbar();
         DrawGuide();
+        DrawMessages();
+        DrawDialog();
         if (InventoryOpen)
         {
             DrawInventory();
@@ -187,7 +236,7 @@ public partial class Hud : Control
 
         if (_held is not null)
         {
-            DrawTextureRect(_icons[_held.Icon], new Rect2(GetLocalMousePosition() - new Vector2(8, 8), 16, 16), false);
+            _iconDraws.Add((new Rect2(GetLocalMousePosition() - new Vector2(24, 24), 48, 48), _held.Icon));
         }
     }
 
@@ -246,76 +295,198 @@ public partial class Hud : Control
         }
     }
 
+    // --- Drawing helpers -------------------------------------------------------------------------
+
+    private void Card(Rect2 rect, float radius = 14f, Color? fill = null)
+    {
+        var shadow = new StyleBoxFlat { BgColor = new Color(0, 0, 0, 0.28f), AntiAliasing = true };
+        shadow.SetCornerRadiusAll((int)radius + 2);
+        DrawStyleBox(shadow, new Rect2(rect.Position + new Vector2(0, 4), rect.Size));
+        var box = new StyleBoxFlat { BgColor = fill ?? Glass, BorderColor = Rim, AntiAliasing = true };
+        box.SetBorderWidthAll(1);
+        box.SetCornerRadiusAll((int)radius);
+        DrawStyleBox(box, rect);
+    }
+
+    private void Pill(Rect2 rect, Color color)
+    {
+        var box = new StyleBoxFlat { BgColor = color, AntiAliasing = true };
+        box.SetCornerRadiusAll((int)(rect.Size.Y / 2f));
+        DrawStyleBox(box, rect);
+    }
+
+    private float Width(string text, int size, Font? font = null) => (font ?? _font).GetStringSize(text, HorizontalAlignment.Left, -1, size).X;
+
+    private void Label(string text, Vector2 at, int size, Color color, Font? font = null, bool shadow = false)
+    {
+        if (shadow)
+        {
+            DrawString(font ?? _font, at + new Vector2(0, 2), text, HorizontalAlignment.Left, -1, size, new Color(Shadow.R, Shadow.G, Shadow.B, Shadow.A * color.A));
+        }
+
+        DrawString(font ?? _font, at, text, HorizontalAlignment.Left, -1, size, color);
+    }
+
+    private void Centered(string text, float y, int size, Color color, Font? font = null, bool shadow = true) =>
+        Label(text, new Vector2((Size.X - Width(text, size, font)) / 2f, y), size, color, font, shadow);
+
+    /// <summary>A rounded bar. The ghost shows recent loss in a paler colour.</summary>
+    private void Bar(Rect2 rect, float value, float ghost, Color color, Color light, bool warn)
+    {
+        Pill(rect, Track);
+        if (ghost > value)
+        {
+            Pill(new Rect2(rect.Position, Mathf.Max(rect.Size.X * ghost, rect.Size.Y), rect.Size.Y), new Color(1f, 0.9f, 0.7f, 0.55f));
+        }
+
+        if (value > 0.001f)
+        {
+            var fill = new Rect2(rect.Position, Mathf.Max(rect.Size.X * value, rect.Size.Y), rect.Size.Y);
+            Pill(fill, warn && Mathf.Sin(_time * 9f) > 0 ? light : color);
+            if (rect.Size.Y >= 10f)
+            {
+                Pill(new Rect2(fill.Position + new Vector2(3, 2), Mathf.Max(fill.Size.X - 6, 1f), rect.Size.Y * 0.3f), new Color(1, 1, 1, 0.22f));
+            }
+        }
+    }
+
+    private void Keycap(string key, Vector2 at, int size = 15)
+    {
+        var width = Mathf.Max(Width(key, size, _bold) + 14f, size + 12f);
+        var rect = new Rect2(at, width, size + 12f);
+        var box = new StyleBoxFlat { BgColor = new Color(1, 1, 1, 0.92f), AntiAliasing = true, BorderColor = new Color(0, 0, 0, 0.25f) };
+        box.SetCornerRadiusAll(6);
+        box.BorderWidthBottom = 3;
+        DrawStyleBox(box, rect);
+        Label(key, new Vector2(at.X + (width - Width(key, size, _bold)) / 2f, at.Y + size + 2f), size, new Color("161a22"), _bold);
+    }
+
+    // --- Screens ----------------------------------------------------------------------------------
+
     private void DrawStatus()
     {
-        DrawPanel(new Rect2(6, 6, 134, 36));
-        DrawString(_font, new Vector2(11, 16), $"Wanderer   Lv {Level}", HorizontalAlignment.Left, -1, 11, Text);
-        DrawBar(new Rect2(11, 19, 124, 9), _shownHealth, _ghostHealth, HealthColor, HealthDark,
-                $"{Math.Max(Player.Health, (short)0)} / {Snapshot?.MaxHealth ?? Tuning.PlayerHealth}", _shownHealth < 0.3f);
-        DrawBar(new Rect2(11, 30, 124, 7), _shownStamina, _shownStamina, StaminaColor, StaminaDark, "", Player.Stamina < 15f);
+        var card = new Rect2(28, 28, 384, 110);
+        Card(card);
+        Label("Wanderer", card.Position + new Vector2(22, 40), 24, Text, _bold);
+        var level = $"Lv {Level}";
+        var levelWidth = Width(level, 15, _bold) + 20;
+        Pill(new Rect2(card.End.X - levelWidth - 18, card.Position.Y + 18, levelWidth, 26), Accent);
+        Label(level, new Vector2(card.End.X - levelWidth - 8, card.Position.Y + 37), 15, new Color("1d1608"), _bold);
+
+        // Health is the wide bar with its numbers inside; stamina is the thin bar under it.
+        var maxHealth = Snapshot?.MaxHealth ?? Tuning.PlayerHealth;
+        var health = new Rect2(card.Position + new Vector2(22, 56), card.Size.X - 44, 22);
+        Bar(health, _shownHealth, _ghostHealth, HealthColor, HealthLight, _shownHealth < 0.3f);
+        var numbers = $"{Math.Max(Player.Health, (short)0)} / {maxHealth}";
+        Label(numbers, new Vector2(health.End.X - 12 - Width(numbers, 15, _bold), health.Position.Y + 17), 15, Colors.White, _bold, true);
+        Bar(new Rect2(card.Position + new Vector2(22, 87), card.Size.X - 44, 6), _shownStamina, _shownStamina, StaminaColor, new Color("8ff0b8"), Player.Stamina < 15f);
+
         if (Player.SlowTicks > 0)
         {
-            var label = $"Slowed {Player.SlowTicks / 60f:F1}s";
-            var width = _font.GetStringSize(label, HorizontalAlignment.Left, -1, 11).X;
-            DrawPanel(new Rect2(6, 45, width + 12, 14));
-            DrawString(_font, new Vector2(12, 55), label, HorizontalAlignment.Left, -1, 11, new Color("8fe05a"));
-        }
-
-        if (Notice.Length > 0)
-        {
-            DrawString(_font, new Vector2(6, 354), Notice, HorizontalAlignment.Left, -1, 11, Text);
-        }
-
-        if (_bannerTime > 0f)
-        {
-            var size = _font.GetStringSize(_banner, HorizontalAlignment.Left, -1, 22);
-            var at = new Vector2((Size.X - size.X) / 2f, 62f - Mathf.Min(_bannerTime - 2.7f, 0f) * 0f);
-            DrawString(_font, at + Vector2.One, _banner, HorizontalAlignment.Left, -1, 22, Ink);
-            DrawString(_font, at, _banner, HorizontalAlignment.Left, -1, 22, _bannerColor);
+            var label = $"Slowed  {Player.SlowTicks / 60f:F1}s";
+            var rect = new Rect2(28, 148, Width(label, 16, _bold) + 32, 34);
+            Card(rect, 17, new Color(0.2f, 0.35f, 0.1f, 0.8f));
+            Label(label, rect.Position + new Vector2(16, 23), 16, new Color("c8f59a"), _bold);
         }
     }
 
     private void DrawGuide()
     {
-        var gold = $"{Snapshot?.Gold ?? 0} gold";
-        var goldWidth = _font.GetStringSize(gold, HorizontalAlignment.Left, -1, 11).X;
-        DrawOutlined(gold, new Vector2(Size.X - goldWidth - 8, 16), new Color("feae34"));
+        var gold = (Snapshot?.Gold ?? 0).ToString();
+        var goldWidth = Width(gold, 20, _bold);
+        var coin = new Rect2(Size.X - 74 - goldWidth, 34, 46 + goldWidth, 40);
+        Card(coin, 20);
+        DrawCircle(coin.Position + new Vector2(22, 20), 10, Accent);
+        DrawCircle(coin.Position + new Vector2(22, 20), 6, new Color("d9a032"));
+        Label(gold, coin.Position + new Vector2(38, 28), 20, Text, _bold);
+
         if (Objective.Length > 0)
         {
-            var width = _font.GetStringSize(Objective, HorizontalAlignment.Left, -1, 11).X;
-            DrawPanel(new Rect2(Size.X - width - 16, 22, width + 10, 14));
-            DrawString(_font, new Vector2(Size.X - width - 11, 33), Objective, HorizontalAlignment.Left, -1, 11, Text);
+            var width = Mathf.Max(Width(Objective, 19), 180f) + 44f;
+            var rect = new Rect2(Size.X - 28 - width, 88, width, 72);
+            Card(rect);
+            Pill(new Rect2(rect.Position + new Vector2(10, 16), 4, 40), Accent);
+            Label("OBJECTIVE", rect.Position + new Vector2(24, 28), 13, Accent, _bold);
+            Label(Objective, rect.Position + new Vector2(24, 54), 19, Text);
         }
 
         if (Prompt.Length > 0 && !DialogOpen)
         {
-            var width = _font.GetStringSize(Prompt, HorizontalAlignment.Left, -1, 11).X;
-            DrawOutlined(Prompt, new Vector2((Size.X - width) / 2f, Size.Y - 70f), new Color("fee761"));
+            var text = Prompt.Replace("[E] ", "");
+            var width = Width(text, 19, _bold) + 70f;
+            var rect = new Rect2((Size.X - width) / 2f, Size.Y - 220, width, 46);
+            Card(rect, 23);
+            Keycap("E", rect.Position + new Vector2(10, 9));
+            Label(text, rect.Position + new Vector2(50, 30), 19, Text, _bold);
         }
 
+        if (Notice.Length > 0)
+        {
+            Centered(Notice, Size.Y / 2f, 26, Text, _bold);
+        }
+    }
+
+    private void DrawMessages()
+    {
         var line = (int)(_storyTime / 4f);
         if (line < _story.Length)
         {
-            var text = _story[line];
-            var width = _font.GetStringSize(text, HorizontalAlignment.Left, -1, 11).X;
-            DrawPanel(new Rect2((Size.X - width) / 2f - 8, 92, width + 16, 16));
-            DrawString(_font, new Vector2((Size.X - width) / 2f, 104), text, HorizontalAlignment.Left, -1, 11, Text);
+            var within = _storyTime - line * 4f;
+            var alpha = Mathf.Clamp(within * 2f, 0f, 1f) * Mathf.Clamp((4f - within) * 2f, 0f, 1f);
+            Centered(_story[line], Size.Y * 0.42f, 28, new Color(1f, 0.98f, 0.93f, alpha), _font);
         }
 
+        if (_placeTime > 0f)
+        {
+            var alpha = Mathf.Clamp(_placeTime, 0f, 1f) * Mathf.Clamp((3.6f - _placeTime) * 2.5f, 0f, 1f);
+            const float y = 170f;
+            var width = Width(_place, 40, _bold);
+            Centered(_place, y, 40, new Color(1, 1, 1, alpha), _bold);
+            var middle = Size.X / 2f;
+            var line_color = new Color(1, 1, 1, alpha * 0.7f);
+            DrawLine(new Vector2(middle - width / 2f - 90, y - 13), new Vector2(middle - width / 2f - 18, y - 13), line_color, 2f, true);
+            DrawLine(new Vector2(middle + width / 2f + 18, y - 13), new Vector2(middle + width / 2f + 90, y - 13), line_color, 2f, true);
+        }
+
+        if (_bannerTime > 0f)
+        {
+            var alpha = Mathf.Clamp(_bannerTime, 0f, 1f) * Mathf.Clamp((3.2f - _bannerTime) * 3f, 0f, 1f);
+            var lift = (1f - Mathf.Clamp((3.2f - _bannerTime) * 3f, 0f, 1f)) * 12f;
+            Centered(_banner, 260f + lift, 44, new Color(_bannerColor.R, _bannerColor.G, _bannerColor.B, alpha), _bold);
+        }
+    }
+
+    private void DrawDialog()
+    {
         if (!DialogOpen)
         {
             return;
         }
 
-        var textHeight = _font.GetMultilineStringSize(_dialogText, HorizontalAlignment.Left, 364, 11).Y;
-        var height = 32f + textHeight + _dialogOptions.Length * 11f;
-        var box = new Rect2((Size.X - 380f) / 2f, Size.Y - 58f - height, 380, height);
-        DrawPanel(box);
-        DrawString(_font, box.Position + new Vector2(8, 12), _dialogName, HorizontalAlignment.Left, -1, 11, new Color("fee761"));
-        DrawMultilineString(_font, box.Position + new Vector2(8, 25), _dialogText, HorizontalAlignment.Left, 364, 11, -1, Text);
+        const float width = 860f;
+        const int size = 20;
+        var textHeight = _font.GetMultilineStringSize(_dialogText, HorizontalAlignment.Left, width - 64, size).Y;
+        var height = 92f + textHeight + _dialogOptions.Length * 44f;
+        var rise = (1f - Mathf.Clamp(_dialogAge * 6f, 0f, 1f)) * 20f;
+        var box = new Rect2((Size.X - width) / 2f, Size.Y - 220 - height + rise, width, height);
+        Card(box, 18, GlassDeep);
+
+        var nameWidth = Width(_dialogName, 18, _bold) + 32;
+        Pill(new Rect2(box.Position + new Vector2(28, -18), nameWidth, 38), Accent);
+        Label(_dialogName, box.Position + new Vector2(44, 7), 18, new Color("1d1608"), _bold);
+
+        DrawMultilineString(_font, box.Position + new Vector2(32, 54), _dialogText, HorizontalAlignment.Left, width - 64, size, -1, Text);
+        var mouse = GetLocalMousePosition();
         for (var i = 0; i < _dialogOptions.Length; i++)
         {
-            DrawString(_font, box.Position + new Vector2(8, 29 + textHeight + i * 11), $"[{i + 1}] {_dialogOptions[i].Label}", HorizontalAlignment.Left, -1, 11, Colors.White);
+            var row = new Rect2(box.Position + new Vector2(22, 66 + textHeight + i * 44), width - 44, 38);
+            if (row.HasPoint(mouse))
+            {
+                Pill(row, new Color(1, 1, 1, 0.07f));
+            }
+
+            Keycap((i + 1).ToString(), row.Position + new Vector2(8, 6), 14);
+            Label(_dialogOptions[i].Label, row.Position + new Vector2(48, 26), 19, Text);
         }
     }
 
@@ -335,133 +506,101 @@ public partial class Hud : Control
             }
 
             var at = ToHud(world);
-            var width = _font.GetStringSize(text.Text, HorizontalAlignment.Left, -1, 11).X;
-            DrawOutlined(text.Text, new Vector2(at.X - width / 2f, at.Y), text.Color);
-        }
-    }
-
-    private void DrawBar(Rect2 rect, float value, float ghost, Color color, Color dark, string label, bool warn)
-    {
-        DrawRect(rect.Grow(1), Ink);
-        DrawRect(rect, new Color("3e2731"));
-        var ghostRect = new Rect2(rect.Position, rect.Size.X * ghost, rect.Size.Y);
-        DrawRect(ghostRect, new Color("feae34"));
-        var fill = new Rect2(rect.Position, rect.Size.X * value, rect.Size.Y);
-        DrawRect(fill, dark);
-        DrawRect(new Rect2(fill.Position, fill.Size.X, Mathf.Ceil(rect.Size.Y * 0.6f)), color);
-
-        // A band of light runs along the bar; it speeds up when the value is low.
-        var sweep = Mathf.PosMod(_time * (warn ? 160f : 46f), rect.Size.X + 60f) - 30f;
-        var shine = rect.Position.X + sweep;
-        var left = Mathf.Max(shine, rect.Position.X);
-        var right = Mathf.Min(shine + 7f, rect.Position.X + fill.Size.X);
-        if (right > left)
-        {
-            DrawRect(new Rect2(left, rect.Position.Y, right - left, 2), new Color(1, 1, 1, 0.75f));
-        }
-
-        if (warn && Mathf.Sin(_time * 10f) > 0)
-        {
-            DrawRect(rect.Grow(1), new Color("fee761"), false);
-        }
-
-        if (label.Length > 0)
-        {
-            DrawOutlined(label, new Vector2(rect.Position.X + rect.Size.X / 2 - label.Length * 2.6f, rect.End.Y - 1), Colors.White);
+            var alpha = Mathf.Clamp((1.2f - text.Age) * 3f, 0f, 1f);
+            var pop = 1f + Mathf.Max(0f, 0.15f - text.Age) * 3f;
+            var size = (int)(26 * pop);
+            var width = Width(text.Text, size, _bold);
+            DrawStringOutline(_bold, new Vector2(at.X - width / 2f, at.Y), text.Text, HorizontalAlignment.Left, -1, size, 6, new Color(0.05f, 0.05f, 0.08f, alpha * 0.85f));
+            DrawString(_bold, new Vector2(at.X - width / 2f, at.Y), text.Text, HorizontalAlignment.Left, -1, size, new Color(text.Color.R, text.Color.G, text.Color.B, alpha));
         }
     }
 
     private void DrawHotbar()
     {
-        var width = Inventory.HotbarSlots * (Slot + 2) + 6;
+        var width = Inventory.HotbarSlots * (SlotSize + SlotGap) - SlotGap + 24;
         var left = (Size.X - width) / 2f;
-        var top = Size.Y - Slot - 12f;
-        DrawPanel(new Rect2(left, top, width, Slot + 8));
-        DrawXpBar(left, top - 14f, width);
+        var top = Size.Y - SlotSize - 44f;
+        Card(new Rect2(left, top - 12, width, SlotSize + 24), 18);
         for (var i = 0; i < Inventory.HotbarSlots; i++)
         {
-            var rect = new Rect2(left + 4 + i * (Slot + 2), top + 4, Slot, Slot);
-            DrawSlot(rect, Items.Hotbar[i], new SlotRef("hotbar", i));
-            if (i == Items.SelectedHotbar)
-            {
-                var pulse = 0.65f + Mathf.Sin(_time * 5f) * 0.35f;
-                DrawRect(rect.Grow(1), new Color("fee761", pulse), false);
-            }
-
-            DrawOutlined((i + 1).ToString(), rect.Position + new Vector2(2, 9), Text);
+            var rect = new Rect2(left + 12 + i * (SlotSize + SlotGap), top, SlotSize, SlotSize);
+            DrawSlot(rect, Items.Hotbar[i], new SlotRef("hotbar", i), i == Items.SelectedHotbar);
+            Label((i + 1).ToString(), rect.Position + new Vector2(7, 18), 13, Muted, _bold);
         }
+
+        // Experience runs as a thin line above the hotbar, with the numbers on its right.
+        var bar = new Rect2(left + 12, top - 30, width - 24, 6);
+        Bar(bar, _shownXp, _shownXp, Accent, new Color("ffe29a"), false);
+        var label = $"{Snapshot?.Xp ?? 0} / {Snapshot?.XpToNext ?? 0} XP";
+        Label(label, new Vector2(bar.End.X - Width(label, 14, _bold), bar.Position.Y - 8), 14, Text, _bold, true);
+        Label($"Level {Level}", new Vector2(bar.Position.X, bar.Position.Y - 8), 14, Accent, _bold, true);
     }
 
-    /// <summary>Experience sits right above the hotbar, with the level on the left and the numbers on it.</summary>
-    private void DrawXpBar(float left, float top, float width)
+    private void DrawSlot(Rect2 rect, Item? item, SlotRef slot, bool selected = false)
     {
-        var levelBox = new Rect2(left - 2, top, 30, 11);
-        DrawPanel(levelBox);
-        DrawOutlined($"Lv {Level}", levelBox.Position + new Vector2(3, 9), new Color("fee761"));
-
-        var bar = new Rect2(left + 32, top + 1, width - 32, 9);
-        DrawRect(bar.Grow(1), Ink);
-        DrawRect(bar, new Color("3e2731"));
-        var fill = new Rect2(bar.Position, bar.Size.X * _shownXp, bar.Size.Y);
-        DrawRect(fill, new Color("d77643"));
-        DrawRect(new Rect2(fill.Position, fill.Size.X, 4), new Color("feae34"));
-        var sweep = Mathf.PosMod(_time * 40f, bar.Size.X + 30f) - 15f;
-        var from = Mathf.Max(bar.Position.X + sweep, bar.Position.X);
-        var to = Mathf.Min(bar.Position.X + sweep + 8f, bar.Position.X + fill.Size.X);
-        if (to > from)
+        _slots.Add((rect, slot));
+        var box = new StyleBoxFlat { BgColor = new Color(1, 1, 1, 0.06f), BorderColor = selected ? Accent : new Color(1, 1, 1, 0.1f), AntiAliasing = true };
+        box.SetCornerRadiusAll(12);
+        box.SetBorderWidthAll(selected ? 3 : 1);
+        if (InventoryOpen && rect.HasPoint(GetLocalMousePosition()))
         {
-            DrawRect(new Rect2(from, bar.Position.Y, to - from, 2), new Color("fee761"));
+            box.BgColor = new Color(1, 1, 1, 0.14f);
         }
 
-        var label = $"XP {Snapshot?.Xp ?? 0} / {Snapshot?.XpToNext ?? 0}";
-        var size = _font.GetStringSize(label, HorizontalAlignment.Left, -1, 11).X;
-        DrawOutlined(label, new Vector2(bar.Position.X + (bar.Size.X - size) / 2f, bar.End.Y - 1), Colors.White);
+        DrawStyleBox(box, rect);
+        if (item is not null)
+        {
+            _iconDraws.Add((rect.Grow(-10), item.Icon));
+        }
     }
 
     private void DrawCrystals(Rect2 window)
     {
         var counts = Snapshot?.Crystals ?? new int[Crystals.Tiers];
         var weight = 0f;
-        var y = window.Position.Y + 146;
+        var y = window.Position.Y + 330;
+        Label("MAGIC CRYSTALS", new Vector2(window.Position.X + 340, y), 13, Accent, _bold);
         for (var i = 0; i < Crystals.Tiers; i++)
         {
             var def = Crystals.All[i];
             weight += counts[i] * def.Weight;
-            var x = window.Position.X + 180 + i * 37;
-            DrawRect(new Rect2(x, y, 7, 9), new Color(def.Color));
-            DrawRect(new Rect2(x + 1, y + 1, 2, 3), Colors.White);
-            DrawString(_font, new Vector2(x + 10, y + 9), counts[i].ToString(), HorizontalAlignment.Left, -1, 11, Text);
+            var x = window.Position.X + 340 + i * 92;
+            var gem = new Vector2(x + 12, y + 32);
+            DrawColoredPolygon(new[] { gem + new Vector2(0, -12), gem + new Vector2(9, 0), gem + new Vector2(0, 12), gem + new Vector2(-9, 0) }, new Color(def.Color));
+            DrawColoredPolygon(new[] { gem + new Vector2(0, -12), gem + new Vector2(4, -2), gem + new Vector2(-4, -2) }, new Color(1, 1, 1, 0.6f));
+            Label(counts[i].ToString(), new Vector2(x + 30, y + 40), 20, Text, _bold);
         }
 
-        DrawString(_font, new Vector2(window.Position.X + 180, y + 22), $"Crystals: {weight:F1} kg", HorizontalAlignment.Left, -1, 11, Edge);
+        Label($"{weight:F1} kg carried", new Vector2(window.Position.X + 340, y + 76), 15, Muted);
     }
 
     private void DrawInventory()
     {
-        var window = new Rect2((Size.X - 340f) / 2f, (Size.Y - 220f) / 2f, 340, 196);
-        DrawPanel(window);
-        DrawString(_font, window.Position + new Vector2(10, 13), "Equipment", HorizontalAlignment.Left, -1, 11, Text);
-        DrawString(_font, window.Position + new Vector2(180, 13), "Inventory", HorizontalAlignment.Left, -1, 11, Text);
+        var window = new Rect2((Size.X - 820f) / 2f, (Size.Y - 520f) / 2f, 820, 520);
+        Card(window, 22, GlassDeep);
+        Label("Equipment", window.Position + new Vector2(34, 52), 24, Text, _bold);
+        Label("Bag", window.Position + new Vector2(340, 52), 24, Text, _bold);
+        DrawLine(window.Position + new Vector2(310, 30), window.Position + new Vector2(310, window.Size.Y - 70), Rim, 1f);
 
         var equip = new (EquipSlot Slot, string Label, int X, int Y)[]
         {
-            (EquipSlot.Head, "Head", 62, 22),
-            (EquipSlot.Chest, "Chest", 62, 56),
-            (EquipSlot.Legs, "Legs", 62, 90),
-            (EquipSlot.Boots, "Boots", 62, 124),
-            (EquipSlot.Weapon, "Weapon", 16, 56),
-            (EquipSlot.Ring, "Ring", 108, 56),
+            (EquipSlot.Head, "Head", 120, 80),
+            (EquipSlot.Chest, "Chest", 120, 170),
+            (EquipSlot.Legs, "Legs", 120, 260),
+            (EquipSlot.Boots, "Boots", 120, 350),
+            (EquipSlot.Weapon, "Weapon", 34, 170),
+            (EquipSlot.Ring, "Ring", 206, 170),
         };
         foreach (var (slot, label, x, y) in equip)
         {
-            var rect = new Rect2(window.Position + new Vector2(x, y), Slot, Slot);
+            var rect = new Rect2(window.Position + new Vector2(x, y), SlotSize, SlotSize);
             DrawSlot(rect, Items.Equipped[slot], new SlotRef("equip", 0, slot));
-            DrawString(_font, rect.Position + new Vector2(-3, Slot + 10), label, HorizontalAlignment.Left, -1, 11, Edge);
+            Label(label, rect.Position + new Vector2((SlotSize - Width(label, 13)) / 2f, SlotSize + 18), 13, Muted);
         }
 
         for (var i = 0; i < Inventory.BagSlots; i++)
         {
-            var rect = new Rect2(window.Position + new Vector2(180 + i % 5 * (Slot + 8), 20 + i / 5 * (Slot + 8)), Slot, Slot);
+            var rect = new Rect2(window.Position + new Vector2(340 + i % 6 * (SlotSize + 10), 80 + i / 6 * (SlotSize + 10)), SlotSize, SlotSize);
             DrawSlot(rect, Items.Bag[i], new SlotRef("bag", i));
         }
 
@@ -472,53 +611,20 @@ public partial class Hud : Control
     private void DrawTooltip(Rect2 window)
     {
         var mouse = GetLocalMousePosition();
+        var bottom = window.Position + new Vector2(34, window.Size.Y - 34);
         foreach (var (rect, slot) in _slots)
         {
             if (rect.HasPoint(mouse) && Read(slot) is { } item)
             {
-                var position = window.Position + new Vector2(10, window.Size.Y - 30);
-                DrawString(_font, position, item.Name, HorizontalAlignment.Left, -1, 11, new Color("fee761"));
-                DrawString(_font, position + new Vector2(0, 12), item.Description, HorizontalAlignment.Left, -1, 11, Text);
+                Label(item.Name, bottom + new Vector2(0, -20), 18, Accent, _bold);
+                Label(item.Description, bottom + new Vector2(Width(item.Name, 18, _bold) + 14, -20), 16, Text);
                 return;
             }
         }
 
-        DrawString(_font, window.Position + new Vector2(10, window.Size.Y - 8), "Click to pick up and place items.  [I] closes.", HorizontalAlignment.Left, -1, 11, Edge);
-    }
-
-    private void DrawSlot(Rect2 rect, Item? item, SlotRef slot)
-    {
-        _slots.Add((rect, slot));
-        DrawRect(rect, Ink);
-        DrawRect(rect.Grow(-1), PanelLight);
-        DrawRect(new Rect2(rect.Position + Vector2.One, rect.Size.X - 2, 1), Panel);
-        if (rect.HasPoint(GetLocalMousePosition()) && InventoryOpen)
-        {
-            DrawRect(rect, Text, false);
-        }
-
-        if (item is not null)
-        {
-            DrawTextureRect(_icons[item.Icon], new Rect2(rect.Position + new Vector2(3, 3), 16, 16), false);
-        }
-    }
-
-    private void DrawPanel(Rect2 rect)
-    {
-        DrawRect(rect.Grow(1), Ink);
-        DrawRect(rect, Panel);
-        DrawRect(new Rect2(rect.Position, rect.Size.X, 1), Edge);
-        DrawRect(new Rect2(rect.Position, 1, rect.Size.Y), PanelLight);
-    }
-
-    private void DrawOutlined(string text, Vector2 position, Color color)
-    {
-        foreach (var offset in new[] { Vector2.Left, Vector2.Right, Vector2.Up, Vector2.Down })
-        {
-            DrawString(_font, position + offset, text, HorizontalAlignment.Left, -1, 11, Ink);
-        }
-
-        DrawString(_font, position, text, HorizontalAlignment.Left, -1, 11, color);
+        Label("Click to pick up and place items", bottom + new Vector2(0, -20), 15, Muted);
+        Keycap("I", bottom + new Vector2(window.Size.X - 160, -42), 14);
+        Label("close", bottom + new Vector2(window.Size.X - 126, -20), 15, Muted);
     }
 
     private void DrawNametags()
@@ -548,13 +654,12 @@ public partial class Hud : Control
 
     private void DrawTag(Vector2 at, in EnemyView enemy, EnemyDef def)
     {
-        var rare = def.Rare;
         var threat = ThreatRules.Compare(enemy.Level, Level);
         var color = threat switch
         {
-            Threat.Strong => new Color("e43b44"),
-            Threat.Weak => new Color("63c74d"),
-            _ => Colors.White,
+            Threat.Strong => new Color("ff6b6b"),
+            Threat.Weak => new Color("8fe0a6"),
+            _ => Text,
         };
         var animal = def.Kind == "animal";
         if (animal && def.Temper == "passive")
@@ -562,31 +667,37 @@ public partial class Hud : Control
             color = new Color("dff6f5");
         }
 
-        var label = animal ? def.Name : $"Lv {enemy.Level} {def.Name}";
-        var width = _font.GetStringSize(label, HorizontalAlignment.Left, -1, 11).X;
-        var left = at.X - width / 2f;
-
-        if (rare)
+        const int size = 17;
+        var name = def.Name;
+        var level = animal ? "" : $"{enemy.Level}";
+        var nameWidth = Width(name, size, _bold);
+        var levelWidth = level.Length > 0 ? Width(level, 13, _bold) + 16 : 0f;
+        var left = at.X - (nameWidth + levelWidth + (levelWidth > 0 ? 6 : 0)) / 2f;
+        if (def.Rare)
         {
-            // Rare enemies get a moving glow behind the tag, and sparks that run around it.
-            var pulse = 0.5f + Mathf.Sin(_time * 6f) * 0.5f;
-            DrawRect(new Rect2(left - 3, at.Y - 11, width + 6, 13), new Color("b55088", 0.35f + pulse * 0.3f));
-            var runner = Mathf.PosMod(_time * 60f, width + 6f);
-            DrawRect(new Rect2(left - 3 + runner, at.Y - 11, 3, 1), new Color("fee761"));
-            DrawRect(new Rect2(left + width + 3 - runner - 3, at.Y + 1, 3, 1), new Color("fee761"));
+            var glow = 0.35f + Mathf.Sin(_time * 5f) * 0.15f;
+            Pill(new Rect2(left - 12, at.Y - 22, nameWidth + levelWidth + 30, 30), new Color(0.8f, 0.3f, 0.6f, glow));
         }
 
-        DrawOutlined(label, new Vector2(left, at.Y), color);
-        if (enemy.Fighting)
+        if (levelWidth > 0)
         {
-            DrawOutlined("!", new Vector2(left - 7, at.Y), new Color("feae34"));
+            Pill(new Rect2(left, at.Y - 18, levelWidth, 22), threat == Threat.Strong ? new Color("e5484d") : new Color(1, 1, 1, 0.2f));
+            Label(level, new Vector2(left + 8, at.Y - 2), 13, Colors.White, _bold);
+            left += levelWidth + 6;
+        }
+
+        DrawStringOutline(_bold, new Vector2(left, at.Y), name, HorizontalAlignment.Left, -1, size, 5, new Color(0, 0, 0, 0.7f));
+        DrawString(_bold, new Vector2(left, at.Y), name, HorizontalAlignment.Left, -1, size, color);
+        if (enemy.Fighting && !animal)
+        {
+            Label("!", new Vector2(left + nameWidth + 6, at.Y), size, Accent, _bold, true);
         }
 
         if (enemy.Health < enemy.MaxHealth)
         {
-            var bar = new Rect2(at.X - 14, at.Y + 3, 28, 2);
-            DrawRect(bar.Grow(1), Ink);
-            DrawRect(new Rect2(bar.Position, bar.Size.X * enemy.Health / enemy.MaxHealth, bar.Size.Y), HealthColor);
+            var bar = new Rect2(at.X - 40, at.Y + 8, 80, 7);
+            Pill(bar.Grow(1.5f), new Color(0, 0, 0, 0.55f));
+            Pill(new Rect2(bar.Position, Mathf.Max(bar.Size.X * enemy.Health / enemy.MaxHealth, bar.Size.Y), bar.Size.Y), HealthColor);
         }
     }
 }

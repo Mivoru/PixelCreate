@@ -72,8 +72,6 @@ public sealed class Fx
     /// <summary>A rising column of light and sparks.</summary>
     public void LevelUp(Vector3 position)
     {
-        Fade(new CylinderMesh { TopRadius = 0.05f, BottomRadius = 0.6f, Height = 5f, RadialSegments = 12 },
-             position + Vector3.Up * 2.5f, Vector3.Zero, new Color("fee761"), 0.8f, 0.45f);
         Burst(position + Vector3.Up * 0.3f, new Color("fee761"), 46, 9f, 1.1f, 0.09f, -4f, 28f);
         Burst(position + Vector3.Up * 1f, Colors.White, 22, 6f, 0.9f, 0.06f, -2f, 60f);
     }
