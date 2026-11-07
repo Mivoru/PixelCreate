@@ -235,6 +235,34 @@ public static class ZoneView
         surface.AddVertex(new Vector3(x, terrain.Vertex(column, row), z));
     }
 
+    /// <summary>
+    /// Marks each metre of the zone where no grass grows. Asking the paths and rivers once per cell
+    /// instead of once per blade keeps loading fast.
+    /// </summary>
+    private static bool[,] BuildGrassMask(Zone zone)
+    {
+        var cells = (int)zone.Size;
+        var mask = new bool[cells, cells];
+        for (var row = 0; row < cells; row++)
+        {
+            for (var column = 0; column < cells; column++)
+            {
+                var x = column - zone.Size / 2f + 0.5f;
+                var z = row - zone.Size / 2f + 0.5f;
+                mask[row, column] = zone.PathDistance(x, z) < 0.6f || zone.IsBare(x, z);
+            }
+        }
+
+        return mask;
+    }
+
+    private static bool IsClearOfGrass(bool[,] mask, float size, float x, float z)
+    {
+        var column = Mathf.Clamp((int)(x + size / 2f), 0, mask.GetLength(1) - 1);
+        var row = Mathf.Clamp((int)(z + size / 2f), 0, mask.GetLength(0) - 1);
+        return mask[row, column];
+    }
+
     /// <summary>Thousands of small blades in one draw call, kept off paths and steep ground.</summary>
     private static MultiMeshInstance3D BuildGrass(Zone zone)
     {
@@ -257,6 +285,7 @@ public static class ZoneView
             InstanceCount = GrassBlades,
         };
 
+        var blocked = BuildGrassMask(zone);
         var random = new Random(11);
         var colors = new[] { new Color("3e8948"), new Color("4f9a4e"), new Color("5ab552"), new Color("63c74d") };
         var half = zone.Size / 2 - 4f;
@@ -267,7 +296,7 @@ public static class ZoneView
             var spread = attempt % 2 == 0 ? 0.5f : 1f;
             var x = ((float)random.NextDouble() * 2 - 1) * half * spread;
             var z = ((float)random.NextDouble() * 2 - 1) * half * spread;
-            if (zone.PathDistance(x, z) < 0.6f || zone.IsBare(x, z))
+            if (IsClearOfGrass(blocked, zone.Size, x, z))
             {
                 continue;
             }

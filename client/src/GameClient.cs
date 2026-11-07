@@ -12,7 +12,7 @@ namespace PixelCreate;
 /// <summary>
 /// Connects to the server and draws the zone from behind the player.
 /// Arguments after "--": [host] [port] [capture folder] [frames]. With a capture folder a bot plays,
-/// saves frames, prints network stats and quits. PIXEL_BOT=idle stands still; PIXEL_BOT=keys
+/// saves frames, prints network stats and quits. PIXEL_BOT=idle stands still; talk opens a conversation; trial starts the Guild trial; keys
 /// presses real key events.
 /// </summary>
 public partial class GameClient : Node
@@ -432,12 +432,22 @@ public partial class GameClient : Node
     private (sbyte X, sbyte Z, Buttons Buttons) BotInput()
     {
         var mode = OS.GetEnvironment("PIXEL_BOT");
-        if (mode == "talk" && _client.Tick == 60)
+        if (mode is "talk" or "trial" && _client.Tick == 60)
         {
             Interact();
         }
 
-        if (mode is "idle" or "talk")
+        if (mode == "trial" && _client.Tick == 90)
+        {
+            _pendingCommand = _hud.Choose(0);
+        }
+
+        if (mode == "trial" && _client.Tick > 90)
+        {
+            return (0, 0, _client.Tick % 40 == 0 ? Buttons.Light : Buttons.None);
+        }
+
+        if (mode is "idle" or "talk" or "trial")
         {
             return (0, 0, Buttons.None);
         }

@@ -94,6 +94,8 @@ public sealed class GameServer : IEnemyEvents
         public uint NextTick;
         public int WaitTicks;
         public InputCmd LastInput;
+        public readonly Queue<Command> Commands = new();
+        public uint LastCommandTick;
         public byte Level = 1;
         public int Xp;
         public uint LastHurtTick;
@@ -270,11 +272,18 @@ public sealed class GameServer : IEnemyEvents
             _players.Add(peer, player);
         }
 
-        foreach (var command in commands)
+        foreach (var command in commands.OrderBy(c => c.Tick))
         {
             if (command.Tick >= player.NextTick)
             {
                 player.Inputs[command.Tick] = command;
+            }
+
+            // Movement that arrives late is dropped, but a request must still happen, exactly once.
+            if (command.Command != Command.None && command.Tick > player.LastCommandTick)
+            {
+                player.LastCommandTick = command.Tick;
+                player.Commands.Enqueue(command.Command);
             }
         }
     }
@@ -304,7 +313,11 @@ public sealed class GameServer : IEnemyEvents
             Strike(player, landed);
         }
 
-        Obey(player, command.Command);
+        while (player.Commands.TryDequeue(out var request))
+        {
+            Obey(player, request);
+        }
+
         var maxHealth = Progression.MaxHealth(player.Level);
         if (player.State.Health <= 0)
         {

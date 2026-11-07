@@ -709,6 +709,20 @@ public sealed class GuildTests
     }
 
     [Fact]
+    public void LateCommand_StillHappens()
+    {
+        var (server, client, network, _) = Start();
+        for (var i = 0; i < 20; i++)
+        {
+            network.Advance(1000.0 / Tuning.TickRate);
+            server.Step();
+        }
+
+        Run(server, client, network, 4, Command.UseDoor);
+        Assert.Equal(50f, server.GetPlayer(1)!.Value.Position.X);
+    }
+
+    [Fact]
     public void Door_TakesThePlayerThrough()
     {
         var (server, client, network, _) = Start();

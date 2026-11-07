@@ -304,13 +304,15 @@ public partial class Hud : Control
             return;
         }
 
-        var box = new Rect2((Size.X - 380f) / 2f, Size.Y - 142f, 380, 84);
+        var textHeight = _font.GetMultilineStringSize(_dialogText, HorizontalAlignment.Left, 364, 11).Y;
+        var height = 32f + textHeight + _dialogOptions.Length * 11f;
+        var box = new Rect2((Size.X - 380f) / 2f, Size.Y - 58f - height, 380, height);
         DrawPanel(box);
         DrawString(_font, box.Position + new Vector2(8, 12), _dialogName, HorizontalAlignment.Left, -1, 11, new Color("fee761"));
-        DrawString(_font, box.Position + new Vector2(8, 25), _dialogText, HorizontalAlignment.Left, 364, 11, Text);
+        DrawMultilineString(_font, box.Position + new Vector2(8, 25), _dialogText, HorizontalAlignment.Left, 364, 11, -1, Text);
         for (var i = 0; i < _dialogOptions.Length; i++)
         {
-            DrawString(_font, box.Position + new Vector2(8, 49 + i * 11), $"[{i + 1}] {_dialogOptions[i].Label}", HorizontalAlignment.Left, -1, 11, Colors.White);
+            DrawString(_font, box.Position + new Vector2(8, 29 + textHeight + i * 11), $"[{i + 1}] {_dialogOptions[i].Label}", HorizontalAlignment.Left, -1, 11, Colors.White);
         }
     }
 

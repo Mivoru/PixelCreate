@@ -5,7 +5,7 @@ using PixelCreate.Transport;
 var port = args.Length > 0 ? int.Parse(args[0]) : 7777;
 using var transport = UdpTransport.Listen(port);
 var zone = Zone.Load("meadow-valley");
-var spawn = Environment.GetEnvironmentVariable("PIXEL_SPAWN")?.Split(',').Select(float.Parse).ToArray();
+var spawn = Environment.GetEnvironmentVariable("PIXEL_SPAWN")?.Split(',').Select(v => float.Parse(v, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
 var server = new GameServer(transport, zone.World, new ServerOptions
 {
     SpawnOverride = spawn is null ? null : new System.Numerics.Vector3(spawn[0], 0, spawn[1]),
