@@ -18,6 +18,9 @@ public sealed class PixelStage
     public int PixelScale { get; private set; } = 1;
     public Camera3D Camera { get; }
 
+    /// <summary>The full-screen quad of the post shader. Hide it to see unprocessed debug lines.</summary>
+    public MeshInstance3D PostQuad { get; }
+
     public PixelStage(Node parent)
     {
         View = new SubViewport
@@ -55,7 +58,8 @@ public sealed class PixelStage
 
         Camera = new Camera3D { Fov = 58, Far = 260 };
         View.AddChild(Camera);
-        Camera.AddChild(BuildPostQuad());
+        PostQuad = BuildPostQuad();
+        Camera.AddChild(PostQuad);
     }
 
     private void Resize(Viewport window)

@@ -63,6 +63,12 @@ public static class NpcLooks
         },
     };
 
+    /// <summary>Every person with a name, for the photo studio.</summary>
+    public static readonly (string Name, RigLook Look)[] All =
+    {
+        ("rhea", Examiner), ("mira", Receptionist), ("bram", Villager), ("tess", VillagerB),
+    };
+
     public static RigLook? For(string role) => role switch
     {
         "receptionist" => Receptionist,

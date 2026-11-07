@@ -143,6 +143,9 @@ public static class ZoneView
         surface.AddVertex(position);
     }
 
+    /// <summary>Gives a model the same materials it has in the world.</summary>
+    public static void Dress(Node model, Shader shader) => Retexture(model, shader, new Dictionary<Material, ShaderMaterial>());
+
     /// <summary>The guild hall and the trial ground lie outside the map, under their own lamps.</summary>
     private static void BuildInteriorLights(Node3D root)
     {

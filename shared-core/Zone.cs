@@ -130,6 +130,9 @@ public sealed class Zone
         ["ruin"] = new(1.1f, 1.1f, 4f),
     };
 
+    /// <summary>Half width, half depth and height of a model's collision, or null when none is listed.</summary>
+    public static Vector3? CollisionOf(string model) => Collision.TryGetValue(model, out var shape) ? shape : null;
+
     private readonly PathData[] _paths;
     private readonly RegionData[] _regions;
 
