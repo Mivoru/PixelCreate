@@ -202,7 +202,14 @@ public sealed class PlayerRig
         _torso.AddChild(Model(_look.Feminine ? "anime_torso_f" : "anime_torso"));
         foreach (var extra in _look.Extras)
         {
-            (extra is "beard" ? _hairRoot : extra is "robe" or "apron" ? _hips : _torso).AddChild(Model($"anime_{extra}"));
+            var holder = extra is "beard" or "headband" ? _hairRoot : extra is "robe" or "apron" ? _hips : _torso;
+            var part = Model($"anime_{extra}");
+            if (extra == "headband")
+            {
+                part.Position = new Vector3(0, -0.3f, 0);
+            }
+
+            holder.AddChild(part);
         }
 
         var head = Model("anime_head");
@@ -254,6 +261,8 @@ public sealed class PlayerRig
             "mira" => ("anime_hair_long", new ClothShape(0.58f, 0.14f, 0.13f, 0.17f, 2.4f, 9.8f, 0.006f, 0.15f, 0.11f), 0.08f),
             "rhea" => ("anime_ponytail", new ClothShape(0.5f, 0.05f, 0.17f, 0.2f, 2.6f, 9.8f, 0.004f, 0.13f, 0.13f), 0.13f),
             "tess" => ("anime_braids", new ClothShape(0.44f, 0.16f, 0.02f, 0.04f, 2f, 9.8f, 0.01f, 0.13f, 0.09f), -0.02f),
+            "sora" => ("anime_hair_wavy", new ClothShape(0.62f, 0.15f, 0.13f, 0.17f, 2.3f, 9.8f, 0.006f, 0.15f, 0.11f), 0.08f),
+            "elda" => ("anime_bun", new ClothShape(0.12f, 0.05f, 0.12f, 0.13f, 3f, 9.8f, 0.08f, 0.12f, 0.12f), 0.2f),
             _ => default,
         };
         if (free.Item1 is not null)
@@ -349,6 +358,11 @@ public sealed class PlayerRig
                         material.SetShaderParameter("shade", _look.Skin * new Color(0.95f, 0.78f, 0.76f));
                         material.SetShaderParameter("threshold", -0.45f);
                         material.SetShaderParameter("rim_strength", 0.08f);
+                    }
+
+                    if (original.ResourceName == "anime_hair")
+                    {
+                        material.SetShaderParameter("shine", 1f);
                     }
 
                     material.SetShaderParameter("sway_top", top);

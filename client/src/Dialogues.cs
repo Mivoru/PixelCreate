@@ -89,10 +89,124 @@ public static class NpcLooks
         },
     };
 
+    private static readonly RigLook Merchant = new("merchant", Skin, 0.93f, "none")
+    {
+        Hair = "lina",
+        Feminine = true,
+        Skirt = true,
+        Cloak = false,
+        Rest = "clasped",
+        Extras = new[] { "apron" },
+        Eyes = new Color("7a4aa8"),
+        Brows = new Color("5a4a7a"),
+        Palette = new Dictionary<string, Color>
+        {
+            ["anime_hair"] = new("b8a0d8"),
+            ["anime_shirt"] = new("4a9a8a"),
+            ["anime_cloak"] = new("3a4a6a"),
+            ["anime_trousers"] = new("f0dcc8"),
+            ["anime_dark"] = new("4a9a8a"),
+            ["anime_vest"] = new("f4ecd8"),
+            ["anime_glove"] = Skin,
+        },
+    };
+
+    private static readonly RigLook Guard = new("guard", new Color("e8c0a4"), 1.04f, "sword")
+    {
+        Hair = "short",
+        Cloak = true,
+        Extras = new[] { "armor" },
+        Eyes = new Color("4a6a3a"),
+        Brows = new Color("3a2418"),
+        Palette = new Dictionary<string, Color>
+        {
+            ["anime_hair"] = new("4a3020"),
+            ["anime_shirt"] = new("3a4a6a"),
+            ["anime_cloak"] = new("2f4070"),
+            ["anime_trousers"] = new("2e3040"),
+        },
+    };
+
+    private static readonly RigLook Baker = new("baker", new Color("f0c8b0"), 0.94f, "none")
+    {
+        Hair = "elda",
+        Feminine = true,
+        Skirt = true,
+        Cloak = false,
+        Rest = "behind",
+        Extras = new[] { "apron" },
+        Eyes = new Color("6a4a30"),
+        Brows = new Color("7a3a20"),
+        Palette = new Dictionary<string, Color>
+        {
+            ["anime_hair"] = new("9a4a2a"),
+            ["anime_shirt"] = new("d89a5a"),
+            ["anime_cloak"] = new("7a5a3a"),
+            ["anime_trousers"] = new("f0dcc8"),
+            ["anime_dark"] = new("d89a5a"),
+            ["anime_vest"] = new("fbf6ec"),
+            ["anime_glove"] = new("f0c8b0"),
+        },
+    };
+
+    private static readonly RigLook Farmer = new("farmer", new Color("e8b08a"), 0.92f, "none")
+    {
+        Hair = "pip",
+        Cloak = false,
+        Extras = new[] { "headband" },
+        Eyes = new Color("3a7a4a"),
+        Brows = new Color("8a6a30"),
+        Palette = new Dictionary<string, Color>
+        {
+            ["anime_hair"] = new("d8b860"),
+            ["anime_shirt"] = new("e8dcc0"),
+            ["anime_trousers"] = new("5a6a8a"),
+            ["anime_dark"] = new("6a5a3e"),
+            ["anime_accent"] = new("c84848"),
+            ["anime_glove"] = new("e8b08a"),
+        },
+    };
+
+    private static readonly RigLook Mage = new("adventurer_a", Skin, 0.95f, "none")
+    {
+        Hair = "sora",
+        Feminine = true,
+        Cloak = true,
+        Rest = "clasped",
+        Eyes = new Color("4a8ac8"),
+        Brows = new Color("6a7a9a"),
+        Palette = new Dictionary<string, Color>
+        {
+            ["anime_hair"] = new("a8c0e0"),
+            ["anime_shirt"] = new("f4f0f8"),
+            ["anime_cloak"] = new("4a3a8a"),
+            ["anime_trousers"] = new("3a3460"),
+            ["anime_glove"] = Skin,
+        },
+    };
+
+    private static readonly RigLook Swordsman = new("adventurer_b", new Color("e8c0a4"), 1.02f, "sword")
+    {
+        Hair = "spiky",
+        Cloak = true,
+        Extras = new[] { "headband" },
+        Eyes = new Color("c87a2a"),
+        Brows = new Color("1a2a20"),
+        Palette = new Dictionary<string, Color>
+        {
+            ["anime_hair"] = new("2a4a3a"),
+            ["anime_shirt"] = new("8a3a3a"),
+            ["anime_cloak"] = new("2a2a32"),
+            ["anime_trousers"] = new("3a3440"),
+            ["anime_accent"] = new("e8e4dc"),
+        },
+    };
+
     /// <summary>Every person with a name, for the photo studio.</summary>
     public static readonly (string Name, RigLook Look)[] All =
     {
-        ("rhea", Examiner), ("mira", Receptionist), ("bram", Villager), ("tess", VillagerB),
+        ("rhea", Examiner), ("mira", Receptionist), ("bram", Villager), ("tess", VillagerB), ("lina", Merchant),
+        ("garrick", Guard), ("elda", Baker), ("pip", Farmer), ("sora", Mage), ("kai", Swordsman),
     };
 
     public static RigLook? For(string role) => role switch
@@ -100,6 +214,12 @@ public static class NpcLooks
         "receptionist" => Receptionist,
         "villager" => Villager,
         "villager_b" => VillagerB,
+        "merchant" => Merchant,
+        "guard" => Guard,
+        "baker" => Baker,
+        "farmer" => Farmer,
+        "adventurer_a" => Mage,
+        "adventurer_b" => Swordsman,
         _ => null,
     };
 }
@@ -120,6 +240,24 @@ public static class Dialogues
                 break;
             case "villager":
                 hud.ShowDialog(npc.Name, "You have a strange look, stranger. Lost? The Guild in the west takes in folk like you.", ("Goodbye", Command.None));
+                break;
+            case "merchant":
+                hud.ShowDialog(npc.Name, "Fresh from the mill and the orchard! Once you carry some gold, come back and we will talk prices.", ("Goodbye", Command.None));
+                break;
+            case "guard":
+                hud.ShowDialog(npc.Name, "The south road leads to Goblin Hollow. Do not go there before the Guild gives you its badge.", ("Understood", Command.None));
+                break;
+            case "baker":
+                hud.ShowDialog(npc.Name, "Another one who fell from the sky? You are the third this year. Eat something first, the Guild can wait a moment.", ("Thank you", Command.None));
+                break;
+            case "farmer":
+                hud.ShowDialog(npc.Name, "Boars dig up the jungle edge again. And the cows are scared of anyone who runs at them, so walk slowly, please.", ("Goodbye", Command.None));
+                break;
+            case "adventurer_a":
+                hud.ShowDialog(npc.Name, "I came from another world too. The trial looks hard, but watch the red marks on the ground and step aside.", ("Good advice", Command.None));
+                break;
+            case "adventurer_b":
+                hud.ShowDialog(npc.Name, "Rhea once threw me across the whole arena. Dash through her heavy swing, then strike back.", ("I will try", Command.None));
                 break;
             default:
                 hud.ShowDialog(npc.Name, "Slimes by the road again. Mind the ground when they jump: the mark shows where they land.", ("Goodbye", Command.None));

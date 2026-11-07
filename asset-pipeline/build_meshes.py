@@ -566,6 +566,121 @@ def anime_hair_bram():
     finish_hair(bm)
 
 
+def anime_hair_lina():
+    """A neat bob: straight bangs and a sleek curtain that ends at the jaw, curling in."""
+    bm = bmesh.new()
+    hair_cap(bm, -0.62)
+    for index in range(13):
+        x = -0.12 + index * 0.02
+        strand(bm, (x, 0.118, 0.11), (x * 1.02, 0.143, 0.035), (0, 0.012, 0), 0.026)
+    for index in range(26):
+        angle = -0.25 + index / 25 * (math.pi + 0.5)
+        x, y = math.cos(angle) * 0.13, -math.sin(angle) * 0.13
+        if y > 0.06:
+            continue
+        strand(bm, (x, y, 0.06), (x * 1.18, y * 1.18, -0.115), (x * 0.18, y * 0.18, 0.0), 0.034)
+        strand(bm, (x * 1.18, y * 1.18, -0.11), (x * 0.98, y * 0.98, -0.128), (0, 0, -0.01), 0.022, steps=3)
+    finish_hair(bm)
+
+
+def anime_hair_spiky():
+    """Bold spikes that sweep up and back, with a sharp fringe."""
+    bm = bmesh.new()
+    hair_cap(bm, -0.45)
+    rng = random.Random(91)
+    for index in range(9):
+        x = -0.11 + index * 0.0275
+        strand(bm, (x, 0.12, 0.12), (x * 1.3, 0.16, 0.02 - rng.uniform(0, 0.04)), (0, 0.02, 0.02), 0.03)
+    for index in range(22):
+        angle = rng.uniform(0, math.tau)
+        x, y = math.cos(angle) * 0.1, math.sin(angle) * 0.1 - 0.03
+        z = rng.uniform(0.06, 0.15)
+        strand(bm, (x, y, z), (x * 2.1, y * 2.1 - 0.06, z + rng.uniform(0.05, 0.12)), (0, -0.02, 0.02), 0.036)
+    finish_hair(bm)
+
+
+def anime_hair_short():
+    """Short, tidy hair parted at one side."""
+    bm = bmesh.new()
+    hair_cap(bm, -0.5)
+    rng = random.Random(93)
+    for index in range(10):
+        x = -0.12 + index * 0.025
+        strand(bm, (x - 0.02, 0.12, 0.12), (x + 0.03, 0.142, 0.06 - rng.uniform(0, 0.02)), (0.01, 0.014, 0), 0.026)
+    for index in range(18):
+        angle = rng.uniform(0.1, math.pi - 0.1)
+        x, y = math.cos(angle) * 0.13, -math.sin(angle) * 0.13
+        strand(bm, (x, y, 0.05), (x * 1.12, y * 1.12, -0.06 - rng.uniform(0, 0.03)), (x * 0.1, y * 0.1, 0), 0.03)
+    finish_hair(bm)
+
+
+def anime_hair_sora():
+    """Soft parted bangs that frame the face, for long wavy hair."""
+    bm = bmesh.new()
+    hair_cap(bm, -0.55)
+    for side in (-1, 1):
+        for index in range(6):
+            x = side * (0.012 + index * 0.02)
+            strand(bm, (x * 0.6, 0.12, 0.12), (x * 1.25, 0.143, 0.02 - index * 0.012), (side * 0.016, 0.014, 0), 0.026, steps=7)
+        for index in range(3):
+            strand(bm, (side * 0.12, 0.06 + index * 0.01, 0.06), (side * 0.15, 0.08, -0.3 - index * 0.04), (side * 0.025, 0, 0), 0.026, steps=8)
+    finish_hair(bm)
+
+
+def anime_hair_wavy():
+    """Long waves down the back."""
+    bm = bmesh.new()
+    rng = random.Random(95)
+    for index in range(24):
+        angle = rng.uniform(0.05, math.pi - 0.05)
+        x, y = math.cos(angle) * 0.128, -math.sin(angle) * 0.128
+        end_z = rng.uniform(-0.6, -0.48)
+        rings = 9
+        points = []
+        for step in range(rings + 1):
+            t = step / rings
+            wave = math.sin(t * 9 + index) * 0.022 * t
+            points.append((x * (1 + 0.25 * t) + wave, y * (1 + 0.4 * t), 0.08 + (end_z - 0.08) * t))
+        for step in range(rings):
+            strand(bm, points[step], points[step + 1], (0, 0, 0), 0.042 * (1 - step / rings * 0.6), steps=2)
+    finish_hair(bm, "wavy")
+
+
+def anime_hair_elda():
+    """Hair pulled smoothly back from the face, held in a bun."""
+    bm = bmesh.new()
+    hair_cap(bm, -0.5)
+    for side in (-1, 1):
+        strand(bm, (side * 0.11, 0.08, 0.07), (side * 0.13, 0.07, -0.08), (side * 0.01, 0, 0), 0.02)
+    finish_hair(bm)
+
+
+def anime_bun():
+    bm = bmesh.new()
+    made = bmesh.ops.create_uvsphere(bm, u_segments=12, v_segments=8, radius=0.075)["verts"]
+    for vert in made:
+        vert.co = (vert.co.x, vert.co.y - 0.11, vert.co.z + 0.15)
+    strand(bm, (0, -0.06, 0.1), (0, -0.1, 0.16), (0, 0, 0), 0.04)
+    finish_hair(bm, "bun")
+
+
+def anime_hair_pip():
+    """A messy mop, sticking out every way."""
+    bm = bmesh.new()
+    hair_cap(bm, -0.48)
+    rng = random.Random(97)
+    for index in range(30):
+        angle = rng.uniform(0, math.tau)
+        x, y = math.cos(angle) * 0.12, math.sin(angle) * 0.12
+        z = rng.uniform(-0.02, 0.15)
+        strand(bm, (x * 0.8, y * 0.8, z), (x * 1.55, y * 1.55, z - rng.uniform(0.02, 0.08)), (0, 0, 0.02), 0.03)
+    finish_hair(bm)
+
+
+def anime_headband():
+    loft("band", [(0.085, 0.142, 0.15), (0.115, 0.146, 0.154)], "anime_accent", 18, (0, 0, 0.3))
+
+
 def anime_beard():
     bm = bmesh.new()
     rng = random.Random(62)
@@ -1387,6 +1502,15 @@ MODELS = {
     "anime_hair_bram": anime_hair_bram,
     "anime_hair_tess": anime_hair_tess,
     "anime_beard": anime_beard,
+    "anime_hair_lina": anime_hair_lina,
+    "anime_hair_spiky": anime_hair_spiky,
+    "anime_hair_short": anime_hair_short,
+    "anime_hair_sora": anime_hair_sora,
+    "anime_hair_wavy": anime_hair_wavy,
+    "anime_hair_elda": anime_hair_elda,
+    "anime_bun": anime_bun,
+    "anime_hair_pip": anime_hair_pip,
+    "anime_headband": anime_headband,
     "anime_braids": anime_braids,
     "anime_ponytail": anime_ponytail,
     "anime_torso_f": anime_torso_f,
