@@ -348,4 +348,32 @@ public sealed class GearTests
         Assert.Equal(Weapons.Bow, client.State.Weapon);
         Assert.True(client.Stats.Corrections <= 2, $"{client.Stats.Corrections} corrections while drawing and loosing");
     }
+    [Fact]
+    public void TheWornWeapon_SurvivesDeath()
+    {
+        var network = new SimNetwork(80, 8, 2, 7);
+        var world = new World(Array.Empty<Aabb>());
+        var server = new GameServer(network.Connect(0), world, new ServerOptions { Seed = 3, EnemyCount = 0 });
+        var client = new ClientPrediction(network.Connect(1), world);
+        var place = -1;
+        for (var tick = 0; tick < Tuning.TickRate * 4; tick++)
+        {
+            network.Advance(1000.0 / Tuning.TickRate);
+            server.Step();
+            if (tick == 30)
+            {
+                place = server.GiveGear(1, GearPiece.Roll(Item("goblin_shortbow"), Rarity.Common, 1, new Random(1)));
+            }
+
+            if (tick == 120)
+            {
+                server.HurtForTest(1, 10000);
+            }
+
+            client.Step(0, 0, Buttons.None, (byte)(tick / 30), tick == 40 ? GearCommands.Toggle(place) : Command.None);
+        }
+
+        Assert.Equal(Weapons.Bow, server.GetPlayer(1)!.Value.Weapon);
+        Assert.Equal(Weapons.Bow, client.State.Weapon);
+    }
 }

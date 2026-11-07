@@ -491,6 +491,8 @@ public sealed class GameServer : IEnemyEvents
             }
 
             player.State = PlayerState.Spawn(_world.Spawn, maxHealth);
+            // Worn gear survives death, so the weapon it picks does too.
+            player.State.Weapon = Weapons.Of(player.Stats.Weapon);
         }
         else if (Tick - player.LastHurtTick > RegenDelayTicks && player.State.Health < maxHealth)
         {
