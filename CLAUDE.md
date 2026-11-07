@@ -37,7 +37,12 @@ Rules:
 - The Godot client can run on a newer .NET than the server. Avoid behaviour that differs between
   runtimes in shared code, such as casting a negative float to an unsigned integer. A live run with
   many corrections and no hits means client and server simulate differently.
-- All game text is English. Enemy types live in `world/enemies.json`; items are a local UI model for now.
+- All game text is English. Enemy types live in `world/enemies.json`. Items live in `world/items.json`
+  (crystals first, then materials, food and equipment); each enemy's `loot` table names them. The
+  server owns the bag and sends it in slices; the client only decides which slot shows what. Gear can be
+  equipped but does not change combat yet. Food is eaten with the command range from `ItemCommands.EatBase`.
+- Item icons: `python asset-pipeline/generate_icons.py --sheet` paints all 16x16 icons from text shapes
+  and writes a preview to `export/previews/icons.png`. A test fails if an item has no icon.
 - Test a far area: set `PIXEL_SPAWN=x,z` before starting the server.
 - Enemy abilities and crystal drops are data in `world/enemies.json`; new effects go in `GameServer.Fire`.
 - Interiors live outside the map on platforms (the guild at x 420, the trial ground at x 480). Doors are portals.
@@ -52,16 +57,23 @@ Rules:
 - Live check: add `-Capture <folder>` to that command. A bot plays, saves frames and prints a `STATS` line.
 - `PIXEL_BOT` picks the bot: `hunt` kills animals near the spawn, loots, eats and opens the bag; `guild` plays the Guild story through the real interface and prints `BOT` stages,
   with `PIXEL_TEST=1` making the examiner frail. Also `idle`, `talk`, `trial`, `keys`. `PIXEL_YAW` turns the camera.
-- `STATS` reports draws, objects and `frameMs` away from capture stalls. The open world runs at about
-  18 ms a frame on the RTX 3050 laptop (the Guild at 7 ms); switching single features off barely changes
-  it, so the cause is still open. `PIXEL_OFF=fog,ssao,glow,shadow,batches,grass` switches features off.
+- `STATS` reports draws, objects and `frameMs` away from capture stalls. Earlier runs measured the open
+  world at about 18 ms a frame on the RTX 3050 laptop; later runs (hunt bot by the sheep, idle in the
+  village) measured 7 to 9 ms, and the reason for the change was never pinned down. Measure before
+  trusting either number. `PIXEL_OFF=fog,ssao,glow,shadow,batches,grass` switches features off.
 - Full check after a change: `powershell -ExecutionPolicy Bypass -File scripts/check.ps1`. It lists script
   exceptions from the live run: one exception a frame freezes the HUD and the player without crashing.
-- Photo studio: `scripts/studio.ps1 -Jobs people,motion,models,world,hitboxes,map` needs no server and writes
+- Photo studio: `scripts/studio.ps1 -Jobs people,animals,monsters,motion,models,world,hitboxes,map` needs no server and writes
   labelled contact sheets to `export/previews/studio/sheets`. Read them after every visual change. World shots
-  live in `client/studio/shots.json`; add one for each new place.
+  live in `client/studio/shots.json`; add one for each new place. `PIXEL_SHOTS=guild,arena` films only shots
+  whose names start with those words.
 - `net-tests/ZoneAuditTests.cs` walks the real zone: keep every door, camp and bridge reachable.
 - Models: edit `asset-pipeline/build_meshes.py`, then `scripts/build_assets.ps1` builds and imports them.
+  Name models to rebuild only those: `scripts/build_assets.ps1 guild_interior beast_cow`. Animals are
+  `beast_*` (asset-pipeline/beasts.py) and goblin parts and camp props come from asset-pipeline/goblins.py.
+  Beasts keep their parts (body, neck, head, ears, tail, legs) as separate nodes for AnimalView.
+- Animals live in herds (`EnemyAnimal.cs`): graze, watch (`alertRange`), bolt (`aggroRange`), and spread a
+  scare through the herd. `net-tests/AnimalTests.cs` checks each behaviour on an empty field.
 - Hair and cloth are `ClothChain` grids; the toon shader bends meshes along them. Rig looks live in `Dialogues.cs`.
 - The server waits for a late input instead of skipping it. Catching up spends only ticks missed while stalled,
   so no client can run faster than real time: extra inputs are thrown away.

@@ -692,7 +692,7 @@ public partial class Hud : Control
         Label(_dialogName, plate.Position + new Vector2(18, 27), 19, Ink, _bold);
         if (DialogRole.Length > 0)
         {
-            Label(DialogRole.ToUpperInvariant(), new Vector2(plate.End.X + 14, plate.Position.Y + 34), 13, AccentDim with { A = 0.9f }, _bold);
+            Label(DialogRole.ToUpperInvariant(), new Vector2(plate.End.X + 12, plate.Position.Y + 16), 13, Accent with { A = 0.85f }, _bold, true);
         }
 
         // Words appear one at a time, so a line never jumps when a long word wraps.
