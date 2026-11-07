@@ -60,6 +60,7 @@ public static class ZoneView
         ["paper"] = ("plaster", 2f, 0f),
         ["window"] = ("plaster", 3f, 0f),
         ["pane"] = ("glass", 1.1f, 0f),
+        ["moss"] = ("leaves", 1.2f, 0f),
     };
 
     public static Node3D Build(Zone zone)
@@ -95,6 +96,12 @@ public static class ZoneView
             instance.Transform = new Transform3D(PropBasis(prop), new Vector3(prop.Position.X, prop.Position.Y, prop.Position.Z));
             Retexture(instance, shader, materials);
             root.AddChild(instance);
+            // The mill's sails hang under their own node, so they can turn.
+            if (instance.FindChild("sails", true, false) is Node3D sails)
+            {
+                sails.AddChild(new Spinner());
+            }
+
             if (prop.Model == "camp_fire")
             {
                 root.AddChild(BuildCampFlames(new Vector3(prop.Position.X, prop.Position.Y, prop.Position.Z)));

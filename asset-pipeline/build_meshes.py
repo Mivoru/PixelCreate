@@ -17,6 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import beasts  # noqa: E402
 import goblins  # noqa: E402
 import houses  # noqa: E402
+import landmarks  # noqa: E402
 
 COLORS = {
     "grass": "3E8948", "grass_dark": "265C42", "leaf": "63C74D", "path": "D77643",
@@ -29,7 +30,7 @@ COLORS = {
     "foliage_oak": "5F9A3C", "foliage_oak_b": "6FA63E", "foliage_birch": "A8C850", "foliage_blossom": "F4A8C0", "foliage_pine": "2F6A58",
     "foliage_willow": "8FB84A", "foliage_bush": "4F8E42", "foliage_jungle": "3F9048", "foliage_core": "1F4A3A",
     "bark": "6E4E3C", "bark_dark": "4A3634", "bark_birch": "E0DACC", "bark_grey": "8A8078", "reed": "9AA850", "grass_tall": "7FBF52",
-    "hide": "8A6A4A", "hide_dark": "4A3428", "sand": "D8C49A", "crop": "D8B85A", "paper": "EEE4C8", "glass": "CFE6F2", "pane": "3C5268", "ember": "B03A1E", "rune": "2CE8F5", "anime_glove": "23252E", "anime_vest": "2F4070", "anime_accent": "C84848", "anime_armor": "B8C4D4", "anime_armor_dark": "7A889C",
+    "hide": "8A6A4A", "hide_dark": "4A3428", "sand": "D8C49A", "crop": "D8B85A", "paper": "EEE4C8", "glass": "CFE6F2", "pane": "3C5268", "moss": "4E6E3C", "ember": "B03A1E", "rune": "2CE8F5", "anime_glove": "23252E", "anime_vest": "2F4070", "anime_accent": "C84848", "anime_armor": "B8C4D4", "anime_armor_dark": "7A889C",
 }
 COLORS.update(beasts.COLORS)
 COLORS.update(goblins.COLORS)
@@ -352,13 +353,20 @@ def start_scene():
 
 
 def join_all():
-    objects = [o for o in bpy.context.scene.objects if o.type == "MESH"]
-    if len(objects) < 2:
-        return
-    for obj in objects:
-        obj.select_set(True)
-    bpy.context.view_layer.objects.active = objects[0]
-    bpy.ops.object.join()
+    """Joins the meshes into one, except those hung under an empty (the mill's sails), which are
+    joined among themselves so the game can still move them as one piece."""
+    groups = {}
+    for obj in bpy.context.scene.objects:
+        if obj.type == "MESH":
+            groups.setdefault(obj.parent, []).append(obj)
+    for objects in groups.values():
+        if len(objects) < 2:
+            continue
+        bpy.ops.object.select_all(action="DESELECT")
+        for obj in objects:
+            obj.select_set(True)
+        bpy.context.view_layer.objects.active = objects[0]
+        bpy.ops.object.join()
 
 
 def export(name):
@@ -863,28 +871,11 @@ def timber(name, start, end, size, material="wood"):
 
 houses.bind({"box": box, "timber": timber, "blob": blob, "add_object": add_object, "mesh_from": mesh_from})
 cottage, cottage_b, tavern = houses.cottage, houses.cottage_b, houses.tavern
+landmarks.bind({"box": box, "timber": timber, "blob": blob, "loft": loft, "add_object": add_object, "mesh_from": mesh_from})
+windmill, watchtower, well, stall = landmarks.windmill, landmarks.watchtower, landmarks.well, landmarks.stall
+ruin_arch, ruin_wall, ruin = landmarks.ruin_arch, landmarks.ruin_wall, landmarks.ruin
 
 
-def well():
-    loft("well_wall", [(0, 1.0, 1.0), (0.85, 0.92, 0.92), (0.95, 1.0, 1.0)], "stone", 14)
-    loft("water", [(0.8, 0.78, 0.78), (0.82, 0.78, 0.78)], "water", 14)
-    for side in (-1, 1):
-        timber("post", (side * 0.95, 0, 0.8), (side * 0.95, 0, 2.9), 0.15)
-    timber("axle", (-1, 0, 2.3), (1, 0, 2.3), 0.09, "wood_dark")
-    roof("well_roof", (0, 0, 2.8), 2.7, 2.1, 0.9, "thatch")
-    loft("bucket", [(1.2, 0.18, 0.18), (1.55, 0.22, 0.22)], "wood", 9)
-
-
-def stall():
-    for x, y in ((-1.5, -1), (1.5, -1), (-1.5, 1), (1.5, 1)):
-        timber("post", (x, y, 0), (x, y, 2.5 if y > 0 else 2.15), 0.11)
-    box("counter", (0, -0.65, 0.9), (3.2, 0.9, 0.12), "wood")
-    box("front", (0, -1.05, 0.45), (3.1, 0.08, 0.9), "wood_dark")
-    awning = [(-1.75, -1.45, 2.05), (1.75, -1.45, 2.05), (1.75, 1.2, 2.6), (-1.75, 1.2, 2.6)]
-    add_object("awning", mesh_from("awning", awning, [(0, 1, 2, 3)]), "cloth_red")
-    for i in range(6):
-        x = -1.2 + i * 0.48
-        blob(f"goods{i}", (x, -0.65, 1.05), 0.15, ("flower", "leaf", "flower_b", "gold")[i % 4], i, 0.9, 1)
 
 
 def barrel():
@@ -1571,36 +1562,6 @@ def falls_cliff():
         blob(f"foot{i}", (x, y, 0.2), 1.6 + (i % 3) * 0.5, "stone_dark" if i % 2 else "stone", 60 + i, 0.6, 2)
 
 
-def windmill():
-    cylinder("tower", (0, 0, 3.6), 1.75, 7.2, "wall", 10)
-    loft("cap", [(7.1, 1.95, 1.95), (8, 1.5, 1.5), (8.9, 0.15, 0.15)], "roof", 10)
-    box("door", (0, -2.2, 1.1), (0.9, 0.3, 2.1), "wood")
-    box("window", (0, -1.92, 4.6), (0.6, 0.2, 0.8), "shutter")
-    timber("axle", (0, -1.5, 7.2), (0, -2.8, 7.2), 0.22, "wood_dark")
-    for i in range(4):
-        a = i * math.pi / 2 + 0.4
-        tip = (math.cos(a) * 5, -2.7, 7.2 + math.sin(a) * 5)
-        timber(f"arm{i}", (0, -2.7, 7.2), tip, 0.14, "wood_dark")
-        side = (-math.sin(a) * 0.45, 0, math.cos(a) * 0.45)
-        verts = [(math.cos(a) * 1.2, -2.75, 7.2 + math.sin(a) * 1.2), tip,
-                 (tip[0] + side[0] * 2, -2.75, tip[2] + side[2] * 2),
-                 (math.cos(a) * 1.2 + side[0] * 2, -2.75, 7.2 + math.sin(a) * 1.2 + side[2] * 2)]
-        add_object(f"sail{i}", mesh_from(f"sail{i}", verts, [(0, 1, 2, 3)]), "wall_b")
-
-
-def watchtower():
-    for x, y in ((-1.7, -1.7), (1.7, -1.7), (1.7, 1.7), (-1.7, 1.7)):
-        timber("leg", (x * 1.15, y * 1.15, 0), (x * 0.85, y * 0.85, 6.4), 0.3)
-    for z in (2.2, 4.4):
-        for (a, b) in (((-1.7, -1.7), (1.7, -1.7)), ((1.7, -1.7), (1.7, 1.7)), ((1.7, 1.7), (-1.7, 1.7)), ((-1.7, 1.7), (-1.7, -1.7))):
-            timber("brace", (a[0], a[1], z), (b[0], b[1], z + 1.6), 0.14, "wood_dark")
-    box("deck", (0, 0, 6.4), (4.2, 4.2, 0.24), "wood_dark")
-    for x in (-2, 2):
-        box("rail", (x, 0, 7.1), (0.14, 4.1, 1.1), "wood")
-        box("rail", (0, x, 7.1), (4.1, 0.14, 1.1), "wood")
-    for x, y in ((-1.9, -1.9), (1.9, -1.9), (1.9, 1.9), (-1.9, 1.9)):
-        timber("post", (x, y, 6.4), (x, y, 9), 0.16)
-    roof("roof", (0, 0, 9), 5, 5, 1.6, "thatch")
 
 
 def field():
@@ -1636,25 +1597,6 @@ def stone_wall():
             box(f"stone{row}_{i}", (x, rng.uniform(-0.04, 0.04), 0.14 + row * 0.27), size, "stone" if (i + row) % 3 else "stone_dark")
 
 
-def ruin_arch():
-    for x in (-2.6, 2.6):
-        box("base", (x, 0, 0.3), (1.8, 1.8, 0.6), "stone_dark")
-        cylinder(f"column{x}", (x, 0, 2.6), 0.6, 4.2, "stone", 8)
-    # A solid arch of stone resting on both columns, with one block fallen out of it.
-    arc = [(math.cos(i / 10 * math.pi) * 2.6, 0, 4.7 + math.sin(i / 10 * math.pi) * 1.55) for i in range(11)]
-    beasts.section_tube("arch", arc[:6], [0.62] * 6, [0.5] * 6, "stone", add_object, smooth, 6)
-    beasts.section_tube("arch", arc[7:], [0.62] * 4, [0.5] * 4, "stone", add_object, smooth, 6)
-    for x, z in ((2.6, 4.7), (-2.6, 4.7)):
-        box("capital", (x, 0, z), (1.5, 1.5, 0.35), "stone_dark")
-    blob("fallen", (3.6, 1.8, 0.4), 0.8, "stone_dark", 3, 0.6, 2)
-
-
-def ruin_wall():
-    rng = random.Random(11)
-    for row in range(5):
-        for i in range(8 - row):
-            x = -2.6 + i * 0.75 + row * 0.15
-            box(f"block{row}_{i}", (x, rng.uniform(-0.05, 0.05), 0.35 + row * 0.7), (0.7, 0.8, 0.64), "stone" if (i + row) % 3 else "stone_dark")
 
 
 def jungle_tree():
@@ -1742,11 +1684,6 @@ def palisade():
         x = -3.9 + index * 0.98
         cylinder(f"stake{index}", (x, 0, 1.4), 0.33, 2.9 + (index % 3) * 0.25, "wood")
 
-
-def ruin():
-    box("base", (0, 0, 0.25), (2.3, 2.3, 0.5), "stone")
-    cylinder("column", (0, 0, 2.2), 0.72, 3.5, "stone", 8)
-    blob("rubble", (1.4, 0.8, 0.2), 0.55, "stone_dark", 2, 0.7, 1)
 
 
 MODELS = {

@@ -179,6 +179,8 @@ public sealed class Zone
     {
         // The lean-to against the east gable, x and z in the model's own axes.
         ["cottage_b"] = new[] { (new Vector2(3.75f, -0.2f), new Vector3(1.0f, 1.75f, 3f)) },
+        // The mill's tail pole comes down to a cart wheel behind the tower.
+        ["windmill"] = new[] { (new Vector2(0f, -4.3f), new Vector3(0.45f, 0.45f, 1.2f)) },
         ["ruin_arch"] = new[] { (new Vector2(-2.6f, 0f), new Vector3(0.9f, 0.9f, 5f)), (new Vector2(2.6f, 0f), new Vector3(0.9f, 0.9f, 5f)) },
         ["guild_hall"] = new[]
         {
