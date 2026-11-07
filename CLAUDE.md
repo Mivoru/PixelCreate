@@ -52,9 +52,9 @@ Rules:
 - Live check: add `-Capture <folder>` to that command. A bot plays, saves frames and prints a `STATS` line.
 - `PIXEL_BOT` picks the bot: `guild` plays the Guild story through the real interface and prints `BOT` stages,
   with `PIXEL_TEST=1` making the examiner frail. Also `idle`, `talk`, `trial`, `keys`. `PIXEL_YAW` turns the camera.
-- `STATS` reports draws, objects and `frameMs` away from capture stalls. The frame is capped by vsync at
-  60 Hz, so judge cost by draws and objects. `PIXEL_OFF=fog,ssao,glow,shadow,batches,grass` switches
-  features off to measure them.
+- `STATS` reports draws, objects and `frameMs` away from capture stalls. The open world runs at about
+  18 ms a frame on the RTX 3050 laptop (the Guild at 7 ms); switching single features off barely changes
+  it, so the cause is still open. `PIXEL_OFF=fog,ssao,glow,shadow,batches,grass` switches features off.
 - Full check after a change: `powershell -ExecutionPolicy Bypass -File scripts/check.ps1`. It lists script
   exceptions from the live run: one exception a frame freezes the HUD and the player without crashing.
 - Photo studio: `scripts/studio.ps1 -Jobs people,motion,models,world,hitboxes,map` needs no server and writes
