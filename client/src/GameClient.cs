@@ -75,6 +75,7 @@ public partial class GameClient : Node
         var port = int.Parse(args.ElementAtOrDefault(1) ?? "7777");
         _captureDir = args.ElementAtOrDefault(2);
         _captureFrames = int.Parse(args.ElementAtOrDefault(3) ?? "8");
+        _yaw = float.TryParse(OS.GetEnvironment("PIXEL_YAW"), System.Globalization.CultureInfo.InvariantCulture, out var yaw) ? yaw : 0f;
 
         var zone = Zone.Load("meadow-valley");
         _world = zone.World;
