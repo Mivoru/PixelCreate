@@ -929,8 +929,11 @@ public partial class Hud : Control
             }
 
             var def = EnemyDef.All[enemy.Type];
-            var head = position + Vector3.Up * (def.Size * 1.5f + 0.25f);
-            if (Camera.IsPositionBehind(head) || Camera.GlobalPosition.DistanceTo(head) > TagRange)
+            var head = position + Vector3.Up * (def.TagHeight > 0f ? def.TagHeight * def.Size : def.Size * 1.5f + 0.25f);
+
+            // Peaceful animals only name themselves up close, so a herd does not fill the sky with labels.
+            var range = def.Kind == "animal" && def.Temper == "passive" && enemy.Health == enemy.MaxHealth ? 14f : TagRange;
+            if (Camera.IsPositionBehind(head) || Camera.GlobalPosition.DistanceTo(head) > range)
             {
                 continue;
             }

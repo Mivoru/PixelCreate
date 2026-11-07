@@ -10,7 +10,8 @@ public sealed record EnemyDef(
     float AggroRange, int HopTicks = 40, float LeapRange = 0f, int LeapCooldownTicks = 0, float SplashRadius = 0f,
     short SplashDamage = 0, byte SlowTicks = 0, float SpitRange = 0f, short SpitDamage = 0, int SpitCooldownTicks = 0,
     double RareChance = 0, string Kind = "slime", bool Rare = false, string Weapon = "", float PreferredRange = 2f,
-    Ability[]? Abilities = null, DropEntry[]? Drops = null, string Temper = "hostile", LootEntry[]? Loot = null)
+    Ability[]? Abilities = null, DropEntry[]? Drops = null, string Temper = "hostile", LootEntry[]? Loot = null,
+    float AlertRange = 0f, float TagHeight = 0f)
 {
     private static readonly Lazy<IReadOnlyList<EnemyDef>> Loaded = new(Load);
 
@@ -41,6 +42,12 @@ public enum EnemyAction : byte
     Walk = 7,
     Cast = 8,
     Strike = 9,
+
+    /// <summary>An animal with its head down, eating.</summary>
+    Graze = 10,
+
+    /// <summary>An animal standing tall and watching something.</summary>
+    Alert = 11,
 }
 
 /// <summary>The nametag colour rule: how an enemy compares with the player.</summary>

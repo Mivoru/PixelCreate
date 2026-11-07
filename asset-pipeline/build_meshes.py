@@ -12,6 +12,9 @@ import bpy
 import mathutils
 
 OUT = Path(__file__).resolve().parent.parent / "client" / "assets"
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import beasts  # noqa: E402
 
 COLORS = {
     "grass": "3E8948", "grass_dark": "265C42", "leaf": "63C74D", "path": "D77643",
@@ -26,6 +29,7 @@ COLORS = {
     "bark": "6E4E3C", "bark_dark": "4A3634", "bark_birch": "E0DACC", "bark_grey": "8A8078", "reed": "9AA850", "grass_tall": "7FBF52",
     "hide": "8A6A4A", "hide_dark": "4A3428", "sand": "D8C49A", "crop": "D8B85A", "paper": "EEE4C8", "glass": "CFE6F2", "ember": "B03A1E", "anime_glove": "23252E", "anime_vest": "2F4070", "anime_accent": "C84848", "anime_armor": "B8C4D4", "anime_armor_dark": "7A889C",
 }
+COLORS.update(beasts.COLORS)
 MATERIALS = {}
 
 
@@ -356,7 +360,7 @@ def join_all():
 
 def export(name):
     OUT.mkdir(parents=True, exist_ok=True)
-    if not name.startswith("anime_"):
+    if not name.startswith(("anime_", "beast_")):
         join_all()
     bpy.ops.export_scene.gltf(filepath=str(OUT / f"{name}.glb"), export_format="GLB", export_apply=True)
 
@@ -1660,8 +1664,10 @@ MODELS = {
     "ruin": ruin,
 }
 
+for beast in beasts.NAMES:
+    MODELS["beast_" + beast] = (lambda kind: lambda: beasts.build(kind, add_object, smooth))(beast)
+
 # Arguments after "--" pick models by name, so one change does not rebuild everything.
-import sys
 WANTED = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
 for model_name, build in MODELS.items():
     if WANTED and model_name not in WANTED:

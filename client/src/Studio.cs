@@ -198,13 +198,18 @@ public partial class Studio : Node
         {
             var view = new AnimalView(def, 2);
             _set.AddChild(view.Root);
-            foreach (var (pose, speed, yaw) in new[] { ("stand", 0f, 1.4f), ("graze", 0f, 0.7f), ("run", 6f, 1.57f) })
+            var poses = new[]
+            {
+                ("stand", 0f, 1.4f, EnemyAction.Idle), ("graze", 0f, 0.7f, EnemyAction.Graze),
+                ("alert", 0f, 2.2f, EnemyAction.Alert), ("run", 6f, 1.57f, EnemyAction.Walk),
+            };
+            foreach (var (pose, speed, yaw, action) in poses)
             {
                 var position = Vector3.Zero;
-                for (var frame = 0; frame < (pose == "graze" ? 200 : 40); frame++)
+                for (var frame = 0; frame < (speed > 0 ? 40 : 120); frame++)
                 {
-                    position += new Vector3(0, 0, -speed * Step);
-                    view.Update(new EnemyView(1, 0, 1, default, yaw, 10, 10, EnemyAction.Walk, 0, default, false), position, Step, null!);
+                    position += new Vector3(-Mathf.Sin(yaw) * speed * Step, 0, -Mathf.Cos(yaw) * speed * Step);
+                    view.Update(new EnemyView(1, 0, 1, default, yaw, 10, 10, action, 0, default, false), position, Step, null!);
                     _stage.Camera.LookAtFromPosition(position + new Vector3(Mathf.Sin(yaw + 1.57f) * 5.5f, 1.4f, Mathf.Cos(yaw + 1.57f) * 5.5f), position + Vector3.Up * 0.6f);
                     await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
                 }

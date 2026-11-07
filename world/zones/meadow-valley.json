@@ -106,6 +106,7 @@
   ],
   "enemies": [
     { "x": 42.6, "z": -2, "radius": 5, "count": 4, "respawnTicks": 1800, "types": ["cow"] },
+    { "x": 21, "z": -16.5, "radius": 4, "count": 5, "respawnTicks": 1200, "types": ["chicken"] },
     { "x": -14, "z": 44, "radius": 9, "count": 5, "respawnTicks": 1800, "types": ["sheep"] },
     { "x": 16, "z": 80, "radius": 13, "count": 5, "respawnTicks": 1800, "types": ["goat"] },
     { "x": -74, "z": 66, "radius": 16, "count": 4, "respawnTicks": 2400, "types": ["deer"] },

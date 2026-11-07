@@ -192,11 +192,13 @@ public sealed class GameServer : IEnemyEvents
             : new[] { new EnemySpawn(world.Spawn, 15f, options.EnemyCount) };
         foreach (var spawn in spawns)
         {
+            var herd = new List<Enemy>();
             for (var i = 0; i < spawn.Count; i++)
             {
-                var enemy = new Enemy { Id = _nextEnemyId++, Type = 0, Home = spawn };
+                var enemy = new Enemy { Id = _nextEnemyId++, Type = 0, Home = spawn, Herd = herd };
                 enemy.Reset(_random, world);
                 _enemies.Add(enemy);
+                herd.Add(enemy);
             }
         }
     }
