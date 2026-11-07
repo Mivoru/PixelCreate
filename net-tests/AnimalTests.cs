@@ -128,4 +128,48 @@ public sealed class AnimalTests
         Run(herd, 3, player);
         Assert.All(herd, boar => Assert.Equal(1, boar.TargetId));
     }
+
+    /// <summary>
+    /// A boar hit while it idles turns on the attacker within a moment instead of sliding off on the
+    /// knockback with its back to the fight, and its sounder joins in just as quickly.
+    /// </summary>
+    [Fact]
+    public void HitBoar_TurnsOnTheAttackerAtOnce()
+    {
+        var herd = Herd("pig", 3, 2f);
+        var boar = herd[0];
+        var random = new Random(9);
+        var events = new Quiet();
+        var player = new Target(1, boar.Position + new Vector3(2.5f, 0, 0), Vector3.Zero);
+        // Let them settle into their grazing and idling first.
+        for (var tick = 0; tick < 200; tick++)
+        {
+            foreach (var animal in herd)
+            {
+                animal.Step(Field, random, new[] { player }, events);
+            }
+        }
+
+        var start = boar.Position;
+        boar.TakeHit(1, player.Position, 1);
+        var furthest = 0f;
+        for (var tick = 0; tick < Tuning.TickRate; tick++)
+        {
+            foreach (var animal in herd)
+            {
+                animal.Step(Field, random, new[] { player }, events);
+            }
+
+            furthest = MathF.Max(furthest, (boar.Position - start).Length());
+        }
+
+        Assert.True(furthest < 1.5f, $"the boar slid {furthest:F1} m away from the blow");
+        foreach (var animal in herd)
+        {
+            var toPlayer = player.Position - animal.Position;
+            var facing = new Vector3(-MathF.Sin(animal.Facing), 0, -MathF.Cos(animal.Facing));
+            Assert.True(Vector3.Dot(Vector3.Normalize(toPlayer with { Y = 0 }), facing) > 0.7f,
+                $"boar {animal.Id} is not facing the attacker one second after the hit");
+        }
+    }
 }

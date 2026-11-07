@@ -27,6 +27,8 @@
   { "name": "watchtower", "eye": [110, 3, -2], "at": [126, 4, -4] },
   { "name": "stones", "eye": [-78, 3, 106], "at": [-90, 1.5, 120] },
   { "name": "bridge_north", "eye": [-44, 6, 106], "at": [-30, 2, 96] },
+  { "name": "water_lake_mouth", "eye": [62, 4, 112], "at": [68, 0, 124] },
+  { "name": "water_falls_mouth", "eye": [-13, 2.5, 115], "at": [-20, 0, 126] },
   { "name": "bridge_north_arch", "eye": [-36, 1.5, 88], "at": [-27, -1, 106] },
   { "name": "bridge_west_low", "eye": [-62, 0.5, 6], "at": [-60, 0, 20] },
   { "name": "guild_back", "eye": [-42, 3, 0], "at": [-36, 4, 16] },

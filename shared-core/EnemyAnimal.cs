@@ -56,6 +56,11 @@ public sealed partial class Enemy
                         Flat(mate.Position - Position).Length() < PanicReach)
                     {
                         mate.TargetId = TargetId;
+                        if (mate.Action is EnemyAction.Idle or EnemyAction.Walk)
+                        {
+                            // Each boar looks round and charges within a moment, not after its nap.
+                            mate.ActionTicks = Math.Min(mate.ActionTicks, 8 + mate.Id % 12);
+                        }
                     }
                 }
             }

@@ -197,7 +197,9 @@ def antlers(b):
 
 
 def dewlap(b):
-    b.tube([(0, 0.95, 1.08), (0, 1.12, 1.02), (0, 1.25, 1.12)], [0.05, 0.07, 0.04], [0.06, 0.12, 0.05], "cow_white", 8)
+    """The loose fold of skin along the underside of the neck. It belongs to the neck, so it ends
+    behind the jaw: a fold reaching under the head stuck out below the mouth when the cow grazed."""
+    b.tube([(0, 0.7, 0.99), (0, 0.86, 0.99), (0, 0.98, 1.07)], [0.05, 0.055, 0.03], [0.06, 0.08, 0.04], "cow_white", 8)
 
 
 def hips(points, material):

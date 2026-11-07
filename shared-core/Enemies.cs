@@ -92,6 +92,9 @@ public sealed partial class Enemy
     private const int LeapAirTicks = 34;
     private const float HopSpeed = 5.5f;
     private const float LeashExtra = 16f;
+
+    /// <summary>How long a hit walker or fighter reels before it acts again.</summary>
+    private const int StaggerTicks = 6;
     private const float LeapLead = 0.3f;
 
     /// <summary>Ticks before an attack lands in which its aim no longer moves.</summary>
@@ -347,6 +350,14 @@ public sealed partial class Enemy
         if (Action == EnemyAction.Windup || Action == EnemyAction.Spit)
         {
             Action = EnemyAction.Hop;
+        }
+        else if (Def.Kind != "slime" && Action is not (EnemyAction.Cast or EnemyAction.Leap or EnemyAction.Strike))
+        {
+            // A short stagger, then it turns on the attacker. Without this a grazing boar kept an
+            // action the fighting code does not know and slid away on the knockback for good, still
+            // facing where it had looked.
+            Action = EnemyAction.Idle;
+            ActionTicks = StaggerTicks;
         }
         else if (Action == EnemyAction.Cast && MaxHealth - Health > 0 && Def.Weapon == "dagger")
         {

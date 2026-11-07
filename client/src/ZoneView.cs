@@ -127,9 +127,11 @@ public static class ZoneView
                 {
                     var middle = a.Lerp(b, along / length);
 
-                    // A stream leaving a lake starts under the lake's surface, so no square end shows.
+                    // A stream joining a lake runs on under the lake's surface for a few metres, so the
+                    // two waters meet without a gap or a square end.
                     var lake = lakes.FirstOrDefault(l => new Vector2(middle.X - l.Centre.X, middle.Z - l.Centre.Z).Length() < l.Radius * 1.6f);
-                    if (lake.Radius > 0f && new Vector2(middle.X - lake.Centre.X, middle.Z - lake.Centre.Z).Length() < lake.Radius * 1.06f)
+                    var fromLake = lake.Radius > 0f ? new Vector2(middle.X - lake.Centre.X, middle.Z - lake.Centre.Z).Length() : float.MaxValue;
+                    if (fromLake < lake.Radius * 0.7f)
                     {
                         continue;
                     }
@@ -138,7 +140,8 @@ public static class ZoneView
                     level = Mathf.Min(level, zone.World.GroundHeight(middle.X, middle.Z) + 1.1f);
                     if (lake.Radius > 0f)
                     {
-                        level = Mathf.Min(level, lake.Centre.Y - 0.06f);
+                        // Just under the lake where they overlap; level with it at the mouth.
+                        level = Mathf.Min(level, lake.Centre.Y - (fromLake < lake.Radius * 1.12f ? 0.03f : 0.01f));
                     }
                     var left = middle - side + Vector3.Up * level;
                     var right = middle + side + Vector3.Up * level;
@@ -162,9 +165,10 @@ public static class ZoneView
             root.AddChild(new MeshInstance3D { Mesh = surface.Commit(), MaterialOverride = new ShaderMaterial { Shader = water } });
         }
 
+        var courses = zone.RiverCourses.ToList();
         foreach (var (centre, radius) in zone.LakeSurfaces)
         {
-            root.AddChild(BuildLake(new Vector3(centre.X, centre.Y, centre.Z), radius, water));
+            root.AddChild(BuildLake(new Vector3(centre.X, centre.Y, centre.Z), radius, water, courses));
         }
 
         var cliff = zone.Props.FirstOrDefault(p => p.Model == "falls_cliff");
@@ -264,8 +268,18 @@ public static class ZoneView
     };
 
     /// <summary>A round sheet of water: the shader's foam runs along the rim, where V reaches 1.</summary>
-    private static MeshInstance3D BuildLake(Vector3 centre, float radius, Shader water)
+    private static MeshInstance3D BuildLake(Vector3 centre, float radius, Shader water, List<(System.Numerics.Vector2[] Points, float Width)> rivers)
     {
+        // The shore foam stops where a stream flows in or out: open water has no bank there.
+        bool AtMouth(Vector3 point) => rivers.Any(r => Enumerable.Range(0, r.Points.Length - 1).Any(i =>
+        {
+            var a = new Vector2(r.Points[i].X, r.Points[i].Y);
+            var b = new Vector2(r.Points[i + 1].X, r.Points[i + 1].Y);
+            var p = new Vector2(point.X, point.Z);
+            var t = Mathf.Clamp((p - a).Dot(b - a) / (b - a).LengthSquared(), 0f, 1f);
+            return p.DistanceTo(a + (b - a) * t) < r.Width * 1.7f;
+        }));
+
         const int sides = 40;
         const int rings = 6;
         var surface = new SurfaceTool();
@@ -276,7 +290,13 @@ public static class ZoneView
             return centre + new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle)) * (radius * 1.12f * ring / rings);
         }
 
-        void Add(int ring, int side) => Vertex(surface, Point(ring, side), Point(ring, side).X * 0.5f, 0.5f + 0.5f * Mathf.Pow(ring / (float)rings, 5f));
+        void Add(int ring, int side)
+        {
+            var point = Point(ring, side);
+            var shore = ring >= rings - 1 && AtMouth(point) ? 0.4f : Mathf.Pow(ring / (float)rings, 5f);
+            Vertex(surface, point, point.X * 0.5f, 0.5f + 0.5f * shore);
+        }
+
         for (var ring = 0; ring < rings; ring++)
         {
             for (var side = 0; side < sides; side++)
