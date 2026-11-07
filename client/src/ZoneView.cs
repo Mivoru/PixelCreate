@@ -34,7 +34,7 @@ public static class ZoneView
         ["wall"] = ("plaster", 0.5f, 0f),
         ["wall_b"] = ("plaster", 0.5f, 0f),
         ["roof"] = ("shingles", 0.6f, 0f),
-        ["thatch"] = ("leaves", 0.7f, 0f),
+        ["thatch"] = ("thatch", 0.8f, 0f),
         ["hay"] = ("leaves", 0.9f, 0f),
         ["sack"] = ("plaster", 0.9f, 0f),
         ["shutter"] = ("planks", 0.9f, 0f),
@@ -59,6 +59,7 @@ public static class ZoneView
         ["crop"] = ("leaves", 1.2f, 0.4f),
         ["paper"] = ("plaster", 2f, 0f),
         ["window"] = ("plaster", 3f, 0f),
+        ["pane"] = ("glass", 1.1f, 0f),
     };
 
     public static Node3D Build(Zone zone)
@@ -518,7 +519,7 @@ public static class ZoneView
         var slope = new Vector2(right - left, far - near).Length() / (terrain.CellSize * 2f);
 
         // Red fades out across the edge of the path, so the shader can cut a ragged line through it.
-        var path = Mathf.Clamp(0.5f - zone.PathDistance(x, z) / 1.6f, 0f, 1f);
+        var path = Mathf.Clamp(0.5f - zone.WornPathDistance(x, z) / 1.6f, 0f, 1f);
         var rock = Mathf.Clamp((slope - 0.55f) * 3f, 0f, 1f);
         surface.SetColor(new Color(path, rock, 0f));
         surface.AddVertex(new Vector3(x, terrain.Vertex(column, row), z));

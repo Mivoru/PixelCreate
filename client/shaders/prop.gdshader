@@ -1,4 +1,4 @@
-// Props: a flat colour with a world-aligned pixel detail texture, and optional sway for leaves.
+// Props: a flat colour with a model-aligned pixel detail texture, and optional sway for leaves.
 shader_type spatial;
 render_mode cull_disabled;
 
@@ -16,8 +16,10 @@ void vertex() {
 	float flutter = sin(TIME * 4.3 + world.x * 1.3 + world.y * 1.9);
 	VERTEX.x += (wave * 0.08 + flutter * 0.03) * sway;
 	VERTEX.z += (wave * 0.05 - flutter * 0.03) * sway;
-	world_position = world;
-	world_normal = abs(normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz));
+	// The texture is laid in the model's own axes, so the courses of a turned house still run
+	// along its walls; the model's position shifts it, so neighbours do not repeat each other.
+	world_position = VERTEX * length(MODEL_MATRIX[0].xyz) + MODEL_MATRIX[3].xyz;
+	world_normal = abs(normalize(NORMAL));
 }
 
 void fragment() {

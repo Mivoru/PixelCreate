@@ -102,9 +102,9 @@ public sealed class Zone
     /// <summary>Half width, half depth and height of each model's collision at scale 1.</summary>
     private static readonly Dictionary<string, Vector3> Collision = new()
     {
-        ["cottage"] = new(3.7f, 2.9f, 6f),
-        ["cottage_b"] = new(4.2f, 2.8f, 6f),
-        ["tavern"] = new(4.9f, 3.3f, 9f),
+        ["cottage"] = new(3.35f, 2.6f, 6f),
+        ["cottage_b"] = new(2.95f, 2.45f, 6f),
+        ["tavern"] = new(4.75f, 3.2f, 9f),
         ["guild_hall"] = new(8.4f, 6.2f, 12f),
         ["cliff"] = new(4.6f, 3.6f, 11f),
         ["falls_cliff"] = new(21f, 9.5f, 16f),
@@ -132,6 +132,7 @@ public sealed class Zone
         ["jungle_tree"] = new(0.7f, 0.7f, 11f),
         ["fern"] = new(0f, 0f, 0f),
         ["bridge"] = new(0f, 0f, 0f),
+        ["bridge_stone"] = new(0f, 0f, 0f),
         ["training_dummy"] = new(0.3f, 0.3f, 1.8f),
         ["guild_interior"] = new(0f, 0f, 0f),
         ["trial_arena"] = new(0f, 0f, 0f),
@@ -176,6 +177,8 @@ public sealed class Zone
     /// <summary>Models with holes in them are solid only where their parts stand: centre offset, then size as above.</summary>
     private static readonly Dictionary<string, (Vector2 Offset, Vector3 Shape)[]> CollisionParts = new()
     {
+        // The lean-to against the east gable, x and z in the model's own axes.
+        ["cottage_b"] = new[] { (new Vector2(3.75f, -0.2f), new Vector3(1.0f, 1.75f, 3f)) },
         ["ruin_arch"] = new[] { (new Vector2(-2.6f, 0f), new Vector3(0.9f, 0.9f, 5f)), (new Vector2(2.6f, 0f), new Vector3(0.9f, 0.9f, 5f)) },
         ["guild_hall"] = new[]
         {
@@ -344,6 +347,31 @@ public sealed class Zone
         }
 
         return nearest;
+    }
+
+    /// <summary>
+    /// Distance to the edge of the worn road surface. A road stops at a river bank and at a bridge
+    /// deck, so no trodden earth runs down the bank and under the bridge into the water.
+    /// </summary>
+    public float WornPathDistance(float x, float z)
+    {
+        foreach (var bridge in Bridges)
+        {
+            if (x >= bridge.MinX - 0.5f && x <= bridge.MaxX + 0.5f && z >= bridge.MinZ - 1f && z <= bridge.MaxZ + 1f)
+            {
+                return float.MaxValue;
+            }
+        }
+
+        foreach (var river in Rivers)
+        {
+            if (PolylineDistance(river.Points, x, z) < river.Width * 1.6f)
+            {
+                return float.MaxValue;
+            }
+        }
+
+        return PathDistance(x, z);
     }
 
     /// <summary>The height of the hills alone, before rivers and mountains shape them.</summary>
@@ -570,7 +598,7 @@ public sealed class Zone
     private static float Settle(World ground, string model, float x, float z, float yaw)
     {
         var centre = ground.GroundHeight(x, z);
-        if (model is "bridge" or "pier" or "field" || !Collision.TryGetValue(model, out var shape) || shape.X <= 0f)
+        if (model is "bridge" or "bridge_stone" or "pier" or "field" || !Collision.TryGetValue(model, out var shape) || shape.X <= 0f)
         {
             return centre;
         }
@@ -610,7 +638,7 @@ public sealed class Zone
     {
         "field" => 8f,
         "pier" => 6f,
-        "bridge" => 11f,
+        "bridge" or "bridge_stone" => 11f,
         "camp_set" => 3f,
         "bone_pile" => 0.8f,
         "ruin_arch" => 4f,

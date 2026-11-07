@@ -107,10 +107,25 @@ def detail(rng, name, values):
 
 
 def planks(rng):
-    values = layered(rng, 4, 16, 32) * 0.7 + 0.3
-    values[::32, :] = 0.0
-    values[1::32, :] = 0.15
-    detail(rng, "planks", values)
+    """Boards with long grain, a knot here and there, and dark gaps between them."""
+    grain = layered(rng, 4, 8, 16)
+    lines = np.sin((np.arange(SIZE)[:, None] * 0.9 + layered(rng, 2, 4) * 40) * 1.3) * 0.5 + 0.5
+    values = 0.62 + grain * 0.22 + lines * 0.1
+    for board in range(0, SIZE, 32):
+        values[board:board + 32, :] *= rng.uniform(0.88, 1.06)
+        for _ in range(2):
+            kx, ky = int(rng.integers(0, SIZE)), board + int(rng.integers(8, 24))
+            for dy in range(-3, 4):
+                for dx in range(-5, 6):
+                    if dx * dx / 25 + dy * dy / 9 <= 1:
+                        values[(ky + dy) % SIZE, (kx + dx) % SIZE] *= 0.72
+        # Butt joints, staggered from board to board.
+        joint = int(rng.integers(0, SIZE))
+        values[board:board + 32, joint:joint + 2] = 0.3
+    values[::32, :] = 0.22
+    values[1::32, :] = 0.4
+    grey = (np.clip(values, 0, 1) * 255).astype(np.uint8)
+    save("planks", np.stack([grey, grey, grey], axis=-1))
 
 
 def shingles(rng):
@@ -120,6 +135,80 @@ def shingles(rng):
         offset = 32 if (row // 32) % 2 else 0
         values[row:row + 32, offset::64] = 0.1
     detail(rng, "shingles", values)
+
+
+def masonry(rng):
+    """Dressed stone laid in courses: each block has its own tone, a lit top-left edge, a shaded
+    lower edge and a recessed mortar joint, so walls read as built rather than as noise."""
+    courses = [44, 40, 46, 38, 48, 40]
+    grain = layered(rng, 16, 64, 128)
+    values = np.full((SIZE, SIZE), 0.32)
+    top = 0
+    for height in courses:
+        x = int(rng.integers(0, 40))
+        start = x
+        while x < start + SIZE:
+            width = int(rng.integers(44, 96))
+            if start + SIZE - (x + width) < 40:
+                width = start + SIZE - x
+            tone = rng.uniform(0.62, 0.92)
+            for row in range(top + 3, top + height - 1):
+                for column in range(x + 3, x + width - 1):
+                    u, v = column % SIZE, row
+                    edge = 0.0
+                    if row < top + 6 or column < x + 6:
+                        edge = 0.1
+                    elif row > top + height - 5 or column > x + width - 5:
+                        edge = -0.12
+                    values[v, u] = tone + edge + (grain[v, u] - 0.5) * 0.3
+            # A few chips and pits on the face.
+            for _ in range(int(width * height / 700)):
+                cx, cy = int(rng.integers(x + 6, x + width - 6)) % SIZE, int(rng.integers(top + 6, top + height - 5))
+                values[cy, cx] -= 0.16
+            x += width
+        top += height
+    grey = (np.clip(values, 0, 1) * 255).astype(np.uint8)
+    save("stone", np.stack([grey, grey, grey], axis=-1))
+
+
+def plaster(rng):
+    """Lime plaster: smooth, with faint trowel sweeps and a little grime."""
+    values = layered(rng, 4, 16, 64) * 0.25 + 0.72
+    sweeps = layered(rng, 2, 8)
+    values += np.sin(sweeps * 9) * 0.012
+    for _ in range(900):
+        x, y = rng.integers(0, SIZE, 2)
+        values[y, x] -= rng.uniform(0.04, 0.1)
+    grey = (np.clip(values, 0, 1) * 255).astype(np.uint8)
+    save("plaster", np.stack([grey, grey, grey], axis=-1))
+
+
+def thatch(rng):
+    """Bundles of straw laid in overlapping courses, the stems running down the slope."""
+    values = np.full((SIZE, SIZE), 0.7)
+    for _ in range(5200):
+        x, y = rng.integers(0, SIZE, 2)
+        length = int(rng.integers(10, 26))
+        tone = rng.uniform(0.55, 1.0)
+        for step in range(length):
+            values[(y + step) % SIZE, x] = values[(y + step) % SIZE, x] * 0.35 + tone * 0.65
+    for row in range(0, SIZE, 32):
+        values[row:row + 3, :] *= 0.62
+        values[row + 3:row + 5, :] *= 0.85
+    grey = (np.clip(values, 0, 1) * 255).astype(np.uint8)
+    save("thatch", np.stack([grey, grey, grey], axis=-1))
+
+
+def glass(rng):
+    """Window glass by day: dark, with a soft sky reflection and a couple of bright diagonal glints."""
+    yy, xx = np.mgrid[0:SIZE, 0:SIZE]
+    values = 0.62 + 0.18 * (1 - yy / SIZE)
+    diagonal = (xx + yy) % SIZE
+    values[(diagonal > 40) & (diagonal < 52)] += 0.3
+    values[(diagonal > 60) & (diagonal < 66)] += 0.22
+    values[(diagonal > 170) & (diagonal < 178)] += 0.15
+    grey = (np.clip(values, 0, 1) * 255).astype(np.uint8)
+    save("glass", np.stack([grey, grey, grey], axis=-1))
 
 
 def merged_palette():
@@ -172,8 +261,10 @@ def main():
     dirt(rng)
     rock(rng)
     detail(rng, "leaves", layered(rng, 16, 32, 64, 128))
-    detail(rng, "plaster", layered(rng, 8, 32, 128) * 0.5 + 0.5)
-    detail(rng, "stone", layered(rng, 8, 16, 64))
+    plaster(rng)
+    masonry(rng)
+    thatch(rng)
+    glass(rng)
     planks(rng)
     shingles(rng)
     print(f"palette colours: {merged_palette()}")

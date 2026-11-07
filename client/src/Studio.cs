@@ -316,6 +316,13 @@ public partial class Studio : Node
         var shader = GD.Load<Shader>("res://shaders/prop.gdshader");
         var names = DirAccess.GetFilesAt("res://assets").Where(f => f.EndsWith(".glb")).Select(f => f[..^4])
             .Where(n => !n.StartsWith("anime_")).OrderBy(n => n).ToArray();
+        // PIXEL_MODELS=cottage,bridge photographs only the models whose names start with those words.
+        var only = (System.Environment.GetEnvironmentVariable("PIXEL_MODELS") ?? "").Split(',', System.StringSplitOptions.RemoveEmptyEntries);
+        if (only.Length > 0)
+        {
+            names = names.Where(n => only.Any(prefix => n.StartsWith(prefix, System.StringComparison.Ordinal))).ToArray();
+        }
+
         foreach (var name in names)
         {
             var model = GD.Load<PackedScene>($"res://assets/{name}.glb").Instantiate<Node3D>();
@@ -335,6 +342,7 @@ public partial class Studio : Node
             foreach (var (view, eye) in new[]
             {
                 ("a", new Vector3(0.75f, 0.55f, 1f)), ("b", new Vector3(-0.8f, 0.4f, -1f)), ("under", new Vector3(0.7f, -0.45f, 0.9f)),
+                ("front", new Vector3(0f, 0.15f, 1f)), ("side", new Vector3(1f, 0.15f, -0.1f)),
             })
             {
                 floor.Visible = view != "under";

@@ -167,7 +167,7 @@
     { "model": "trial_arena", "x": 480, "z": 0 },
     { "model": "bridge", "x": -60, "z": 20 },
     { "model": "bridge", "x": 52, "z": 42 },
-    { "model": "bridge", "x": -27, "z": 106 },
+    { "model": "bridge_stone", "x": -27, "z": 106 },
     { "model": "falls_cliff", "x": -20, "z": 143 },
     { "model": "cliff", "x": 120, "z": 92 }, { "model": "cliff", "x": 132, "z": 100 }, { "model": "cliff", "x": -140, "z": 12 },
     { "model": "ruin_arch", "x": 96, "z": 60 }, { "model": "ruin_arch", "x": -70, "z": 96 },

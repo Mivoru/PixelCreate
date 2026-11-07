@@ -159,7 +159,7 @@ public class ZoneAuditTests
     [Fact]
     public void Trees_KeepClearOfBridgesRoadsAndBuildings()
     {
-        var built = Valley.Props.Where(p => p.Model is "bridge" or "cottage" or "cottage_b" or "tavern" or "guild_hall" or "windmill" or "watchtower" or "well" or "stall" or "field").ToArray();
+        var built = Valley.Props.Where(p => p.Model is "bridge" or "bridge_stone" or "cottage" or "cottage_b" or "tavern" or "guild_hall" or "windmill" or "watchtower" or "well" or "stall" or "field").ToArray();
         foreach (var tree in Valley.Props.Where(p => IsTree(p.Model) && p.Scale > 0f && !Authored(p)))
         {
             Assert.True(Valley.PathDistance(tree.Position.X, tree.Position.Z) > 2.5f, $"a tree stands on the road at {tree.Position}");
