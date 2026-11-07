@@ -77,7 +77,27 @@ public sealed class Zone
     /// <summary>Half width, half depth and height of each model's collision at scale 1.</summary>
     private static readonly Dictionary<string, Vector3> Collision = new()
     {
-        ["cottage"] = new(3.45f, 2.7f, 5f),
+        ["cottage"] = new(3.7f, 2.9f, 6f),
+        ["cottage_b"] = new(4.2f, 2.8f, 6f),
+        ["tavern"] = new(4.9f, 3.3f, 9f),
+        ["well"] = new(1.05f, 1.05f, 3f),
+        ["stall"] = new(1.7f, 1.2f, 2.6f),
+        ["barrel"] = new(0.42f, 0.42f, 1.1f),
+        ["crate"] = new(0.47f, 0.47f, 0.9f),
+        ["sacks"] = new(0.5f, 0.5f, 0.9f),
+        ["cart"] = new(1.5f, 0.9f, 1.6f),
+        ["bench"] = new(0.95f, 0.28f, 0.6f),
+        ["lantern_post"] = new(0.14f, 0.14f, 2.9f),
+        ["signpost"] = new(0.14f, 0.14f, 2.3f),
+        ["hay"] = new(0.85f, 0.85f, 1.4f),
+        ["log_pile"] = new(1.1f, 0.85f, 1.1f),
+        ["fence"] = new(1.6f, 0.1f, 1f),
+        ["stone_wall"] = new(2.1f, 0.35f, 0.8f),
+        ["rock_b"] = new(1f, 1f, 1.1f),
+        ["rock_c"] = new(0.6f, 0.6f, 0.5f),
+        ["flowers"] = new(0f, 0f, 0f),
+        ["mushroom"] = new(0f, 0f, 0f),
+        ["camp_set"] = new(0f, 0f, 0f),
         ["tree_a"] = new(0.5f, 0.5f, 6f),
         ["tree_b"] = new(0.5f, 0.5f, 6f),
         ["rock"] = new(0.55f, 0.55f, 0.7f),
@@ -221,7 +241,7 @@ public sealed class Zone
 
     private static bool Near(PlacedProp prop, float x, float z, float spacing)
     {
-        var reach = spacing + (prop.Model == "cottage" ? 5f : 0f);
+        var reach = spacing + (prop.Model is "cottage" or "cottage_b" or "tavern" or "stall" or "tent" ? 5f : 0f);
         return new Vector2(prop.Position.X - x, prop.Position.Z - z).LengthSquared() < reach * reach;
     }
 

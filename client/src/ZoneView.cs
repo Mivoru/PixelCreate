@@ -14,7 +14,13 @@ public static class ZoneView
     private static readonly Dictionary<string, (string Texture, float Scale, float Sway)> Surfaces = new()
     {
         ["wall"] = ("plaster", 0.5f, 0f),
+        ["wall_b"] = ("plaster", 0.5f, 0f),
         ["roof"] = ("shingles", 0.6f, 0f),
+        ["thatch"] = ("leaves", 0.7f, 0f),
+        ["hay"] = ("leaves", 0.9f, 0f),
+        ["sack"] = ("plaster", 0.9f, 0f),
+        ["shutter"] = ("planks", 0.9f, 0f),
+        ["cloth_red"] = ("plaster", 0.8f, 0f),
         ["wood"] = ("planks", 0.7f, 0f),
         ["wood_dark"] = ("planks", 0.7f, 0f),
         ["stone"] = ("stone", 0.6f, 0f),

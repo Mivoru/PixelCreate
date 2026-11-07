@@ -56,7 +56,8 @@ public sealed class PlayerRig
     private readonly CpuParticles3D _sparks;
     private readonly CpuParticles3D _wind;
     private RigLook _look = RigLook.Player;
-    private readonly System.Collections.Generic.List<Node3D> _hairLocks = new();
+    private readonly Node3D _hairRoot = new();
+    private readonly Node3D _cape = new();
     private readonly System.Collections.Generic.List<Node3D> _eyes = new();
     private float _hairAngle;
     private float _hairVelocity;
@@ -94,20 +95,20 @@ public sealed class PlayerRig
         var skin = look.Skin;
         Root.Scale = Vector3.One * look.Scale;
         _look = look;
-        _hipHeight = look.Goblin ? 0.6f : 0.92f;
+        _hipHeight = look.Goblin ? 0.6f : 0.98f;
         Root.AddChild(_hips);
         _hips.Position = new Vector3(0, _hipHeight, 0);
         _hips.AddChild(_torso);
         _torso.Position = new Vector3(0, 0.1f, 0);
         _torso.AddChild(_head);
-        _head.Position = new Vector3(0, look.Goblin ? 0.5f : 0.46f, look.Goblin ? -0.06f : -0.01f);
+        _head.Position = new Vector3(0, look.Goblin ? 0.5f : 0.3f, look.Goblin ? -0.06f : 0f);
         if (look.Goblin)
         {
             BuildGoblin(tunic, skin);
         }
         else
         {
-            BuildHuman(tunic, skin);
+            BuildHuman();
         }
 
         // A bow is held in the left hand, every other weapon in the right.
@@ -165,89 +166,116 @@ public sealed class PlayerRig
         Root.AddChild(_wind);
     }
 
-    /// <summary>A person of natural proportions: about seven and a half heads tall.</summary>
-    private void BuildHuman(Color shirt, Color skin)
+    /// <summary>An original anime-style hero: slim, long-legged, with a big head and a dark cloak.</summary>
+    private void BuildHuman()
     {
-        var trousers = new Color("3f4658");
-        var leather = new Color("6b4632");
-        var darkLeather = new Color("3e2731");
+        _hips.AddChild(Model("anime_pelvis"));
+        _torso.AddChild(Model("anime_torso"));
+        var head = Model("anime_head");
+        head.Position = new Vector3(0, 0.3f, 0);
+        _head.AddChild(head);
+        _head.AddChild(_hairRoot);
+        _hairRoot.Position = head.Position;
+        _hairRoot.AddChild(Model("anime_hair"));
+        BuildEyes(head);
 
-        var pelvis = Part(new CylinderMesh { TopRadius = 0.15f, BottomRadius = 0.175f, Height = 0.2f, RadialSegments = 12 }, trousers, Vector3.Zero);
-        pelvis.Scale = new Vector3(1f, 1f, 0.72f);
-        _hips.AddChild(pelvis);
+        _cape.Position = new Vector3(0, 0.44f, 0.02f);
+        _cape.AddChild(Model("anime_cloak"));
+        _torso.AddChild(_cape);
 
-        // One tapered torso, narrow at the waist and broad at the chest, with a sloping top for the shoulders.
-        var chest = Part(new CylinderMesh { TopRadius = 0.2f, BottomRadius = 0.145f, Height = 0.44f, RadialSegments = 14 }, shirt, new Vector3(0, 0.22f, 0));
-        chest.Scale = new Vector3(1f, 1f, 0.68f);
-        _torso.AddChild(chest);
-        var yoke = Part(new CylinderMesh { TopRadius = 0.08f, BottomRadius = 0.2f, Height = 0.1f, RadialSegments = 14 }, shirt, new Vector3(0, 0.49f, 0));
-        yoke.Scale = new Vector3(1f, 1f, 0.68f);
-        _torso.AddChild(yoke);
+        foreach (var (thigh, shin, x) in new[] { (_thighL, _shinL, -0.085f), (_thighR, _shinR, 0.085f) })
+        {
+            _hips.AddChild(thigh);
+            thigh.Position = new Vector3(x, -0.06f, 0);
+            thigh.AddChild(Model("anime_thigh"));
+            thigh.AddChild(shin);
+            shin.Position = new Vector3(0, -0.47f, 0);
+            shin.AddChild(Model("anime_shin"));
+        }
 
-        // A leather jerkin hugs the chest, open down the front to show the shirt.
-        var jerkin = Part(new CylinderMesh { TopRadius = 0.208f, BottomRadius = 0.155f, Height = 0.4f, RadialSegments = 14 }, leather, new Vector3(0, 0.22f, 0));
-        jerkin.Scale = new Vector3(1f, 1f, 0.7f);
-        _torso.AddChild(jerkin);
-        _torso.AddChild(Part(new BoxMesh { Size = new Vector3(0.075f, 0.4f, 0.02f) }, shirt, new Vector3(0, 0.22f, -0.122f)));
-        var belt = Part(new CylinderMesh { TopRadius = 0.16f, BottomRadius = 0.163f, Height = 0.055f, RadialSegments = 14 }, darkLeather, new Vector3(0, 0.02f, 0));
-        belt.Scale = new Vector3(1f, 1f, 0.74f);
-        _torso.AddChild(belt);
-        _torso.AddChild(Part(new BoxMesh { Size = new Vector3(0.06f, 0.055f, 0.02f) }, new Color("c9a35a"), new Vector3(0, 0.02f, -0.122f)));
-        _torso.AddChild(Part(new CylinderMesh { TopRadius = 0.052f, BottomRadius = 0.064f, Height = 0.11f, RadialSegments = 10 }, skin, new Vector3(0, 0.55f, -0.005f)));
-
-        BuildFace(skin);
-        BuildLeg(_thighL, _shinL, -0.095f, trousers, leather, 1f, false);
-        BuildLeg(_thighR, _shinR, 0.095f, trousers, leather, 1f, false);
-        BuildArm(_armL, _forearmL, -0.235f, shirt, skin, leather);
-        BuildArm(_armR, _forearmR, 0.235f, shirt, skin, leather);
+        foreach (var (arm, forearm, x) in new[] { (_armL, _forearmL, -0.19f), (_armR, _forearmR, 0.19f) })
+        {
+            _torso.AddChild(arm);
+            arm.Position = new Vector3(x, 0.385f, 0);
+            arm.AddChild(Model("anime_upper_arm"));
+            arm.AddChild(forearm);
+            forearm.Position = new Vector3(0, -0.3f, 0);
+            forearm.AddChild(Model("anime_forearm"));
+        }
     }
 
-    /// <summary>A sculpted head from Blender with eyes, brows and a mouth, under moving hair.</summary>
-    private void BuildFace(Color skin)
+    /// <summary>Large eyes with a dark lash, a coloured iris and a highlight, and a small mouth and nose.</summary>
+    private void BuildEyes(Node3D head)
     {
-        var head = new Node3D { Position = new Vector3(0, 0.25f, 0), Scale = Vector3.One * 1.12f };
-        _head.AddChild(head);
-        head.AddChild(GD.Load<PackedScene>("res://assets/human_head.glb").Instantiate());
-
-        var hair = new Color("5a3a28");
-        var brow = new Color("3e2731");
+        var skinShade = new Color("e0a890");
         foreach (var side in new[] { -1f, 1f })
         {
-            var eye = new Node3D { Position = new Vector3(side * 0.044f, 0.024f, -0.1f) };
-            eye.AddChild(Rounded(new Vector3(0.019f, 0.012f, 0.008f), new Color("f4efe6"), Vector3.Zero));
-            eye.AddChild(Rounded(new Vector3(0.0105f, 0.0105f, 0.006f), new Color("3f6f8f"), new Vector3(0, 0, -0.006f)));
-            eye.AddChild(Rounded(new Vector3(0.0055f, 0.0055f, 0.004f), new Color("181425"), new Vector3(0, 0, -0.0095f)));
+            var eye = new Node3D { Position = new Vector3(side * 0.057f, -0.018f, -0.118f) };
+            eye.Rotation = new Vector3(0, side * -0.32f, 0);
+            eye.AddChild(Flat(new Vector3(0.03f, 0.031f, 0.006f), new Color("f8f4ee"), Vector3.Zero));
+            eye.AddChild(Flat(new Vector3(0.021f, 0.029f, 0.006f), new Color("2f8f62"), new Vector3(side * -0.003f, -0.002f, -0.005f)));
+            eye.AddChild(Flat(new Vector3(0.012f, 0.017f, 0.005f), new Color("15382c"), new Vector3(side * -0.003f, 0.001f, -0.009f)));
+            eye.AddChild(Flat(new Vector3(0.0085f, 0.0085f, 0.004f), Colors.White, new Vector3(side * 0.006f, 0.012f, -0.0125f)));
+            var lash = Flat(new Vector3(0.036f, 0.0075f, 0.008f), new Color("1c1a24"), new Vector3(0, 0.031f, -0.006f));
+            lash.Rotation = new Vector3(0, 0, side * -0.14f);
+            eye.AddChild(lash);
             head.AddChild(eye);
             _eyes.Add(eye);
-
-            var bar = Part(new BoxMesh { Size = new Vector3(0.047f, 0.009f, 0.012f) }, brow, new Vector3(side * 0.045f, 0.05f, -0.107f));
-            bar.Rotation = new Vector3(0, 0, side * -0.12f);
-            head.AddChild(bar);
+            var brow = Flat(new Vector3(0.028f, 0.0045f, 0.004f), new Color("2b3044"), new Vector3(side * 0.06f, 0.05f, -0.122f));
+            brow.Rotation = new Vector3(0, side * -0.3f, side * 0.14f);
+            head.AddChild(brow);
         }
 
-        head.AddChild(Part(new BoxMesh { Size = new Vector3(0.05f, 0.008f, 0.008f) }, new Color("9c5a4a"), new Vector3(0, -0.07f, -0.109f)));
-        head.AddChild(GD.Load<PackedScene>("res://assets/human_hair.glb").Instantiate());
+        head.AddChild(Flat(new Vector3(0.0065f, 0.004f, 0.005f), skinShade, new Vector3(0, -0.058f, -0.14f)));
+        head.AddChild(Flat(new Vector3(0.016f, 0.0035f, 0.004f), new Color("b86a60"), new Vector3(0, -0.098f, -0.116f)));
+    }
 
-        // Loose locks hang from the crown on joints, so they can swing with the body.
-        var locks = new (Vector3 Root, float Length, float Width)[]
+    private static MeshInstance3D Flat(Vector3 radius, Color color, Vector3 position)
+    {
+        var part = new MeshInstance3D
         {
-            (new Vector3(-0.07f, 0.1f, -0.085f), 0.07f, 0.035f),
-            (new Vector3(-0.02f, 0.115f, -0.095f), 0.055f, 0.04f),
-            (new Vector3(0.05f, 0.105f, -0.09f), 0.065f, 0.035f),
-            (new Vector3(-0.1f, 0.05f, 0.02f), 0.1f, 0.036f),
-            (new Vector3(0.1f, 0.05f, 0.02f), 0.1f, 0.036f),
-            (new Vector3(-0.07f, 0.03f, 0.09f), 0.13f, 0.05f),
-            (new Vector3(0f, 0.04f, 0.105f), 0.15f, 0.055f),
-            (new Vector3(0.07f, 0.03f, 0.09f), 0.13f, 0.05f),
+            Mesh = new SphereMesh { Radius = 1f, Height = 2f, RadialSegments = 10, Rings = 6 },
+            Position = position,
+            Scale = radius,
+            MaterialOverride = new StandardMaterial3D { AlbedoColor = color, ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded },
         };
-        foreach (var (root, length, width) in locks)
+        return part;
+    }
+
+    /// <summary>Loads a Blender part and gives it the cel shader.</summary>
+    private static Node3D Model(string name)
+    {
+        var model = GD.Load<PackedScene>($"res://assets/{name}.glb").Instantiate<Node3D>();
+        Toonify(model);
+        return model;
+    }
+
+    private static void Toonify(Node node)
+    {
+        if (node is MeshInstance3D mesh && mesh.Mesh is not null)
         {
-            var joint = new Node3D { Position = root };
-            var strand = Part(new CylinderMesh { TopRadius = width, BottomRadius = 0.004f, Height = length, RadialSegments = 6 }, hair, new Vector3(0, -length / 2f, 0));
-            joint.AddChild(strand);
-            head.AddChild(joint);
-            _hairLocks.Add(joint);
+            for (var surface = 0; surface < mesh.Mesh.GetSurfaceCount(); surface++)
+            {
+                if (mesh.Mesh.SurfaceGetMaterial(surface) is StandardMaterial3D original)
+                {
+                    mesh.SetSurfaceOverrideMaterial(surface, Toon(original.AlbedoColor));
+                }
+            }
         }
+
+        foreach (var child in node.GetChildren())
+        {
+            Toonify(child);
+        }
+    }
+
+    /// <summary>A cel material. The shadow leans towards cool purple, as hand-coloured shading does.</summary>
+    private static ShaderMaterial Toon(Color color)
+    {
+        var material = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/toon.gdshader") };
+        material.SetShaderParameter("base", color);
+        material.SetShaderParameter("shade", color.Lerp(new Color("3a3060"), 0.38f));
+        return material;
     }
 
     /// <summary>Hair lags behind the head: it streams back with speed, lifts when falling and settles slowly.</summary>
@@ -261,11 +289,10 @@ public sealed class PlayerRig
         var turn = Mathf.Clamp((_lastYaw - Root.Rotation.Y) / Mathf.Max(delta, 0.001f), -6f, 6f);
         _hairSide = Mathf.Lerp(_hairSide, turn * 0.07f, 1f - Mathf.Exp(-9f * delta));
         _lastYaw = Root.Rotation.Y;
-        for (var i = 0; i < _hairLocks.Count; i++)
-        {
-            var ripple = Mathf.Sin(_phase * 1.5f + i * 1.3f) * Mathf.Min(state.Speed * 0.012f, 0.1f);
-            _hairLocks[i].Rotation = new Vector3(_hairAngle + ripple, 0, _hairSide);
-        }
+        // The cloak trails the body and the hair bobs a little, both from the same spring.
+        var ripple = Mathf.Sin(_phase * 1.5f) * Mathf.Min(state.Speed * 0.012f, 0.1f);
+        _cape.Rotation = new Vector3(_hairAngle * 0.9f + ripple, 0, _hairSide * 0.6f);
+        _hairRoot.Rotation = new Vector3(_hairAngle * 0.07f, 0, _hairSide * 0.1f);
 
         _blinkClock -= delta;
         if (_blinkClock < -0.12f)
@@ -949,7 +976,7 @@ public sealed class PlayerRig
     {
         Mesh = mesh,
         Position = position,
-        MaterialOverride = new StandardMaterial3D { AlbedoColor = color, Roughness = 1 },
+        MaterialOverride = Toon(color),
     };
 
     /// <summary>The swing as a flat band: U runs along the swing, V from the player to the blade tip.</summary>

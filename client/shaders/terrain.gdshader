@@ -22,7 +22,9 @@ void fragment() {
 	}
 	// Noise on the threshold gives ragged edges instead of straight blends.
 	if (COLOR.g + (grain - 0.5) * 0.5 > 0.5) {
-		color = texture(rock_tex, uv).rgb;
+		// Steep ground takes its texture from the side, so it does not smear into streaks.
+		vec2 side = vec2(world_position.x + world_position.z, world_position.y * 1.4) / 9.0;
+		color = texture(rock_tex, side).rgb;
 	}
 	if (COLOR.r + (grain - 0.5) * 0.45 > 0.5) {
 		color = texture(dirt_tex, uv).rgb;

@@ -85,11 +85,11 @@ public partial class PoseTest : Node
         if (_shot == 2)
         {
             // A close look at the two player figures.
-            _stage.Camera.Fov = 20;
-            var at = _rigs[0].Root.Position + new Vector3(1.3f, 1f, 0);
-            _rigs[0].Root.Rotation = new Vector3(0, 0.35f, 0);
-            _rigs[1].Root.Rotation = new Vector3(0, -2.4f, 0);
-            _stage.Camera.LookAtFromPosition(at + new Vector3(0, 0.4f, -7f), at);
+            _stage.Camera.Fov = 22;
+            var at = _rigs[0].Root.Position + new Vector3(1.3f, 1.05f, 0);
+            _rigs[0].Root.Rotation = new Vector3(0, 0.3f, 0);
+            _rigs[1].Root.Rotation = new Vector3(0, -2.6f, 0);
+            _stage.Camera.LookAtFromPosition(at + new Vector3(0, 0.2f, -7.5f), at);
             return;
         }
 
