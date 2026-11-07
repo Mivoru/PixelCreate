@@ -468,6 +468,11 @@ public partial class GameClient : Node
         if (!ReferenceEquals(snapshot, _lastSnapshot))
         {
             var first = _lastSnapshot is null;
+            foreach (var piece in _hud.Items.ApplyGear(snapshot.Gear))
+            {
+                _hud.AddLoot(piece, 1);
+            }
+
             foreach (var (item, gained) in _hud.Items.Apply(snapshot.Bag))
             {
                 if (!first)
@@ -519,6 +524,11 @@ public partial class GameClient : Node
         if (mode == "hunt")
         {
             return HuntBot();
+        }
+
+        if (mode == "gear")
+        {
+            return GearBot();
         }
 
         if (mode is "talk" or "trial" && _client.Tick == 60)
@@ -615,6 +625,40 @@ public partial class GameClient : Node
         return snapshot.Crystals.Sum() > 0
             ? BotConverse("sell crystals", new Vector3(mira.X, 0, mira.Z + 2.6f), Command.SellCrystals)
             : BotDone();
+    }
+
+    /// <summary>
+    /// Checks gear through the real interface (start the server with PIXEL_TEST=1 for a starting
+    /// kit): opens the bag, wears the legendary piece with a right click, then points at the epic one
+    /// so the capture shows its tooltip and the worn piece in its slot.
+    /// </summary>
+    private (sbyte X, sbyte Z, Buttons Buttons) GearBot()
+    {
+        if (_client.Tick < 90)
+        {
+            return (0, 0, Buttons.None);
+        }
+
+        if (!_hud.InventoryOpen)
+        {
+            _hud.ToggleInventory();
+            BotStage("open the bag");
+        }
+
+        var legendary = _hud.Items.Bag.FirstOrDefault(i => i?.Gear?.Rarity == Rarity.Legendary);
+        if (legendary is not null && _botWait++ == 30)
+        {
+            BotStage("wear the legendary piece");
+            _pendingCommand = GearCommands.Toggle(legendary.Place);
+        }
+
+        var epic = Array.FindIndex(_hud.Items.Bag, i => i?.Gear?.Rarity == Rarity.Epic);
+        if (epic >= 0 && _hud.SlotCentre("bag", epic) is { } slot)
+        {
+            GetViewport().WarpMouse(slot);
+        }
+
+        return (0, 0, Buttons.None);
     }
 
     /// <summary>
@@ -956,7 +1000,7 @@ public partial class GameClient : Node
         var def = ItemDef.All[drop.Item];
         if (!def.IsCrystal)
         {
-            return BuildItemDrop(def);
+            return BuildItemDrop(def, drop.Rarity);
         }
 
         var rarity = def.Crystal;
@@ -983,10 +1027,12 @@ public partial class GameClient : Node
 
     private static readonly Color[] TierGlow = { new("e8eef6"), new("58b4ff"), new("d77be0"), new("feae34") };
 
-    private Node3D BuildItemDrop(ItemDef def)
+    /// <summary>Gear glows in the colour of its rarity; other items in the colour of their tier.</summary>
+    private Node3D BuildItemDrop(ItemDef def, byte rarity)
     {
         var root = new Node3D();
-        var color = TierGlow[Math.Clamp(def.Tier, 0, 3)];
+        var tier = rarity == LootView.NoRarity ? def.Tier : rarity;
+        var color = TierGlow[Math.Clamp(tier, 0, 3)];
         root.AddChild(new Sprite3D
         {
             Texture = GD.Load<Texture2D>($"res://assets/ui/icons/{def.Icon}.png"),
@@ -1007,13 +1053,15 @@ public partial class GameClient : Node
             Position = new Vector3(0, -0.5f, 0),
         };
         root.AddChild(ring);
-        if (def.Tier > 0 || def.IsEquipment)
+        if (tier > 0 || def.IsEquipment)
         {
+            // The rarer the find, the taller its beam of light.
+            var height = 4f + tier * 2f;
             root.AddChild(new MeshInstance3D
             {
-                Mesh = new CylinderMesh { TopRadius = 0.04f, BottomRadius = 0.26f, Height = 4f + def.Tier, RadialSegments = 8 },
-                MaterialOverride = _fx.Stipple(color, 0.25f),
-                Position = new Vector3(0, (4f + def.Tier) / 2f - 0.5f, 0),
+                Mesh = new CylinderMesh { TopRadius = 0.04f, BottomRadius = 0.26f, Height = height, RadialSegments = 8 },
+                MaterialOverride = _fx.Stipple(color, 0.25f + tier * 0.05f),
+                Position = new Vector3(0, height / 2f - 0.5f, 0),
             });
         }
 

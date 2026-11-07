@@ -380,7 +380,20 @@ public partial class Hud : Control
                 continue;
             }
 
-            if (click.ButtonIndex == MouseButton.Right)
+            if (click.ButtonIndex == MouseButton.Right && Read(slot) is { IsGear: true } piece)
+            {
+                // Right click puts a piece on or takes it off; with Shift it throws a piece away.
+                var worn = slot.Area == "equip";
+                if (click.ShiftPressed && !worn)
+                {
+                    _commands.Enqueue(GearCommands.Discard(piece.Place));
+                }
+                else if (!click.ShiftPressed)
+                {
+                    _commands.Enqueue(GearCommands.Toggle(piece.Place));
+                }
+            }
+            else if (click.ButtonIndex == MouseButton.Right)
             {
                 Use(Read(slot));
             }
@@ -433,6 +446,24 @@ public partial class Hud : Control
         if (Items.Held is { } held && slot.Equip != EquipSlot.None && held.Slot != slot.Equip)
         {
             return;
+        }
+
+        // The server decides what is worn. Putting a piece in an equipment slot asks to wear it,
+        // which takes off whatever was there; lifting a worn piece out asks to take it off.
+        if (slot.Area == "equip")
+        {
+            if (Items.Held is { IsGear: true } wearing)
+            {
+                _commands.Enqueue(GearCommands.Toggle(wearing.Place));
+            }
+            else if (Items.Held is null && current is { IsGear: true } worn)
+            {
+                _commands.Enqueue(GearCommands.Toggle(worn.Place));
+            }
+            else if (Items.Held is null && current is not null && !current.IsGear)
+            {
+                return; // the wooden sword stays in hand until something replaces it
+            }
         }
 
         Write(slot, Items.Held);
@@ -892,7 +923,7 @@ public partial class Hud : Control
         }
 
         var bottom = window.Position + new Vector2(340, window.Size.Y - 30);
-        Label("Left click: move    Right click: eat", bottom, 15, Muted);
+        Label("Left click: move    Right click: eat or wear    Shift + right click: discard", bottom, 15, Muted);
         Keycap("I", new Vector2(window.End.X - 120, bottom.Y - 22), 14);
         Label("close", new Vector2(window.End.X - 86, bottom.Y), 15, Muted);
     }
@@ -912,12 +943,14 @@ public partial class Hud : Control
         {
             "food" => $"Food  ·  restores {item.Heal} health",
             "material" => "Material",
-            _ => item.Slot == EquipSlot.None ? "Item" : $"{item.Slot} equipment",
+            _ => item.Slot == EquipSlot.None ? "Item" : item.Slot == EquipSlot.Weapon && item.Gear is { } weapon
+                ? $"{char.ToUpperInvariant(weapon.Def.Weapon[0])}{weapon.Def.Weapon[1..]}" : $"{item.Slot} equipment",
         };
-        var price = item.Price > 0 && item.Kind != "equipment" ? $"Sells for {item.Price} gold" : item.Price > 0 ? $"Worth {item.Price} gold" : "";
+        var price = item.Price > 0 && item.Kind != "equipment" ? $"Sells for {item.Price} gold" : "";
+        var lines = GearLines(item);
         const float width = 340f;
         var textHeight = _font.GetMultilineStringSize(item.Description, HorizontalAlignment.Left, width - 36, 16).Y;
-        var height = 92f + textHeight + (price.Length > 0 ? 26f : 0f);
+        var height = 92f + textHeight + (price.Length > 0 ? 26f : 0f) + (lines.Count > 0 ? 14f + lines.Count * 21f : 0f);
         var at = mouse + new Vector2(22, 10);
         at.X = Mathf.Min(at.X, Size.X - width - 12);
         at.Y = Mathf.Min(at.Y, Size.Y - height - 12);
@@ -934,12 +967,61 @@ public partial class Hud : Control
         canvas.DrawStyleBox(pill, new Rect2(rect.Position + new Vector2(0, 14), 3, 30));
         canvas.DrawString(_bold, rect.Position + new Vector2(18, 32), item.Name, HorizontalAlignment.Left, -1, 20, tier.Color);
         canvas.DrawString(_bold, rect.Position + new Vector2(18, 56), $"{tier.Name.ToUpperInvariant()}  ·  {kind}", HorizontalAlignment.Left, -1, 13, Muted);
-        canvas.DrawMultilineString(_font, rect.Position + new Vector2(18, 84), item.Description, HorizontalAlignment.Left, width - 36, 16, -1, Text);
+        var y = rect.Position.Y + 84;
+        if (lines.Count > 0)
+        {
+            foreach (var (text, color) in lines)
+            {
+                canvas.DrawString(_bold, new Vector2(rect.Position.X + 18, y + 2), text, HorizontalAlignment.Left, -1, 15, color);
+                y += 21;
+            }
+
+            y += 14;
+        }
+
+        canvas.DrawMultilineString(_font, new Vector2(rect.Position.X + 18, y), item.Description, HorizontalAlignment.Left, width - 36, 16, -1, Muted);
         if (price.Length > 0)
         {
             canvas.DrawCircle(rect.Position + new Vector2(25, height - 24), 6, Accent);
             canvas.DrawString(_bold, rect.Position + new Vector2(38, height - 18), price, HorizontalAlignment.Left, -1, 15, Accent);
         }
+    }
+
+    /// <summary>
+    /// The stat lines of a piece of gear: what its base gives (weapon damage against the wooden
+    /// sword, defense, health) in white, then each affix in the colour of the piece's rarity.
+    /// </summary>
+    private List<(string Text, Color Color)> GearLines(Item item)
+    {
+        var lines = new List<(string, Color)>();
+        if (item.Gear is not { } piece)
+        {
+            return lines;
+        }
+
+        if (piece.Def.Slot == "weapon")
+        {
+            lines.Add(($"{piece.Power * 100f:F0}% weapon damage", Text));
+        }
+
+        if (piece.Defense > 0)
+        {
+            lines.Add(($"{piece.Defense} defense", Text));
+        }
+
+        if (piece.Health > 0)
+        {
+            lines.Add(($"+{piece.Health} maximum health", Text));
+        }
+
+        var color = TierColor((int)piece.Rarity);
+        foreach (var affix in piece.Affixes)
+        {
+            lines.Add((affix.Def.Describe(affix.Value), color));
+        }
+
+        lines.Add(($"Item level {piece.Level}", Muted));
+        return lines;
     }
 
     private void DrawNametags()

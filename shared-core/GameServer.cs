@@ -380,6 +380,16 @@ public sealed class GameServer : IEnemyEvents
                 WaitTicks = _options.InputBufferTicks,
             };
             _players.Add(peer, player);
+            if (_options.TestMode)
+            {
+                // Test runs start with one piece of each rarity, so gear can be checked at once.
+                var kit = new[] { "twin_daggers", "iron_helm", "leather_jerkin", "chain_leggings" };
+                for (var i = 0; i < kit.Length; i++)
+                {
+                    player.Gear[i] = GearPiece.Roll(ItemDef.Index(kit[i]), (Rarity)i, 5, _random);
+                    player.GearChanged.Add(i);
+                }
+            }
         }
 
         foreach (var command in commands.OrderBy(c => c.Tick))
