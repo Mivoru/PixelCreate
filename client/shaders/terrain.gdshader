@@ -20,6 +20,9 @@ void fragment() {
 	if (large + grain * 0.35 > 0.86) {
 		color = texture(dry_tex, uv).rgb;
 	}
+	// Wide washes of warmer and cooler green, as a painter would lay them down.
+	float wash = texture(dry_tex, world_position.xz / 61.0 + 0.3).g;
+	color *= mix(vec3(0.82, 0.96, 0.8), vec3(1.14, 1.08, 0.82), smoothstep(0.3, 0.75, wash));
 	// Noise on the threshold gives ragged edges instead of straight blends.
 	if (COLOR.g + (grain - 0.5) * 0.5 > 0.5) {
 		// Steep ground takes its texture from the side, so it does not smear into streaks.

@@ -46,7 +46,8 @@ void fragment() {
 	vec3 color = mix(deep, leaf, 0.35 + height * 0.65) * (0.55 + sample_color.r * 0.75);
 	ALBEDO = color;
 	EMISSION = color * 0.28;
-	ROUGHNESS = 1.0;
+	// The post pass reads this low roughness as "leaves" and draws no outline inside a crown.
+	ROUGHNESS = 0.5;
 	SPECULAR = 0.0;
 }
 

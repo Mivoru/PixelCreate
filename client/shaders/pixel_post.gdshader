@@ -36,7 +36,9 @@ void fragment() {
 	vec2 px = 1.0 / VIEWPORT_SIZE;
 	vec2 offsets[4] = vec2[4](vec2(px.x, 0.0), vec2(-px.x, 0.0), vec2(0.0, px.y), vec2(0.0, -px.y));
 	float depth = view_depth(SCREEN_UV, INV_PROJECTION_MATRIX);
-	vec3 normal = texture(normal_tex, SCREEN_UV).xyz * 2.0 - 1.0;
+	vec4 normal_sample = texture(normal_tex, SCREEN_UV);
+	vec3 normal = normal_sample.xyz * 2.0 - 1.0;
+	bool leaves = normal_sample.a < 0.8;
 
 	float depth_edge = 0.0;
 	float normal_gap = 0.0;
@@ -71,7 +73,7 @@ void fragment() {
 	}
 	// Grass shares the normal of the ground, so a depth step alone draws no line around a blade.
 	vec3 final_color = mix(color, best, palette_strength);
-	if (depth_edge > 0.5 && normal_gap > 0.5 && depth < 1000.0) {
+	if (depth_edge > 0.5 && normal_gap > 0.5 && depth < 1000.0 && !leaves) {
 		final_color = mix(final_color, outline_color, 0.72);
 	}
 	ALBEDO = to_linear(final_color);

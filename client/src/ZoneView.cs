@@ -8,7 +8,9 @@ namespace PixelCreate;
 /// <summary>Builds what the player sees from the same zone data the server uses for collision.</summary>
 public static class ZoneView
 {
-    private const int GrassBlades = 220000;
+    private const float GrassPatch = 24f;
+    private const int GrassPerPatch = 4200;
+    private const float GrassRange = 95f;
 
     /// <summary>Material name from Blender: detail texture, world scale and leaf sway.</summary>
     private static readonly Dictionary<string, (string Texture, float Scale, float Sway)> Surfaces = new()
@@ -50,6 +52,7 @@ public static class ZoneView
         root.AddChild(BuildGrass(zone));
         BuildWater(zone, root);
         BuildInteriorLights(root);
+        root.AddChild(new Ambient(zone));
 
         var models = new Dictionary<string, PackedScene>();
         var shader = GD.Load<Shader>("res://shaders/prop.gdshader");
@@ -353,54 +356,79 @@ public static class ZoneView
         return mask[row, column];
     }
 
-    /// <summary>Thousands of small blades in one draw call, kept off paths and steep ground.</summary>
-    private static MultiMeshInstance3D BuildGrass(Zone zone)
+    /// <summary>
+    /// Dense grass in square patches. Each patch is one draw call and stops drawing beyond a set
+    /// distance, so the meadow is thick around the player and costs nothing far away.
+    /// </summary>
+    private static Node3D BuildGrass(Zone zone)
+    {
+        var blade = BuildBlade();
+        var blocked = BuildGrassMask(zone);
+        var material = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/grass.gdshader") };
+        var random = new Random(11);
+        var colors = new[] { new Color("4f9a4e"), new Color("5ab552"), new Color("63c74d"), new Color("7ac85a"), new Color("8fce5a") };
+        var root = new Node3D { Name = "Grass" };
+        var patches = (int)(zone.Size / GrassPatch);
+        for (var row = 0; row < patches; row++)
+        {
+            for (var column = 0; column < patches; column++)
+            {
+                var left = column * GrassPatch - zone.Size / 2f;
+                var top = row * GrassPatch - zone.Size / 2f;
+                var multi = new MultiMesh
+                {
+                    TransformFormat = MultiMesh.TransformFormatEnum.Transform3D,
+                    UseColors = true,
+                    Mesh = blade,
+                    InstanceCount = GrassPerPatch,
+                };
+                var placed = 0;
+                for (var i = 0; i < GrassPerPatch; i++)
+                {
+                    var x = left + (float)random.NextDouble() * GrassPatch;
+                    var z = top + (float)random.NextDouble() * GrassPatch;
+                    if (IsClearOfGrass(blocked, zone.Size, x, z) || MathF.Max(MathF.Abs(x), MathF.Abs(z)) > zone.Size * 0.47f)
+                    {
+                        continue;
+                    }
+
+                    var basis = Basis.Identity.Rotated(Vector3.Up, (float)random.NextDouble() * Mathf.Tau)
+                        .Scaled(Vector3.One * (0.7f + (float)random.NextDouble() * 0.8f));
+                    multi.SetInstanceTransform(placed, new Transform3D(basis, new Vector3(x, zone.World.GroundHeight(x, z), z)));
+
+                    // Patches of paler and deeper grass, so a meadow is never one flat colour.
+                    var patch = Mathf.Sin(x * 0.09f + 1f) * Mathf.Cos(z * 0.07f) * 0.5f + 0.5f;
+                    var pick = Mathf.Clamp((int)(patch * colors.Length + random.Next(-1, 2)), 0, colors.Length - 1);
+                    multi.SetInstanceColor(placed, colors[pick].SrgbToLinear());
+                    placed++;
+                }
+
+                multi.VisibleInstanceCount = placed;
+                if (placed > 0)
+                {
+                    root.AddChild(new MultiMeshInstance3D { Multimesh = multi, MaterialOverride = material, VisibilityRangeEnd = GrassRange, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
+                }
+            }
+        }
+
+        return root;
+    }
+
+    /// <summary>One narrow curved blade.</summary>
+    private static ArrayMesh BuildBlade()
     {
         var blade = new ArrayMesh();
         var arrays = new Godot.Collections.Array();
         arrays.Resize((int)Mesh.ArrayType.Max);
         arrays[(int)Mesh.ArrayType.Vertex] = new[]
         {
-            new Vector3(-0.05f, 0, 0), new Vector3(0.05f, 0, 0), new Vector3(0, 0.34f, 0),
-            new Vector3(0, 0, -0.05f), new Vector3(0, 0, 0.05f), new Vector3(0.05f, 0.28f, 0.02f),
+            new Vector3(-0.035f, 0, 0), new Vector3(0.035f, 0, 0),
+            new Vector3(-0.028f, 0.22f, 0.02f), new Vector3(0.028f, 0.22f, 0.02f),
+            new Vector3(0.01f, 0.46f, 0.08f),
         };
-        arrays[(int)Mesh.ArrayType.Normal] = new[] { Vector3.Up, Vector3.Up, Vector3.Up, Vector3.Up, Vector3.Up, Vector3.Up };
+        arrays[(int)Mesh.ArrayType.Normal] = new[] { Vector3.Up, Vector3.Up, Vector3.Up, Vector3.Up, Vector3.Up };
+        arrays[(int)Mesh.ArrayType.Index] = new[] { 0, 1, 2, 2, 1, 3, 2, 3, 4 };
         blade.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
-
-        var multi = new MultiMesh
-        {
-            TransformFormat = MultiMesh.TransformFormatEnum.Transform3D,
-            UseColors = true,
-            Mesh = blade,
-            InstanceCount = GrassBlades,
-        };
-
-        var blocked = BuildGrassMask(zone);
-        var random = new Random(11);
-        var colors = new[] { new Color("4f9a4e"), new Color("5ab552"), new Color("63c74d"), new Color("7ac85a") };
-        var half = zone.Size / 2 - 4f;
-        var placed = 0;
-        for (var attempt = 0; attempt < GrassBlades * 3 && placed < GrassBlades; attempt++)
-        {
-            // Half of the blades stay near the middle of the zone, where players spend their time.
-            var spread = attempt % 2 == 0 ? 0.5f : 1f;
-            var x = ((float)random.NextDouble() * 2 - 1) * half * spread;
-            var z = ((float)random.NextDouble() * 2 - 1) * half * spread;
-            if (IsClearOfGrass(blocked, zone.Size, x, z))
-            {
-                continue;
-            }
-
-            var y = zone.World.GroundHeight(x, z);
-            var basis = Basis.Identity.Rotated(Vector3.Up, (float)random.NextDouble() * Mathf.Tau)
-                .Scaled(Vector3.One * (0.7f + (float)random.NextDouble() * 0.9f));
-            multi.SetInstanceTransform(placed, new Transform3D(basis, new Vector3(x, y, z)));
-            multi.SetInstanceColor(placed, colors[random.Next(colors.Length)].SrgbToLinear());
-            placed++;
-        }
-
-        multi.VisibleInstanceCount = placed;
-        var material = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/grass.gdshader") };
-        return new MultiMeshInstance3D { Multimesh = multi, MaterialOverride = material };
+        return blade;
     }
 }

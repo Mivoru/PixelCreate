@@ -9,6 +9,7 @@
   { "name": "guild_counter", "eye": [420, 1.6, -3], "at": [420, 1.4, -6.6] },
   { "name": "guild_side", "eye": [429, 3, -7], "at": [412, 1.5, 3] },
   { "name": "guild_board", "eye": [416, 2, 2], "at": [410, 2, 2] },
+  { "name": "meadow_low", "eye": [-12, 1.1, 34], "at": [8, 2.2, 52] },
   { "name": "arena", "eye": [480, 5, 18], "at": [480, 1, -10] },
   { "name": "bridge_west", "eye": [-60, 5, 34], "at": [-60, 1, 20] },
   { "name": "bridge_east", "eye": [40, 4, 54], "at": [52, 0, 42] },
