@@ -87,13 +87,13 @@ public partial class Hud : Control
     /// <summary>Pixel-art icons need nearest filtering, unlike the smooth text, so they draw on their own layer.</summary>
     private sealed partial class IconLayer : Control
     {
-        public Hud Owner = null!;
+        public Hud Hud = null!;
 
         public override void _Draw()
         {
-            foreach (var (rect, icon, alpha) in Owner._iconDraws)
+            foreach (var (rect, icon, alpha) in Hud._iconDraws)
             {
-                DrawTextureRect(Owner.Icon(icon), rect, false, new Color(1, 1, 1, alpha));
+                DrawTextureRect(Hud.Icon(icon), rect, false, new Color(1, 1, 1, alpha));
             }
         }
     }
@@ -101,9 +101,9 @@ public partial class Hud : Control
     /// <summary>The item card under the pointer draws last, above the icons, so no icon covers it.</summary>
     private sealed partial class TooltipLayer : Control
     {
-        public Hud Owner = null!;
+        public Hud Hud = null!;
 
-        public override void _Draw() => Owner.DrawTooltip(this);
+        public override void _Draw() => Hud.DrawTooltip(this);
     }
 
     private readonly List<FloatingText> _floating = new();
@@ -136,9 +136,9 @@ public partial class Hud : Control
         _bold = Weight(file, 800);
         TextureFilter = TextureFilterEnum.Linear;
         MouseFilter = MouseFilterEnum.Stop;
-        _iconLayer = new IconLayer { Owner = this, TextureFilter = TextureFilterEnum.Nearest, MouseFilter = MouseFilterEnum.Ignore };
+        _iconLayer = new IconLayer { Hud = this, TextureFilter = TextureFilterEnum.Nearest, MouseFilter = MouseFilterEnum.Ignore };
         AddChild(_iconLayer);
-        _tooltipLayer = new TooltipLayer { Owner = this, TextureFilter = TextureFilterEnum.Linear, MouseFilter = MouseFilterEnum.Ignore };
+        _tooltipLayer = new TooltipLayer { Hud = this, TextureFilter = TextureFilterEnum.Linear, MouseFilter = MouseFilterEnum.Ignore };
         AddChild(_tooltipLayer);
         GetViewport().SizeChanged += FitWindow;
         FitWindow();

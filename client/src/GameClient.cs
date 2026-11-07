@@ -212,7 +212,9 @@ public partial class GameClient : Node
         _transport.Poll();
         if (!_transport.IsConnected)
         {
-            _hud.Notice = "Connecting...";
+            _hud.Notice = _transport.LastDisconnect.Length > 0
+                ? $"Lost the connection to the server ({_transport.LastDisconnect}). Restart the game to rejoin."
+                : "Connecting...";
             return;
         }
 

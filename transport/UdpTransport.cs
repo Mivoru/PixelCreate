@@ -16,7 +16,8 @@ public sealed class UdpTransport : ITransport, IDisposable
 
     private UdpTransport(EventBasedNetListener listener, bool isServer)
     {
-        _manager = new NetManager(listener) { UnsyncedEvents = false };
+        // A client that stalls for a few seconds (loading, a breakpoint, a window dragged) keeps its seat.
+        _manager = new NetManager(listener) { UnsyncedEvents = false, DisconnectTimeout = 20000 };
         listener.NetworkReceiveEvent += (peer, reader, _, _) =>
         {
             _inbox.Enqueue((_ids.GetValueOrDefault(peer), reader.GetRemainingBytes()));
@@ -28,12 +29,15 @@ public sealed class UdpTransport : ITransport, IDisposable
             _peers[id] = peer;
             _ids[peer] = id;
         };
-        listener.PeerDisconnectedEvent += (peer, _) =>
+        listener.PeerDisconnectedEvent += (peer, info) =>
         {
-            if (_ids.Remove(peer, out var id))
+            // A connection attempt that never got through reports no peer.
+            if (peer is not null && _ids.Remove(peer, out var id))
             {
                 _peers.Remove(id);
             }
+
+            LastDisconnect = info.Reason.ToString();
         };
     }
 
@@ -59,6 +63,9 @@ public sealed class UdpTransport : ITransport, IDisposable
     }
 
     public bool IsConnected => _peers.Count > 0;
+
+    /// <summary>Why the last connection ended, for the log; empty while none has.</summary>
+    public string LastDisconnect { get; private set; } = "";
 
     /// <summary>Processes network events without taking any packet from the inbox.</summary>
     public void Poll() => _manager.PollEvents();

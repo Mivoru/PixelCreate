@@ -1,10 +1,12 @@
 # Starts a local server and the game client. Pass -ServerHost to join another server instead.
 # Controls: WASD move, mouse look, Space jump, Shift dash, left button attack, Esc quit.
 # With -Capture <folder> a bot plays, saves frames, prints a STATS line and quits.
+# -Test starts the local server in test mode: a kit of gear in the bag and a frail examiner.
 param(
     [string]$ServerHost = "127.0.0.1",
     [string]$Capture = "",
-    [int]$CaptureFrames = 8
+    [int]$CaptureFrames = 8,
+    [switch]$Test
 )
 
 $ErrorActionPreference = "Stop"
@@ -22,6 +24,7 @@ $server = $null
 if ($ServerHost -eq "127.0.0.1") {
     dotnet build (Join-Path $root "server") -v q
     if ($LASTEXITCODE -ne 0) { throw "The server did not build." }
+    if ($Test) { $env:PIXEL_TEST = "1" }
     $server = Start-Process (Join-Path $root "server\bin\Debug\net8.0\Server.exe") -PassThru -WindowStyle Hidden -RedirectStandardOutput (Join-Path $root "export\previews\server.log")
 }
 
