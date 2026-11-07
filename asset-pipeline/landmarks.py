@@ -70,7 +70,7 @@ def windmill():
         houses.wall_box("door_frame", "-y", front(1.2), k * 0.56, 0.06, 2.3, (0.14, 0.14, 2.3), "wood_dark")
     houses.wall_box("door_head", "-y", front(1.2), 0, 0.07, 3.45, (1.4, 0.16, 0.18), "wood_dark")
     for z in (1.7, 2.8):
-        houses.wall_box("door_strap", "-y", front(1.2), 0, 0.07, z, (0.85, 0.03, 0.08), "stone_dark")
+        houses.wall_box("door_strap", "-y", front(1.2), 0, 0.07, z, (0.85, 0.03, 0.08), "iron")
     box("step", (0, -2.55, 0.15), (1.6, 0.8, 0.3), "stone")
     box("step", (0, -2.35, 0.45), (1.4, 0.5, 0.3), "stone")
     houses.wall_box("handle", "-y", front(1.2), 0.3, 0.1, 2.2, (0.08, 0.06, 0.08), "gold")
@@ -136,11 +136,11 @@ def well():
     loft("rope_coil", [(-0.05, 0.11, 0.11), (0.05, 0.11, 0.11)], "sack", 10)
     bpy.data.objects["rope_coil"].rotation_euler = (0, math.pi / 2, 0)
     bpy.data.objects["rope_coil"].location = (0.2, 0, 2.15)
-    timber("crank", (1.1, 0, 2.15), (1.1, 0, 1.8), 0.06, "stone_dark")
+    timber("crank", (1.1, 0, 2.15), (1.1, 0, 1.8), 0.06, "iron")
     timber("crank_grip", (1.1, 0, 1.8), (1.3, 0, 1.8), 0.06, "wood_dark")
     timber("rope", (0.2, -0.1, 2.12), (0.2, -0.1, 1.25), 0.025, "sack")
     loft("bucket", [(0.95, 0.15, 0.15), (1.25, 0.18, 0.18)], "wood", 10, (0.2, -0.1, 0))
-    loft("bucket_hoop", [(1.18, 0.185, 0.185), (1.22, 0.185, 0.185)], "stone_dark", 10, (0.2, -0.1, 0))
+    loft("bucket_hoop", [(1.18, 0.185, 0.185), (1.22, 0.185, 0.185)], "iron", 10, (0.2, -0.1, 0))
     timber("ridge_beam", (-1.15, 0, 2.95), (1.15, 0, 2.95), 0.14, "wood_dark")
     houses.gabled_roof(2.85, 2.0, 1.6, 0.75, 0.3, "thatch", 0.14)
     for side in (-1, 1):

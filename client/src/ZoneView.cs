@@ -61,6 +61,9 @@ public static class ZoneView
         ["window"] = ("plaster", 3f, 0f),
         ["pane"] = ("glass", 1.1f, 0f),
         ["moss"] = ("leaves", 1.2f, 0f),
+        ["rock"] = ("rockface", 0.5f, 0f),
+        ["rock_dark"] = ("rockface", 0.6f, 0f),
+        ["iron"] = ("plaster", 2f, 0f),
     };
 
     public static Node3D Build(Zone zone)

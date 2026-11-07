@@ -30,7 +30,7 @@ COLORS = {
     "foliage_oak": "5F9A3C", "foliage_oak_b": "6FA63E", "foliage_birch": "A8C850", "foliage_blossom": "F4A8C0", "foliage_pine": "2F6A58",
     "foliage_willow": "8FB84A", "foliage_bush": "4F8E42", "foliage_jungle": "3F9048", "foliage_core": "1F4A3A",
     "bark": "6E4E3C", "bark_dark": "4A3634", "bark_birch": "E0DACC", "bark_grey": "8A8078", "reed": "9AA850", "grass_tall": "7FBF52",
-    "hide": "8A6A4A", "hide_dark": "4A3428", "sand": "D8C49A", "crop": "D8B85A", "paper": "EEE4C8", "glass": "CFE6F2", "pane": "3C5268", "moss": "4E6E3C", "ember": "B03A1E", "rune": "2CE8F5", "anime_glove": "23252E", "anime_vest": "2F4070", "anime_accent": "C84848", "anime_armor": "B8C4D4", "anime_armor_dark": "7A889C",
+    "hide": "8A6A4A", "hide_dark": "4A3428", "sand": "D8C49A", "crop": "D8B85A", "paper": "EEE4C8", "glass": "CFE6F2", "pane": "3C5268", "rock": "8E909C", "rock_dark": "666874", "iron": "3E3E48", "moss": "4E6E3C", "ember": "B03A1E", "rune": "2CE8F5", "anime_glove": "23252E", "anime_vest": "2F4070", "anime_accent": "C84848", "anime_armor": "B8C4D4", "anime_armor_dark": "7A889C",
 }
 COLORS.update(beasts.COLORS)
 COLORS.update(goblins.COLORS)
@@ -377,7 +377,7 @@ def export(name):
 
 
 def rock():
-    blob("rock", (0, 0, 0.2), 0.6, "stone_dark", 5, 0.7, 1)
+    blob("rock", (0, 0, 0.2), 0.6, "rock_dark", 5, 0.7, 1)
 
 
 def bush():
@@ -881,7 +881,7 @@ ruin_arch, ruin_wall, ruin = landmarks.ruin_arch, landmarks.ruin_wall, landmarks
 def barrel():
     loft("barrel", [(0, 0.34, 0.34), (0.35, 0.42, 0.42), (0.7, 0.42, 0.42), (1.05, 0.34, 0.34)], "wood", 12)
     for z in (0.15, 0.9):
-        loft("hoop", [(z, 0.39, 0.39), (z + 0.07, 0.39, 0.39)], "stone_dark", 12)
+        loft("hoop", [(z, 0.39, 0.39), (z + 0.07, 0.39, 0.39)], "iron", 12)
 
 
 def crate():
@@ -960,13 +960,13 @@ def flowers():
 
 
 def rock_b():
-    blob("big", (0, 0, 0.5), 1.0, "stone_dark", 15, 0.8, 3)
-    blob("side", (0.9, 0.3, 0.24), 0.48, "stone", 16, 0.75, 2)
+    blob("big", (0, 0, 0.5), 1.0, "rock_dark", 15, 0.8, 3)
+    blob("side", (0.9, 0.3, 0.24), 0.48, "rock", 16, 0.75, 2)
 
 
 def rock_c():
     for i, (x, y, r) in enumerate(((0, 0, 0.42), (0.55, 0.2, 0.28), (-0.4, 0.4, 0.26), (0.1, -0.5, 0.2))):
-        blob(f"stone{i}", (x, y, r * 0.5), r, "stone" if i % 2 else "stone_dark", 30 + i, 0.72, 2)
+        blob(f"stone{i}", (x, y, r * 0.5), r, "rock" if i % 2 else "rock_dark", 30 + i, 0.72, 2)
 
 
 def mushroom():
@@ -980,7 +980,7 @@ def camp_set():
     timber("tripod", (-0.5, -1.1, 0), (0, -1.5, 1.3), 0.07, "wood_dark")
     timber("tripod", (0.5, -1.1, 0), (0, -1.5, 1.3), 0.07, "wood_dark")
     timber("tripod", (0, -2, 0), (0, -1.5, 1.3), 0.07, "wood_dark")
-    loft("pot", [(0.45, 0.18, 0.18), (0.62, 0.28, 0.28), (0.85, 0.25, 0.25)], "stone_dark", 10, (0, -1.5, 0))
+    loft("pot", [(0.45, 0.18, 0.18), (0.62, 0.28, 0.28), (0.85, 0.25, 0.25)], "iron", 10, (0, -1.5, 0))
     blob("pack", (1, 0.7, 0.3), 0.35, "sack", 3, 0.95, 2)
 
 
@@ -1089,13 +1089,13 @@ def guild_hall():
     for x in (-0.66, 0.66):
         box("door", (x, -7.18, 1.85), (1.24, 0.12, 3.1), "wood")
         for z in (0.9, 2.7):
-            box("strap", (x, -7.26, z), (1.1, 0.05, 0.14), "stone_dark")
+            box("strap", (x, -7.26, z), (1.1, 0.05, 0.14), "iron")
         box("ring", (x * 0.5, -7.28, 1.8), (0.16, 0.05, 0.16), "gold")
     box("step", (0, -7.75, 0.12), (4.2, 1.1, 0.25), "stone_dark")
     box("sign", (0, -7.2, 4.35), (3.4, 0.14, 0.62), "wood_dark")
     box("sign_face", (0, -7.29, 4.35), (3.0, 0.05, 0.42), "gold")
     for x in (-2.55, 2.55):
-        timber("lamp_arm", (x, -7.05, 3.2), (x, -7.6, 3.2), 0.06, "stone_dark")
+        timber("lamp_arm", (x, -7.05, 3.2), (x, -7.6, 3.2), 0.06, "iron")
         box("lamp", (x, -7.65, 2.95), (0.34, 0.34, 0.46), "window")
         box("lamp_cap", (x, -7.65, 3.22), (0.44, 0.44, 0.08), "stone_dark")
 
@@ -1127,7 +1127,7 @@ def guild_hall():
         box("back_jamb", (4.6 + side * 0.7, 5.76, 1.5), (0.22, 0.12, 2.4), "stone_dark")
     box("back_lintel", (4.6, 5.76, 2.75), (1.7, 0.14, 0.3), "stone_dark")
     for z in (0.9, 2.0):
-        box("back_strap", (4.6, 5.78, z), (1.0, 0.03, 0.08), "stone_dark")
+        box("back_strap", (4.6, 5.78, z), (1.0, 0.03, 0.08), "iron")
     box("back_step", (4.6, 6.3, 0.15), (1.8, 0.9, 0.3), "stone_dark")
 
     # Round towers at the front corners, with arrow slits, a band and pointed roofs.
@@ -1368,7 +1368,7 @@ def guild_interior():
     for x, y in ((-4, -2), (4, -2), (-4, 4), (4, 4)):
         for k in range(3):
             a = k * math.tau / 3
-            timber("chain", (x, y, 7), (x + math.cos(a) * 0.75, y + math.sin(a) * 0.75, 5.25), 0.025, "stone_dark")
+            timber("chain", (x, y, 7), (x + math.cos(a) * 0.75, y + math.sin(a) * 0.75, 5.25), 0.025, "iron")
         for k in range(10):
             a0, a1 = k * math.tau / 10, (k + 1) * math.tau / 10
             timber("wheel", (x + math.cos(a0) * 0.8, y + math.sin(a0) * 0.8, 5.2), (x + math.cos(a1) * 0.8, y + math.sin(a1) * 0.8, 5.2), 0.09, "wood_dark")
@@ -1495,7 +1495,7 @@ def cliff():
     crag("cliff", 11, 9, 11, 4, 40)
 
 
-def crag(name, width, depth, height, levels, seed, material="stone_dark"):
+def crag(name, width, depth, height, levels, seed, material="rock_dark"):
     """Layered rock with a flat foot and top. Each layer steps in, like weathered strata."""
     rng = random.Random(seed)
     sides = 18
@@ -1535,31 +1535,33 @@ def falls_cliff():
     The chute follows chute_front(t), and the game lays the falling water 0.5 m in front of it, so
     the water always hugs the rock. Keep the two in step (ZoneView.ChuteFront).
     """
-    crag("wall", 50, 18, 16, 6, 71, "stone")
-    crag("left", 18, 14, 21, 7, 72, "stone_dark")
+    crag("wall", 50, 18, 16, 6, 71, "rock")
+    crag("left", 18, 14, 21, 7, 72, "rock_dark")
     bpy.data.objects["left"].location = (-19, 2, 0)
-    crag("right", 16, 14, 19, 6, 73, "stone_dark")
+    crag("right", 16, 14, 19, 6, 73, "rock_dark")
     bpy.data.objects["right"].location = (20, 2, 0)
 
     def chute_front(t):
         return 9.8 * (1 - 0.34 * t ** 1.6)
 
     rows = [i / 8 for i in range(9)]
-    beasts.section_tube("chute", [(0, chute_front(t) - 0.5, t * 16) for t in rows], [4.6] * 9, [0.6] * 9, "stone_dark", add_object, smooth, 8)
+    beasts.section_tube("chute", [(0, chute_front(t) - 0.5, t * 16) for t in rows], [4.6] * 9, [0.6] * 9, "rock_dark", add_object, smooth, 8)
     for side in (-1, 1):
         beasts.section_tube("rib", [(side * 5.4, chute_front(t) - 0.6, t * 16.6) for t in rows],
-                            [1.6 - t * 0.5 for t in rows], [1.5 - t * 0.4 for t in rows], "stone", add_object, smooth, 7)
+                            [1.6 - t * 0.5 for t in rows], [1.5 - t * 0.4 for t in rows], "rock", add_object, smooth, 7)
     # The lip the water pours over, and a spring among boulders on top that feeds it.
-    beasts.section_tube("lip", [(-4.4, chute_front(1) + 0.2, 16.1), (4.4, chute_front(1) + 0.2, 16.1)], [0.5, 0.5], [0.35, 0.35], "stone", add_object, smooth, 7)
+    beasts.section_tube("lip", [(-4.4, chute_front(1) + 0.2, 16.1), (4.4, chute_front(1) + 0.2, 16.1)], [0.5, 0.5], [0.35, 0.35], "rock", add_object, smooth, 7)
     for i, (x, y, r) in enumerate(((-3.5, -2.0, 1.6), (3.2, -2.6, 1.9), (0.0, -4.2, 2.2), (-5.5, 1.0, 1.3), (5.8, 0.6, 1.2))):
-        blob(f"boulder{i}", (x, y, 16.2), r, "stone_dark" if i % 2 else "stone", 40 + i, 0.7, 2)
+        blob(f"boulder{i}", (x, y, 16.2), r, "rock_dark" if i % 2 else "rock", 40 + i, 0.7, 2)
     for i, (x, y, z, s) in enumerate(((-12, 7.5, 15.5, 1.6), (11, 7.0, 15.5, 1.3), (16, 5.0, 15, 1.7), (-22, 5.0, 15, 1.4),
                                       (-9, 9.0, 8, 1.0), (9, 9.2, 6, 1.2), (-15, 8.5, 3, 1.3), (13, 8.5, 11, 1.0),
                                       (-6.5, 9.6, 1.0, 1.4), (6.8, 9.8, 1.2, 1.5))):
-        blob(f"moss{i}", (x, y, z), 1.9 * s, "grass" if i % 2 else "grass_dark", i, 0.45, 2)
+        # Moss settles on the ledges between the strata, so each patch sits on a ledge, flat.
+        ledge = round(z / (16 / 6)) * (16 / 6)
+        blob(f"moss{i}", (x, y - 0.6, ledge), 1.5 * s, "moss", i, 0.22, 2)
     # Boulders at the foot sink the cliff into the ground.
     for i, (x, y) in enumerate(((-9, 10.5), (-14, 9.5), (10, 10.8), (15, 9.4), (-20, 8.0), (21, 8.2), (-5.8, 11.4), (6.2, 11.2))):
-        blob(f"foot{i}", (x, y, 0.2), 1.6 + (i % 3) * 0.5, "stone_dark" if i % 2 else "stone", 60 + i, 0.6, 2)
+        blob(f"foot{i}", (x, y, 0.2), 1.6 + (i % 3) * 0.5, "rock_dark" if i % 2 else "rock", 60 + i, 0.6, 2)
 
 
 
@@ -1585,7 +1587,7 @@ def pier():
 
 
 def standing_stone():
-    crag("stone", 1.2, 0.9, 3, 3, 81, "stone")
+    crag("stone", 1.2, 0.9, 3, 3, 81, "rock")
 
 
 def stone_wall():
@@ -1672,7 +1674,7 @@ def tent():
 def camp_fire():
     for index in range(9):
         angle = index / 9 * math.tau
-        blob(f"stone{index}", (math.cos(angle) * 0.55, math.sin(angle) * 0.55, 0.08), 0.15, "stone_dark", index, 0.7, 1)
+        blob(f"stone{index}", (math.cos(angle) * 0.55, math.sin(angle) * 0.55, 0.08), 0.15, "rock_dark", index, 0.7, 1)
     for index in range(5):
         angle = index / 5 * math.tau + 0.4
         timber(f"log{index}", (math.cos(angle) * 0.42, math.sin(angle) * 0.42, 0.06), (math.cos(angle) * 0.06, math.sin(angle) * 0.06, 0.42), 0.1, "wood_dark")
@@ -1680,9 +1682,19 @@ def camp_fire():
 
 
 def palisade():
-    for index in range(9):
-        x = -3.9 + index * 0.98
-        cylinder(f"stake{index}", (x, 0, 1.4), 0.33, 2.9 + (index % 3) * 0.25, "wood")
+    """A stretch of goblin stockade: rough logs of uneven height, sharpened to points, sunk in the
+    ground and pinned by two rails behind with rope lashings. Everything stays inside its narrow hitbox."""
+    rng = random.Random(17)
+    for index in range(11):
+        x = -4.0 + index * 0.8
+        radius = rng.uniform(0.3, 0.36)
+        height = rng.uniform(2.7, 3.3)
+        lean = rng.uniform(-0.05, 0.05)
+        loft(f"stake{index}", [(-0.6, radius, radius, x, 0), (height, radius * 0.92, radius * 0.92, x + lean, 0),
+                               (height + 0.55, 0.04, 0.04, x + lean * 1.2, 0)], "bark", 7)
+        loft(f"band{index}", [(1.95, radius * 0.97, radius * 0.97, x + lean * 0.6, 0), (2.07, radius * 0.97, radius * 0.97, x + lean * 0.6, 0)], "sack", 7)
+    for z in (0.9, 2.0):
+        timber("rail", (-4.3, 0.36, z), (4.3, 0.36, z), 0.16, "wood_dark")
 
 
 

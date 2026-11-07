@@ -248,23 +248,35 @@ def camp_models(box, timber, blob, cylinder, loft, tube):
             tube("feather", [(side * 0.2, -0.1, 3.2), (side * 0.45, -0.18, 2.9), (side * 0.55, -0.2, 2.5)], [0.04, 0.035, 0.005], "cloth_red" if side > 0 else "stone", 5)
 
     def bone_pile():
+        """A heap of gnawed bones on trampled earth: long bones with knuckled ends crossing at all
+        angles, a curve of ribs and a skull on top with its jaw."""
         rng = __import__("random").Random(9)
-        for i in range(9):
+        box("earth", (0, 0, 0.02), (1.3, 1.1, 0.04), "hide_dark")
+        for i in range(10):
             a = rng.uniform(0, math.tau)
-            r = rng.uniform(0, 0.55)
+            r = rng.uniform(0, 0.45)
             x, y = math.cos(a) * r, math.sin(a) * r
-            b = rng.uniform(0, math.tau)
-            timber("bone", (x - math.cos(b) * 0.3, y - math.sin(b) * 0.3, 0.06 + i * 0.015), (x + math.cos(b) * 0.3, y + math.sin(b) * 0.3, 0.08 + i * 0.012), 0.05, "paper")
-        blob("skull", (0.1, 0.0, 0.25), 0.2, "paper", 2, 0.9, 1)
+            b = a + rng.uniform(-1.2, 1.2) + math.pi / 2
+            half = rng.uniform(0.18, 0.3)
+            z = 0.06 + 0.05 * (i % 3)
+            p, q = (x - math.cos(b) * half, y - math.sin(b) * half, z), (x + math.cos(b) * half, y + math.sin(b) * half, z + 0.02)
+            timber("bone", p, q, 0.045, "paper")
+            for end in (p, q):
+                blob("knuckle", end, 0.045, "paper", i, 0.9, 1)
+        for k in range(5):
+            y = -0.25 + k * 0.1
+            tube("rib", [(0.35, y, 0.05), (0.5, y, 0.22), (0.62, y, 0.07)], [0.02, 0.022, 0.015], "paper", 5)
+        blob("skull", (-0.05, 0.05, 0.3), 0.17, "paper", 2, 0.95, 2)
+        blob("jaw", (-0.05, 0.16, 0.2), 0.1, "paper", 3, 0.6, 1)
         for side in (-1, 1):
-            blob("socket", (0.1 + side * 0.07, 0.17, 0.27), 0.05, "wood_dark", 1, 1, 1)
+            blob("socket", (-0.05 + side * 0.06, 0.19, 0.33), 0.04, "anime_dark", 1, 1, 1)
 
     def cook_pot():
         for i in range(3):
             a = i / 3 * math.tau
             timber("leg", (math.cos(a) * 0.9, math.sin(a) * 0.9, 0), (0, 0, 1.7), 0.07, "wood_dark")
-        timber("chain", (0, 0, 1.7), (0, 0, 1.05), 0.02, "stone_dark")
-        loft("pot", [(0.45, 0.25, 0.25), (0.55, 0.42, 0.42), (0.8, 0.46, 0.46), (1.0, 0.4, 0.4), (1.05, 0.42, 0.42)], "stone_dark", 12)
+        timber("chain", (0, 0, 1.7), (0, 0, 1.05), 0.02, "iron")
+        loft("pot", [(0.45, 0.25, 0.25), (0.55, 0.42, 0.42), (0.8, 0.46, 0.46), (1.0, 0.4, 0.4), (1.05, 0.42, 0.42)], "iron", 12)
         loft("stew", [(1.0, 0.39, 0.39), (1.01, 0.39, 0.39)], "hide", 12)
         timber("bone", (0.15, -0.1, 1.0), (0.3, -0.25, 1.35), 0.04, "paper")
         for i in range(5):
@@ -293,7 +305,7 @@ def camp_models(box, timber, blob, cylinder, loft, tube):
         timber("rail", (-3, 0.05, 1.4), (3, 0.05, 1.4), 0.08, "wood_dark")
 
     def rune_stone():
-        loft("stone", [(0, 0.55, 0.4), (1.4, 0.45, 0.32), (2.4, 0.3, 0.25), (2.7, 0.08, 0.08)], "stone_dark", 6)
+        loft("stone", [(0, 0.55, 0.4), (1.4, 0.45, 0.32), (2.4, 0.3, 0.25), (2.7, 0.08, 0.08)], "rock_dark", 6)
         for i, z in enumerate((0.7, 1.15, 1.6, 2.0)):
             box("rune", (0.0, 0.36 - z * 0.05, z), (0.18 - i * 0.02, 0.04, 0.12), "ember")
         blob("moss", (0.2, -0.2, 0.15), 0.3, "grass", 2, 0.4, 1)

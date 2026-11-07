@@ -189,7 +189,7 @@ def house(width, depth, height, wall, roof_material, door_x=0.0, floors=1, close
         wall_box("door_frame", "-y", front.centre, door_x + k * door_w / 2, 0.07, base + 1.1, (0.12, 0.12, 2.2), "wood_dark")
     wall_box("door_head", "-y", front.centre, door_x, 0.08, base + 2.24, (door_w + 0.3, 0.14, 0.16), "wood_dark")
     for z in (0.5, 1.6):
-        wall_box("door_strap", "-y", front.centre, door_x, 0.07, base + z, (door_w - 0.2, 0.03, 0.08), "stone_dark")
+        wall_box("door_strap", "-y", front.centre, door_x, 0.07, base + z, (door_w - 0.2, 0.03, 0.08), "iron")
     wall_box("handle", "-y", front.centre, door_x + 0.32, 0.1, base + 1.0, (0.08, 0.06, 0.08), "gold")
     box("step", (door_x, -d - 0.45, 0.16), (1.5, 0.9, 0.32), "stone")
 

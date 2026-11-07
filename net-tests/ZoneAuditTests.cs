@@ -119,7 +119,7 @@ public class ZoneAuditTests
     {
         foreach (var prop in Valley.Props.Where(p => p.Model.Contains("tree")))
         {
-            Assert.False(Valley.IsBare(prop.Position.X, prop.Position.Z), $"a tree stands in water at {prop.Position}");
+            Assert.False(Valley.IsWater(prop.Position.X, prop.Position.Z), $"a tree stands in water at {prop.Position}");
         }
     }
 
@@ -131,7 +131,7 @@ public class ZoneAuditTests
         foreach (var (x, z) in RoadPoints())
         {
             var onBridge = Valley.World.Platforms.Any(p => x >= p.MinX - 3 && x <= p.MaxX + 3 && z >= p.MinZ - 3 && z <= p.MaxZ + 3);
-            Assert.True(onBridge || !Valley.IsBare(x, z), $"a road runs through water at {x:F0}, {z:F0}");
+            Assert.True(onBridge || !Valley.IsWater(x, z), $"a road runs through water at {x:F0}, {z:F0}");
         }
     }
 

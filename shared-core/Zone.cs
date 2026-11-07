@@ -292,9 +292,11 @@ public sealed class Zone
             }
         }
 
-        return Rivers.Any(r => PolylineDistance(r.Points, x, z) < r.Width * 1.45f) || InLake(x, z, 1f) ||
-               _yards.Any(y => new Vector2(x - y[0], z - y[1]).Length() < y[2]);
+        return IsWater(x, z) || _yards.Any(y => new Vector2(x - y[0], z - y[1]).Length() < y[2]);
     }
+
+    /// <summary>True in a river or a lake.</summary>
+    public bool IsWater(float x, float z) => Rivers.Any(r => PolylineDistance(r.Points, x, z) < r.Width * 1.45f) || InLake(x, z, 1f);
 
     /// <summary>The name of the place at a point, or an empty string in the wilds between places.</summary>
     public string RegionAt(float x, float z)
@@ -373,7 +375,14 @@ public sealed class Zone
             }
         }
 
-        return PathDistance(x, z);
+        // A yard (a farmyard, a camp) is trodden bare all over.
+        var worn = PathDistance(x, z);
+        foreach (var yard in _yards)
+        {
+            worn = MathF.Min(worn, new Vector2(x - yard[0], z - yard[1]).Length() - yard[2]);
+        }
+
+        return worn;
     }
 
     /// <summary>The height of the hills alone, before rivers and mountains shape them.</summary>

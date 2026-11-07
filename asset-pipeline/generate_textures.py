@@ -267,6 +267,8 @@ def main():
     glass(rng)
     planks(rng)
     shingles(rng)
+    # Natural stone keeps the soft weathered noise; built stone uses the coursed masonry above.
+    detail(rng, "rockface", layered(rng, 8, 16, 64))
     print(f"palette colours: {merged_palette()}")
     bitmap_font()
 

@@ -40,9 +40,10 @@
   { "name": "lake", "eye": [54, 4, 112], "at": [72, 0, 130] },
   { "name": "ruins_east", "eye": [84, 3, 40], "at": [98, 2, 58] },
   { "name": "ruins_west", "eye": [-58, 3, 86], "at": [-72, 2, 100] },
-  { "name": "goblin_camp", "eye": [70, 4, -60], "at": [88, 1, -80] },
-  { "name": "goblin_hollow", "eye": [100, 4, -54], "at": [88, 1, -70] },
-  { "name": "goblin_fort", "eye": [118, 5, -88], "at": [108, 1, -102] },
-  { "name": "shaman_camp", "eye": [80, 4, -88], "at": [84, 1, -106] },
+  { "name": "goblin_camp", "eye": [88, 3.5, -88], "at": [90, 1, -66] },
+  { "name": "goblin_hollow", "eye": [66, 9, -96], "at": [88, 0, -92] },
+  { "name": "goblin_fort", "eye": [82, 4, -96], "at": [84, 1, -114] },
+  { "name": "goblin_outpost", "eye": [44, 3, -90], "at": [54, 1, -80] },
+  { "name": "shaman_camp", "eye": [91, 2.5, -88], "at": [101, 1, -95] },
   { "name": "valley_view", "eye": [0, 34, 70], "at": [-20, 0, -20] }
 ]
