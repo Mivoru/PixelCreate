@@ -153,11 +153,11 @@ public sealed class NetSimTests
     }
 
     [Fact]
-    public void ClockDrift_WithoutClockSync_IsCaughtUpByTheServer()
+    public void ClockDrift_WithoutClockSync_DelayStaysBounded()
     {
         var result = Run(rtt: 80, jitter: 8, loss: 2, enemies: 0, drift: 1.005f);
         _output.WriteLine($"buffered inputs at the end: {string.Join(", ", result.Buffered)}");
-        Assert.All(result.Buffered, count => Assert.InRange(count, 0, 12));
+        Assert.All(result.Buffered, count => Assert.InRange(count, 0, 26));
     }
 
     [Fact]
@@ -706,6 +706,29 @@ public sealed class GuildTests
             server.Step();
             client.Step(0, 0, buttons, 0, i == 0 ? command : Command.None);
         }
+    }
+
+    [Theory]
+    [InlineData(2)]
+    [InlineData(3)]
+    public void FastClient_GainsNoDistance(int stepsEvery2Ticks)
+    {
+        var (server, client, network, _) = Start();
+        var start = server.GetPlayer(1)!.Value.Position;
+        const int ticks = 600;
+        for (var tick = 0; tick < ticks; tick++)
+        {
+            network.Advance(1000.0 / Tuning.TickRate);
+            server.Step();
+            var steps = tick % 2 == 0 ? stepsEvery2Ticks - stepsEvery2Ticks / 2 : stepsEvery2Ticks / 2;
+            for (var i = 0; i < steps; i++)
+            {
+                client.Step(0, 127, Buttons.None);
+            }
+        }
+
+        var walked = Vector3.Distance(server.GetPlayer(1)!.Value.Position, start);
+        Assert.InRange(walked, 0f, Tuning.MoveSpeed * ticks / Tuning.TickRate * 1.04f);
     }
 
     [Fact]

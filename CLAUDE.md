@@ -59,7 +59,8 @@ Rules:
 - `net-tests/ZoneAuditTests.cs` walks the real zone: keep every door, camp and bridge reachable.
 - Models: edit `asset-pipeline/build_meshes.py`, then `scripts/build_assets.ps1` builds and imports them.
 - Hair and cloth are `ClothChain` grids; the toon shader bends meshes along them. Rig looks live in `Dialogues.cs`.
-- The server waits for a late input instead of skipping it, and catches up at no more than 1.5 times speed.
+- The server waits for a late input instead of skipping it. Catching up spends only ticks missed while stalled,
+  so no client can run faster than real time: extra inputs are thrown away.
 
 ## Which tool to draw with
 

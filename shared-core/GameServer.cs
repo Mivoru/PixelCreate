@@ -23,6 +23,7 @@ public sealed class ServerOptions
 public sealed class ServerStats
 {
     public long MissedInputs;
+    public long DroppedInputs;
     public long EnemiesKilled;
     public long PlayerHits;
     public long EnemyHits;
@@ -69,6 +70,12 @@ public sealed class GameServer : IEnemyEvents
     /// <summary>Inputs above the normal buffer before the server starts to catch up.</summary>
     private const int CatchUpSurplus = 4;
 
+    /// <summary>The most missed time a player can save up, which covers a stall of three seconds.</summary>
+    private const int MaxCatchUpTicks = 180;
+
+    /// <summary>The most inputs the server holds for a player.</summary>
+    private const int MaxInputBacklog = 24;
+
     /// <summary>A second press of the key right after a door must not lead straight back out.</summary>
     private const int DoorCooldownTicks = 45;
 
@@ -105,6 +112,7 @@ public sealed class GameServer : IEnemyEvents
         public readonly Queue<Command> Commands = new();
         public uint LastCommandTick;
         public uint DoorReadyTick;
+        public int CatchUpTicks;
         public byte Level = 1;
         public int Xp;
         public uint LastHurtTick;
@@ -307,6 +315,7 @@ public sealed class GameServer : IEnemyEvents
         if (!player.Inputs.Remove(player.NextTick, out var command))
         {
             Stats.MissedInputs++;
+            player.CatchUpTicks = Math.Min(player.CatchUpTicks + 1, MaxCatchUpTicks);
             if (player.Inputs.Count >= Protocol.InputRedundancy)
             {
                 player.NextTick = player.Inputs.First().Key;
@@ -331,12 +340,22 @@ public sealed class GameServer : IEnemyEvents
             return;
         }
 
-        // A client that stalled sends a burst when it recovers. An extra input every second tick
-        // brings it back to the normal delay, and caps how fast a client can ever run at 1.5 times.
-        var inputs = player.Inputs.Count > _options.InputBufferTicks + CatchUpSurplus && Tick % 2 == 0 ? 2 : 1;
-        for (var i = 0; i < inputs; i++)
+        // A client that stalled sends a burst when it recovers. It may run extra inputs only with
+        // ticks it missed while stalled, so over time nobody simulates faster than real time.
+        RunInput(player);
+        if (player.Inputs.Count > _options.InputBufferTicks + CatchUpSurplus && player.CatchUpTicks > 0 && Tick % 2 == 0)
         {
+            player.CatchUpTicks--;
             RunInput(player);
+        }
+
+        // Inputs beyond that come from a client that runs too fast. They are thrown away, and the
+        // client is pulled back by the next snapshot.
+        while (player.Inputs.Count > MaxInputBacklog)
+        {
+            player.Inputs.Remove(player.Inputs.First().Key);
+            player.NextTick = player.Inputs.First().Key;
+            Stats.DroppedInputs++;
         }
 
         while (player.Commands.TryDequeue(out var request))
