@@ -33,6 +33,13 @@ public sealed class AnimalView : IEnemyView
     private float _speed;
     private float _fall;
     private Vector3 _lastPosition;
+    private readonly int _id;
+    private float _callTimer;
+    private float _calmFor;
+    private bool _wasDead;
+    private bool _wasAlert;
+    private bool _wasBolting;
+    private bool _wasFighting;
 
     public Node3D Root { get; } = new();
     public int DamageTaken { get; private set; }
@@ -76,6 +83,8 @@ public sealed class AnimalView : IEnemyView
 
         // Each animal starts its little routines at its own moment.
         _clock = id * 1.37f;
+        _id = id;
+        _callTimer = 3f + id % 7 * 2.3f;
         Root.Scale = Vector3.One * def.Size;
     }
 
@@ -166,11 +175,83 @@ public sealed class AnimalView : IEnemyView
         PoseTail(moving);
         PoseWings(moving);
 
+        Voice(enemy, position, delta, moving, sfx);
+    }
+
+    /// <summary>
+    /// The animal's own sounds: a call now and then while it is calm, a cry when it is hurt, an
+    /// alarm when it notices someone, hoofbeats when a herd bolts, a boar's snort as it turns to
+    /// fight, and the thud of a body falling.
+    /// </summary>
+    private void Voice(in EnemyView enemy, Vector3 position, float delta, bool moving, Sfx sfx)
+    {
+        var at = position + Vector3.Up * 0.8f;
+        var dead = enemy.Action == EnemyAction.Dead;
         if (DamageTaken > 0)
         {
-            sfx.Play("slime_hit", position + Vector3.Up);
+            sfx.Play(Sound("hurt"), at);
         }
+
+        if (dead && !_wasDead)
+        {
+            sfx.Play("animal_fall", position, -2f);
+        }
+
+        var alert = enemy.Action == EnemyAction.Alert;
+        if (alert && !_wasAlert && _kind is "deer")
+        {
+            sfx.Play("deer_alarm", at);
+        }
+
+        var bolting = moving && _speed > 3f;
+        if (bolting && !_wasBolting && _calmFor > 1f)
+        {
+            // One of every few animals sounds for the herd, so a stampede is not a wall of noise.
+            if (_kind == "chicken")
+            {
+                sfx.Play("chicken_squawk", at, -2f);
+            }
+            else if (_id % 3 == 0)
+            {
+                sfx.Play("hooves", position, -3f);
+            }
+        }
+
+        if (_kind == "pig" && enemy.Fighting && !_wasFighting)
+        {
+            sfx.Play("pig_angry", at);
+        }
+
+        // Calm animals call out every so often, each on its own clock.
+        _calmFor = bolting || alert || dead ? 0f : _calmFor + delta;
+        _callTimer -= delta;
+        if (_callTimer <= 0f)
+        {
+            _callTimer = 9f + (float)GD.RandRange(0.0, 18.0);
+            if (_calmFor > 4f && !dead && _kind is not ("deer"))
+            {
+                sfx.Play(Sound("call"), at, -5f);
+            }
+        }
+
+        _wasDead = dead;
+        _wasAlert = alert;
+        _wasBolting = bolting;
+        _wasFighting = enemy.Fighting;
     }
+
+    /// <summary>The file for one of this animal's sounds: its call or its cry of pain.</summary>
+    private string Sound(string what) => (_kind, what) switch
+    {
+        ("cow", "call") => "cow_moo",
+        ("sheep", "call") => "sheep_baa",
+        ("goat", "call") => "goat_bleat",
+        ("pig", "call") => "pig_grunt",
+        ("chicken", "call") => "chicken_cluck",
+        ("chicken", _) => "chicken_squawk",
+        ("deer", _) => "deer_hurt",
+        (_, _) => $"{_kind}_hurt",
+    };
 
     private void PoseHead(bool moving, float gallop)
     {

@@ -59,6 +59,21 @@ SOUNDS = {
     "fire_wall": ("wall of fire rushing forward, deep roaring flames sweeping, low rumble", 1.5, 1.4, -6),
     "explosion": ("small fiery explosion, deep muffled boom, low rumble", 0.8, 0.7, -6),
     "crystal": ("soft warm glass chime, one gentle low note, calm, magical", 0.6, 0.5, -11),
+    "cow_moo": ("a single cow mooing once in a quiet meadow, long low moo, outdoors, no other animals", 2.0, 1.7, -11),
+    "cow_hurt": ("a cow bellowing once in alarm and pain, short distressed moo, outdoors", 1.0, 0.8, -8),
+    "sheep_baa": ("a single sheep bleating once, soft baa, outdoors, close", 1.2, 1.0, -12),
+    "sheep_hurt": ("a sheep crying out once in fright, sharp short bleat", 0.8, 0.6, -9),
+    "goat_bleat": ("a single goat bleating once, nasal meh, outdoors, close", 1.0, 0.9, -12),
+    "goat_hurt": ("a goat crying out once in fear, short sharp bleat", 0.8, 0.6, -9),
+    "pig_grunt": ("a wild boar grunting and snuffling softly while rooting in the ground, close, calm", 1.2, 1.0, -12),
+    "pig_angry": ("an angry wild boar snorting and grunting aggressively, about to charge", 1.0, 0.9, -7),
+    "pig_hurt": ("a wild boar squealing once in pain, short loud squeal", 0.8, 0.6, -8),
+    "chicken_cluck": ("a hen clucking softly, a few calm clucks, close, no rooster", 1.2, 1.0, -14),
+    "chicken_squawk": ("a chicken squawking in panic with flapping wings, short", 1.0, 0.8, -9),
+    "deer_alarm": ("a red deer giving one short sharp alarm bark, outdoors in a meadow", 0.8, 0.6, -10),
+    "deer_hurt": ("a deer bleating once in pain, short high cry", 0.8, 0.6, -9),
+    "hooves": ("loud close hoofbeats of several deer galloping fast over hard dry ground, clear thudding gallop", 1.5, 1.3, -12),
+    "animal_fall": ("a large animal body falling onto soft grass, one heavy muffled thud", 0.8, 0.6, -9),
 }
 
 
