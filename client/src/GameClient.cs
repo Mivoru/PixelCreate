@@ -21,6 +21,7 @@ public partial class GameClient : Node
     private const float CameraStep = 0.25f;
     private const float CameraClearance = 0.4f;
     private const int BotDialogTicks = 70;
+    private const int MaxTicksPerFrame = 6;
     private const float FigureRange = 60f;
     private const float GuildInteriorX = 400f;
     private const float ArenaX = 450f;
@@ -191,7 +192,9 @@ public partial class GameClient : Node
         }
 
         _hud.Notice = "";
-        _clock += delta;
+        // A long frame, such as the first one while shaders compile, must not turn into a burst of
+        // simulated ticks: the time beyond a few ticks is simply dropped.
+        _clock = Math.Min(_clock + delta, Tuning.TickSeconds * MaxTicksPerFrame);
         var tickLength = Tuning.TickSeconds * _client.TickScale;
         while (_clock >= tickLength)
         {
@@ -778,7 +781,14 @@ public partial class GameClient : Node
             return;
         }
 
-        var ability = def.Abilities![enemy.Ability];
+        // Animals that only wander have no abilities at all.
+        if (def.Abilities is not { } abilities || enemy.Ability >= abilities.Length)
+        {
+            telegraph.Hide();
+            return;
+        }
+
+        var ability = abilities[enemy.Ability];
         if (enemy.Action != EnemyAction.Cast || ability.Telegraph == "none")
         {
             telegraph.Hide();
