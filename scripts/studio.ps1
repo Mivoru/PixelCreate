@@ -1,7 +1,7 @@
 # Renders check pictures without a server and joins them into labelled contact sheets.
 # Jobs: people, motion, models, world, hitboxes, map. Pictures land in export/previews/studio.
 param(
-    [string]$Jobs = "people,motion,models,world,hitboxes,map"
+    [string]$Jobs = "people,animals,motion,models,world,hitboxes,map"
 )
 
 $ErrorActionPreference = "Stop"

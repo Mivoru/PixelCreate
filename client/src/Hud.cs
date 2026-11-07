@@ -556,7 +556,13 @@ public partial class Hud : Control
             Threat.Weak => new Color("63c74d"),
             _ => Colors.White,
         };
-        var label = $"Lv {enemy.Level} {def.Name}";
+        var animal = def.Kind == "animal";
+        if (animal && def.Temper == "passive")
+        {
+            color = new Color("dff6f5");
+        }
+
+        var label = animal ? def.Name : $"Lv {enemy.Level} {def.Name}";
         var width = _font.GetStringSize(label, HorizontalAlignment.Left, -1, 11).X;
         var left = at.X - width / 2f;
 

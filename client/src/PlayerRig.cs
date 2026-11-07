@@ -365,6 +365,9 @@ public sealed class PlayerRig
         }
     }
 
+    /// <summary>The cel material, for other views that build their own figures.</summary>
+    public static ShaderMaterial ToonMaterial(Color color) => Toon(color);
+
     /// <summary>A cel material. The shadow leans towards cool purple, as hand-coloured shading does.</summary>
     private static ShaderMaterial Toon(Color color)
     {

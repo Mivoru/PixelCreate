@@ -95,6 +95,13 @@
     { "width": 2.2, "points": [[92, 58], [110, 30], [122, 4]] }
   ],
   "enemies": [
+    { "x": 42.6, "z": -2, "radius": 5, "count": 4, "respawnTicks": 1800, "types": ["cow"] },
+    { "x": -14, "z": 44, "radius": 9, "count": 5, "respawnTicks": 1800, "types": ["sheep"] },
+    { "x": 16, "z": 80, "radius": 13, "count": 5, "respawnTicks": 1800, "types": ["goat"] },
+    { "x": -74, "z": 66, "radius": 16, "count": 4, "respawnTicks": 2400, "types": ["deer"] },
+    { "x": -120, "z": -24, "radius": 14, "count": 3, "respawnTicks": 2400, "types": ["deer"] },
+    { "x": 120, "z": 40, "radius": 12, "count": 3, "respawnTicks": 2400, "types": ["deer"] },
+    { "x": -60, "z": -86, "radius": 12, "count": 4, "respawnTicks": 2400, "types": ["pig"] },
     { "x": -46, "z": 42, "radius": 10, "count": 5, "minLevel": 1, "maxLevel": 1, "respawnTicks": 900 },
     { "x": 56, "z": 20, "radius": 11, "count": 5, "minLevel": 1, "maxLevel": 2, "respawnTicks": 900 },
     { "x": -46, "z": -34, "radius": 12, "count": 6, "minLevel": 2, "maxLevel": 3, "respawnTicks": 1200 },

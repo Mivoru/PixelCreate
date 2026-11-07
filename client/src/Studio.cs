@@ -45,7 +45,7 @@ public partial class Studio : Node
     {
         var args = OS.GetCmdlineUserArgs();
         _folder = args.ElementAtOrDefault(0) ?? "studio";
-        var jobs = (args.ElementAtOrDefault(1) ?? "people,motion,models,world,hitboxes,map").Split(',');
+        var jobs = (args.ElementAtOrDefault(1) ?? "people,animals,motion,models,world,hitboxes,map").Split(',');
         System.IO.Directory.CreateDirectory(_folder);
         _stage = new PixelStage(this);
         _set = new Node3D();
@@ -59,6 +59,7 @@ public partial class Studio : Node
                 await (job switch
                 {
                     "people" => People(),
+                    "animals" => Animals(),
                     "motion" => Motion(),
                     "models" => Models(),
                     "world" => World(false),
@@ -80,7 +81,7 @@ public partial class Studio : Node
     /// <summary>Removes the old pictures of a job, so a renamed shot cannot linger and mislead.</summary>
     private void Forget(string job)
     {
-        var prefix = job switch { "people" => "person_", "motion" => "motion_", "models" => "model_", "world" => "world_", "hitboxes" => "box_", _ => "map_" };
+        var prefix = job switch { "animals" => "animal_", "people" => "person_", "motion" => "motion_", "models" => "model_", "world" => "world_", "hitboxes" => "box_", _ => "map_" };
         foreach (var file in System.IO.Directory.GetFiles(_folder, prefix + "*.png"))
         {
             System.IO.File.Delete(file);
@@ -185,6 +186,33 @@ public partial class Studio : Node
             await Wait(8);
             Save($"person_{name}_face");
             Dismiss(rig);
+        }
+    }
+
+    /// <summary>Every animal standing, grazing and running, from the side and at three quarters.</summary>
+    private async Task Animals()
+    {
+        Floor();
+        _stage.Camera.Fov = 22;
+        foreach (var def in EnemyDef.All.Where(d => d.Kind == "animal"))
+        {
+            var view = new AnimalView(def, 2);
+            _set.AddChild(view.Root);
+            foreach (var (pose, speed, yaw) in new[] { ("stand", 0f, 1.4f), ("graze", 0f, 0.7f), ("run", 6f, 1.57f) })
+            {
+                var position = Vector3.Zero;
+                for (var frame = 0; frame < (pose == "graze" ? 200 : 40); frame++)
+                {
+                    position += new Vector3(0, 0, -speed * Step);
+                    view.Update(new EnemyView(1, 0, 1, default, yaw, 10, 10, EnemyAction.Walk, 0, default, false), position, Step, null!);
+                    _stage.Camera.LookAtFromPosition(position + new Vector3(Mathf.Sin(yaw + 1.57f) * 5.5f, 1.4f, Mathf.Cos(yaw + 1.57f) * 5.5f), position + Vector3.Up * 0.6f);
+                    await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+                }
+
+                Save($"animal_{def.Id}_{pose}");
+            }
+
+            view.Root.QueueFree();
         }
     }
 

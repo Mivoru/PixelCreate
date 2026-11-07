@@ -75,5 +75,33 @@
       { "effect": "firewall", "range": 14, "windupTicks": 62, "recoverTicks": 70, "cooldownTicks": 360, "damage": 26, "telegraph": "wedge" }
     ],
     "drops": [{ "rarity": 1, "chance": 1 }, { "rarity": 2, "chance": 0.15 }, { "rarity": 3, "chance": 0.01 }]
+  },
+  {
+    "id": "cow", "name": "Cow", "kind": "animal", "temper": "passive",
+    "minLevel": 1, "maxLevel": 1, "health": 60, "healthPerLevel": 0, "speed": 2.6, "size": 1.0, "aggroRange": 0,
+    "drops": []
+  },
+  {
+    "id": "goat", "name": "Goat", "kind": "animal", "temper": "passive",
+    "minLevel": 1, "maxLevel": 1, "health": 30, "healthPerLevel": 0, "speed": 4.5, "size": 1.0, "aggroRange": 4,
+    "drops": []
+  },
+  {
+    "id": "deer", "name": "Deer", "kind": "animal", "temper": "passive",
+    "minLevel": 1, "maxLevel": 1, "health": 35, "healthPerLevel": 0, "speed": 7.5, "size": 1.0, "aggroRange": 10,
+    "drops": []
+  },
+  {
+    "id": "sheep", "name": "Sheep", "kind": "animal", "temper": "passive",
+    "minLevel": 1, "maxLevel": 1, "health": 30, "healthPerLevel": 0, "speed": 3.2, "size": 1.0, "aggroRange": 2.5,
+    "drops": []
+  },
+  {
+    "id": "pig", "name": "Wild Boar", "kind": "animal", "temper": "neutral", "weapon": "none",
+    "minLevel": 2, "maxLevel": 3, "health": 70, "healthPerLevel": 15, "speed": 5, "size": 1.15, "aggroRange": 0, "preferredRange": 1.4,
+    "abilities": [
+      { "effect": "melee", "range": 1.8, "windupTicks": 20, "recoverTicks": 20, "cooldownTicks": 50, "damage": 6, "radius": 1.4 }
+    ],
+    "drops": [{ "rarity": 0, "chance": 0.5 }]
   }
 ]

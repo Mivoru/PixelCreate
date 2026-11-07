@@ -10,7 +10,7 @@ public sealed record EnemyDef(
     float AggroRange, int HopTicks = 40, float LeapRange = 0f, int LeapCooldownTicks = 0, float SplashRadius = 0f,
     short SplashDamage = 0, byte SlowTicks = 0, float SpitRange = 0f, short SpitDamage = 0, int SpitCooldownTicks = 0,
     double RareChance = 0, string Kind = "slime", bool Rare = false, string Weapon = "", float PreferredRange = 2f,
-    Ability[]? Abilities = null, DropEntry[]? Drops = null)
+    Ability[]? Abilities = null, DropEntry[]? Drops = null, string Temper = "hostile")
 {
     private static readonly Lazy<IReadOnlyList<EnemyDef>> Loaded = new(Load);
 
@@ -186,6 +186,12 @@ public sealed partial class Enemy
         if (LeapCooldown > 0) LeapCooldown--;
         if (SpitCooldown > 0) SpitCooldown--;
         ActionTicks--;
+
+        if (IsAnimal && Action != EnemyAction.Dead)
+        {
+            StepAnimal(world, random, targets, events);
+            return;
+        }
 
         if (Def.Kind != "slime" && Action != EnemyAction.Dead)
         {

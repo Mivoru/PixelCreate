@@ -469,7 +469,7 @@ public sealed class EnemyTests
             }
         }
 
-        Assert.All(clients, c => Assert.InRange(c.Latest!.Enemies.Length, 1, 12));
+        Assert.All(clients, c => Assert.InRange(c.Latest!.Enemies.Length, 1, 16));
     }
 
     private static (GameServer Server, ClientPrediction Client, SimNetwork Network) StartGoblin(string id, float distance)
@@ -651,7 +651,7 @@ public sealed class EnemyTests
     {
         Assert.Equal(new[] { "Common", "Rare", "Epic", "Legendary" }, Crystals.All.Select(c => c.Rarity.ToString()));
         Assert.True(Crystals.All.Zip(Crystals.All.Skip(1)).All(p => p.First.Weight < p.Second.Weight));
-        Assert.All(EnemyDef.All.Where(d => d.Id != Guild.ExaminerId), def => Assert.NotEmpty(def.Drops!));
+        Assert.All(EnemyDef.All.Where(d => d.Id != Guild.ExaminerId && d.Temper != "passive"), def => Assert.NotEmpty(def.Drops!));
     }
 
     [Fact]

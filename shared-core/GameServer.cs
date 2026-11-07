@@ -97,7 +97,10 @@ public sealed class GameServer : IEnemyEvents
 
     /// <summary>A player hears only about nearby things, which keeps a snapshot inside one UDP packet.</summary>
     private const float InterestRange = 70f;
-    private const int MaxEnemiesPerSnapshot = 12;
+    private const int MaxEnemiesPerSnapshot = 16;
+
+    /// <summary>Animals are less urgent than enemies, so they count as this much further away.</summary>
+    private const float AnimalInterestPenalty = 20f;
     private const int MaxProjectilesPerSnapshot = 16;
     private const int MaxDropsPerSnapshot = 6;
 
@@ -790,7 +793,7 @@ public sealed class GameServer : IEnemyEvents
             var origin = player.State.Position;
             var enemies = _enemies
                 .Where(e => Vector3.Distance(e.Position, origin) < InterestRange)
-                .OrderBy(e => Vector3.Distance(e.Position, origin))
+                .OrderBy(e => Vector3.Distance(e.Position, origin) + (e.IsAnimal ? AnimalInterestPenalty : 0f))
                 .Take(MaxEnemiesPerSnapshot)
                 .Select(e => new EnemyView(e.Id, e.Type, e.Level, e.Position, e.Facing, e.Health, (short)e.MaxHealth,
                     e.Action, e.HitFlash, e.LeapTarget, e.TargetId >= 0, e.AbilityIndex)).ToArray();
