@@ -332,9 +332,11 @@ public partial class Studio : Node
             var size = bounds.Size.Length();
             var middle = bounds.GetCenter();
             MeshInstance3D? wire = null;
-            if (Zone.CollisionOf(name) is { X: > 0 } shape)
+            // The measured collision boxes, exactly as the game places them.
+            var shape = Zone.ShapeOf(name);
+            if (shape.Count > 0)
             {
-                wire = Wire(new[] { new CoreBox(new(-shape.X, 0, -shape.Y), new(shape.X, shape.Z, shape.Y)) }, new Color("ff2fd0"));
+                wire = Wire(shape.Select(b => new CoreBox(new(b.X0, 0, b.Z0), new(b.X1, b.Top, b.Z1))).ToArray(), new Color("ff2fd0"));
                 _set.AddChild(wire);
             }
 

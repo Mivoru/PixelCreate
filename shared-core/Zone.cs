@@ -99,95 +99,51 @@ public sealed class Zone
         NpcData[]? Npcs = null, float[]? Trial = null, float[]? Waterfall = null, float[][]? Clearings = null, LakeData[]? Lakes = null,
         float[][]? Yards = null);
 
-    /// <summary>Half width, half depth and height of each model's collision at scale 1.</summary>
-    private static readonly Dictionary<string, Vector3> Collision = new()
+    /// <summary>
+    /// Models a walker passes through or over: plants, flat things, and the bridges, piers and
+    /// interiors whose floors are platforms and whose walls the zone file lists.
+    /// </summary>
+    private static readonly HashSet<string> NonSolid = new()
     {
-        ["cottage"] = new(3.35f, 2.6f, 6f),
-        ["cottage_b"] = new(2.95f, 2.45f, 6f),
-        ["tavern"] = new(4.75f, 3.2f, 9f),
-        ["guild_hall"] = new(8.4f, 6.2f, 12f),
-        ["cliff"] = new(4.6f, 3.6f, 11f),
-        ["falls_cliff"] = new(21f, 9.5f, 16f),
-        ["windmill"] = new(2.4f, 2.4f, 10f),
-        ["birch"] = new(0.35f, 0.35f, 6f),
-        ["blossom"] = new(0.5f, 0.5f, 5f),
-        ["apple"] = new(0.45f, 0.45f, 4f),
-        ["pine"] = new(0.5f, 0.5f, 9f),
-        ["pine_b"] = new(0.4f, 0.4f, 7f),
-        ["willow"] = new(0.6f, 0.6f, 5f),
-        ["dead_tree"] = new(0.5f, 0.5f, 4f),
-        ["stump"] = new(0.5f, 0.5f, 0.5f),
-        ["fallen_log"] = new(2.3f, 0.4f, 0.7f),
-        ["twigs"] = new(0f, 0f, 0f),
-        ["berry_bush"] = new(0f, 0f, 0f),
-        ["tall_bush"] = new(0f, 0f, 0f),
-        ["reeds"] = new(0f, 0f, 0f),
-        ["grass_tuft"] = new(0f, 0f, 0f),
-        ["watchtower"] = new(2.1f, 2.1f, 9f),
-        ["standing_stone"] = new(0.6f, 0.45f, 3f),
-        ["field"] = new(0f, 0f, 0f),
-        ["pier"] = new(0f, 0f, 0f),
-        ["ruin_arch"] = new(0f, 0f, 0f),
-        ["ruin_wall"] = new(3f, 0.5f, 4f),
-        ["jungle_tree"] = new(0.7f, 0.7f, 11f),
-        ["fern"] = new(0f, 0f, 0f),
-        ["bridge"] = new(0f, 0f, 0f),
-        ["bridge_stone"] = new(0f, 0f, 0f),
-        ["training_dummy"] = new(0.3f, 0.3f, 1.8f),
-        ["guild_interior"] = new(0f, 0f, 0f),
-        ["trial_arena"] = new(0f, 0f, 0f),
-        ["well"] = new(1.05f, 1.05f, 3f),
-        ["stall"] = new(1.7f, 1.2f, 2.6f),
-        ["barrel"] = new(0.42f, 0.42f, 1.1f),
-        ["crate"] = new(0.47f, 0.47f, 0.9f),
-        ["sacks"] = new(0.5f, 0.5f, 0.9f),
-        ["cart"] = new(1.5f, 0.9f, 1.6f),
-        ["bench"] = new(0.95f, 0.28f, 0.6f),
-        ["lantern_post"] = new(0.14f, 0.14f, 2.9f),
-        ["signpost"] = new(0.14f, 0.14f, 2.3f),
-        ["hay"] = new(0.85f, 0.85f, 1.4f),
-        ["log_pile"] = new(1.1f, 0.85f, 1.1f),
-        ["fence"] = new(1.6f, 0.1f, 1f),
-        ["stone_wall"] = new(2.1f, 0.35f, 0.8f),
-        ["rock_b"] = new(1f, 1f, 1.1f),
-        ["rock_c"] = new(0.6f, 0.6f, 0.5f),
-        ["flowers"] = new(0f, 0f, 0f),
-        ["mushroom"] = new(0f, 0f, 0f),
-        ["camp_set"] = new(0f, 0f, 0f),
-        ["tree_a"] = new(0.5f, 0.5f, 6f),
-        ["tree_b"] = new(0.5f, 0.5f, 6f),
-        ["rock"] = new(0.55f, 0.55f, 0.7f),
-        ["bush"] = new(0f, 0f, 0f),
-        ["tent"] = new(1.7f, 2f, 2.6f),
-        ["goblin_hut"] = new(1.6f, 1.6f, 3.2f),
-        ["goblin_totem"] = new(0.3f, 0.3f, 3.6f),
-        ["bone_pile"] = new(0f, 0f, 0f),
-        ["cook_pot"] = new(0.55f, 0.55f, 1.1f),
-        ["goblin_banner"] = new(0.12f, 0.12f, 4f),
-        ["spike_wall"] = new(3f, 0.5f, 2f),
-        ["rune_stone"] = new(0.55f, 0.4f, 2.6f),
-        ["camp_fire"] = new(0.5f, 0.5f, 0.5f),
-        ["palisade"] = new(4.2f, 0.4f, 3f),
-        ["ruin"] = new(1.1f, 1.1f, 4f),
+        "twigs", "berry_bush", "tall_bush", "reeds", "grass_tuft", "field", "pier", "fern", "bridge", "bridge_stone",
+        "guild_interior", "trial_arena", "flowers", "mushroom", "bush",
     };
 
-    /// <summary>Half width, half depth and height of a model's collision, or null when none is listed.</summary>
-    public static Vector3? CollisionOf(string model) => Collision.TryGetValue(model, out var shape) ? shape : null;
+    /// <summary>One collision box of a model, around its origin in its own axes: x, z and the top.</summary>
+    public readonly record struct ModelBox(float X0, float Z0, float X1, float Z1, float Top);
 
-    /// <summary>Models with holes in them are solid only where their parts stand: centre offset, then size as above.</summary>
-    private static readonly Dictionary<string, (Vector2 Offset, Vector3 Shape)[]> CollisionParts = new()
+    /// <summary>
+    /// Each model's collision boxes, measured from the model itself when it is built
+    /// (asset-pipeline/collision.py writes world/collision.json).
+    /// </summary>
+    private static readonly Dictionary<string, ModelBox[]> Shapes = LoadShapes();
+
+    private static Dictionary<string, ModelBox[]> LoadShapes()
     {
-        // The lean-to against the east gable, x and z in the model's own axes.
-        ["cottage_b"] = new[] { (new Vector2(3.75f, -0.2f), new Vector3(1.0f, 1.75f, 3f)) },
-        // The mill's tail pole comes down to a cart wheel behind the tower.
-        ["windmill"] = new[] { (new Vector2(0f, -4.3f), new Vector3(0.45f, 0.45f, 1.2f)) },
-        ["ruin_arch"] = new[] { (new Vector2(-2.6f, 0f), new Vector3(0.9f, 0.9f, 5f)), (new Vector2(2.6f, 0f), new Vector3(0.9f, 0.9f, 5f)) },
-        ["guild_hall"] = new[]
+        using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("collision")
+            ?? throw new InvalidOperationException("world/collision.json is missing; build the models.");
+        var raw = JsonSerializer.Deserialize<Dictionary<string, float[][]>>(stream)!;
+        return raw.ToDictionary(e => e.Key, e => e.Value.Select(b => new ModelBox(b[0], b[1], b[2], b[3], b[4])).ToArray());
+    }
+
+    /// <summary>The collision boxes of a solid model, or none for something a walker passes through.</summary>
+    public static IReadOnlyList<ModelBox> ShapeOf(string model) =>
+        !NonSolid.Contains(model) && Shapes.TryGetValue(model, out var boxes) ? boxes : Array.Empty<ModelBox>();
+
+    /// <summary>True for a model that blocks walkers but has no measured shape: its model needs building.</summary>
+    public static bool MissingShape(string model) => !NonSolid.Contains(model) && !Shapes.ContainsKey(model);
+
+    /// <summary>Half width, half depth and height of what a model covers on the ground, or null when it covers nothing.</summary>
+    public static Vector3? CollisionOf(string model)
+    {
+        var boxes = ShapeOf(model);
+        if (boxes.Count == 0)
         {
-            (new Vector2(-7.8f, 5.4f), new Vector3(2.1f, 2.1f, 13f)), (new Vector2(7.8f, 5.4f), new Vector3(2.1f, 2.1f, 13f)),
-            (new Vector2(0f, 6.4f), new Vector3(2.8f, 0.6f, 5f)),
-        },
-    };
+            return null;
+        }
+
+        return new Vector3(boxes.Max(b => MathF.Max(-b.X0, b.X1)), boxes.Max(b => MathF.Max(-b.Z0, b.Z1)), boxes.Max(b => b.Top));
+    }
 
     private readonly PathData[] _paths;
     private readonly float[][] _yards;
@@ -254,11 +210,12 @@ public sealed class Zone
         }
 
         Props = props;
+        _fields = props.Where(p => p.Model == "field").ToArray();
         var spawn = new Vector3(data.Spawn[0], terrain.At(data.Spawn[0], data.Spawn[1]), data.Spawn[1]);
         var enemySpawns = (data.Enemies ?? Array.Empty<EnemySpawnData>())
             .Select(e => new EnemySpawn(new Vector3(e.X, terrain.At(e.X, e.Z), e.Z), e.Radius, e.Count, e.MinLevel, e.MaxLevel, e.RespawnTicks, e.Rare, e.Types)).ToArray();
         _regions = data.Regions ?? Array.Empty<RegionData>();
-        var boxes = BuildBoxes(props, data.Size, ground);
+        var boxes = BuildBoxes(props, data.Size);
         boxes.AddRange((data.Walls ?? Array.Empty<RectData>()).Select(w => new Aabb(new(w.X0, w.Bottom, w.Z0), new(w.X1, w.Height, w.Z1))));
         Vector3 Place(float x, float z) => new(x, ground.GroundHeight(x, z), z);
         var trial = data.Trial is { } t ? Place(t[0], t[1]) : spawn;
@@ -294,6 +251,41 @@ public sealed class Zone
 
         return IsWater(x, z) || _yards.Any(y => new Vector2(x - y[0], z - y[1]).Length() < y[2]);
     }
+
+    /// <summary>
+    /// True where something stands on the ground: inside a solid model's collision, or on a field's
+    /// soil. Grass does not grow there.
+    /// </summary>
+    public bool IsCovered(float x, float z)
+    {
+        var ground = World.GroundHeight(x, z);
+        foreach (var box in World.BoxesNear(x, z, x, z))
+        {
+            if (x > box.Min.X && x < box.Max.X && z > box.Min.Z && z < box.Max.Z && box.Max.Y > ground + 0.1f &&
+                box.Max.X - box.Min.X < 60f && box.Max.Z - box.Min.Z < 60f)
+            {
+                return true;
+            }
+        }
+
+        foreach (var field in _fields)
+        {
+            var (sin, cos) = MathF.SinCos(field.Yaw);
+            var dx = x - field.Position.X;
+            var dz = z - field.Position.Z;
+            if (MathF.Abs(dx * cos - dz * sin) < FieldHalf.X && MathF.Abs(dx * sin + dz * cos) < FieldHalf.Y)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>Half the length and width of a field's soil (build_meshes.py: field).</summary>
+    private static readonly Vector2 FieldHalf = new(6f, 4f);
+
+    private PlacedProp[] _fields = Array.Empty<PlacedProp>();
 
     /// <summary>True in a river or a lake.</summary>
     public bool IsWater(float x, float z) => Rivers.Any(r => PolylineDistance(r.Points, x, z) < r.Width * 1.45f) || InLake(x, z, 1f);
@@ -609,7 +601,7 @@ public sealed class Zone
     private static float Settle(World ground, string model, float x, float z, float yaw)
     {
         var centre = ground.GroundHeight(x, z);
-        if (model is "bridge" or "bridge_stone" or "pier" or "field" || !Collision.TryGetValue(model, out var shape) || shape.X <= 0f)
+        if (model is "bridge" or "bridge_stone" or "pier" or "field" || CollisionOf(model) is not { } shape)
         {
             return centre;
         }
@@ -632,7 +624,7 @@ public sealed class Zone
     /// </summary>
     private static (float Height, float Slope) Lean(World ground, string model, float x, float z, float yaw)
     {
-        var half = Collision[model].X;
+        var half = CollisionOf(model)?.X ?? 1f;
         var (sin, cos) = MathF.SinCos(yaw);
         var start = ground.GroundHeight(x - half * cos, z + half * sin);
         var end = ground.GroundHeight(x + half * cos, z - half * sin);
@@ -653,7 +645,7 @@ public sealed class Zone
         "camp_set" => 3f,
         "bone_pile" => 0.8f,
         "ruin_arch" => 4f,
-        _ => Collision.TryGetValue(model, out var shape) ? MathF.Max(shape.X, shape.Y) : 0f,
+        _ => CollisionOf(model) is { } shape ? MathF.Max(shape.X, shape.Y) : 0f,
     };
 
     private static bool Near(PlacedProp prop, float x, float z, float spacing, float extra)
@@ -662,7 +654,7 @@ public sealed class Zone
         return new Vector2(prop.Position.X - x, prop.Position.Z - z).LengthSquared() < reach * reach;
     }
 
-    private static List<Aabb> BuildBoxes(List<PlacedProp> props, float size, World ground)
+    private static List<Aabb> BuildBoxes(List<PlacedProp> props, float size)
     {
         const float wallHeight = 80f;
         const float thick = 2f;
@@ -676,40 +668,57 @@ public sealed class Zone
         };
         foreach (var prop in props)
         {
-            foreach (var (offset, part) in CollisionParts.GetValueOrDefault(prop.Model, Array.Empty<(Vector2, Vector3)>()))
-            {
-                var cosine = MathF.Cos(prop.Yaw);
-                var sine = MathF.Sin(prop.Yaw);
-                var x = prop.Position.X + (offset.X * cosine + offset.Y * sine) * prop.Scale;
-                var z = prop.Position.Z + (-offset.X * sine + offset.Y * cosine) * prop.Scale;
-                var extent = part * prop.Scale;
-                boxes.Add(new(new(x - extent.X, prop.Position.Y - 1f, z - extent.Y), new(x + extent.X, prop.Position.Y + extent.Z, z + extent.Y)));
-            }
-
-            var shape = Collision[prop.Model] * prop.Scale;
-            if (shape.X > 0)
-            {
-                // A turned prop needs a box that still covers it, so its footprint is rotated first.
-                var cos = MathF.Abs(MathF.Cos(prop.Yaw));
-                var sin = MathF.Abs(MathF.Sin(prop.Yaw));
-                var halfX = shape.X * cos + shape.Y * sin;
-                var halfZ = shape.X * sin + shape.Y * cos;
-                var p = prop.Position;
-                // On a slope the box reaches as high above the uphill ground as the model is tall, so
-                // nobody steps onto the top of a fence from the high side.
-                var top = p.Y + shape.Z;
-                if (IsRun(prop.Model))
-                {
-                    foreach (var (sx, sz) in new[] { (-1f, -1f), (1f, -1f), (-1f, 1f), (1f, 1f) })
-                    {
-                        top = MathF.Max(top, ground.GroundHeight(p.X + sx * halfX, p.Z + sz * halfZ) + shape.Z);
-                    }
-                }
-
-                boxes.Add(new(new(p.X - halfX, p.Y - 1f, p.Z - halfZ), new(p.X + halfX, top, p.Z + halfZ)));
-            }
+            AddShape(boxes, prop);
         }
 
         return boxes;
+    }
+
+    /// <summary>The most a piece of a turned model may measure along x or z before it is cut smaller.</summary>
+    private const float TurnedPiece = 0.5f;
+
+    /// <summary>
+    /// Places a model's measured boxes in the world. A box of a model turned off the grid is cut into
+    /// small pieces first, so the upright boxes that cover the pieces hug the turned shape instead
+    /// of one big box covering a long turned wall from corner to corner.
+    /// </summary>
+    private static void AddShape(List<Aabb> boxes, PlacedProp prop)
+    {
+        var shape = ShapeOf(prop.Model);
+        if (shape.Count == 0)
+        {
+            return;
+        }
+
+        var (sin, cos) = MathF.SinCos(prop.Yaw);
+        var quarter = MathF.Abs(prop.Yaw / (MathF.PI / 2) - MathF.Round(prop.Yaw / (MathF.PI / 2))) < 0.01f;
+        var p = prop.Position;
+        foreach (var box in shape)
+        {
+            var cutsX = quarter ? 1 : Math.Max(1, (int)MathF.Ceiling((box.X1 - box.X0) * prop.Scale / TurnedPiece));
+            var cutsZ = quarter ? 1 : Math.Max(1, (int)MathF.Ceiling((box.Z1 - box.Z0) * prop.Scale / TurnedPiece));
+            for (var i = 0; i < cutsX; i++)
+            {
+                for (var j = 0; j < cutsZ; j++)
+                {
+                    var x0 = box.X0 + (box.X1 - box.X0) * i / cutsX;
+                    var x1 = box.X0 + (box.X1 - box.X0) * (i + 1) / cutsX;
+                    var z0 = box.Z0 + (box.Z1 - box.Z0) * j / cutsZ;
+                    var z1 = box.Z0 + (box.Z1 - box.Z0) * (j + 1) / cutsZ;
+                    var min = new Vector2(float.MaxValue);
+                    var max = new Vector2(float.MinValue);
+                    foreach (var (lx, lz) in new[] { (x0, z0), (x1, z0), (x0, z1), (x1, z1) })
+                    {
+                        var world = new Vector2(p.X + (lx * cos + lz * sin) * prop.Scale, p.Z + (-lx * sin + lz * cos) * prop.Scale);
+                        min = Vector2.Min(min, world);
+                        max = Vector2.Max(max, world);
+                    }
+
+                    // A sheared fence rises along its length; its boxes rise with it.
+                    var lift = prop.Slope * (x0 + x1) / 2 * prop.Scale;
+                    boxes.Add(new Aabb(new Vector3(min.X, p.Y + lift - 1f, min.Y), new Vector3(max.X, p.Y + lift + box.Top * prop.Scale, max.Y)));
+                }
+            }
+        }
     }
 }

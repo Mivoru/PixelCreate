@@ -241,6 +241,11 @@ public class ZoneAuditTests
                 {
                     var start = new Vector3(endX + outward * MathF.Cos(angle) * 9f, 0, middle + MathF.Sin(angle) * 9f);
                     start.Y = world.GroundHeight(start.X, start.Z);
+                    if (world.OverlapsPlayer(start))
+                    {
+                        continue; // a building stands there (the guild beside the west bridge)
+                    }
+
                     var goal = new Vector3((bridge.MinX + bridge.MaxX) / 2, 0, middle);
                     var state = PlayerState.Spawn(start);
                     for (var tick = 0; tick < Tuning.TickRate * 12; tick++)
@@ -338,6 +343,59 @@ public class ZoneAuditTests
                 var past = Vector2.Dot(new Vector2(state.Position.X - fence.Position.X, state.Position.Z - fence.Position.Z), across) * side;
                 Assert.True(past > 0f, $"walked over the fence at {fence.Position.X}, {fence.Position.Z} from side {side}");
             }
+        }
+    }
+
+    /// <summary>Every solid thing in the zone has collision measured from its model.</summary>
+    [Fact]
+    public void SolidModels_HaveMeasuredCollision()
+    {
+        foreach (var model in Valley.Props.Select(p => p.Model).Distinct())
+        {
+            Assert.False(Zone.MissingShape(model), $"{model} has no measured collision; rebuild it with scripts/build_assets.ps1");
+        }
+    }
+
+    /// <summary>
+    /// A stockade or fence turned off the grid blocks only along its own line: a walker can stand
+    /// close beside it on either side, and cannot stand on it. Its box once covered it from corner
+    /// to corner, two metres out from one side of a turned palisade.
+    /// </summary>
+    [Fact]
+    public void TurnedRuns_BlockOnlyAlongTheirLine()
+    {
+        var world = Valley.World;
+        foreach (var run in Valley.Props.Where(p => p.Model is "palisade" or "fence" or "spike_wall" or "stone_wall"))
+        {
+            var (sin, cos) = MathF.SinCos(run.Yaw);
+            var across = new Vector2(sin, cos);
+            var half = Zone.CollisionOf(run.Model)!.Value.Y;
+            var centre = new Vector2(run.Position.X, run.Position.Z);
+            Vector3 At(Vector2 point) => new(point.X, world.GroundHeight(point.X, point.Y) + 0.05f, point.Y);
+            Assert.True(world.OverlapsPlayer(At(centre)), $"nothing blocks the middle of the {run.Model} at {centre}");
+            foreach (var side in new[] { -1f, 1f })
+            {
+                var beside = centre + across * side * (half + Tuning.PlayerHalfSize.X + 0.6f);
+                var blocked = world.OverlapsPlayer(At(beside));
+                // Something else may stand there; only this run's own boxes matter.
+                if (blocked && !Valley.Props.Any(p => p != run && p.Model != "fence" && Vector2.Distance(new(p.Position.X, p.Position.Z), beside) < 4f))
+                {
+                    Assert.Fail($"the {run.Model} at {centre} turned {run.Yaw:F2} blocks {half + 1:F1} m out from its line");
+                }
+            }
+        }
+    }
+
+    /// <summary>The dark crags either side of the waterfall are solid all through.</summary>
+    [Fact]
+    public void FallsCrags_AreSolid()
+    {
+        var cliff = Valley.Props.Single(p => p.Model == "falls_cliff");
+        foreach (var (x, z) in new[] { (-19f, -2f), (20f, -2f), (-15f, -6f), (16f, -6f), (0f, -4f) })
+        {
+            var point = new Vector3(cliff.Position.X + x, 0, cliff.Position.Z + z);
+            point.Y = Valley.World.GroundHeight(point.X, point.Z) + 0.05f;
+            Assert.True(Valley.World.OverlapsPlayer(point), $"a walker can stand inside the falls cliff at {point}");
         }
     }
 }

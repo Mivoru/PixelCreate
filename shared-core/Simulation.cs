@@ -134,6 +134,64 @@ public sealed class World
         Terrain = terrain;
         Spawn = spawn;
         EnemySpawns = enemySpawns ?? Array.Empty<EnemySpawn>();
+        foreach (var box in boxes)
+        {
+            var (x0, z0, x1, z1) = Cells(box.Min.X, box.Min.Z, box.Max.X, box.Max.Z);
+            if ((long)(x1 - x0 + 1) * (z1 - z0 + 1) > HugeCells)
+            {
+                _huge.Add(box);
+                continue;
+            }
+
+            for (var x = x0; x <= x1; x++)
+            {
+                for (var z = z0; z <= z1; z++)
+                {
+                    if (!_grid.TryGetValue((x, z), out var list))
+                    {
+                        _grid[(x, z)] = list = new List<Aabb>();
+                    }
+
+                    list.Add(box);
+                }
+            }
+        }
+    }
+
+    /// <summary>The boxes are filed by area in a grid of this cell size, so a mover only checks those near it.</summary>
+    private const float GridCell = 4f;
+
+    /// <summary>Boxes covering more cells than this (the walls round the map) are always checked instead.</summary>
+    private const int HugeCells = 64;
+
+    private readonly Dictionary<(int X, int Z), List<Aabb>> _grid = new();
+    private readonly List<Aabb> _huge = new();
+
+    private static (int X0, int Z0, int X1, int Z1) Cells(float minX, float minZ, float maxX, float maxZ) =>
+        ((int)MathF.Floor(minX / GridCell), (int)MathF.Floor(minZ / GridCell), (int)MathF.Floor(maxX / GridCell), (int)MathF.Floor(maxZ / GridCell));
+
+    /// <summary>Every box that may touch this area seen from above. A box can come up more than once.</summary>
+    public IEnumerable<Aabb> BoxesNear(float minX, float minZ, float maxX, float maxZ)
+    {
+        foreach (var box in _huge)
+        {
+            yield return box;
+        }
+
+        var (x0, z0, x1, z1) = Cells(minX, minZ, maxX, maxZ);
+        for (var x = x0; x <= x1; x++)
+        {
+            for (var z = z0; z <= z1; z++)
+            {
+                if (_grid.TryGetValue((x, z), out var list))
+                {
+                    foreach (var box in list)
+                    {
+                        yield return box;
+                    }
+                }
+            }
+        }
     }
 
     public float GroundHeight(float x, float z)
@@ -167,7 +225,7 @@ public sealed class World
     public bool OverlapsPlayer(Vector3 position)
     {
         var half = Tuning.PlayerHalfSize;
-        foreach (var box in Boxes)
+        foreach (var box in BoxesNear(position.X - half.X, position.Z - half.Z, position.X + half.X, position.Z + half.Z))
         {
             if (position.X - half.X < box.Max.X && position.X + half.X > box.Min.X &&
                 position.Y < box.Max.Y && position.Y + half.Y * 2 > box.Min.Y &&
@@ -189,7 +247,7 @@ public sealed class World
     /// <summary>True when a point is inside a solid box. The ground does not count.</summary>
     public bool IsInsideBox(Vector3 point)
     {
-        foreach (var box in Boxes)
+        foreach (var box in BoxesNear(point.X, point.Z, point.X, point.Z))
         {
             if (point.X > box.Min.X && point.X < box.Max.X && point.Y > box.Min.Y && point.Y < box.Max.Y &&
                 point.Z > box.Min.Z && point.Z < box.Max.Z)
@@ -389,7 +447,7 @@ public static class Movement
         var min = new Vector3(position.X - half.X, position.Y, position.Z - half.Z);
         var max = new Vector3(position.X + half.X, position.Y + half.Y * 2, position.Z + half.Z);
 
-        foreach (var box in world.Boxes)
+        foreach (var box in world.BoxesNear(min.X, min.Z, max.X, max.Z))
         {
             if (min.X >= box.Max.X || max.X <= box.Min.X || min.Y >= box.Max.Y || max.Y <= box.Min.Y ||
                 min.Z >= box.Max.Z || max.Z <= box.Min.Z)

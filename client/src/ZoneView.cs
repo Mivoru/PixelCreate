@@ -559,17 +559,20 @@ public static class ZoneView
     /// Marks each metre of the zone where no grass grows. Asking the paths and rivers once per cell
     /// instead of once per blade keeps loading fast.
     /// </summary>
+    /// <summary>Cells of the grass mask per metre: fine enough that grass stops at the foot of a rock.</summary>
+    private const int MaskPerMetre = 2;
+
     private static bool[,] BuildGrassMask(Zone zone)
     {
-        var cells = (int)zone.Size;
+        var cells = (int)zone.Size * MaskPerMetre;
         var mask = new bool[cells, cells];
         for (var row = 0; row < cells; row++)
         {
             for (var column = 0; column < cells; column++)
             {
-                var x = column - zone.Size / 2f + 0.5f;
-                var z = row - zone.Size / 2f + 0.5f;
-                mask[row, column] = zone.PathDistance(x, z) < 0.6f || zone.IsBare(x, z);
+                var x = (column + 0.5f) / MaskPerMetre - zone.Size / 2f;
+                var z = (row + 0.5f) / MaskPerMetre - zone.Size / 2f;
+                mask[row, column] = zone.PathDistance(x, z) < 0.6f || zone.IsBare(x, z) || zone.IsCovered(x, z);
             }
         }
 
@@ -578,8 +581,8 @@ public static class ZoneView
 
     private static bool IsClearOfGrass(bool[,] mask, float size, float x, float z)
     {
-        var column = Mathf.Clamp((int)(x + size / 2f), 0, mask.GetLength(1) - 1);
-        var row = Mathf.Clamp((int)(z + size / 2f), 0, mask.GetLength(0) - 1);
+        var column = Mathf.Clamp((int)((x + size / 2f) * MaskPerMetre), 0, mask.GetLength(1) - 1);
+        var row = Mathf.Clamp((int)((z + size / 2f) * MaskPerMetre), 0, mask.GetLength(0) - 1);
         return mask[row, column];
     }
 

@@ -10,5 +10,6 @@
     <EmbeddedResource Include="..\world\zones\*.json" LogicalName="zones.%(Filename)" />
     <EmbeddedResource Include="..\world\enemies.json" LogicalName="enemies" />
     <EmbeddedResource Include="..\world\items.json" LogicalName="items" />
+    <EmbeddedResource Include="..\world\collision.json" LogicalName="collision" />
   </ItemGroup>
 </Project>
