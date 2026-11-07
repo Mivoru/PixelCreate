@@ -21,6 +21,9 @@ COLORS = {
     "flower": "E8506A", "flower_b": "F0C040", "hay": "D8B85A", "sack": "C8B48C", "cloth_red": "B84040",
     "anime_skin": "F6D8C4", "anime_hair": "2B3044", "anime_shirt": "D8D0C2", "anime_dark": "23252E",
     "anime_trousers": "2E3040", "anime_leather": "5A3A2C", "anime_cloak": "2F4A3C", "anime_gold": "D8A23C",
+    "foliage_oak": "5F9A3C", "foliage_oak_b": "6FA63E", "foliage_birch": "A8C850", "foliage_blossom": "F4A8C0", "foliage_pine": "2F6A58",
+    "foliage_willow": "8FB84A", "foliage_bush": "4F8E42", "foliage_jungle": "3F9048", "foliage_core": "1F4A3A",
+    "bark": "6E4E3C", "bark_dark": "4A3634", "bark_birch": "E0DACC", "bark_grey": "8A8078", "reed": "9AA850", "grass_tall": "7FBF52",
     "hide": "8A6A4A", "hide_dark": "4A3428", "sand": "D8C49A", "crop": "D8B85A", "paper": "EEE4C8", "anime_glove": "23252E", "anime_vest": "2F4070", "anime_accent": "C84848", "anime_armor": "B8C4D4", "anime_armor_dark": "7A889C",
 }
 MATERIALS = {}
@@ -104,20 +107,235 @@ def ground():
     add_object("ground", mesh_from("ground", verts, faces), "grass")
 
 
-def tree(prefix, x, y, scale, seed):
-    """A trunk with branches and a crown of many leaf clumps: darker low down, brighter on top."""
+FOLIAGE_CELLS = {"broad": (0.0, 0.0), "small": (0.5, 0.0), "needles": (0.0, 0.5), "strands": (0.5, 0.5)}
+
+
+def tube(name, points, radii, material, sides=7):
+    """A bent tube through points, narrowing along the given radii."""
+    bm = bmesh.new()
+    rings = []
+    vectors = [mathutils.Vector(p) for p in points]
+    for index, point in enumerate(vectors):
+        ahead = vectors[min(index + 1, len(vectors) - 1)] - vectors[max(index - 1, 0)]
+        axis = ahead.normalized()
+        side = axis.cross(mathutils.Vector((0.31, 0.17, 0.93))).normalized()
+        other = axis.cross(side).normalized()
+        ring = []
+        for i in range(sides):
+            angle = i / sides * math.tau
+            ring.append(bm.verts.new(point + (side * math.cos(angle) + other * math.sin(angle)) * radii[index]))
+        rings.append(ring)
+    for r in range(len(rings) - 1):
+        for i in range(sides):
+            j = (i + 1) % sides
+            bm.faces.new((rings[r][i], rings[r][j], rings[r + 1][j], rings[r + 1][i]))
+    mesh = bpy.data.meshes.new(name)
+    bm.to_mesh(mesh)
+    bm.free()
+    smooth(mesh)
+    add_object(name, mesh, material)
+
+
+def leaf_cards(name, clumps, material, cell, cards, size, seed, droop=0.0):
+    """Cut-out leaf cards on the surface of each clump, all shading as one soft ball."""
     rng = random.Random(seed)
-    cylinder(f"{prefix}_trunk", (x, y, 1.5 * scale), 0.34 * scale, 3 * scale, "wood")
-    for i in range(3):
-        a = i * 2.1 + seed
-        timber(f"{prefix}_branch{i}", (x, y, 2.3 * scale), (x + math.cos(a) * 1.1 * scale, y + math.sin(a) * 1.1 * scale, 3.5 * scale), 0.16 * scale)
-    for i in range(11):
+    u0, v0 = FOLIAGE_CELLS[cell]
+    verts, faces, uvs, normals = [], [], [], []
+    for centre, radius in clumps:
+        centre = mathutils.Vector(centre)
+        for _ in range(cards):
+            direction = mathutils.Vector((rng.gauss(0, 1), rng.gauss(0, 1), rng.gauss(0, 1) * 0.8 + 0.25)).normalized()
+            spot = centre + direction * radius * rng.uniform(0.55, 1.0)
+            facing = (direction + mathutils.Vector((rng.uniform(-0.6, 0.6), rng.uniform(-0.6, 0.6), rng.uniform(-0.6, 0.6)))).normalized()
+            right = facing.cross(mathutils.Vector((0.21, 0.13, 0.97))).normalized()
+            up = right.cross(facing).normalized()
+            up = (up + mathutils.Vector((0, 0, -droop))).normalized()
+            half = size * rng.uniform(0.75, 1.2)
+            base = len(verts)
+            for corner_x, corner_y, u, v in ((-1, -1, 0, 0.5), (1, -1, 0.5, 0.5), (1, 1, 0.5, 0), (-1, 1, 0, 0)):
+                point = spot + right * corner_x * half + up * corner_y * half
+                verts.append(tuple(point))
+                uvs.append((u0 + u * 0.995, 1 - (v0 + v * 0.995)))
+                normals.append(tuple((point - centre).normalized()))
+            faces.append((base, base + 1, base + 2, base + 3))
+    mesh = mesh_from(name, verts, faces)
+    layer = mesh.uv_layers.new(name="UVMap")
+    for loop in mesh.loops:
+        layer.data[loop.index].uv = uvs[loop.vertex_index]
+    mesh.normals_split_custom_set_from_vertices(normals)
+    add_object(name, mesh, material)
+
+
+def crown_clumps(rng, base, width, height, count):
+    clumps = []
+    for _ in range(count):
         a = rng.uniform(0, math.tau)
-        height = rng.uniform(0, 1)
-        reach = (1.55 - height * 1.1) * rng.uniform(0.55, 1)
-        color = "grass_dark" if height < 0.3 else "grass" if height < 0.72 else "leaf"
-        blob(f"{prefix}_leaf{i}", (x + math.cos(a) * reach * scale, y + math.sin(a) * reach * scale, (3.1 + height * 2.1) * scale),
-             rng.uniform(0.75, 1.15) * scale, color, seed + i, 0.82, 2)
+        t = rng.random()
+        reach = width * (1 - t ** 1.6) * rng.uniform(0.35, 1)
+        clumps.append(((math.cos(a) * reach, math.sin(a) * reach, base + t * height), rng.uniform(0.95, 1.5) * width * 0.42))
+    return clumps
+
+
+def broad_tree(seed, material, trunk_height, width, crown_height, bark="bark", lean=0.3, cell="broad", cards=26, size=0.62):
+    """A trunk that flares at the roots, branches that reach into every clump, and a leafy crown."""
+    rng = random.Random(seed)
+    tip = (rng.uniform(-lean, lean), rng.uniform(-lean, lean), trunk_height)
+    tube("trunk", [(0, 0, -0.2), (0, 0, 0.3), (tip[0] * 0.4, tip[1] * 0.4, trunk_height * 0.5), tip],
+         [0.5, 0.33, 0.27, 0.2], bark, 8)
+    for i in range(5):
+        a = i * 1.257 + rng.uniform(-0.3, 0.3)
+        tube(f"root{i}", [(0, 0, 0.5), (math.cos(a) * 0.5, math.sin(a) * 0.5, 0.12), (math.cos(a) * 0.95, math.sin(a) * 0.95, -0.1)], [0.15, 0.1, 0.03], bark, 5)
+    clumps = crown_clumps(rng, trunk_height + 0.5, width, crown_height, 9)
+    for index, (centre, radius) in enumerate(clumps):
+        start = (tip[0] * 0.8, tip[1] * 0.8, trunk_height * rng.uniform(0.62, 1))
+        middle = ((start[0] + centre[0]) / 2, (start[1] + centre[1]) / 2, (start[2] + centre[2]) / 2 + 0.25)
+        tube(f"branch{index}", [start, middle, centre], [0.13, 0.08, 0.02], bark, 5)
+        blob(f"core{index}", centre, radius * 0.6, "foliage_core", seed + index, 0.85, 1)
+    leaf_cards("leaves", clumps, material, cell, cards, size, seed)
+
+
+def oak():
+    broad_tree(11, "foliage_oak", 3.0, 3.1, 3.2)
+
+
+def oak_b():
+    broad_tree(21, "foliage_oak_b", 2.6, 2.7, 3.6, lean=0.5)
+
+
+def birch():
+    rng = random.Random(31)
+    broad_tree(31, "foliage_birch", 4.6, 1.7, 3.8, "bark_birch", 0.25, "small", 30, 0.5)
+    for i in range(9):
+        a = rng.uniform(0, math.tau)
+        z = rng.uniform(0.5, 4)
+        box(f"mark{i}", (math.cos(a) * 0.24, math.sin(a) * 0.24, z), (0.2, 0.2, 0.05), "wood_dark")
+
+
+def blossom():
+    broad_tree(41, "foliage_blossom", 2.4, 2.5, 2.6, "bark", 0.5, "small", 30, 0.55)
+
+
+def apple():
+    broad_tree(51, "foliage_oak_b", 2.1, 2.1, 2.3, "bark", 0.3, "broad", 22, 0.5)
+    rng = random.Random(52)
+    for i in range(24):
+        a = rng.uniform(0, math.tau)
+        r = rng.uniform(0.9, 2.1)
+        blob(f"fruit{i}", (math.cos(a) * r, math.sin(a) * r, rng.uniform(2.2, 4.2)), 0.1, "cloth_red", i, 1, 1)
+
+
+def pine_at(seed, height, width):
+    """Tiers of drooping boughs around a straight trunk, narrowing to a point."""
+    rng = random.Random(seed)
+    tube("trunk", [(0, 0, -0.2), (0, 0, height * 0.5), (0, 0, height)], [0.34, 0.2, 0.03], "bark_dark", 7)
+    tiers = 8
+    verts_clumps = []
+    for tier in range(tiers):
+        t = tier / (tiers - 1)
+        z = height * (0.22 + 0.76 * t)
+        reach = width * (1 - t) ** 0.85 + 0.25
+        for i in range(9 - tier // 2):
+            a = i / (9 - tier // 2) * math.tau + rng.uniform(-0.25, 0.25) + tier
+            tip = (math.cos(a) * reach, math.sin(a) * reach, z - reach * 0.42)
+            tube(f"bough{tier}_{i}", [(0, 0, z), tip], [0.05, 0.015], "bark_dark", 4)
+            verts_clumps.append((tip, reach, a, z))
+    cards = []
+    verts, faces, uvs, normals = [], [], [], []
+    u0, v0 = FOLIAGE_CELLS["needles"]
+    for tip, reach, a, z in verts_clumps:
+        out = mathutils.Vector((math.cos(a), math.sin(a), -0.42)).normalized()
+        side = mathutils.Vector((-math.sin(a), math.cos(a), 0))
+        root = mathutils.Vector((math.cos(a) * reach * 0.08, math.sin(a) * reach * 0.08, z + 0.08))
+        half = max(reach * 0.58, 0.45)
+        end = root + out * reach * 1.15
+        base = len(verts)
+        for point, u, v in ((root - side * half * 0.3, 0, 0), (root + side * half * 0.3, 0.5, 0), (end + side * half, 0.5, 0.5), (end - side * half, 0, 0.5)):
+            verts.append(tuple(point))
+            uvs.append((u0 + u * 0.995, 1 - (v0 + v * 0.995)))
+            normal = mathutils.Vector((point.x, point.y, 0.6 * reach + 0.5)).normalized()
+            normals.append(tuple(normal))
+        faces.append((base, base + 1, base + 2, base + 3))
+    mesh = mesh_from("needles", verts, faces)
+    layer = mesh.uv_layers.new(name="UVMap")
+    for loop in mesh.loops:
+        layer.data[loop.index].uv = uvs[loop.vertex_index]
+    mesh.normals_split_custom_set_from_vertices(normals)
+    add_object("needles", mesh, "foliage_pine")
+
+
+def pine():
+    pine_at(61, 9.5, 2.5)
+
+
+def pine_b():
+    pine_at(62, 6.8, 2.1)
+
+
+def willow():
+    rng = random.Random(71)
+    tube("trunk", [(0, 0, -0.2), (0, 0, 0.4), (0.3, 0.1, 2.2), (0.2, 0.2, 3.4)], [0.55, 0.4, 0.3, 0.2], "bark", 8)
+    clumps = crown_clumps(rng, 3.8, 2.9, 1.7, 8)
+    for index, (centre, radius) in enumerate(clumps):
+        tube(f"branch{index}", [(0.2, 0.2, 3.1), ((centre[0] + 0.2) / 2, (centre[1] + 0.2) / 2, centre[2] + 0.7), centre], [0.12, 0.07, 0.02], "bark", 5)
+        blob(f"core{index}", centre, radius * 0.5, "foliage_core", index, 0.7, 1)
+    leaf_cards("leaves", clumps, "foliage_willow", "broad", 16, 0.56, 72)
+    # Curtains of hanging twigs around the crown.
+    verts, faces, uvs, normals = [], [], [], []
+    u0, v0 = FOLIAGE_CELLS["strands"]
+    for index in range(46):
+        a = index / 46 * math.tau + rng.uniform(-0.1, 0.1)
+        r = rng.uniform(1.8, 3.5)
+        top = 5.4 - r * 0.42 + rng.uniform(-0.3, 0.3)
+        length = rng.uniform(2.5, 3.9)
+        side = mathutils.Vector((-math.sin(a), math.cos(a), 0)) * rng.uniform(0.6, 0.95)
+        centre = mathutils.Vector((math.cos(a) * r, math.sin(a) * r, 0))
+        base = len(verts)
+        for point, u, v in ((centre - side + mathutils.Vector((0, 0, top)), 0, 0), (centre + side + mathutils.Vector((0, 0, top)), 0.5, 0),
+                            (centre + side + mathutils.Vector((0, 0, top - length)), 0.5, 0.5), (centre - side + mathutils.Vector((0, 0, top - length)), 0, 0.5)):
+            verts.append(tuple(point))
+            uvs.append((u0 + u * 0.995, 1 - (v0 + v * 0.995)))
+            normals.append(tuple(mathutils.Vector((point.x, point.y, 1.4)).normalized()))
+        faces.append((base, base + 1, base + 2, base + 3))
+    mesh = mesh_from("strands", verts, faces)
+    layer = mesh.uv_layers.new(name="UVMap")
+    for loop in mesh.loops:
+        layer.data[loop.index].uv = uvs[loop.vertex_index]
+    mesh.normals_split_custom_set_from_vertices(normals)
+    add_object("strands", mesh, "foliage_willow")
+
+
+def dead_tree():
+    rng = random.Random(81)
+    tube("trunk", [(0, 0, -0.2), (0.1, 0, 1.8), (0.3, 0.2, 4)], [0.42, 0.26, 0.06], "bark_grey", 7)
+    for i in range(6):
+        a = rng.uniform(0, math.tau)
+        z = rng.uniform(1.6, 3.6)
+        tip = (math.cos(a) * rng.uniform(1, 2), math.sin(a) * rng.uniform(1, 2), z + rng.uniform(0.3, 1.5))
+        tube(f"branch{i}", [(0.1, 0.05, z), ((tip[0]) * 0.6, (tip[1]) * 0.6, z + 0.2), tip], [0.11, 0.06, 0.01], "bark_grey", 5)
+
+
+def stump():
+    tube("stump", [(0, 0, -0.1), (0, 0, 0.2), (0, 0, 0.5)], [0.6, 0.45, 0.42], "bark", 9)
+    disc_top = [(math.cos(i / 9 * math.tau) * 0.42, math.sin(i / 9 * math.tau) * 0.42, 0.5) for i in range(9)]
+    add_object("top", mesh_from("top", disc_top, [tuple(range(9))]), "sand")
+    for i in range(5):
+        a = i * 1.26
+        tube(f"root{i}", [(0, 0, 0.25), (math.cos(a) * 0.65, math.sin(a) * 0.65, 0.02), (math.cos(a) * 0.95, math.sin(a) * 0.95, -0.1)], [0.14, 0.09, 0.03], "bark", 5)
+
+
+def fallen_log():
+    tube("log", [(-2.3, 0, 0.32), (-0.6, 0.1, 0.36), (1.2, -0.1, 0.32), (2.5, 0.05, 0.26)], [0.36, 0.38, 0.34, 0.28], "bark", 8)
+    for i, x in enumerate((-1.7, -0.4, 1.3)):
+        blob(f"moss{i}", (x, 0, 0.6), 0.34, "grass", i, 0.5, 1)
+    tube("twig", [(0.4, 0, 0.5), (0.9, 0.4, 1.1)], [0.07, 0.015], "bark", 5)
+
+
+def twigs():
+    rng = random.Random(83)
+    for i in range(7):
+        a = rng.uniform(0, math.tau)
+        c = (rng.uniform(-0.7, 0.7), rng.uniform(-0.7, 0.7), 0.05)
+        tube(f"twig{i}", [(c[0] - math.cos(a) * 0.6, c[1] - math.sin(a) * 0.6, 0.04), c, (c[0] + math.cos(a) * 0.7, c[1] + math.sin(a) * 0.7, 0.1)], [0.04, 0.03, 0.01], "bark", 4)
 
 
 def start_scene():
@@ -126,30 +344,21 @@ def start_scene():
     MATERIALS.update({name: make_material(name, value) for name, value in COLORS.items()})
 
 
+def join_all():
+    objects = [o for o in bpy.context.scene.objects if o.type == "MESH"]
+    if len(objects) < 2:
+        return
+    for obj in objects:
+        obj.select_set(True)
+    bpy.context.view_layer.objects.active = objects[0]
+    bpy.ops.object.join()
+
+
 def export(name):
     OUT.mkdir(parents=True, exist_ok=True)
+    if not name.startswith("anime_"):
+        join_all()
     bpy.ops.export_scene.gltf(filepath=str(OUT / f"{name}.glb"), export_format="GLB", export_apply=True)
-
-
-def village():
-    ground()
-    cottage()
-    box("path", (0, -7.6, 0.06), (1.7, 11, 0.12), "path")
-    tree("oak", -7.2, 1.8, 1.25, 11)
-    tree("birch", 7.4, -2.2, 0.95, 21)
-    tree("elm", 6.2, 5.8, 1.1, 31)
-
-    rng = random.Random(9)
-    for i in range(9):
-        x, y = rng.uniform(-14, 14), rng.uniform(-13, -3)
-        if abs(x) > 1.6:
-            blob(f"rock{i}", (x, y, 0.16), rng.uniform(0.3, 0.7), "stone_dark", i, 0.7, 1)
-
-    # A figure the height of the player, to judge scale.
-    box("legs", (1.6, -4.4, 0.4), (0.42, 0.34, 0.8), "stone_dark")
-    box("body", (1.6, -4.4, 1.05), (0.56, 0.42, 0.7), "tunic")
-    box("head", (1.6, -4.4, 1.6), (0.46, 0.46, 0.46), "skin")
-    box("hat", (1.6, -4.4, 1.9), (0.84, 0.84, 0.1), "hat")
 
 
 def rock():
@@ -157,9 +366,49 @@ def rock():
 
 
 def bush():
-    blob("bush", (0, 0, 0.32), 0.55, "grass", 8, 0.75, 2)
-    blob("bush_b", (0.35, 0.2, 0.3), 0.38, "grass_dark", 10, 0.8, 2)
-    blob("bush_top", (0.05, 0.1, 0.56), 0.33, "leaf", 9, 0.8, 2)
+    rng = random.Random(8)
+    clumps = [((rng.uniform(-0.45, 0.45), rng.uniform(-0.45, 0.45), rng.uniform(0.35, 0.75)), 0.55) for _ in range(5)]
+    for i, (c, r) in enumerate(clumps):
+        blob(f"core{i}", c, r * 0.65, "foliage_core", i, 0.8, 1)
+    leaf_cards("leaves", clumps, "foliage_bush", "broad", 16, 0.34, 8)
+
+
+def berry_bush():
+    rng = random.Random(18)
+    clumps = [((rng.uniform(-0.5, 0.5), rng.uniform(-0.5, 0.5), rng.uniform(0.3, 0.7)), 0.5) for _ in range(5)]
+    for i, (c, r) in enumerate(clumps):
+        blob(f"core{i}", c, r * 0.65, "foliage_core", i, 0.8, 1)
+    leaf_cards("leaves", clumps, "foliage_oak_b", "small", 20, 0.28, 18)
+    for i in range(22):
+        a = rng.uniform(0, math.tau)
+        blob(f"berry{i}", (math.cos(a) * rng.uniform(0.4, 0.85), math.sin(a) * rng.uniform(0.4, 0.85), rng.uniform(0.35, 1)), 0.05, "flower", i, 1, 1)
+
+
+def tall_bush():
+    rng = random.Random(28)
+    clumps = [((rng.uniform(-0.3, 0.3), rng.uniform(-0.3, 0.3), 0.6 + i * 0.42), 0.5 - i * 0.04) for i in range(5)]
+    tube("stem", [(0, 0, 0), (0, 0, 2)], [0.09, 0.02], "bark", 5)
+    for i, (c, r) in enumerate(clumps):
+        blob(f"core{i}", c, r * 0.6, "foliage_core", i, 0.9, 1)
+    leaf_cards("leaves", clumps, "foliage_birch", "small", 18, 0.3, 28)
+
+
+def reeds():
+    rng = random.Random(38)
+    for i in range(16):
+        x, y = rng.uniform(-0.8, 0.8), rng.uniform(-0.8, 0.8)
+        h = rng.uniform(1, 1.9)
+        tube(f"reed{i}", [(x, y, -0.1), (x + rng.uniform(-0.1, 0.1), y + rng.uniform(-0.1, 0.1), h)], [0.025, 0.01], "reed", 4)
+        if i % 3 == 0:
+            tube(f"head{i}", [(x, y, h - 0.32), (x, y, h)], [0.05, 0.05], "wood_dark", 5)
+
+
+def grass_tuft():
+    rng = random.Random(48)
+    for i in range(14):
+        a = rng.uniform(0, math.tau)
+        tube(f"blade{i}", [(0, 0, 0), (math.cos(a) * 0.14, math.sin(a) * 0.14, 0.5), (math.cos(a) * 0.5, math.sin(a) * 0.5, rng.uniform(0.7, 1.05))],
+             [0.05, 0.035, 0.005], "grass_tall", 3)
 
 
 def smooth(mesh):
@@ -1020,21 +1269,52 @@ def ruin_wall():
 
 
 def jungle_tree():
-    cylinder("trunk", (0, 0, 4), 0.55, 8, "wood_dark", 9)
-    for i, (x, y, z, r) in enumerate(((0, 0, 9, 3), (2.2, 0.8, 8.2, 2), (-2, 1, 8.4, 2.2), (0.6, -2.2, 8.2, 2), (-0.8, 1.8, 10, 1.8))):
-        blob(f"crown{i}", (x, y, z), r, "grass_dark" if i % 2 else "grass", i + 60, 0.62, 2)
-    for i in range(5):
-        a = i * 1.26
-        timber(f"vine{i}", (math.cos(a) * 2, math.sin(a) * 2, 7.5), (math.cos(a) * 2.1, math.sin(a) * 2.1, 3), 0.06, "grass_dark")
-    for i in range(4):
-        a = i * 1.57
-        timber(f"root{i}", (0, 0, 0.9), (math.cos(a) * 1.4, math.sin(a) * 1.4, 0), 0.24, "wood_dark")
+    """A giant with buttress roots, a flat high canopy and hanging vines."""
+    rng = random.Random(61)
+    tube("trunk", [(0, 0, -0.2), (0, 0, 3), (0.2, 0.1, 6), (0.1, 0.2, 9)], [0.9, 0.52, 0.42, 0.28], "bark_dark", 9)
+    for i in range(6):
+        a = i * 1.05
+        tube(f"root{i}", [(0, 0, 2.2), (math.cos(a) * 0.9, math.sin(a) * 0.9, 0.7), (math.cos(a) * 2, math.sin(a) * 2, -0.1)], [0.26, 0.2, 0.05], "bark_dark", 5)
+    clumps = []
+    for i in range(10):
+        a = i * 0.63 + rng.uniform(-0.2, 0.2)
+        r = rng.uniform(1.2, 3.8)
+        c = (math.cos(a) * r, math.sin(a) * r, rng.uniform(8.8, 10.4))
+        clumps.append((c, rng.uniform(1.4, 2)))
+        tube(f"branch{i}", [(0.1, 0.2, 7.6), (c[0] * 0.5, c[1] * 0.5, 8.7), c], [0.2, 0.12, 0.03], "bark_dark", 5)
+        blob(f"core{i}", c, 1.1, "foliage_core", i, 0.6, 1)
+    leaf_cards("leaves", clumps, "foliage_jungle", "broad", 20, 0.8, 62)
+    for i in range(9):
+        a = rng.uniform(0, math.tau)
+        r = rng.uniform(1.5, 3.8)
+        top = (math.cos(a) * r, math.sin(a) * r, 8.5)
+        tube(f"vine{i}", [top, (top[0] + 0.1, top[1], 6), (top[0], top[1] + 0.1, rng.uniform(2, 4))], [0.04, 0.03, 0.015], "grass_dark", 4)
 
 
 def fern():
-    for i in range(7):
-        a = i / 7 * math.tau
-        timber(f"frond{i}", (0, 0, 0.05), (math.cos(a) * 0.9, math.sin(a) * 0.9, 0.5), 0.09, "leaf" if i % 2 else "grass")
+    rng = random.Random(70)
+    verts, faces, uvs, normals = [], [], [], []
+    u0, v0 = FOLIAGE_CELLS["small"]
+    for index in range(9):
+        a = index / 9 * math.tau + rng.uniform(-0.2, 0.2)
+        out = mathutils.Vector((math.cos(a), math.sin(a), 0))
+        side = mathutils.Vector((-math.sin(a), math.cos(a), 0)) * 0.2
+        length = rng.uniform(0.8, 1.15)
+        base = len(verts)
+        mid = out * length * 0.55 + mathutils.Vector((0, 0, 0.5))
+        end = out * length + mathutils.Vector((0, 0, 0.2))
+        for point, u, v in ((mathutils.Vector((0, 0, 0.02)) - side * 0.3, 0.1, 0), (mathutils.Vector((0, 0, 0.02)) + side * 0.3, 0.4, 0),
+                            (mid + side, 0.5, 0.25), (mid - side, 0, 0.25), (end + side * 0.2, 0.3, 0.5), (end - side * 0.2, 0.2, 0.5)):
+            verts.append(tuple(point))
+            uvs.append((u0 + u * 0.995, 1 - (v0 + v * 0.995)))
+            normals.append(tuple(mathutils.Vector((point.x * 0.6, point.y * 0.6, 1)).normalized()))
+        faces += [(base, base + 1, base + 2, base + 3), (base + 3, base + 2, base + 4, base + 5)]
+    mesh = mesh_from("fern", verts, faces)
+    layer = mesh.uv_layers.new(name="UVMap")
+    for loop in mesh.loops:
+        layer.data[loop.index].uv = uvs[loop.vertex_index]
+    mesh.normals_split_custom_set_from_vertices(normals)
+    add_object("fern", mesh, "foliage_jungle")
 
 
 def training_dummy():
@@ -1081,10 +1361,23 @@ def ruin():
 
 
 MODELS = {
-    "village": village,
     "cottage": cottage,
-    "tree_a": lambda: tree("a", 0, 0, 1.0, 11),
-    "tree_b": lambda: tree("b", 0, 0, 1.0, 21),
+    "tree_a": oak,
+    "tree_b": oak_b,
+    "birch": birch,
+    "blossom": blossom,
+    "apple": apple,
+    "pine": pine,
+    "pine_b": pine_b,
+    "willow": willow,
+    "dead_tree": dead_tree,
+    "stump": stump,
+    "fallen_log": fallen_log,
+    "twigs": twigs,
+    "berry_bush": berry_bush,
+    "tall_bush": tall_bush,
+    "reeds": reeds,
+    "grass_tuft": grass_tuft,
     "rock": rock,
     "bush": bush,
     "anime_head": anime_head,

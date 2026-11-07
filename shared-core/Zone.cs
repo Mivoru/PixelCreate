@@ -69,7 +69,8 @@ public sealed class Zone
 
     /// <summary>Blob shapes the area like a wood instead of a rectangle; Clusters above 0 gathers things into groups.</summary>
     private sealed record ScatterData(
-        string Model, int Count, float[] Area, float MinScale, float MaxScale, float Spacing, bool Blob = false, float Clusters = 0f);
+        string Model, int Count, float[] Area, float MinScale, float MaxScale, float Spacing, bool Blob = false, float Clusters = 0f,
+        float Waterside = 0f, float MinHeight = -100f, bool InWater = false);
 
     private sealed record EnemySpawnData(
         float X, float Z, float Radius, int Count, int MinLevel = 1, int MaxLevel = 3, int RespawnTicks = 900,
@@ -103,6 +104,20 @@ public sealed class Zone
         ["cliff"] = new(4.6f, 3.6f, 11f),
         ["falls_cliff"] = new(21f, 7.5f, 16f),
         ["windmill"] = new(2.4f, 2.4f, 10f),
+        ["birch"] = new(0.35f, 0.35f, 6f),
+        ["blossom"] = new(0.5f, 0.5f, 5f),
+        ["apple"] = new(0.45f, 0.45f, 4f),
+        ["pine"] = new(0.5f, 0.5f, 9f),
+        ["pine_b"] = new(0.4f, 0.4f, 7f),
+        ["willow"] = new(0.6f, 0.6f, 5f),
+        ["dead_tree"] = new(0.5f, 0.5f, 4f),
+        ["stump"] = new(0.5f, 0.5f, 0.5f),
+        ["fallen_log"] = new(2.3f, 0.4f, 0.7f),
+        ["twigs"] = new(0f, 0f, 0f),
+        ["berry_bush"] = new(0f, 0f, 0f),
+        ["tall_bush"] = new(0f, 0f, 0f),
+        ["reeds"] = new(0f, 0f, 0f),
+        ["grass_tuft"] = new(0f, 0f, 0f),
         ["watchtower"] = new(2.1f, 2.1f, 9f),
         ["standing_stone"] = new(0.6f, 0.45f, 3f),
         ["field"] = new(0f, 0f, 0f),
@@ -460,6 +475,23 @@ public sealed class Zone
         return MathF.Sqrt(u * u + v * v) + Waves(x * 2f, z * 2f) * 0.28f > 1f;
     }
 
+    /// <summary>Waterside plants want the bank of a river or lake, others a minimum height.</summary>
+    private bool MatchesGround(ScatterData scatter, HeightField terrain, float x, float z)
+    {
+        if (terrain.At(x, z) < scatter.MinHeight)
+        {
+            return false;
+        }
+
+        if (scatter.Waterside <= 0f)
+        {
+            return true;
+        }
+
+        var river = Rivers.Any(r => PolylineDistance(r.Points, x, z) < r.Width * 1.75f + scatter.Waterside);
+        return river || InLake(x, z, 1.25f + scatter.Waterside / 15f);
+    }
+
     private static bool TooSteep(HeightField terrain, float x, float z) =>
         MathF.Abs(terrain.At(x + 1.5f, z) - terrain.At(x - 1.5f, z)) + MathF.Abs(terrain.At(x, z + 1.5f) - terrain.At(x, z - 1.5f)) > 2.4f;
 
@@ -481,9 +513,10 @@ public sealed class Zone
             var scale = scatter.MinScale + (float)random.NextDouble() * (scatter.MaxScale - scatter.MinScale);
             var yaw = (float)random.NextDouble() * MathF.Tau;
             // A tree crown spreads far wider than its trunk, so trees keep more distance from what is built.
-            var tree = scatter.Model.Contains("tree") || scatter.Model is "pine" or "birch" or "willow" or "oak";
-            if (PathDistance(x, z) < (tree ? 3.2f : 1.5f) || terrain.At(x, z) < -0.3f || props.Any(p => Near(p, x, z, scatter.Spacing, tree && Footprint(p.Model) > 1.2f ? 3f : 0f)) ||
-                OutsideShape(scatter, x, z) || InClearing(data, x, z) || NearWater(x, z) || TooSteep(terrain, x, z))
+            var tree = scatter.Model.Contains("tree") || scatter.Model is "pine" or "pine_b" or "birch" or "willow" or "blossom" or "apple";
+            if (PathDistance(x, z) < (tree ? 3.2f : 1.5f) || (terrain.At(x, z) < -0.3f && !scatter.InWater) || props.Any(p => Near(p, x, z, scatter.Spacing, tree && Footprint(p.Model) > 1.2f ? 3f : 0f)) ||
+                OutsideShape(scatter, x, z) || InClearing(data, x, z) || (NearWater(x, z) && !scatter.InWater) || TooSteep(terrain, x, z) ||
+                !MatchesGround(scatter, terrain, x, z))
             {
                 continue;
             }

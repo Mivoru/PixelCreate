@@ -29,6 +29,13 @@ public static class ZoneView
         ["grass"] = ("leaves", 0.9f, 1f),
         ["leaf"] = ("leaves", 0.9f, 1f),
         ["hide"] = ("plaster", 0.9f, 0f),
+        ["foliage_core"] = ("leaves", 0.9f, 1f),
+        ["bark"] = ("planks", 1.6f, 0f),
+        ["bark_dark"] = ("planks", 1.6f, 0f),
+        ["bark_birch"] = ("plaster", 1.4f, 0f),
+        ["bark_grey"] = ("planks", 1.6f, 0f),
+        ["reed"] = ("leaves", 2f, 1f),
+        ["grass_tall"] = ("leaves", 2f, 1f),
         ["hide_dark"] = ("plaster", 0.9f, 0f),
         ["sand"] = ("plaster", 0.6f, 0f),
         ["crop"] = ("leaves", 1.2f, 0.4f),
@@ -254,6 +261,15 @@ public static class ZoneView
 
     private static ShaderMaterial BuildMaterial(StandardMaterial3D original, Shader shader)
     {
+        if (original.ResourceName.StartsWith("foliage_") && original.ResourceName != "foliage_core")
+        {
+            var foliage = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/foliage.gdshader") };
+            foliage.SetShaderParameter("tint", original.AlbedoColor);
+            foliage.SetShaderParameter("leaves", GD.Load<Texture2D>("res://assets/textures/foliage.png"));
+            foliage.SetShaderParameter("deep", original.AlbedoColor.Lerp(new Color("123a38"), 0.72f));
+            return foliage;
+        }
+
         var look = Surfaces.GetValueOrDefault(original.ResourceName, ("stone", 0.6f, 0f));
         var material = new ShaderMaterial { Shader = shader };
         material.SetShaderParameter("tint", original.AlbedoColor);

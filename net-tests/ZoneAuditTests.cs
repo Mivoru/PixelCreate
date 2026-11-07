@@ -123,7 +123,7 @@ public class ZoneAuditTests
         }
     }
 
-    private static bool IsTree(string model) => model.Contains("tree") || model is "pine" or "birch" or "willow" or "oak";
+    private static bool IsTree(string model) => model.Contains("tree") || model is "pine" or "pine_b" or "birch" or "willow" or "blossom" or "apple";
 
     [Fact]
     public void Roads_CrossWaterOnlyOnBridges()

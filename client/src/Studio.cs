@@ -227,7 +227,7 @@ public partial class Studio : Node
         var floor = Floor();
         var shader = GD.Load<Shader>("res://shaders/prop.gdshader");
         var names = DirAccess.GetFilesAt("res://assets").Where(f => f.EndsWith(".glb")).Select(f => f[..^4])
-            .Where(n => !n.StartsWith("anime_") && n != "village").OrderBy(n => n).ToArray();
+            .Where(n => !n.StartsWith("anime_")).OrderBy(n => n).ToArray();
         foreach (var name in names)
         {
             var model = GD.Load<PackedScene>($"res://assets/{name}.glb").Instantiate<Node3D>();
