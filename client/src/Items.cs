@@ -52,16 +52,13 @@ public sealed record Item(string Id, string Name, string Description, string Ico
 /// <summary>
 /// The player's items as the interface shows them. The server owns how many of each item the player
 /// holds, every piece of gear and what is worn; this class only decides where each one sits in the
-/// bag and on the hotbar. A worn piece always shows in its equipment slot; with no weapon worn the
-/// player fights with the wooden sword.
+/// bag and on the hotbar. A worn piece always shows in its equipment slot; anything taken off,
+/// the wooden sword included, goes back to the bag.
 /// </summary>
 public sealed class Inventory
 {
     public const int BagSlots = 30;
     public const int HotbarSlots = 8;
-
-    public static readonly Item WoodenSword = new(
-        "wooden_sword", "Wooden Sword", "A training blade. It still hurts.", "wooden_sword", EquipSlot.Weapon, 0);
 
     private static readonly Item[] Defs = ItemDef.All.Select(Item.From).ToArray();
 
@@ -73,7 +70,7 @@ public sealed class Inventory
         [EquipSlot.Chest] = null,
         [EquipSlot.Legs] = null,
         [EquipSlot.Boots] = null,
-        [EquipSlot.Weapon] = WoodenSword,
+        [EquipSlot.Weapon] = null,
         [EquipSlot.Ring] = null,
     };
 
@@ -85,10 +82,6 @@ public sealed class Inventory
     /// <summary>The item picked up with the mouse and not yet put down.</summary>
     public Item? Held { get; set; }
 
-    public Inventory()
-    {
-        Hotbar[0] = WoodenSword;
-    }
 
     public bool HasWeapon => Equipped[EquipSlot.Weapon] is not null;
 
@@ -176,11 +169,6 @@ public sealed class Inventory
             }
         }
 
-        if (Equipped[EquipSlot.Weapon] is null && Held?.Slot != EquipSlot.Weapon)
-        {
-            Equipped[EquipSlot.Weapon] = WoodenSword;
-        }
-
         foreach (var (place, item) in _gear)
         {
             if (!_worn.Contains(place))
@@ -189,12 +177,17 @@ public sealed class Inventory
             }
         }
 
-        // The hotbar's weapon is whatever weapon is worn.
-        for (var i = 0; i < Hotbar.Length; i++)
+        // The first hotbar slot shows the worn weapon; with none worn it keeps the last one.
+        if (Equipped[EquipSlot.Weapon] is { } weapon && (Hotbar[0] is null || Hotbar[0]!.Slot == EquipSlot.Weapon))
         {
-            if (Hotbar[i]?.Slot == EquipSlot.Weapon && Equipped[EquipSlot.Weapon] is { } weapon)
+            Hotbar[0] = weapon;
+        }
+
+        for (var i = 1; i < Hotbar.Length; i++)
+        {
+            if (Hotbar[i]?.Slot == EquipSlot.Weapon && Equipped[EquipSlot.Weapon] is { } worn)
             {
-                Hotbar[i] = weapon;
+                Hotbar[i] = worn;
             }
         }
     }

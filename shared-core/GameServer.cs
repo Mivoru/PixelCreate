@@ -386,14 +386,19 @@ public sealed class GameServer : IEnemyEvents
                 WaitTicks = _options.InputBufferTicks,
             };
             _players.Add(peer, player);
+
+            // Everyone starts with the wooden sword in hand: a weapon like any other.
+            player.Gear[0] = new GearPiece(ItemDef.Index("wooden_sword"), Rarity.Common, 1, Array.Empty<AffixRoll>());
+            player.GearChanged.Add(0);
+            ToggleWorn(player, 0, player.Gear[0]!);
             if (_options.TestMode)
             {
                 // Test runs start with one piece of each rarity, so gear can be checked at once.
                 var kit = new[] { "twin_daggers", "iron_helm", "leather_jerkin", "chain_leggings", "hunters_longbow" };
                 for (var i = 0; i < kit.Length; i++)
                 {
-                    player.Gear[i] = GearPiece.Roll(ItemDef.Index(kit[i]), (Rarity)(i % 4), 5, _random);
-                    player.GearChanged.Add(i);
+                    player.Gear[i + 1] = GearPiece.Roll(ItemDef.Index(kit[i]), (Rarity)(i % 4), 5, _random);
+                    player.GearChanged.Add(i + 1);
                 }
             }
         }

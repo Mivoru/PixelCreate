@@ -461,15 +461,18 @@ public partial class Hud : Control
             {
                 _commands.Enqueue(GearCommands.Toggle(worn.Place));
             }
-            else if (Items.Held is null && current is not null && !current.IsGear)
-            {
-                return; // the wooden sword stays in hand until something replaces it
-            }
+
+        }
+
+        if (slot.Area == "equip" && Items.Held is { IsGear: true })
+        {
+            // The server swaps the pieces; the one taken off returns to the bag with the next update.
+            Items.Held = null;
+            return;
         }
 
         Write(slot, Items.Held);
-        // The wooden sword is not an item to carry about: it only fills an empty weapon slot.
-        Items.Held = ReferenceEquals(current, Inventory.WoodenSword) && slot.Area == "equip" ? null : current;
+        Items.Held = current;
     }
 
     private Item? Read(SlotRef slot) => slot.Area switch

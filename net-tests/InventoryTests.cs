@@ -69,4 +69,22 @@ public sealed class InventoryTests
         AssertShown(inventory, new[] { new GearEntry(1, cap, true), new GearEntry(0, helm, false) });
         Assert.Equal(2, inventory.Bag.Count(i => i is not null) + inventory.Equipped.Values.Count(i => i is { IsGear: true }));
     }
+
+    [Fact]
+    public void TheWoodenSword_IsAWeaponLikeAnyOther()
+    {
+        var inventory = new Inventory();
+        var sword = new GearPiece(ItemDef.Index("wooden_sword"), Rarity.Common, 1, Array.Empty<AffixRoll>());
+        var daggers = Piece("twin_daggers");
+        inventory.ApplyGear(new[] { new GearEntry(0, sword, true), new GearEntry(1, daggers, false) });
+        Assert.Equal(sword.Item, inventory.Equipped[EquipSlot.Weapon]!.Gear!.Item);
+        Assert.Same(inventory.Equipped[EquipSlot.Weapon], inventory.Hotbar[0]);
+
+        // Wearing the daggers sends the sword to the bag, from where it can be worn again.
+        var after = new[] { new GearEntry(1, daggers, true), new GearEntry(0, sword, false) };
+        inventory.ApplyGear(after);
+        AssertShown(inventory, after);
+        Assert.Contains(inventory.Bag, i => i?.Gear?.Item == sword.Item);
+        Assert.Equal(daggers.Item, inventory.Hotbar[0]!.Gear!.Item);
+    }
 }

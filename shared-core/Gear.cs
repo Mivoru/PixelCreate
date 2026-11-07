@@ -146,11 +146,14 @@ public sealed record GearPiece(ushort Item, Rarity Rarity, byte Level, AffixRoll
 
 /// <summary>
 /// What a player's worn gear adds up to. Percentages are whole numbers: 12 means 12 %.
-/// Without gear a player fights with the wooden sword: power 1, nothing else.
+/// With no weapon worn a player fights bare-handed, at half the wooden sword's power.
 /// </summary>
 public sealed class GearStats
 {
-    public float Power = 1f;
+    public float Power = BareHands;
+
+    /// <summary>The power of a fist, against the wooden sword's 1.</summary>
+    public const float BareHands = 0.5f;
     public string Weapon = "sword";
     public int Damage;
     public int DamagePct;

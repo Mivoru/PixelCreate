@@ -33,6 +33,7 @@
   { "id": "raw_chicken", "name": "Raw Chicken", "kind": "food", "tier": 0, "price": 3, "heal": 16, "icon": "raw_chicken", "description": "A plucked bird. Elda would know a recipe." },
   { "id": "egg", "name": "Egg", "kind": "food", "tier": 0, "price": 2, "heal": 10, "icon": "egg", "description": "Still warm." },
 
+  { "id": "wooden_sword", "name": "Wooden Sword", "kind": "equipment", "slot": "weapon", "tier": 0, "price": 5, "icon": "wooden_sword", "description": "A training blade. It still hurts.", "weapon": "sword", "power": 1.0 },
   { "id": "rusty_dagger", "name": "Rusty Dagger", "kind": "equipment", "slot": "weapon", "tier": 1, "price": 30, "icon": "rusty_dagger", "description": "A goblin's knife. Short, quick and dirty.", "weapon": "dagger", "power": 1.05 },
   { "id": "spiked_club", "name": "Spiked Club", "kind": "equipment", "slot": "weapon", "tier": 1, "price": 40, "icon": "spiked_club", "description": "A log with nails in it. Subtle it is not.", "weapon": "club", "power": 1.3 },
   { "id": "goblin_shortbow", "name": "Goblin Shortbow", "kind": "equipment", "slot": "weapon", "tier": 1, "price": 35, "icon": "goblin_shortbow", "description": "Small, springy and strung with gut.", "weapon": "bow", "power": 1.1 },
