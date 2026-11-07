@@ -665,7 +665,7 @@ public partial class GameClient : Node
             return (0, 0, Buttons.None);
         }
 
-        if (tick < 260)
+        if (tick < 300)
         {
             if (!_hud.InventoryOpen)
             {
@@ -684,6 +684,20 @@ public partial class GameClient : Node
             if (daggers is not null && tick == 160)
             {
                 BotStage("take up the daggers");
+                _pendingCommand = GearCommands.Toggle(daggers.Place);
+            }
+
+            // Swapping weapons must put the daggers back in the bag, not lose them.
+            var bow = _hud.Items.Bag.FirstOrDefault(i => i?.Gear?.Def.Weapon == "bow");
+            if (bow is not null && tick == 200)
+            {
+                BotStage("swap to the bow");
+                _pendingCommand = GearCommands.Toggle(bow.Place);
+            }
+
+            if (daggers is not null && tick == 235)
+            {
+                BotStage("swap back to the daggers");
                 _pendingCommand = GearCommands.Toggle(daggers.Place);
             }
 

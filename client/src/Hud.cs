@@ -468,7 +468,8 @@ public partial class Hud : Control
         }
 
         Write(slot, Items.Held);
-        Items.Held = current;
+        // The wooden sword is not an item to carry about: it only fills an empty weapon slot.
+        Items.Held = ReferenceEquals(current, Inventory.WoodenSword) && slot.Area == "equip" ? null : current;
     }
 
     private Item? Read(SlotRef slot) => slot.Area switch

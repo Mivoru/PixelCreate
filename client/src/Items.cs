@@ -99,10 +99,13 @@ public sealed class Inventory
     /// <summary>Gear by its place in the server's gear list.</summary>
     private readonly Dictionary<int, Item> _gear = new();
 
+    /// <summary>Places of the gear list the server says are worn.</summary>
+    private readonly HashSet<int> _worn = new();
+
     /// <summary>
-    /// Takes in gear entries from a snapshot. A new piece goes to the first free bag slot and is
-    /// returned so it can be announced; a changed piece replaces the old one where it sat; a worn
-    /// piece moves to its equipment slot and one taken off moves back to the bag.
+    /// Takes in gear entries from a snapshot and returns the pieces that are new, so they can be
+    /// announced. Afterwards the view agrees with the server: each worn piece sits in its equipment
+    /// slot, and every other piece sits in the bag or on the hotbar, never lost between them.
     /// </summary>
     public List<Item> ApplyGear(IEnumerable<GearEntry> entries)
     {
@@ -118,11 +121,11 @@ public sealed class Inventory
                     _gear.Remove(entry.Index);
                 }
 
+                _worn.Remove(entry.Index);
                 continue;
             }
 
-            var item = old is not null && old.Gear == piece ? old : Item.FromGear(piece, entry.Index);
-            if (old is null || !ReferenceEquals(old.Gear, piece) && !SamePiece(old.Gear!, piece))
+            if (old is null || !SamePiece(old.Gear!, piece))
             {
                 if (old is not null)
                 {
@@ -130,23 +133,60 @@ public sealed class Inventory
                 }
                 else
                 {
-                    found.Add(item);
+                    found.Add(Item.FromGear(piece, entry.Index));
                 }
 
-                _gear[entry.Index] = item;
-                Place(item);
+                _gear[entry.Index] = old is null ? found[^1] : Item.FromGear(piece, entry.Index);
+            }
+
+            if (entry.Worn)
+            {
+                _worn.Add(entry.Index);
             }
             else
             {
-                item = old;
+                _worn.Remove(entry.Index);
             }
-
-            Settle(item, entry.Worn);
         }
 
-        if (!Equipped.Values.Any(i => i?.Slot == EquipSlot.Weapon) && Held?.Slot != EquipSlot.Weapon)
+        Reconcile();
+        return found;
+    }
+
+    /// <summary>Puts worn pieces in their slots and everything else back where the player can see it.</summary>
+    private void Reconcile()
+    {
+        foreach (var slot in Equipped.Keys.ToList())
+        {
+            var worn = _worn.Select(p => _gear.GetValueOrDefault(p)).FirstOrDefault(i => i?.Slot == slot);
+            if (worn is not null)
+            {
+                // A worn piece leaves the bag; the hotbar keeps showing the worn weapon.
+                for (var i = 0; i < Bag.Length; i++)
+                {
+                    Bag[i] = ReferenceEquals(Bag[i], worn) ? null : Bag[i];
+                }
+
+                Held = ReferenceEquals(Held, worn) ? null : Held;
+                Equipped[slot] = worn;
+            }
+            else if (Equipped[slot] is { IsGear: true })
+            {
+                Equipped[slot] = null;
+            }
+        }
+
+        if (Equipped[EquipSlot.Weapon] is null && Held?.Slot != EquipSlot.Weapon)
         {
             Equipped[EquipSlot.Weapon] = WoodenSword;
+        }
+
+        foreach (var (place, item) in _gear)
+        {
+            if (!_worn.Contains(place))
+            {
+                Place(item);
+            }
         }
 
         // The hotbar's weapon is whatever weapon is worn.
@@ -157,38 +197,15 @@ public sealed class Inventory
                 Hotbar[i] = weapon;
             }
         }
-
-        return found;
     }
 
     private static bool SamePiece(GearPiece a, GearPiece b) =>
         a.Item == b.Item && a.Rarity == b.Rarity && a.Level == b.Level && a.Affixes.SequenceEqual(b.Affixes);
 
-    /// <summary>Puts a worn piece in its equipment slot and a piece taken off back in the bag.</summary>
-    private void Settle(Item item, bool worn)
-    {
-        var slot = item.Slot;
-        if (worn && !ReferenceEquals(Equipped[slot], item))
-        {
-            RemoveFromView(item);
-            if (Equipped[slot] is { IsGear: true } other)
-            {
-                Place(other);
-            }
-
-            Equipped[slot] = item;
-        }
-        else if (!worn && ReferenceEquals(Equipped[slot], item))
-        {
-            Equipped[slot] = slot == EquipSlot.Weapon ? WoodenSword : null;
-            Place(item);
-        }
-    }
-
-    /// <summary>Puts an item in the first free bag slot unless it already sits somewhere.</summary>
+    /// <summary>Puts an item in the first free bag slot unless it already sits in the bag, on the hotbar or in hand.</summary>
     private void Place(Item item)
     {
-        if (Holds(item))
+        if (ReferenceEquals(Held, item) || Bag.Any(i => ReferenceEquals(i, item)) || Hotbar.Any(i => ReferenceEquals(i, item) && !(item.Slot == EquipSlot.Weapon)))
         {
             return;
         }
