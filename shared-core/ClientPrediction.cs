@@ -45,6 +45,11 @@ public sealed class ClientPrediction
     public uint Tick { get; private set; }
     public PlayerState State;
     public Snapshot? Latest { get; private set; }
+
+    /// <summary>The gear list as the server last described each place of it.</summary>
+    public IReadOnlyCollection<GearEntry> Gear => _gear.Values;
+
+    private readonly Dictionary<byte, GearEntry> _gear = new();
     public ClientStats Stats { get; } = new();
 
     /// <summary>
@@ -112,6 +117,10 @@ public sealed class ClientPrediction
         if (Latest is null || snapshot.ServerTick > Latest.ServerTick)
         {
             Latest = snapshot;
+            foreach (var entry in snapshot.Gear)
+            {
+                _gear[entry.Index] = entry;
+            }
 
             // Only the server changes health, so it needs no prediction and no correction.
             State.Health = snapshot.Self.Health;

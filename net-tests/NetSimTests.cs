@@ -638,7 +638,8 @@ public sealed class EnemyTests
         server.EnemiesFrozen = true;
         var enemy = server.Enemies[0];
         enemy.Health = 1;
-        enemy.Position = server.GetPlayer(1)!.Value.Position + new Vector3(0, 0, -2);
+        // Close enough that whatever it drops lands within reach of the player.
+        enemy.Position = server.GetPlayer(1)!.Value.Position + new Vector3(0, 0, -1.2f);
         Play(server, client, network, 40, Buttons.Light);
         Assert.True(server.Stats.CrystalsDropped > 0, "Every slime drops a crystal.");
         Assert.Equal(server.Stats.CrystalsDropped, server.Stats.CrystalsLooted);

@@ -5,13 +5,19 @@ using System.Text.Json;
 namespace PixelCreate.Core;
 
 /// <summary>An enemy type, loaded from world/enemies.json.</summary>
+/// <summary>
+/// The gear an enemy can drop: the chance that it drops a piece at all, the weights of each rarity
+/// (common, rare, epic, legendary) and the base items to choose from.
+/// </summary>
+public sealed record GearTable(double Chance, int[] Rarity, string[] Items);
+
 public sealed record EnemyDef(
     string Id, string Name, int MinLevel, int MaxLevel, int Health, int HealthPerLevel, float Speed, float Size,
     float AggroRange, int HopTicks = 40, float LeapRange = 0f, int LeapCooldownTicks = 0, float SplashRadius = 0f,
     short SplashDamage = 0, byte SlowTicks = 0, float SpitRange = 0f, short SpitDamage = 0, int SpitCooldownTicks = 0,
     double RareChance = 0, string Kind = "slime", bool Rare = false, string Weapon = "", float PreferredRange = 2f,
     Ability[]? Abilities = null, DropEntry[]? Drops = null, string Temper = "hostile", LootEntry[]? Loot = null,
-    float AlertRange = 0f, float TagHeight = 0f)
+    float AlertRange = 0f, float TagHeight = 0f, GearTable? Gear = null, int Defense = 0)
 {
     private static readonly Lazy<IReadOnlyList<EnemyDef>> Loaded = new(Load);
 
@@ -136,6 +142,11 @@ public sealed partial class Enemy
     public int TrialOf = -1;
 
     public bool Returning;
+
+    /// <summary>Bleeding: ticks left, damage dealt each second, and the player who caused it.</summary>
+    public int BleedTicks;
+    public short BleedDamage;
+    public int BleedOwner = -1;
     private int _detour;
     private float _detourSide = 1f;
     private int _stuckClock;

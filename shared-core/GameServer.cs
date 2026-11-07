@@ -37,6 +37,10 @@ public sealed class ServerStats
     public long ItemsLooted;
     public long ItemsSold;
     public long MealsEaten;
+    public long CriticalHits;
+
+    /// <summary>Pieces of gear dropped, by rarity.</summary>
+    public readonly long[] GearDropped = new long[4];
 }
 
 public enum ProjectileKind : byte
@@ -108,6 +112,14 @@ public sealed class GameServer : IEnemyEvents
     private const int MaxProjectilesPerSnapshot = 16;
     private const int MaxDropsPerSnapshot = 8;
     private const int BagEntriesPerSnapshot = 6;
+    private const int GearEntriesPerSnapshot = 2;
+
+    /// <summary>How many pieces of gear a player can carry, worn ones included.</summary>
+    public const int GearSlots = 24;
+
+    /// <summary>Bleeding lasts this long and deals this share of the blow that caused it, spread over its length.</summary>
+    private const int BleedTicks = 180;
+    private const float BleedShare = 0.6f;
     private const int MaxStack = 999;
 
     private sealed class Player
@@ -135,6 +147,17 @@ public sealed class GameServer : IEnemyEvents
         public readonly SortedDictionary<ushort, int> Bag = new();
         public readonly HashSet<ushort> BagChanged = new();
         public int BagCursor;
+
+        /// <summary>Gear carried, by place; a place is empty when null. Worn pieces stay in the list.</summary>
+        public readonly GearPiece?[] Gear = new GearPiece?[GearSlots];
+        public readonly HashSet<int> Worn = new();
+        public readonly HashSet<int> GearChanged = new();
+        public int GearCursor;
+
+        /// <summary>What the worn gear adds up to; worked out again whenever it changes.</summary>
+        public GearStats Stats = new();
+        public float RegenCarry;
+        public float LifestealCarry;
     }
 
     private sealed class Projectile
@@ -156,6 +179,9 @@ public sealed class GameServer : IEnemyEvents
     {
         public required int Id;
         public required ushort Item;
+
+        /// <summary>The rolled piece, when the loot is gear.</summary>
+        public GearPiece? Gear;
         public required int Owner;
         public Vector3 Position;
         public int Life = CrystalLifeTicks;
@@ -236,6 +262,24 @@ public sealed class GameServer : IEnemyEvents
     /// <summary>How many of an item a player holds.</summary>
     public int GetItem(int id, string item) => _players[id].Bag.GetValueOrDefault(ItemDef.Index(item));
 
+    /// <summary>For tests: puts a piece of gear in a player's gear list and returns its place.</summary>
+    public int GiveGear(int id, GearPiece piece)
+    {
+        var player = _players[id];
+        var free = Array.IndexOf(player.Gear, null);
+        player.Gear[free] = piece;
+        player.GearChanged.Add(free);
+        return free;
+    }
+
+    /// <summary>For tests: what a player's worn gear adds up to, and the player's maximum health.</summary>
+    public GearStats GearOf(int id) => _players[id].Stats;
+
+    public short MaxHealthOf(int id) => MaxHealth(_players[id]);
+
+    /// <summary>For tests: the gear a player carries, by place.</summary>
+    public IReadOnlyList<GearPiece?> GearList(int id) => _players[id].Gear;
+
     /// <summary>For tests: gives a player items as if looted.</summary>
     public void GiveItem(int id, string item, int count) => AddItem(_players[id], ItemDef.Index(item), count);
 
@@ -254,7 +298,7 @@ public sealed class GameServer : IEnemyEvents
         {
             player.Xp -= Progression.XpToNext(player.Level);
             player.Level++;
-            player.State.Health = Progression.MaxHealth(player.Level);
+            player.State.Health = MaxHealth(player);
             Stats.LevelUps++;
         }
     }
@@ -276,6 +320,7 @@ public sealed class GameServer : IEnemyEvents
         }
 
         StepLoot();
+        StepBleeding();
         foreach (var finished in _finishedTrials)
         {
             _enemies.Remove(finished);
@@ -411,7 +456,7 @@ public sealed class GameServer : IEnemyEvents
             Obey(player, request);
         }
 
-        var maxHealth = Progression.MaxHealth(player.Level);
+        var maxHealth = MaxHealth(player);
         if (player.State.Health <= 0)
         {
             if (player.Rank == GuildRank.InTrial)
@@ -422,11 +467,25 @@ public sealed class GameServer : IEnemyEvents
 
             player.State = PlayerState.Spawn(_world.Spawn, maxHealth);
         }
-        else if (Tick - player.LastHurtTick > RegenDelayTicks && Tick % RegenIntervalTicks == 0 && player.State.Health < maxHealth)
+        else if (Tick - player.LastHurtTick > RegenDelayTicks && player.State.Health < maxHealth)
         {
-            player.State.Health++;
+            // One point every third of a second, plus what regen gear gives each second; below a
+            // third of the health, second wind makes it all heal faster.
+            var perSecond = Tuning.TickRate / (float)RegenIntervalTicks + player.Stats.Regen;
+            if (player.State.Health < maxHealth / 3)
+            {
+                perSecond *= 1f + player.Stats.SecondWind / 100f;
+            }
+
+            player.RegenCarry += perSecond / Tuning.TickRate;
+            var heal = (int)player.RegenCarry;
+            player.RegenCarry -= heal;
+            player.State.Health = (short)Math.Min(maxHealth, player.State.Health + heal);
         }
     }
+
+    /// <summary>A player's maximum health: from the level, plus what the worn gear adds.</summary>
+    private static short MaxHealth(Player player) => (short)(Progression.MaxHealth(player.Level) + player.Stats.MaxHealth);
 
     /// <summary>Carries out what a player asked for, when the player is allowed to and close enough.</summary>
     private void Obey(Player player, Command command)
@@ -481,8 +540,15 @@ public sealed class GameServer : IEnemyEvents
             case var eat when ItemCommands.TryEat(eat, out var food) && ItemDef.All[food].IsFood &&
                               player.Bag.GetValueOrDefault(food) > 0 && player.State.Health > 0:
                 AddItem(player, food, -1);
-                player.State.Health = (short)Math.Min(player.State.Health + ItemDef.All[food].Heal, Progression.MaxHealth(player.Level));
+                player.State.Health = (short)Math.Min(player.State.Health + ItemDef.All[food].Heal, MaxHealth(player));
                 Stats.MealsEaten++;
+                break;
+            case var wear when GearCommands.TryToggle(wear, out var place) && player.Gear[place] is { } piece:
+                ToggleWorn(player, place, piece);
+                break;
+            case var discard when GearCommands.TryDiscard(discard, out var spot) && player.Gear[spot] is not null && !player.Worn.Contains(spot):
+                player.Gear[spot] = null;
+                player.GearChanged.Add(spot);
                 break;
             case Command.TurnInQuest when Guild.Quest(player.QuestId) is { } quest && QuestProgress(player) >= quest.Count && Near(player, "receptionist"):
                 if (quest.IsDelivery)
@@ -516,7 +582,7 @@ public sealed class GameServer : IEnemyEvents
     private void BeginTrial(Player player)
     {
         player.Rank = GuildRank.InTrial;
-        player.State.Health = Progression.MaxHealth(player.Level);
+        player.State.Health = MaxHealth(player);
         var ground = _world.TrialGround;
         Move(player, ground + new Vector3(0, 0, 7));
         var type = (byte)EnemyDef.All.ToList().FindIndex(d => d.Id == Guild.ExaminerId);
@@ -541,7 +607,7 @@ public sealed class GameServer : IEnemyEvents
     private void EndTrial(Player player) => _enemies.RemoveAll(e => e.TrialOf == player.Id);
 
     /// <summary>Hurts a player, unless a dash avoids it. Returns true when the attack connects.</summary>
-    private bool Hurt(Player player, short damage, byte slowTicks)
+    private bool Hurt(Player player, short damage, byte slowTicks, Enemy? attacker = null)
     {
         if (player.State.DashTicks > 0)
         {
@@ -550,7 +616,14 @@ public sealed class GameServer : IEnemyEvents
             return false;
         }
 
+        // Defense takes a share off every blow; at least one point always gets through.
+        damage = (short)Math.Max(1, MathF.Round(damage * GearStats.DamageTaken(player.Stats.Defense)));
         player.State.Health -= damage;
+        if (attacker is { Alive: true } && player.Stats.Thorns > 0 && attacker.TakeHit((short)player.Stats.Thorns, player.State.Position, player.Id))
+        {
+            OnKilled(attacker, player);
+        }
+
         if (slowTicks > 0)
         {
             player.State.SlowTicks = slowTicks;
@@ -582,8 +655,9 @@ public sealed class GameServer : IEnemyEvents
                 continue;
             }
 
-            var damage = (short)MathF.Round(attack.Damage * Progression.DamageScale(player.Level));
+            var damage = BlowDamage(player, kind, enemy);
             var killed = enemy.TakeHit(damage, player.State.Position, player.Id);
+            AfterBlow(player, enemy, damage);
             Stats.EnemyHits++;
             CallForHelp(enemy, player.Id);
             if (killed)
@@ -591,6 +665,128 @@ public sealed class GameServer : IEnemyEvents
                 OnKilled(enemy, player);
             }
         }
+    }
+
+    /// <summary>
+    /// The damage of one blow: the attack, scaled by level and the weapon's power, plus flat
+    /// damage; then every percentage bonus that applies to this target and this blow; a critical
+    /// hit; and last the target's defense, less the armour the weapon pierces.
+    /// </summary>
+    private short BlowDamage(Player player, AttackKind kind, Enemy enemy)
+    {
+        var gear = player.Stats;
+        var damage = Tuning.Attack(kind).Damage * Progression.DamageScale(player.Level) * gear.Power + gear.Damage;
+        var bonus = gear.DamagePct;
+        if (enemy.Def.Kind == "goblin")
+        {
+            bonus += gear.GoblinBane;
+        }
+        else if (enemy.Def.Kind is "animal" or "slime")
+        {
+            bonus += gear.BeastBane;
+        }
+
+        if (kind == AttackKind.Heavy)
+        {
+            bonus += gear.Crushing;
+        }
+
+        // From behind: the enemy faces away from the player.
+        var facing = new Vector3(-MathF.Sin(enemy.Facing), 0, -MathF.Cos(enemy.Facing));
+        var fromEnemy = player.State.Position - enemy.Position;
+        fromEnemy.Y = 0;
+        if (gear.Backstab > 0 && fromEnemy != Vector3.Zero && Vector3.Dot(Vector3.Normalize(fromEnemy), facing) < -0.3f)
+        {
+            bonus += gear.Backstab;
+        }
+
+        damage *= 1f + bonus / 100f;
+        if (_random.Next(100) < gear.CritChance)
+        {
+            damage *= 1f + (GearStats.BaseCritDamage + gear.CritDamage) / 100f;
+            Stats.CriticalHits++;
+        }
+
+        damage *= GearStats.DamageTaken(enemy.Def.Defense - gear.ArmorPen);
+        return (short)Math.Max(1, MathF.Round(damage));
+    }
+
+    /// <summary>What a landed blow does besides its damage: lifesteal heals, and it may cause bleeding.</summary>
+    private void AfterBlow(Player player, Enemy enemy, short damage)
+    {
+        var gear = player.Stats;
+        if (gear.Lifesteal > 0)
+        {
+            player.LifestealCarry += damage * gear.Lifesteal / 100f;
+            var heal = (int)player.LifestealCarry;
+            player.LifestealCarry -= heal;
+            player.State.Health = (short)Math.Min(MaxHealth(player), player.State.Health + heal);
+        }
+
+        if (enemy.Alive && _random.Next(100) < gear.Bleed)
+        {
+            enemy.BleedTicks = BleedTicks;
+            enemy.BleedDamage = (short)Math.Max(1, MathF.Round(damage * BleedShare / (BleedTicks / (float)Tuning.TickRate)));
+            enemy.BleedOwner = player.Id;
+        }
+    }
+
+    /// <summary>Bleeding enemies lose health once a second until it runs out.</summary>
+    private void StepBleeding()
+    {
+        foreach (var enemy in _enemies)
+        {
+            if (enemy.BleedTicks <= 0 || !enemy.Alive)
+            {
+                continue;
+            }
+
+            enemy.BleedTicks--;
+            if (enemy.BleedTicks % Tuning.TickRate != 0)
+            {
+                continue;
+            }
+
+            var owner = _players.GetValueOrDefault(enemy.BleedOwner);
+            if (enemy.TakeHit(enemy.BleedDamage, enemy.Position, enemy.BleedOwner) && owner is not null)
+            {
+                OnKilled(enemy, owner);
+            }
+        }
+    }
+
+    /// <summary>Puts a piece on, taking off whatever was worn in its slot, or takes it off.</summary>
+    private static void ToggleWorn(Player player, int place, GearPiece piece)
+    {
+        if (!player.Worn.Remove(place))
+        {
+            foreach (var other in player.Worn.Where(o => player.Gear[o]?.Def.Slot == piece.Def.Slot).ToList())
+            {
+                player.Worn.Remove(other);
+                player.GearChanged.Add(other);
+            }
+
+            player.Worn.Add(place);
+        }
+
+        player.GearChanged.Add(place);
+        player.Stats = GearStats.Of(player.Worn.Select(w => player.Gear[w]!));
+        player.State.Health = Math.Min(player.State.Health, MaxHealth(player));
+    }
+
+    /// <summary>Rolls an enemy's gear table: maybe one piece, of a rarity picked by the table's weights.</summary>
+    private void DropGear(Enemy enemy, Player owner)
+    {
+        if (enemy.Def.Gear is not { } table || _random.NextDouble() >= table.Chance)
+        {
+            return;
+        }
+
+        var item = ItemDef.Index(table.Items[_random.Next(table.Items.Length)]);
+        var piece = GearPiece.Roll(item, GearPiece.RollRarity(table.Rarity, _random), (byte)Math.Clamp((int)enemy.Level, 1, 255), _random);
+        var loot = Drop(enemy, owner, item);
+        loot.Gear = piece;
+        Stats.GearDropped[(int)piece.Rarity]++;
     }
 
     private void OnKilled(Enemy enemy, Player killer)
@@ -621,6 +817,7 @@ public sealed class GameServer : IEnemyEvents
             }
         }
 
+        DropGear(enemy, winner);
         foreach (var entry in enemy.Def.Loot ?? Array.Empty<LootEntry>())
         {
             if (_random.NextDouble() >= entry.Chance)
@@ -638,13 +835,15 @@ public sealed class GameServer : IEnemyEvents
         }
     }
 
-    private void Drop(Enemy enemy, Player owner, ushort item)
+    private Loot Drop(Enemy enemy, Player owner, ushort item)
     {
         var angle = (float)(_random.NextDouble() * Math.Tau);
         var reach = 0.5f + (float)_random.NextDouble() * 0.6f;
         var spot = enemy.Position + new Vector3(MathF.Cos(angle) * reach, 0, MathF.Sin(angle) * reach);
         spot.Y = _world.GroundHeight(spot.X, spot.Z);
-        _loot.Add(new Loot { Id = _nextId++, Item = item, Owner = owner.Id, Position = spot });
+        var loot = new Loot { Id = _nextId++, Item = item, Owner = owner.Id, Position = spot };
+        _loot.Add(loot);
+        return loot;
     }
 
     private void StepLoot()
@@ -659,7 +858,20 @@ public sealed class GameServer : IEnemyEvents
             }
 
             var def = ItemDef.All[loot.Item];
-            if (def.IsCrystal)
+            if (loot.Gear is { } piece)
+            {
+                // Gear waits on the ground while the gear list is full.
+                var free = Array.IndexOf(owner.Gear, null);
+                if (free < 0)
+                {
+                    continue;
+                }
+
+                owner.Gear[free] = piece;
+                owner.GearChanged.Add(free);
+                Stats.ItemsLooted++;
+            }
+            else if (def.IsCrystal)
             {
                 owner.Crystals[def.Crystal]++;
                 Stats.CrystalsLooted++;
@@ -674,6 +886,28 @@ public sealed class GameServer : IEnemyEvents
         }
 
         _loot.RemoveAll(l => l.Life <= 0);
+    }
+
+    /// <summary>Changed places of the gear list first, then one more place that moves on each snapshot.</summary>
+    private static GearEntry[] GearSlice(Player player)
+    {
+        var entries = new List<GearEntry>(GearEntriesPerSnapshot);
+        foreach (var place in player.GearChanged.Take(GearEntriesPerSnapshot).ToList())
+        {
+            entries.Add(new GearEntry((byte)place, player.Gear[place], player.Worn.Contains(place)));
+            player.GearChanged.Remove(place);
+        }
+
+        if (entries.Count < GearEntriesPerSnapshot)
+        {
+            var place = player.GearCursor++ % GearSlots;
+            if (entries.All(e => e.Index != place))
+            {
+                entries.Add(new GearEntry((byte)place, player.Gear[place], player.Worn.Contains(place)));
+            }
+        }
+
+        return entries.ToArray();
     }
 
     /// <summary>Changed items first, then a slice of the rest that moves on with every snapshot.</summary>
@@ -719,7 +953,7 @@ public sealed class GameServer : IEnemyEvents
         foreach (var player in _players.Values)
         {
             var away = player.State.Position - enemy.Position;
-            if (away.Length() > enemy.Def.SplashRadius || !Hurt(player, enemy.Def.SplashDamage, enemy.Def.SlowTicks))
+            if (away.Length() > enemy.Def.SplashRadius || !Hurt(player, enemy.Def.SplashDamage, enemy.Def.SlowTicks, enemy))
             {
                 continue;
             }
@@ -768,13 +1002,13 @@ public sealed class GameServer : IEnemyEvents
         {
             case "melee":
             case "dashStrike":
-                Area(enemy.Position + Facing(enemy) * 1.1f, ability.Radius, ability.Damage);
+                Area(enemy.Position + Facing(enemy) * 1.1f, ability.Radius, ability.Damage, enemy);
                 break;
             case "slam":
-                Area(enemy.LeapTarget, ability.Radius, ability.Damage);
+                Area(enemy.LeapTarget, ability.Radius, ability.Damage, enemy);
                 break;
             case "spin":
-                Area(enemy.Position, ability.Radius, ability.Damage);
+                Area(enemy.Position, ability.Radius, ability.Damage, enemy);
                 break;
             case "arrow":
                 Shoot(ProjectileKind.Arrow, chest, direction * ArrowSpeed, ability.Damage);
@@ -802,13 +1036,14 @@ public sealed class GameServer : IEnemyEvents
 
     private static Vector3 Facing(Enemy enemy) => new(-MathF.Sin(enemy.Facing), 0, -MathF.Cos(enemy.Facing));
 
-    private void Area(Vector3 center, float radius, short damage)
+    /// <summary>A blow that lands on every player in a circle; the attacker feels any thorns.</summary>
+    private void Area(Vector3 center, float radius, short damage, Enemy attacker)
     {
-        foreach (var player in _players.Values)
+        foreach (var player in _players.Values.ToList())
         {
             if (Vector3.Distance(player.State.Position, center) <= radius + 0.4f)
             {
-                Hurt(player, damage, 0);
+                Hurt(player, damage, 0, attacker);
             }
         }
     }
@@ -932,7 +1167,7 @@ public sealed class GameServer : IEnemyEvents
                 .Select(s => new ProjectileView(s.Id, s.Kind, s.Position)).ToArray();
             var drops = _loot.Where(l => l.Owner == player.Id)
                 .OrderBy(l => Vector3.Distance(l.Position, origin)).Take(MaxDropsPerSnapshot)
-                .Select(l => new LootView(l.Id, l.Item, l.Position)).ToArray();
+                .Select(l => new LootView(l.Id, l.Item, l.Position, l.Gear is { } piece ? (byte)piece.Rarity : LootView.NoRarity)).ToArray();
             var snapshot = new Snapshot
             {
                 ServerTick = Tick,
@@ -943,7 +1178,7 @@ public sealed class GameServer : IEnemyEvents
                 Level = player.Level,
                 Xp = player.Xp,
                 XpToNext = Progression.XpToNext(player.Level),
-                MaxHealth = Progression.MaxHealth(player.Level),
+                MaxHealth = MaxHealth(player),
                 Dodges = player.Dodges,
                 Rank = player.Rank,
                 Gold = player.Gold,
@@ -956,6 +1191,7 @@ public sealed class GameServer : IEnemyEvents
                 Projectiles = shots,
                 Drops = drops,
                 Bag = BagSlice(player),
+                Gear = GearSlice(player),
                 FireWalls = _walls.Where(w => Vector3.Distance(w.Origin, origin) < InterestRange).Take(2)
                     .Select(w => new FireWallView(w.Id, w.Origin, MathF.Atan2(-w.Direction.X, -w.Direction.Z), w.Length)).ToArray(),
             };

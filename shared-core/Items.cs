@@ -9,9 +9,13 @@ namespace PixelCreate.Core;
 /// </summary>
 /// <param name="Crystal">The crystal rarity this item stands for, or -1.</param>
 /// <param name="Heal">Health that eating it restores; only food has it.</param>
+/// <param name="Weapon">For a weapon: sword, dagger, club, bow or staff.</param>
+/// <param name="Power">For a weapon: damage compared with the wooden sword, which is 1.</param>
+/// <param name="Defense">For armour: the defense it gives before rarity and level.</param>
+/// <param name="Health">Extra maximum health it gives before rarity and level.</param>
 public sealed record ItemDef(
     string Id, string Name, string Kind, int Tier, string Icon, string Description, int Price = 0, string Slot = "",
-    int Crystal = -1, int Heal = 0)
+    int Crystal = -1, int Heal = 0, string Weapon = "", float Power = 0f, int Defense = 0, int Health = 0)
 {
     private static readonly Lazy<IReadOnlyList<ItemDef>> Loaded = new(Load);
     private static readonly Lazy<Dictionary<string, ushort>> Indices = new(() =>
@@ -65,6 +69,33 @@ public static class ItemCommands
     public static bool TryEat(Command command, out ushort item)
     {
         item = (ushort)Math.Max(0, (int)command - EatBase);
-        return (int)command >= EatBase && item < ItemDef.All.Count;
+        return (int)command >= EatBase && (int)command < GearCommands.ToggleBase && item < ItemDef.All.Count;
+    }
+}
+
+/// <summary>
+/// Gear commands share the command byte with the rest: a command from <see cref="ToggleBase"/> puts
+/// on or takes off the piece at that place in the gear list; one from <see cref="DiscardBase"/>
+/// throws the piece away.
+/// </summary>
+public static class GearCommands
+{
+    public const int ToggleBase = 128;
+    public const int DiscardBase = ToggleBase + GameServer.GearSlots;
+
+    public static Command Toggle(int place) => (Command)(ToggleBase + place);
+
+    public static Command Discard(int place) => (Command)(DiscardBase + place);
+
+    public static bool TryToggle(Command command, out int place)
+    {
+        place = (int)command - ToggleBase;
+        return place >= 0 && place < GameServer.GearSlots;
+    }
+
+    public static bool TryDiscard(Command command, out int place)
+    {
+        place = (int)command - DiscardBase;
+        return place >= 0 && place < GameServer.GearSlots;
     }
 }

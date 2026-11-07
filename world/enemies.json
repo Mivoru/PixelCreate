@@ -6,7 +6,8 @@
     "splashRadius": 2.6, "splashDamage": 10, "slowTicks": 150,
     "spitRange": 0, "spitDamage": 0, "spitCooldownTicks": 0, "rareChance": 0,
     "drops": [{ "rarity": 0, "chance": 1 }],
-    "loot": [{"item": "slime_gel", "chance": 0.9, "min": 1, "max": 2}, {"item": "slime_core", "chance": 0.08, "min": 1, "max": 1}, {"item": "jelly_ring", "chance": 0.01, "min": 1, "max": 1}]
+    "gear": { "chance": 0.005, "rarity": [80, 17, 3, 0], "items": ["jelly_ring"] },
+    "loot": [{"item": "slime_gel", "chance": 0.9, "min": 1, "max": 2}, {"item": "slime_core", "chance": 0.08, "min": 1, "max": 1}]
   },
   {
     "id": "rare_slime", "name": "Rare Slime", "kind": "slime", "rare": true,
@@ -15,7 +16,8 @@
     "splashRadius": 2.4, "splashDamage": 12, "slowTicks": 180,
     "spitRange": 11, "spitDamage": 8, "spitCooldownTicks": 120, "rareChance": 0.03,
     "drops": [{ "rarity": 0, "chance": 1 }, { "rarity": 1, "chance": 0.12 }],
-    "loot": [{"item": "prism_gel", "chance": 1, "min": 1, "max": 2}, {"item": "slime_core", "chance": 0.5, "min": 1, "max": 1}, {"item": "jelly_ring", "chance": 0.06, "min": 1, "max": 1}]
+    "gear": { "chance": 0.04, "rarity": [55, 30, 12, 3], "items": ["jelly_ring"] },
+    "loot": [{"item": "prism_gel", "chance": 1, "min": 1, "max": 2}, {"item": "slime_core", "chance": 0.5, "min": 1, "max": 1}]
   },
   {
     "id": "goblin_skirmisher", "name": "Goblin Skirmisher", "kind": "goblin", "weapon": "dagger",
@@ -26,10 +28,11 @@
       { "effect": "dashStrike", "range": 8, "minRange": 3, "windupTicks": 22, "recoverTicks": 18, "cooldownTicks": 200, "damage": 12, "radius": 1.8, "telegraph": "line" }
     ],
     "drops": [{ "rarity": 0, "chance": 1 }, { "rarity": 1, "chance": 0.03 }],
-    "loot": [{"item": "goblin_tooth", "chance": 0.6, "min": 1, "max": 1}, {"item": "tattered_cloth", "chance": 0.5, "min": 1, "max": 1}, {"item": "leather_scrap", "chance": 0.3, "min": 1, "max": 1}, {"item": "rusty_dagger", "chance": 0.04, "min": 1, "max": 1}]
+    "gear": { "chance": 0.035, "rarity": [65, 25, 8, 2], "items": ["rusty_dagger", "twin_daggers", "goblin_cap", "leather_jerkin", "patched_trousers"] },
+    "loot": [{"item": "goblin_tooth", "chance": 0.6, "min": 1, "max": 1}, {"item": "tattered_cloth", "chance": 0.5, "min": 1, "max": 1}, {"item": "leather_scrap", "chance": 0.3, "min": 1, "max": 1}]
   },
   {
-    "id": "goblin_brute", "name": "Goblin Brute", "kind": "goblin", "weapon": "club",
+    "id": "goblin_brute", "name": "Goblin Brute", "kind": "goblin", "defense": 8, "weapon": "club",
     "minLevel": 4, "maxLevel": 6, "health": 150, "healthPerLevel": 30, "speed": 3.2, "size": 1.3,
     "aggroRange": 10, "preferredRange": 2,
     "abilities": [
@@ -37,7 +40,8 @@
       { "effect": "spin", "range": 3.6, "windupTicks": 54, "recoverTicks": 40, "cooldownTicks": 300, "damage": 22, "radius": 4.2, "telegraph": "circle" }
     ],
     "drops": [{ "rarity": 0, "chance": 1 }, { "rarity": 1, "chance": 0.06 }],
-    "loot": [{"item": "goblin_tooth", "chance": 0.6, "min": 1, "max": 1}, {"item": "brute_tusk", "chance": 0.45, "min": 1, "max": 1}, {"item": "iron_scrap", "chance": 0.6, "min": 1, "max": 2}, {"item": "hide_vest", "chance": 0.03, "min": 1, "max": 1}, {"item": "spiked_club", "chance": 0.03, "min": 1, "max": 1}]
+    "gear": { "chance": 0.05, "rarity": [60, 27, 10, 3], "items": ["spiked_club", "hide_vest", "iron_helm", "chain_leggings"] },
+    "loot": [{"item": "goblin_tooth", "chance": 0.6, "min": 1, "max": 1}, {"item": "brute_tusk", "chance": 0.45, "min": 1, "max": 1}, {"item": "iron_scrap", "chance": 0.6, "min": 1, "max": 2}]
   },
   {
     "id": "goblin_rapid_archer", "name": "Goblin Archer", "kind": "goblin", "weapon": "bow",
@@ -48,7 +52,8 @@
       { "effect": "volley", "range": 12, "windupTicks": 50, "recoverTicks": 30, "cooldownTicks": 460, "damage": 8 }
     ],
     "drops": [{ "rarity": 0, "chance": 1 }, { "rarity": 1, "chance": 0.03 }],
-    "loot": [{"item": "goblin_tooth", "chance": 0.5, "min": 1, "max": 1}, {"item": "crude_arrow", "chance": 0.7, "min": 2, "max": 5}, {"item": "leather_scrap", "chance": 0.3, "min": 1, "max": 1}, {"item": "goblin_shortbow", "chance": 0.04, "min": 1, "max": 1}, {"item": "archer_hood", "chance": 0.03, "min": 1, "max": 1}]
+    "gear": { "chance": 0.035, "rarity": [65, 25, 8, 2], "items": ["goblin_shortbow", "archer_hood", "goblin_cap", "patched_trousers", "leather_jerkin"] },
+    "loot": [{"item": "goblin_tooth", "chance": 0.5, "min": 1, "max": 1}, {"item": "crude_arrow", "chance": 0.7, "min": 2, "max": 5}, {"item": "leather_scrap", "chance": 0.3, "min": 1, "max": 1}]
   },
   {
     "id": "goblin_sharpshooter", "name": "Goblin Sharpshooter", "kind": "goblin", "weapon": "bow",
@@ -59,7 +64,8 @@
       { "effect": "powershot", "range": 30, "windupTicks": 64, "recoverTicks": 40, "cooldownTicks": 420, "damage": 34, "telegraph": "line" }
     ],
     "drops": [{ "rarity": 0, "chance": 1 }, { "rarity": 1, "chance": 0.05 }],
-    "loot": [{"item": "goblin_tooth", "chance": 0.5, "min": 1, "max": 1}, {"item": "hawk_feather", "chance": 0.6, "min": 1, "max": 2}, {"item": "leather_scrap", "chance": 0.4, "min": 1, "max": 1}, {"item": "hunters_longbow", "chance": 0.03, "min": 1, "max": 1}, {"item": "archer_hood", "chance": 0.05, "min": 1, "max": 1}]
+    "gear": { "chance": 0.05, "rarity": [60, 27, 10, 3], "items": ["hunters_longbow", "archer_hood", "leather_jerkin", "chain_leggings"] },
+    "loot": [{"item": "goblin_tooth", "chance": 0.5, "min": 1, "max": 1}, {"item": "hawk_feather", "chance": 0.6, "min": 1, "max": 2}, {"item": "leather_scrap", "chance": 0.4, "min": 1, "max": 1}]
   },
   {
     "id": "guild_examiner", "name": "Examiner Rhea", "kind": "human", "weapon": "sword",
@@ -81,7 +87,8 @@
       { "effect": "firewall", "range": 14, "windupTicks": 62, "recoverTicks": 70, "cooldownTicks": 360, "damage": 26, "telegraph": "wedge" }
     ],
     "drops": [{ "rarity": 1, "chance": 1 }, { "rarity": 2, "chance": 0.15 }, { "rarity": 3, "chance": 0.01 }],
-    "loot": [{"item": "ember_shard", "chance": 1, "min": 1, "max": 2}, {"item": "shaman_totem", "chance": 0.25, "min": 1, "max": 1}, {"item": "bone_staff", "chance": 0.08, "min": 1, "max": 1}, {"item": "shaman_mask", "chance": 0.04, "min": 1, "max": 1}]
+    "gear": { "chance": 0.25, "rarity": [30, 35, 25, 10], "items": ["bone_staff", "shaman_mask", "twin_daggers", "iron_helm", "chain_leggings"] },
+    "loot": [{"item": "ember_shard", "chance": 1, "min": 1, "max": 2}, {"item": "shaman_totem", "chance": 0.25, "min": 1, "max": 1}]
   },
   {
     "id": "cow", "name": "Cow", "kind": "animal", "temper": "passive",
@@ -120,6 +127,7 @@
       { "effect": "melee", "range": 1.8, "windupTicks": 20, "recoverTicks": 20, "cooldownTicks": 50, "damage": 6, "radius": 1.4 }
     ],
     "drops": [{ "rarity": 0, "chance": 0.5 }],
-    "loot": [{"item": "boar_meat", "chance": 1, "min": 1, "max": 2}, {"item": "boar_tusk", "chance": 0.5, "min": 1, "max": 1}, {"item": "boar_hide", "chance": 0.5, "min": 1, "max": 1}, {"item": "boar_boots", "chance": 0.03, "min": 1, "max": 1}]
+    "gear": { "chance": 0.02, "rarity": [70, 24, 6, 0], "items": ["boar_boots", "leather_jerkin"] },
+    "loot": [{"item": "boar_meat", "chance": 1, "min": 1, "max": 2}, {"item": "boar_tusk", "chance": 0.5, "min": 1, "max": 1}, {"item": "boar_hide", "chance": 0.5, "min": 1, "max": 1}]
   }
 ]

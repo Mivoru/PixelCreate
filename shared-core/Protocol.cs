@@ -19,8 +19,20 @@ public readonly record struct ProjectileView(int Id, ProjectileKind Kind, Vector
 
 public readonly record struct FireWallView(int Id, Vector3 Origin, float Yaw, float Length);
 
-/// <summary>Something lying on the ground for one player: a crystal or another item from items.json.</summary>
-public readonly record struct LootView(int Id, ushort Item, Vector3 Position);
+/// <summary>
+/// Something lying on the ground for one player: a crystal or another item from items.json. Gear
+/// carries its rarity, so the client can colour its glow; anything else has no rarity.
+/// </summary>
+public readonly record struct LootView(int Id, ushort Item, Vector3 Position, byte Rarity = LootView.NoRarity)
+{
+    public const byte NoRarity = 255;
+}
+
+/// <summary>
+/// One place in a player's gear list: the piece there, or none when the place is empty, and
+/// whether the player wears it.
+/// </summary>
+public readonly record struct GearEntry(byte Index, GearPiece? Piece, bool Worn);
 
 /// <summary>How many of one item a player holds. A count of zero means the player no longer has it.</summary>
 public readonly record struct BagEntry(ushort Item, ushort Count);
@@ -60,6 +72,9 @@ public sealed class Snapshot
     /// reaches the client over a few snapshots without making any one of them big.
     /// </summary>
     public BagEntry[] Bag = Array.Empty<BagEntry>();
+
+    /// <summary>Part of the gear list, sent the same way as the bag.</summary>
+    public GearEntry[] Gear = Array.Empty<GearEntry>();
     public FireWallView[] FireWalls = Array.Empty<FireWallView>();
 }
 
@@ -190,6 +205,7 @@ public static class Protocol
             writer.Write(drop.Id);
             writer.Write(drop.Item);
             WriteVector(writer, drop.Position);
+            writer.Write(drop.Rarity);
         }
 
         writer.Write((byte)snapshot.Bag.Length);
@@ -197,6 +213,25 @@ public static class Protocol
         {
             writer.Write(entry.Item);
             writer.Write(entry.Count);
+        }
+
+        writer.Write((byte)snapshot.Gear.Length);
+        foreach (var entry in snapshot.Gear)
+        {
+            writer.Write(entry.Index);
+            writer.Write(entry.Worn);
+            writer.Write(entry.Piece is null ? ushort.MaxValue : entry.Piece.Item);
+            if (entry.Piece is { } piece)
+            {
+                writer.Write((byte)piece.Rarity);
+                writer.Write(piece.Level);
+                writer.Write((byte)piece.Affixes.Length);
+                foreach (var affix in piece.Affixes)
+                {
+                    writer.Write(affix.Affix);
+                    writer.Write(affix.Value);
+                }
+            }
         }
 
         writer.Write((byte)snapshot.FireWalls.Length);
@@ -274,13 +309,36 @@ public static class Protocol
         snapshot.Drops = new LootView[reader.ReadByte()];
         for (var i = 0; i < snapshot.Drops.Length; i++)
         {
-            snapshot.Drops[i] = new LootView(reader.ReadInt32(), reader.ReadUInt16(), ReadVector(reader));
+            snapshot.Drops[i] = new LootView(reader.ReadInt32(), reader.ReadUInt16(), ReadVector(reader), reader.ReadByte());
         }
 
         snapshot.Bag = new BagEntry[reader.ReadByte()];
         for (var i = 0; i < snapshot.Bag.Length; i++)
         {
             snapshot.Bag[i] = new BagEntry(reader.ReadUInt16(), reader.ReadUInt16());
+        }
+
+        snapshot.Gear = new GearEntry[reader.ReadByte()];
+        for (var i = 0; i < snapshot.Gear.Length; i++)
+        {
+            var index = reader.ReadByte();
+            var worn = reader.ReadBoolean();
+            var item = reader.ReadUInt16();
+            GearPiece? piece = null;
+            if (item != ushort.MaxValue)
+            {
+                var rarity = (Rarity)reader.ReadByte();
+                var level = reader.ReadByte();
+                var affixes = new AffixRoll[reader.ReadByte()];
+                for (var a = 0; a < affixes.Length; a++)
+                {
+                    affixes[a] = new AffixRoll(reader.ReadByte(), reader.ReadInt16());
+                }
+
+                piece = new GearPiece(item, rarity, level, affixes);
+            }
+
+            snapshot.Gear[i] = new GearEntry(index, piece, worn);
         }
 
         snapshot.FireWalls = new FireWallView[reader.ReadByte()];
