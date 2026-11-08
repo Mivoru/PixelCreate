@@ -269,6 +269,9 @@ public sealed class GameServer : IEnemyEvents
     private readonly List<FireWallHazard> _walls = new();
     private readonly List<Enemy> _finishedTrials = new();
 
+    /// <summary>Groups that walk a route instead of staying in one camp.</summary>
+    private readonly List<Patrol> _patrols = new();
+
     /// <summary>The fighters holding a turn to come in close at each player.</summary>
     private readonly Dictionary<int, HashSet<Enemy>> _turns = new();
 
@@ -314,6 +317,11 @@ public sealed class GameServer : IEnemyEvents
                 enemy.Reset(_random, world);
                 _enemies.Add(enemy);
                 herd.Add(enemy);
+            }
+
+            if (spawn.Route is { Length: > 0 })
+            {
+                _patrols.Add(new Patrol(spawn, herd));
             }
         }
     }
@@ -432,6 +440,11 @@ public sealed class GameServer : IEnemyEvents
             // A clone is gone once it falls or fades, and with the wolf that called it.
             var living = _enemies.Where(e => e.Alive && e.SummonedBy < 0).Select(e => e.Id).ToHashSet();
             _enemies.RemoveAll(e => e.SummonedBy >= 0 && (!e.Alive || !living.Contains(e.SummonedBy)));
+        }
+
+        foreach (var patrol in _patrols)
+        {
+            patrol.Step(_random);
         }
 
         StepWalls();

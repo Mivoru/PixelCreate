@@ -77,6 +77,24 @@ public class ZoneAuditTests
         foreach (var camp in Valley.World.EnemySpawns)
         {
             Assert.True(ReachedNear(cells, camp.Center, (int)camp.Radius), $"camp at {camp.Center} cannot be reached");
+            foreach (var point in camp.Route ?? Array.Empty<Vector3>())
+            {
+                Assert.True(ReachedNear(cells, point, 3), $"patrol point {point} of the camp at {camp.Center} cannot be reached");
+            }
+        }
+    }
+
+    [Fact]
+    public void Patrols_AndWildCamps_KeepAwayFromTheVillage()
+    {
+        // The starting village stays safe: nothing hostile lives or walks within 50 m of its middle.
+        var village = new Vector3(2, 0, 4);
+        foreach (var camp in Valley.World.EnemySpawns.Where(c => c.Types?.Any(t => t.StartsWith("goblin_") || t.StartsWith("orc_")) == true))
+        {
+            foreach (var point in new[] { camp.Center }.Concat(camp.Route ?? Array.Empty<Vector3>()))
+            {
+                Assert.True(Vector3.Distance(point with { Y = 0 }, village) > 50f, $"hostile camp or patrol point {point} is too close to the village");
+            }
         }
     }
 

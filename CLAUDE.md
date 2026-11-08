@@ -58,6 +58,10 @@ Rules:
   the recovery). The rest hold a ring and feint. `behavior` in `enemies.json` picks the role: brute, flanker (works to
   the player's back), skirmisher (falls back after a blow), ranged, support (keeps behind its front line) or pack;
   a `leader` wolf's call rallies its kind and lets two more of the pack strike for 5 s. `net-tests/TacticsTests.cs`.
+- Goblins and orcs also roam: a camp with a `route` in the zone file is a patrol (`Patrol.cs`) that walks its points
+  and back, resting at each, and small wild camps sit in Westwood, the Southern Wilds and south of East Watch. The
+  zone audit keeps every patrol point reachable and every hostile camp or point over 50 m from the village. Put camps
+  on flat ground: a slope check before placing saves a rebuild.
   Orcs fight by weapon: longswords swing flat (light) and send an `airSlash` crescent about 5 m (heavy); spears stab
   and throw (`spearThrow`, the spear is back in her hand at once); axes swing flat and split the ground in a small V
   (`earthCrack`, a `FireWallHazard` of kind `EarthCrack` drawn by `EarthCrackNode`, hurting only while it runs).

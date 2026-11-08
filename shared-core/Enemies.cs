@@ -32,10 +32,13 @@ public sealed record EnemyDef(
     }
 }
 
-/// <summary>A camp: a place enemies live, return to and respawn at. A rare camp holds only rare enemies.</summary>
+/// <summary>
+/// A camp: a place enemies live, return to and respawn at. A rare camp holds only rare enemies.
+/// With a route it is a patrol: the group walks from point to point and back, resting at each.
+/// </summary>
 public readonly record struct EnemySpawn(
     Vector3 Center, float Radius, int Count, int MinLevel = 1, int MaxLevel = 3, int RespawnTicks = 240, bool Rare = false,
-    string[]? Types = null);
+    string[]? Types = null, Vector3[]? Route = null);
 
 public enum EnemyAction : byte
 {

@@ -133,6 +133,29 @@ public class TacticsTests
     }
 
     [Fact]
+    public void Patrol_WalksItsRouteAndBack()
+    {
+        // No player near: the patrol walks out to the far point, rests, and comes back.
+        var route = new[] { new Vector3(40, 0, 60), new Vector3(80, 0, 60) };
+        var camp = new EnemySpawn(new Vector3(0, 0, 60), Patrol.PointRadius, 2, Types: new[] { "goblin_skirmisher" }, Route: route);
+        var network = new SimNetwork(1, 0, 0, 0);
+        var world = new World(Array.Empty<Aabb>(), null, new Vector3(0, 0, -200), new[] { camp });
+        var server = new GameServer(network.Connect(0), world, new ServerOptions { Seed = 3 });
+        var farthest = 0f;
+        var back = false;
+        for (var i = 0; i < 60 * 120 && !back; i++)
+        {
+            server.Step();
+            var x = server.Enemies.Average(e => e.Position.X);
+            farthest = MathF.Max(farthest, x);
+            back = farthest > 75f && x < 8f;
+        }
+
+        Assert.True(farthest > 75f, $"The patrol must reach the far point; it got to x {farthest:F0}.");
+        Assert.True(back, "The patrol must turn round and walk back to its start.");
+    }
+
+    [Fact]
     public void PackLeader_CallsARush()
     {
         var (server, client, network) = Start(Camp("alpha_wolf", 1, 8f, 0.5f), Camp("wolf", 5, 9f, 2f));
