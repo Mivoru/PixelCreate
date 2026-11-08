@@ -1,5 +1,10 @@
-# The full check after a change: tests, the Guild story played live, then all studio pictures.
-# Read export/previews/live/sheets and export/previews/studio/sheets afterwards.
+# The check after a change: tests, the Guild story played live, then studio pictures of what changed.
+# -Jobs picks the studio jobs (for example -Jobs monsters,world); without it no studio runs, and
+# -Jobs all runs every job. Read export/previews/live/sheets and export/previews/studio/sheets afterwards.
+param(
+    [string]$Jobs = ""
+)
+
 $root = Split-Path $PSScriptRoot -Parent
 Set-Location $root
 
@@ -19,4 +24,9 @@ if ($errors) { Write-Host "SCRIPT ERRORS IN THE LIVE RUN:"; $errors | ForEach-Ob
 Remove-Item Env:PIXEL_TEST, Env:PIXEL_FRAIL, Env:PIXEL_SPAWN, Env:PIXEL_BOT
 python (Join-Path $root "tools\sheet.py") $live
 
-powershell -ExecutionPolicy Bypass -File (Join-Path $root "scripts\studio.ps1") 2>&1 | Select-String "sheets in"
+if ($Jobs -eq "all") {
+    powershell -ExecutionPolicy Bypass -File (Join-Path $root "scripts\studio.ps1") 2>&1 | Select-String "sheets in"
+}
+elseif ($Jobs) {
+    powershell -ExecutionPolicy Bypass -File (Join-Path $root "scripts\studio.ps1") -Jobs $Jobs 2>&1 | Select-String "sheets in"
+}
