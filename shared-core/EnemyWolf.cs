@@ -46,6 +46,16 @@ public sealed partial class Enemy
     public bool Landed;
 
     /// <summary>Knocks the enemy off balance after a parry: it reels, unable to act, for the given time.</summary>
+    /// <summary>Thrown into the air by a blow: helpless until it comes down and gathers itself.</summary>
+    public void Launch(float up, int ticks)
+    {
+        Stagger(ticks);
+        if (Alive && ticks > 0)
+        {
+            Velocity.Y = up;
+        }
+    }
+
     public void Stagger(int ticks)
     {
         if (!Alive || ticks <= 0)

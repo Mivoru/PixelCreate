@@ -32,7 +32,7 @@
       },
       {
        "name": "Rising Slash",
-       "text": "A new heavy blow that throws enemies up",
+       "text": "Heavy from a slide: a cut that throws foes up",
        "unlock": "rising_slash",
        "cost": 3
       }
@@ -102,7 +102,7 @@
       },
       {
        "name": "Whirlwind",
-       "text": "A spinning flurry of sword blows",
+       "text": "Heavy in the air: spin down striking 4 times",
        "unlock": "whirlwind",
        "cost": 3
       }
@@ -142,7 +142,7 @@
       },
       {
        "name": "Fan of Knives",
-       "text": "A ring of thrown knives",
+       "text": "Your leap lands with a ring of 8 knives",
        "unlock": "fan_of_knives",
        "cost": 3
       }
@@ -177,7 +177,7 @@
       },
       {
        "name": "Shadow Step",
-       "text": "Step through the shadows behind an enemy",
+       "text": "Heavy in the air: step behind the foe ahead",
        "unlock": "shadow_step",
        "cost": 3
       }
@@ -212,7 +212,7 @@
       },
       {
        "name": "Blade Dance",
-       "text": "A long chain of dagger strikes",
+       "text": "Light from a slide: 5 stabs darting forward",
        "unlock": "blade_dance",
        "cost": 3
       }
@@ -252,7 +252,7 @@
       },
       {
        "name": "Ground Pound",
-       "text": "A leap that ends in a crushing slam",
+       "text": "Heavy in the air: plunge into a crushing slam",
        "unlock": "ground_pound",
        "cost": 3
       }
@@ -322,7 +322,7 @@
       },
       {
        "name": "Stunning Bash",
-       "text": "A blow that stuns for a moment",
+       "text": "Your spin stuns everything it hits",
        "unlock": "stunning_bash",
        "cost": 3
       }
@@ -397,7 +397,7 @@
       },
       {
        "name": "Piercing Arrow",
-       "text": "An arrow that passes through every enemy",
+       "text": "Arrows fly through every enemy they hit",
        "unlock": "piercing_arrow",
        "cost": 3
       }
@@ -432,7 +432,7 @@
       },
       {
        "name": "Rain of Arrows",
-       "text": "Arrows fall on a spot you aim at",
+       "text": "A full draw aimed high comes down as a rain",
        "unlock": "rain_of_arrows",
        "cost": 3
       }
@@ -472,7 +472,7 @@
       },
       {
        "name": "Meteor",
-       "text": "A burning rock falls from the sky",
+       "text": "A burning rock falls on your line of fire",
        "unlock": "meteor",
        "cost": 3
       }
@@ -507,7 +507,7 @@
       },
       {
        "name": "Chain Lightning",
-       "text": "Lightning that leaps from enemy to enemy",
+       "text": "Your fireball leaps on to 3 more foes",
        "unlock": "chain_lightning",
        "cost": 3
       }
@@ -542,7 +542,7 @@
       },
       {
        "name": "Arcane Barrier",
-       "text": "A shield that soaks up blows",
+       "text": "A shield that refills while you are unhurt",
        "unlock": "arcane_barrier",
        "cost": 3
       }

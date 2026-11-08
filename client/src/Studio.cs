@@ -408,9 +408,9 @@ public partial class Studio : Node
         Floor();
         foreach (var (weapon, kinds) in new[]
         {
-            ("sword", new[] { AttackKind.Light, AttackKind.Heavy }),
-            ("dagger", new[] { AttackKind.DaggerFlurry, AttackKind.DaggerLeap }),
-            ("club", new[] { AttackKind.ClubSwing, AttackKind.ClubSpin }),
+            ("sword", new[] { AttackKind.Light, AttackKind.Heavy, AttackKind.RisingSlash, AttackKind.Whirlwind }),
+            ("dagger", new[] { AttackKind.DaggerFlurry, AttackKind.DaggerLeap, AttackKind.BladeDance, AttackKind.ShadowStep }),
+            ("club", new[] { AttackKind.ClubSwing, AttackKind.ClubSpin, AttackKind.GroundPound }),
             ("staff", new[] { AttackKind.StaffBolt, AttackKind.StaffWall }),
         })
         {
@@ -425,6 +425,12 @@ public partial class Studio : Node
                 var attack = Tuning.Attack(kind);
                 for (var tick = 0; tick < attack.Total; tick++)
                 {
+                    if (kind == AttackKind.GroundPound && tick is > 16 and < Tuning.GroundPoundLandTick)
+                    {
+                        // The plunge lasts as long as the fall; the film skips to the landing.
+                        tick = Tuning.GroundPoundLandTick;
+                    }
+
                     // The leap rises and falls as it would in the game.
                     var airborne = kind == AttackKind.DaggerLeap && tick is > 2 and < Tuning.LeapHitAt;
                     var t = (tick - 2) / (float)(Tuning.LeapHitAt - 2);

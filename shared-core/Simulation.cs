@@ -63,6 +63,49 @@ public static class Tuning
     public const int ChainJumps = 3;
     public const float ChainShare = 0.6f;
     public const float ChainSpeed = 45f;
+
+    /// <summary>Sword mastery Rising Slash (heavy from a slide): the hop it gives the player, and how high and long a struck foe flies.</summary>
+    public const float RisingSlashHop = 5.5f;
+    public const float RisingSlashLaunch = 10f;
+    public const int RisingSlashAirTicks = 60;
+
+    /// <summary>Sword mastery Whirlwind (heavy in the air): the spin floats down no faster than this.</summary>
+    public const float WhirlwindFall = 2.5f;
+
+    /// <summary>Club mastery Ground Pound (heavy in the air): a short rise, then a plunge until the ground; the tick the landing jumps to.</summary>
+    public const int GroundPoundRiseTicks = 8;
+    public const float GroundPoundRise = 3f;
+    public const float GroundPoundFall = 26f;
+    public const byte GroundPoundLandTick = 200;
+
+    /// <summary>Dagger mastery Blade Dance (light from a slide): the player keeps darting along the aim this fast, this long.</summary>
+    public const float BladeDanceSpeed = 7f;
+    public const int BladeDanceDashTicks = 50;
+
+    /// <summary>Dagger mastery Shadow Step (heavy in the air): how far ahead an enemy can be to step behind it.</summary>
+    public const float ShadowStepRange = 10f;
+
+    /// <summary>Dagger mastery Fan of Knives: knives thrown in a ring when the leap lands, their speed, reach and share of the leap's damage.</summary>
+    public const int FanKnives = 8;
+    public const float KnifeSpeed = 20f;
+    public const float KnifeRange = 8f;
+    public const float KnifeShare = 0.35f;
+
+    /// <summary>Staff mastery Meteor: a rock falls on the far end of the line of fire, after this flight, bursting this wide, with this share of a fireball.</summary>
+    public const float MeteorFlightSeconds = 0.7f;
+    public const float MeteorSplash = 3.2f;
+    public const float MeteorShare = 1.6f;
+
+    /// <summary>Bow mastery Rain of Arrows: a full-draw shot aimed at least this steeply up comes down as this many arrows, spread this wide.</summary>
+    public const float RainMinPitch = 0.5f;
+    public const int RainArrows = 12;
+    public const float RainRadius = 3.5f;
+    public const float RainShare = 0.45f;
+
+    /// <summary>Staff mastery Arcane Barrier: a share of max health soaked up, refilling over some seconds once unhurt for a while.</summary>
+    public const float BarrierShare = 0.25f;
+    public const int BarrierDelayTicks = 240;
+    public const float BarrierFillSeconds = 3f;
     public const float StaggerDamageScale = 1.5f;
     public const float GroundAcceleration = 60f;
     public const float AirAcceleration = 20f;
@@ -100,6 +143,11 @@ public static class Tuning
         AttackKind.ClubSpin => ClubSpin,
         AttackKind.StaffBolt => StaffBolt,
         AttackKind.StaffWall => StaffWall,
+        AttackKind.RisingSlash => RisingSlash,
+        AttackKind.Whirlwind => Whirlwind,
+        AttackKind.GroundPound => GroundPound,
+        AttackKind.BladeDance => BladeDance,
+        AttackKind.ShadowStep => ShadowStep,
         _ => LightAttack,
     };
 
@@ -168,6 +216,21 @@ public static class Tuning
     /// <summary>The staff driven into the ground, raising a straight line of fire ahead.</summary>
     private static readonly AttackDef StaffWall = new(50, 22, 26, 0f, 1f, 30f, 0.2f);
 
+    /// <summary>Rising Slash: an upward cut out of a slide that throws what it hits into the air.</summary>
+    private static readonly AttackDef RisingSlash = new(40, 12, 34, 3.0f, 0.2f, 22f, 0.5f);
+
+    /// <summary>Whirlwind: the sword whirled round and round in the air, a blow every fifth of a second.</summary>
+    private static readonly AttackDef Whirlwind = new(62, 12, 14, 3.0f, -1f, 30f, 0.7f, 0, 12, 48);
+
+    /// <summary>Ground Pound: the blow lands where the plunge meets the ground (see Movement.Step), on everything around.</summary>
+    private static readonly AttackDef GroundPound = new(220, GroundPoundLandTick, 44, 4.0f, -1f, 26f, 0.4f);
+
+    /// <summary>Blade Dance: five stabs while darting on along the aim.</summary>
+    private static readonly AttackDef BladeDance = new(58, 8, 12, 2.6f, 0.2f, 26f, 1f, 0, 10, 48);
+
+    /// <summary>Shadow Step: the server moves the player behind the enemy ahead, and the daggers go in from behind.</summary>
+    private static readonly AttackDef ShadowStep = new(36, 14, 40, 2.6f, 0.2f, 28f, 0.2f);
+
     /// <summary>How fast a staff's fireball flies, how far, and how wide it bursts.</summary>
     public const float StaffBoltSpeed = 20f;
     public const float StaffBoltRange = 30f;
@@ -213,6 +276,18 @@ public static class Weapons
     };
 }
 
+/// <summary>Mastery moves that change how attacks start or move, so movement must know them. The server sets them.</summary>
+[Flags]
+public enum MasteryMoves : byte
+{
+    None = 0,
+    RisingSlash = 1,
+    Whirlwind = 2,
+    BladeDance = 4,
+    ShadowStep = 8,
+    GroundPound = 16,
+}
+
 public enum AttackKind : byte
 {
     None = 0,
@@ -225,6 +300,11 @@ public enum AttackKind : byte
     ClubSpin = 7,
     StaffBolt = 8,
     StaffWall = 9,
+    RisingSlash = 10,
+    Whirlwind = 11,
+    GroundPound = 12,
+    BladeDance = 13,
+    ShadowStep = 14,
 }
 
 /// <param name="Total">Length of the attack in ticks.</param>
@@ -235,7 +315,16 @@ public enum AttackKind : byte
 /// <param name="Stamina">Stamina the attack costs.</param>
 /// <param name="MoveScale">Share of normal speed while attacking.</param>
 /// <param name="SecondHitAt">Tick of a second blow in the same attack, or 0.</param>
-public sealed record AttackDef(int Total, int HitAt, short Damage, float Range, float MinDot, float Stamina, float MoveScale, int SecondHitAt = 0);
+/// <param name="HitEvery">For a run of blows: ticks between them after the first, up to LastHitAt.</param>
+public sealed record AttackDef(int Total, int HitAt, short Damage, float Range, float MinDot, float Stamina, float MoveScale, int SecondHitAt = 0, int HitEvery = 0, int LastHitAt = 0)
+{
+    /// <summary>True when a blow of this attack lands on this tick.</summary>
+    public bool HitsOn(int tick) => tick == HitAt || tick == SecondHitAt
+        || (HitEvery > 0 && tick > HitAt && tick <= LastHitAt && (tick - HitAt) % HitEvery == 0);
+
+    /// <summary>The tick of the last blow.</summary>
+    public int LastHit => Math.Max(Math.Max(HitAt, SecondHitAt), LastHitAt);
+}
 
 [Flags]
 public enum Buttons : byte
@@ -308,6 +397,9 @@ public struct PlayerState
     /// <summary>Ticks the guard has been up (0 when not blocking), and where it faces.</summary>
     public byte BlockTicks;
     public byte BlockAim;
+
+    /// <summary>Mastery moves taken for the weapon in hand (<see cref="MasteryMoves"/>). The server sets it.</summary>
+    public byte Moves;
 
     public static PlayerState Spawn(Vector3 position, short health = Tuning.PlayerHealth) => new()
     {
@@ -554,6 +646,20 @@ public static class Movement
             state.Velocity.X = aim.X * Tuning.LeapSpeed;
             state.Velocity.Z = aim.Z * Tuning.LeapSpeed;
         }
+        else if (state.Attack == AttackKind.BladeDance && state.AttackTick < Tuning.BladeDanceDashTicks)
+        {
+            // Blade Dance: the dancer darts on along the aim between the stabs.
+            var aim = AimDirection(state.AttackAim);
+            state.Velocity.X = aim.X * Tuning.BladeDanceSpeed;
+            state.Velocity.Z = aim.Z * Tuning.BladeDanceSpeed;
+        }
+        else if (state.Attack == AttackKind.GroundPound && state.AttackTick < Tuning.GroundPoundLandTick)
+        {
+            // Ground Pound: a short rise with the club overhead, then straight down.
+            state.Velocity.X = 0;
+            state.Velocity.Z = 0;
+            state.Velocity.Y = state.AttackTick < Tuning.GroundPoundRiseTicks ? Tuning.GroundPoundRise : -Tuning.GroundPoundFall;
+        }
         else if (state.SlideTicks > 0)
         {
             Slide(ref state, wish);
@@ -572,13 +678,44 @@ public static class Movement
         }
 
         state.Velocity.Y -= Tuning.Gravity * Tuning.TickSeconds;
+        if (state.Attack == AttackKind.Whirlwind && state.Velocity.Y < -Tuning.WhirlwindFall)
+        {
+            // Whirlwind: the spin floats the player down slowly.
+            state.Velocity.Y = -Tuning.WhirlwindFall;
+        }
+
         var wasGrounded = state.Grounded && state.Velocity.Y <= 0;
         state.Grounded = false;
         MoveAxis(ref state, world, 0, state.Velocity.X * Tuning.TickSeconds);
         MoveAxis(ref state, world, 2, state.Velocity.Z * Tuning.TickSeconds);
         MoveAxis(ref state, world, 1, state.Velocity.Y * Tuning.TickSeconds);
         LandOnGround(ref state, world, wasGrounded);
+        if (state.Attack == AttackKind.GroundPound && state.Grounded
+            && state.AttackTick >= Tuning.GroundPoundRiseTicks && state.AttackTick < Tuning.GroundPoundLandTick)
+        {
+            // The plunge meets the ground: the blow lands now and the recovery starts.
+            state.AttackTick = Tuning.GroundPoundLandTick;
+            landed = AttackKind.GroundPound;
+        }
+
         return landed;
+    }
+
+    /// <summary>A mastery move in place of the usual attack: heavy from a slide or in the air, light from a slide.</summary>
+    private static AttackKind Variant(in PlayerState state, AttackKind wanted)
+    {
+        var moves = (MasteryMoves)state.Moves;
+        var sliding = state.SlideTicks > 0;
+        var air = !state.Grounded;
+        return wanted switch
+        {
+            AttackKind.Heavy when sliding && moves.HasFlag(MasteryMoves.RisingSlash) => AttackKind.RisingSlash,
+            AttackKind.Heavy when air && moves.HasFlag(MasteryMoves.Whirlwind) => AttackKind.Whirlwind,
+            AttackKind.ClubSpin when air && moves.HasFlag(MasteryMoves.GroundPound) => AttackKind.GroundPound,
+            AttackKind.DaggerFlurry when sliding && moves.HasFlag(MasteryMoves.BladeDance) => AttackKind.BladeDance,
+            AttackKind.DaggerLeap when air && moves.HasFlag(MasteryMoves.ShadowStep) => AttackKind.ShadowStep,
+            _ => wanted,
+        };
     }
 
     /// <summary>Ctrl while running on the ground drops into a slide along the way the player is going.</summary>
@@ -645,7 +782,7 @@ public static class Movement
         {
             var current = Tuning.Attack(state.Attack);
             state.AttackTick++;
-            if (state.AttackTick == current.HitAt || state.AttackTick == current.SecondHitAt)
+            if (current.HitsOn(state.AttackTick))
             {
                 landed = state.Attack;
             }
@@ -674,6 +811,7 @@ public static class Movement
                 Weapons.Staff => heavy ? AttackKind.StaffWall : AttackKind.StaffBolt,
                 _ => wanted,
             };
+            wanted = Variant(state, wanted);
         }
         if (wanted == AttackKind.None || !CanStartAttack(state))
         {
@@ -687,6 +825,10 @@ public static class Movement
             state.AttackTick = 0;
             state.AttackAim = input.Aim;
             Spend(ref state, next.Stamina);
+            if (wanted == AttackKind.RisingSlash && state.Grounded)
+            {
+                state.Velocity.Y = Tuning.RisingSlashHop;
+            }
         }
 
         return landed;
@@ -733,7 +875,7 @@ public static class Movement
         }
 
         var current = Tuning.Attack(state.Attack);
-        return state.AttackTick > Math.Max(current.HitAt, current.SecondHitAt) + 5;
+        return state.AttackTick > current.LastHit + 5;
     }
 
     private static void StepDash(ref PlayerState state, in InputCmd input, Vector2 wish)

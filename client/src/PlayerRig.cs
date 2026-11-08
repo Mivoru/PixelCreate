@@ -805,6 +805,39 @@ public sealed class PlayerRig
             DaggerPose(state.Attack, state.AttackTick);
             blend = state.Attack == AttackKind.DaggerFlurry ? 40f : 26f;
         }
+        else if (state.Attack == AttackKind.BladeDance)
+        {
+            // Blade Dance: the flurry's stabs, hand after hand, one for every blow of the dance.
+            var dance = Tuning.Attack(AttackKind.BladeDance);
+            var blow = Mathf.Max(0, (state.AttackTick - dance.HitAt + dance.HitEvery / 2) / dance.HitEvery);
+            var offset = state.AttackTick - (dance.HitAt + blow * dance.HitEvery);
+            var flurry = Tuning.Attack(AttackKind.DaggerFlurry);
+            DaggerPose(AttackKind.DaggerFlurry, Mathf.Max(0, (blow % 2 == 0 ? flurry.HitAt : flurry.SecondHitAt) + offset));
+            blend = 40f;
+        }
+        else if (state.Attack == AttackKind.ShadowStep)
+        {
+            // Shadow Step: the leap's raised daggers, driven down at the blow.
+            var hit = Tuning.Attack(AttackKind.ShadowStep).HitAt;
+            DaggerPose(AttackKind.DaggerLeap, state.AttackTick < hit ? Mathf.Min(4 + state.AttackTick, Tuning.LeapHitAt - 4) : Tuning.LeapHitAt + state.AttackTick - hit);
+            blend = 30f;
+        }
+        else if (state.Attack == AttackKind.GroundPound)
+        {
+            WeaponPose(state.AttackTick < Tuning.GroundPoundLandTick ? WeaponMove.ClubRaise : WeaponMove.ClubSmash);
+            blend = 30f;
+        }
+        else if (state.Attack == AttackKind.Whirlwind)
+        {
+            // Whirlwind: the blade held straight out while the body turns under it.
+            ClubPose(AttackKind.ClubSpin, 20);
+            blend = 30f;
+        }
+        else if (state.Attack == AttackKind.RisingSlash)
+        {
+            RisingPose(state.AttackTick);
+            blend = 34f;
+        }
         else if (state.Attack is AttackKind.ClubSwing or AttackKind.ClubSpin)
         {
             ClubPose(state.Attack, state.AttackTick);
@@ -1877,6 +1910,15 @@ public sealed class PlayerRig
     /// <summary>The spin turns the whole body once round: wind-up, a fast turn through the hit, and a settle.</summary>
     private void UpdateSpin(in MotionState state)
     {
+        if (state.Attack == AttackKind.Whirlwind)
+        {
+            // Whirlwind: whole turns, one for each blow, slowing at the end.
+            var whirl = Tuning.Attack(AttackKind.Whirlwind);
+            var turns = Mathf.Min(state.AttackTick, whirl.LastHitAt + 6) / (float)whirl.HitEvery;
+            _hips.Rotation = new Vector3(0, -Mathf.Tau * turns, 0);
+            return;
+        }
+
         if (state.Attack != AttackKind.ClubSpin)
         {
             if (_bow is null)
@@ -1912,6 +1954,46 @@ public sealed class PlayerRig
         if (tick >= hit && _lastAttackTick < hit)
         {
             _sparks.Amount = kind == AttackKind.StaffWall ? 40 : 20;
+            _sparks.Restart();
+            _sparks.Emitting = true;
+        }
+    }
+
+    /// <summary>Rising Slash: low with the blade trailing behind, then a cut from the ground up over the head.</summary>
+    private void RisingPose(int tick)
+    {
+        var attack = Tuning.Attack(AttackKind.RisingSlash);
+        var swung = tick >= attack.HitAt - 2;
+        var recover = Mathf.Clamp((tick - attack.HitAt) / (float)(attack.Total - attack.HitAt), 0f, 1f);
+        _target[Lean] = swung ? -0.35f + recover * 0.3f : 0.5f;
+        _target[Twist] = swung ? -0.3f : 0.7f;
+        _target[ArmR] = swung ? 3.0f - recover * 1.2f : -0.7f;
+        _target[ArmRSide] = swung ? 0.15f : 0.35f;
+        _target[ForearmR] = swung ? -0.2f : -0.4f;
+        _target[SwordTilt] = swung ? 0.3f : 2.2f;
+        _target[SwordYaw] = 0f;
+        _target[ArmL] = swung ? 0.9f : -0.4f;
+        _target[ForearmL] = -0.7f;
+        _target[ThighL] = swung ? -0.2f : -0.9f;
+        _target[ThighR] = swung ? 0.3f : 0.6f;
+        _target[ShinL] = swung ? 0.2f : 1.0f;
+        _target[ShinR] = swung ? 0.6f : 0.9f;
+        _target[Bob] = swung ? 0.02f : -0.24f;
+        var progress = (tick - (attack.HitAt - 4)) / 11f;
+        _slash.Visible = progress is >= 0f and <= 1.6f;
+        if (_slash.Visible)
+        {
+            _slashMaterial.SetShaderParameter("head", Mathf.Min(progress * 1.5f, 1.8f));
+            _slashMaterial.SetShaderParameter("strength", progress < 1f ? 1f : 2.6f - progress * 1.6f);
+            _slashMaterial.SetShaderParameter("inner_color", new Color("f77622"));
+            _slashMaterial.SetShaderParameter("tip_color", new Color("fee761"));
+            _slash.Rotation = new Vector3(0f, 0f, 1.5708f);
+            _slash.Scale = Vector3.One * 1.3f;
+        }
+
+        if (tick >= attack.HitAt && _lastAttackTick < attack.HitAt)
+        {
+            _sparks.Amount = 40;
             _sparks.Restart();
             _sparks.Emitting = true;
         }

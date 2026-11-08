@@ -1016,6 +1016,13 @@ public partial class Hud : Control
         var maxHealth = Snapshot?.MaxHealth ?? Tuning.PlayerHealth;
         var health = new Rect2(card.Position + new Vector2(22, 56), card.Size.X - 44, 22);
         Bar(health, _shownHealth, _ghostHealth, HealthColor, HealthLight, _shownHealth < 0.3f);
+        if (Snapshot is { Barrier: > 0 } shielded)
+        {
+            // Staff mastery Arcane Barrier: a blue band along the top of the health bar.
+            var share = Mathf.Clamp(shielded.Barrier / (float)maxHealth, 0f, 1f);
+            Rounded(new Rect2(health.Position + new Vector2(0, -6), health.Size.X * share, 5), 2, new Color("2ce8f5"), Colors.Transparent, 0);
+        }
+
         var numbers = $"{Math.Max(Player.Health, (short)0)} / {maxHealth}";
         Label(numbers, new Vector2(health.End.X - 12 - Width(numbers, 15, _bold), health.Position.Y + 17), 15, Colors.White, _bold, true);
         Bar(new Rect2(card.Position + new Vector2(22, 87), card.Size.X - 44, 6), _shownStamina, _shownStamina, StaminaColor, new Color("8ff0b8"), Player.Stamina < 15f);

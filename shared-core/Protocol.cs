@@ -76,6 +76,9 @@ public sealed class Snapshot
 
     /// <summary>Counts parries answered by the sword's Riposte, the same way.</summary>
     public byte Ripostes;
+
+    /// <summary>Health the staff's Arcane Barrier still soaks up.</summary>
+    public short Barrier;
     public GuildRank Rank;
     public int Gold;
     public byte QuestId;
@@ -186,6 +189,7 @@ public static class Protocol
         writer.Write(snapshot.Blocks);
         writer.Write(snapshot.Parries);
         writer.Write(snapshot.Ripostes);
+        writer.Write(snapshot.Barrier);
         writer.Write(snapshot.Attributes, 0, Core.Attributes.Count);
         writer.Write(snapshot.UnspentPoints);
         writer.Write(snapshot.KnownSkills);
@@ -313,6 +317,7 @@ public static class Protocol
         snapshot.Blocks = reader.ReadByte();
         snapshot.Parries = reader.ReadByte();
         snapshot.Ripostes = reader.ReadByte();
+        snapshot.Barrier = reader.ReadInt16();
         snapshot.Attributes = reader.ReadBytes(Core.Attributes.Count);
         snapshot.UnspentPoints = reader.ReadByte();
         snapshot.KnownSkills = reader.ReadUInt32();
@@ -483,6 +488,7 @@ public static class Protocol
         writer.Write(state.SlideTicks);
         writer.Write(state.SlideCooldown);
         WriteVector(writer, state.SlideDirection);
+        writer.Write(state.Moves);
     }
 
     private static PlayerState ReadState(BinaryReader reader) => new()
@@ -509,5 +515,6 @@ public static class Protocol
         SlideTicks = reader.ReadByte(),
         SlideCooldown = reader.ReadByte(),
         SlideDirection = ReadVector(reader),
+        Moves = reader.ReadByte(),
     };
 }

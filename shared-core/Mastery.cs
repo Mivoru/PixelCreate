@@ -15,7 +15,12 @@ public sealed record MasteryNode(string Name, string Text, Dictionary<string, in
     public int Index { get; init; }
 
     /// <summary>Unlocks for moves that exist in the game; others cannot be taken yet.</summary>
-    public static readonly HashSet<string> BuiltUnlocks = new() { "riposte", "triple_shot", "piercing_arrow", "stunning_bash", "shockwave", "chain_lightning" };
+    public static readonly HashSet<string> BuiltUnlocks = new()
+    {
+        "riposte", "triple_shot", "piercing_arrow", "stunning_bash", "shockwave", "chain_lightning",
+        "fan_of_knives", "meteor", "arcane_barrier", "rain_of_arrows",
+        "rising_slash", "whirlwind", "ground_pound", "blade_dance", "shadow_step",
+    };
 
     public bool Ready => Unlock is null || BuiltUnlocks.Contains(Unlock);
 }
@@ -55,6 +60,25 @@ public static class Mastery
     /// <summary>True when a move at the end of a branch is taken and a weapon of its kind is in hand.</summary>
     public static bool Has(string weaponInHand, ulong taken, string unlock) =>
         Nodes.Any(n => n.Unlock == unlock && n.Weapon == weaponInHand && (taken & (1ul << n.Index)) != 0);
+
+    /// <summary>The moves that change movement, taken for the weapon in hand, for <see cref="PlayerState.Moves"/>.</summary>
+    public static MasteryMoves MovesFor(string weaponInHand, ulong taken)
+    {
+        var moves = MasteryMoves.None;
+        foreach (var (unlock, move) in new[]
+        {
+            ("rising_slash", MasteryMoves.RisingSlash), ("whirlwind", MasteryMoves.Whirlwind), ("blade_dance", MasteryMoves.BladeDance),
+            ("shadow_step", MasteryMoves.ShadowStep), ("ground_pound", MasteryMoves.GroundPound),
+        })
+        {
+            if (Has(weaponInHand, taken, unlock))
+            {
+                moves |= move;
+            }
+        }
+
+        return moves;
+    }
 
     /// <summary>Points spent in one weapon's tree.</summary>
     public static int Spent(string weapon, ulong taken) => Nodes.Where(n => n.Weapon == weapon && (taken & (1ul << n.Index)) != 0).Sum(n => n.Cost);

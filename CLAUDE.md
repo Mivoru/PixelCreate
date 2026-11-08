@@ -57,6 +57,15 @@ Rules:
   (club: the spin also strikes out to `Tuning.ShockwaveRadius`, client ring `Fx.Ring`) and Chain Lightning (staff: the
   fireball's nearest victim sends a `ProjectileKind.ChainBolt` leaping on, `Tuning.ChainJumps` times). Test mode takes
   every built move. `net-tests/MasteryMoveTests.cs` checks each with and without it.
+  All 15 moves are built. Moves that change how attacks start are predicted: the server puts them in
+  `PlayerState.Moves` (`MasteryMoves`), and `Movement.Variant` swaps the attack: heavy from a slide is Rising Slash
+  (sword, `Enemy.Launch`), light from a slide is Blade Dance (daggers, five stabs darting on); heavy in the air is
+  Whirlwind (sword, floats down), Ground Pound (club, the blow lands where the plunge meets the ground) or Shadow Step
+  (daggers: the server moves the player behind the enemy ahead, which the client takes from the snapshot). Runs of
+  blows use `AttackDef.HitEvery`/`LastHitAt`. Server-side moves: Fan of Knives (`ProjectileKind.Knife` ring when the
+  leap lands), Meteor (`ProjectileKind.Meteor` on the far end of the fire line), Rain of Arrows (a full draw aimed
+  above `Tuning.RainMinPitch` rains arrows where it ends) and Arcane Barrier (`Player.Barrier`, soaks blows before
+  health, refills when unhurt, `Snapshot.Barrier`). The studio's attacks job films the new player attacks.
 - Slide: Ctrl while running on the ground (`Buttons.Slide`, `PlayerState.SlideTicks`/`SlideDirection`, in `Movement.Step`):
   a burst from 17 to 7 m/s over half a second, steerable a little, for stamina; a jump out of it keeps the speed in the
   air, and an attack or a dash ends it. `net-tests/SlideTests.cs`.

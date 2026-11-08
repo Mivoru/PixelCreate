@@ -108,6 +108,7 @@ public partial class GameClient : Node
     private byte _lastBlocks;
     private byte _lastParries;
     private byte _lastRipostes;
+    private MeshInstance3D _barrier = null!;
 
     /// <summary>True when the player has taken a mastery move and holds a weapon of its kind.</summary>
     private bool HasMove(string unlock) =>
@@ -156,6 +157,16 @@ public partial class GameClient : Node
         var effects = new Node3D();
         _stage.View.AddChild(effects);
         _fx = new Fx(effects);
+
+        // Staff mastery Arcane Barrier: a faint blue shell round the player while it holds.
+        _barrier = new MeshInstance3D
+        {
+            Mesh = new SphereMesh { Radius = 0.85f, Height = 2.1f, RadialSegments = 16, Rings = 8 },
+            MaterialOverride = _fx.Stipple(new Color("2ce8f5"), 0.22f),
+            Position = Vector3.Up * 0.95f,
+            Visible = false,
+        };
+        _player.Root.AddChild(_barrier);
 
         _hud = new Hud { Camera = _stage.Camera };
         AddChild(_hud);
@@ -513,6 +524,42 @@ public partial class GameClient : Node
         {
             _sfx.Play("hit_heavy", shown);
             _fx.Burst(shown + Vector3.Up * 0.05f, new Color("b8a58a"), 26, 5f, 0.45f, 0.09f, -5f, 85f);
+            if (HasMove("fan_of_knives"))
+            {
+                _sfx.Play("air_slash", chest, -3f);
+            }
+        }
+
+        // Runs of blows (Whirlwind, Blade Dance) swish on every blow after the first.
+        if (attack.HitEvery > 0 && now.Attack == _last.Attack && now.AttackTick > attack.HitAt && attack.HitsOn(now.AttackTick) && !attack.HitsOn(_last.AttackTick))
+        {
+            _sfx.Play("swing_light", chest, -3f);
+        }
+
+        if (now.Attack == AttackKind.GroundPound && now.AttackTick >= Tuning.GroundPoundLandTick && _last.AttackTick < Tuning.GroundPoundLandTick)
+        {
+            // Ground Pound: the club meets the ground in a ring of force and dust.
+            _sfx.Play("club_slam", shown);
+            _sfx.Play("shockwave", shown, -4f);
+            _fx.Ring(shown, new Color("ead4aa"), Tuning.Attack(AttackKind.GroundPound).Range, 0.4f);
+            _fx.Burst(shown + Vector3.Up * 0.1f, new Color("b8a58a"), 40, 7f, 0.5f, 0.1f, -6f, 88f);
+        }
+
+        if (now.Attack == AttackKind.ShadowStep && _last.Attack != AttackKind.ShadowStep)
+        {
+            // Shadow Step: the player melts into shadow here and comes out behind the enemy.
+            _sfx.Play("shadow_sink", shown);
+            _fx.Burst(shown + Vector3.Up * 0.8f, new Color("181425"), 30, 4f, 0.5f, 0.12f, 1f, 120f);
+        }
+        else if (now.Attack == AttackKind.ShadowStep && now.AttackTick >= 4 && _last.AttackTick < 4)
+        {
+            _sfx.Play("shadow_rise", shown);
+            _fx.Burst(shown + Vector3.Up * 0.8f, new Color("3a4466"), 24, 3f, 0.45f, 0.1f, 1f, 120f);
+        }
+
+        if (now.Attack == AttackKind.RisingSlash && now.AttackTick >= attack.HitAt && _last.AttackTick < attack.HitAt)
+        {
+            _fx.Burst(chest + Vector3.Up * 0.3f, new Color("feae34"), 22, 8f, 0.35f, 0.07f, -4f, 25f);
         }
 
         if (now.Health < _last.Health && _last.Health > 0)
@@ -556,6 +603,8 @@ public partial class GameClient : Node
             _fx.Burst(chest + Vector3.Up * 0.3f, new Color("ffffff"), 12, 5f, 0.25f, 0.05f, 0f, 180f);
             _hud.AddFloating("Parry!", chest + Vector3.Up, new Color("fee761"));
         }
+
+        _barrier.Visible = snapshot.Barrier > 0;
 
         if (snapshot.Ripostes != _lastRipostes)
         {
@@ -1541,7 +1590,7 @@ public partial class GameClient : Node
                     _sfx.Play("spear_summon", ball.Position, -8f);
                 }
                 else if (spit.Kind is not (ProjectileKind.PlayerArrow or ProjectileKind.AirSlash or ProjectileKind.AirSlashWide or ProjectileKind.ThrownSpear
-                    or ProjectileKind.FangSlash))
+                    or ProjectileKind.FangSlash or ProjectileKind.Knife))
                 {
                     _sfx.Play(spit.Kind switch
                     {
@@ -1558,6 +1607,7 @@ public partial class GameClient : Node
             ball.Position = ball.Position.Lerp(target, spit.Kind == ProjectileKind.PowerArrow ? 1f : blend);
             if (spit.Kind is ProjectileKind.Arrow or ProjectileKind.PowerArrow or ProjectileKind.PlayerArrow or ProjectileKind.AirSlash
                     or ProjectileKind.AirSlashWide or ProjectileKind.ThrownSpear or ProjectileKind.SummonedSpear or ProjectileKind.FangSlash
+                    or ProjectileKind.Knife or ProjectileKind.Meteor
                 && motion.LengthSquared() > 0.0001f)
             {
                 ball.LookAt(ball.GlobalPosition + motion, Vector3.Up);
@@ -1611,6 +1661,17 @@ public partial class GameClient : Node
             case ProjectileKind.FangSlash:
                 _fx.Burst(last, new Color("e43b44"), 12, 4f, 0.3f, 0.07f, 0f, 120f);
                 break;
+            case ProjectileKind.Meteor:
+                _sfx.Play("explosion", last);
+                _sfx.Play("earth_crack", last, -4f);
+                _fx.Burst(last, new Color("f77622"), 60, 12f, 0.7f, 0.16f, -6f, 90f);
+                _fx.Burst(last, new Color("fee761"), 30, 7f, 0.5f, 0.11f, -4f, 90f);
+                _fx.Ring(ground, new Color("f77622"), Tuning.MeteorSplash, 0.45f);
+                _fx.Puddle(ground, new Color("3e2731"), Tuning.MeteorSplash, 2f);
+                break;
+            case ProjectileKind.Knife:
+                _fx.Burst(last, new Color("c0cbdc"), 6, 3f, 0.2f, 0.05f, -6f, 120f);
+                break;
             case ProjectileKind.ChainBolt:
                 _fx.Burst(last, new Color("2ce8f5"), 18, 6f, 0.3f, 0.06f, 0f, 180f);
                 _fx.Burst(last, new Color("ffffff"), 8, 4f, 0.2f, 0.05f, 0f, 180f);
@@ -1636,6 +1697,33 @@ public partial class GameClient : Node
         if (kind == ProjectileKind.Spit)
         {
             return BuildSpit(position);
+        }
+
+        if (kind == ProjectileKind.Knife)
+        {
+            // Fan of Knives: a small steel blade with a thin pale streak.
+            var knife = new MeshInstance3D
+            {
+                Mesh = new BoxMesh { Size = new Vector3(0.05f, 0.03f, 0.38f) },
+                MaterialOverride = _fx.Stipple(new Color("c0cbdc"), 1f),
+                Position = position,
+            };
+            knife.AddChild(Trail(new Color("ffffff"), 8, 0.12f, 0.03f));
+            return knife;
+        }
+
+        if (kind == ProjectileKind.Meteor)
+        {
+            // Meteor: a dark burning rock trailing fire and smoke.
+            var rock = new MeshInstance3D
+            {
+                Mesh = new SphereMesh { Radius = 0.55f, Height = 1.1f, RadialSegments = 8, Rings = 5 },
+                MaterialOverride = _fx.Stipple(new Color("733e39"), 1f),
+                Position = position,
+            };
+            rock.AddChild(Trail(new Color("f77622"), 30, 0.45f, 0.18f));
+            rock.AddChild(Trail(new Color("3e2731"), 16, 0.7f, 0.22f, 1f));
+            return rock;
         }
 
         if (kind == ProjectileKind.ChainBolt)

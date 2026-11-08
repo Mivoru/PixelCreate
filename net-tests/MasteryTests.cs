@@ -67,8 +67,10 @@ public class MasteryTests
     [Fact]
     public void UnbuiltMoves_CannotBeTakenYet()
     {
-        var unlock = Mastery.Nodes.First(n => n.Unlock is not null && !MasteryNode.BuiltUnlocks.Contains(n.Unlock));
-        Assert.False(Mastery.CanTake(unlock, ulong.MaxValue & ~(1ul << unlock.Index), 99));
+        // Every move in the trees is built now; a move added to the file before its code waits.
+        Assert.All(Mastery.Nodes.Where(n => n.Unlock is not null), n => Assert.True(n.Ready, n.Unlock));
+        var unbuilt = Mastery.Nodes[3] with { Unlock = "not_built_yet" };
+        Assert.False(Mastery.CanTake(unbuilt, ulong.MaxValue & ~(1ul << unbuilt.Index), 99));
     }
 
     [Theory]

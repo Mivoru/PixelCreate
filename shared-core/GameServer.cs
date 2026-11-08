@@ -79,6 +79,12 @@ public enum ProjectileKind : byte
 
     /// <summary>Staff mastery Chain Lightning: a bolt that leaps from one enemy to the next.</summary>
     ChainBolt = 11,
+
+    /// <summary>Dagger mastery Fan of Knives: one of the knives thrown in a ring.</summary>
+    Knife = 12,
+
+    /// <summary>Staff mastery Meteor: a burning rock falling on the end of the line of fire.</summary>
+    Meteor = 13,
 }
 
 /// <summary>What a ground hazard is: the shaman's burning V or a player's strip of fire, or an orc's crack in the earth.</summary>
@@ -243,6 +249,10 @@ public sealed class GameServer : IEnemyEvents
         public byte Blocks;
         public byte Parries;
         public byte Ripostes;
+
+        /// <summary>Health the Arcane Barrier soaks up, and the part of a point it has refilled.</summary>
+        public int Barrier;
+        public float BarrierCarry;
         public GuildRank Rank;
         public int Gold;
         public byte QuestId;
@@ -298,6 +308,9 @@ public sealed class GameServer : IEnemyEvents
 
         /// <summary>For a chain bolt: leaps still to make after this one.</summary>
         public int Jumps;
+
+        /// <summary>Bow mastery Rain of Arrows: where this arrow ends, arrows rain down.</summary>
+        public bool Rain;
 
         /// <summary>For a player's arrow: who loosed it and how far the bow was drawn, as a share of a full draw.</summary>
         public int Shooter = -1;
@@ -679,6 +692,11 @@ public sealed class GameServer : IEnemyEvents
             player.ShotPitch = command.AimPitch;
         }
 
+        if (player.State.Attack == AttackKind.ShadowStep && player.State.AttackTick == 1)
+        {
+            ShadowStep(player);
+        }
+
         if (landed == AttackKind.BowShot)
         {
             Loose(player);
@@ -729,6 +747,7 @@ public sealed class GameServer : IEnemyEvents
         }
 
         var maxHealth = MaxHealth(player);
+        StepBarrier(player, maxHealth);
         if (player.State.Health <= 0)
         {
             if (player.Rank == GuildRank.InTrial)
@@ -741,6 +760,7 @@ public sealed class GameServer : IEnemyEvents
             // Worn gear survives death, so the weapon it picks does too; so do the attributes.
             player.State.Weapon = Weapons.Of(player.Stats.Weapon);
             player.State.Endurance = player.Attributes[(int)PlayerAttribute.Endurance];
+            player.State.Moves = (byte)Mastery.MovesFor(player.Stats.Weapon, player.MasteryTaken);
             player.State.Stamina = Core.Attributes.MaxStamina(player.State);
         }
         else if (Tick - player.LastHurtTick > RegenDelayTicks && player.State.Health < maxHealth)
@@ -1111,6 +1131,20 @@ public sealed class GameServer : IEnemyEvents
 
         // Defense takes a share off every blow; at least one point always gets through.
         damage = (short)Math.Max(1, MathF.Round(damage * GearStats.DamageTaken(player.Stats.Defense)));
+        if (player.Barrier > 0)
+        {
+            // Staff mastery Arcane Barrier: the barrier soaks up what it can first.
+            var soaked = Math.Min(player.Barrier, (int)damage);
+            player.Barrier -= soaked;
+            damage -= (short)soaked;
+            player.LastHurtTick = Tick;
+            if (damage <= 0)
+            {
+                Stats.PlayerHits++;
+                return true;
+            }
+        }
+
         player.State.Health -= damage;
         if (attacker is { Alive: true } && player.Stats.Thorns > 0 && attacker.TakeHit((short)player.Stats.Thorns, player.State.Position, player.Id))
         {
@@ -1241,11 +1275,116 @@ public sealed class GameServer : IEnemyEvents
                 // Club mastery Stunning Bash: the spin leaves everyone it hit reeling.
                 enemy.Stagger(Tuning.StunTicks);
             }
+            else if (kind == AttackKind.RisingSlash)
+            {
+                enemy.Launch(Tuning.RisingSlashLaunch, Tuning.RisingSlashAirTicks);
+            }
+        }
+
+        if (kind == AttackKind.DaggerLeap && Mastery.Has(player.Stats.Weapon, player.MasteryTaken, "fan_of_knives"))
+        {
+            FanOfKnives(player);
         }
 
         if (kind == AttackKind.ClubSpin && Mastery.Has(player.Stats.Weapon, player.MasteryTaken, "shockwave"))
         {
             Shockwave(player, attack.Range);
+        }
+    }
+
+    /// <summary>Dagger mastery Fan of Knives: the landing leap throws knives out in a ring.</summary>
+    private void FanOfKnives(Player player)
+    {
+        for (var i = 0; i < Tuning.FanKnives; i++)
+        {
+            var angle = i * MathF.Tau / Tuning.FanKnives;
+            var direction = new Vector3(-MathF.Sin(angle), 0, -MathF.Cos(angle));
+            _projectiles.Add(new Projectile
+            {
+                Id = _nextId++,
+                Kind = ProjectileKind.Knife,
+                Damage = 0,
+                Position = player.State.Position + Vector3.UnitY * 0.9f + direction * 0.5f,
+                Velocity = direction * Tuning.KnifeSpeed,
+                Shooter = player.Id,
+                Blow = AttackKind.DaggerLeap,
+                Draw = Tuning.KnifeShare,
+                Life = (int)MathF.Ceiling(Tuning.KnifeRange / Tuning.KnifeSpeed * Tuning.TickRate),
+            });
+        }
+    }
+
+    /// <summary>
+    /// Dagger mastery Shadow Step: the nearest enemy ahead, in reach, finds the player suddenly at
+    /// its back, facing it. With nobody there the stab simply falls where the player is.
+    /// </summary>
+    private void ShadowStep(Player player)
+    {
+        var feet = player.State.Position;
+        var forward = Movement.AimDirection(player.State.AttackAim);
+        var mark = _enemies.Where(e => e.Alive && !e.InShadow)
+            .Select(e => (Enemy: e, Offset: (e.Position - feet) with { Y = 0 }))
+            .Where(m => m.Offset.Length() is > 0.1f and < Tuning.ShadowStepRange && Vector3.Dot(Vector3.Normalize(m.Offset), forward) > 0.3f)
+            .OrderBy(m => m.Offset.Length()).Select(m => m.Enemy).FirstOrDefault();
+        if (mark is null)
+        {
+            return;
+        }
+
+        var through = Vector3.Normalize((mark.Position - feet) with { Y = 0 });
+        var spot = mark.Position + through * (mark.Def.Size * 0.5f + 1.1f);
+        if (_world.IsBlocked(spot with { Y = _world.GroundHeight(spot.X, spot.Z) + 1f }))
+        {
+            return;
+        }
+
+        Move(player, spot);
+        var back = -through;
+        player.State.AttackAim = (byte)((int)MathF.Round(MathF.Atan2(-back.X, -back.Z) / MathF.Tau * 256f) & 0xFF);
+    }
+
+    /// <summary>Staff mastery Arcane Barrier: while a staff is in hand, the barrier refills once the player is left alone a while.</summary>
+    private void StepBarrier(Player player, short maxHealth)
+    {
+        var most = Mastery.Has(player.Stats.Weapon, player.MasteryTaken, "arcane_barrier") ? (int)(maxHealth * Tuning.BarrierShare) : 0;
+        if (player.Barrier >= most)
+        {
+            player.Barrier = most;
+            return;
+        }
+
+        if (Tick - player.LastHurtTick > Tuning.BarrierDelayTicks)
+        {
+            player.BarrierCarry += most / (Tuning.BarrierFillSeconds * Tuning.TickRate);
+            var gain = (int)player.BarrierCarry;
+            player.BarrierCarry -= gain;
+            player.Barrier = Math.Min(most, player.Barrier + gain);
+        }
+    }
+
+    /// <summary>Bow mastery Rain of Arrows: arrows fall from high above round where the steep shot came down.</summary>
+    private void RainAt(Player player, Vector3 where)
+    {
+        var ground = _world.GroundHeight(where.X, where.Z);
+        for (var i = 0; i < Tuning.RainArrows; i++)
+        {
+            var angle = (float)(_random.NextDouble() * MathF.Tau);
+            var reach = MathF.Sqrt((float)_random.NextDouble()) * Tuning.RainRadius;
+            var height = 12f + i * 1.6f;
+            var spot = new Vector3(where.X - MathF.Sin(angle) * reach, ground, where.Z - MathF.Cos(angle) * reach);
+            const float speed = 28f;
+            _projectiles.Add(new Projectile
+            {
+                Id = _nextId++,
+                Kind = ProjectileKind.PlayerArrow,
+                Damage = 0,
+                Position = spot + Vector3.UnitY * height,
+                Velocity = new Vector3(0, -speed, 0),
+                Shooter = player.Id,
+                Draw = Tuning.RainShare,
+                Pierces = true,
+                Life = (int)MathF.Ceiling(height / speed * Tuning.TickRate) + 2,
+            });
         }
     }
 
@@ -1436,6 +1575,7 @@ public sealed class GameServer : IEnemyEvents
     {
         player.Stats = GearStats.Of(player.Worn.Select(w => player.Gear[w]!));
         Mastery.AddTo(player.Stats, player.MasteryTaken);
+        player.State.Moves = (byte)Mastery.MovesFor(player.Stats.Weapon, player.MasteryTaken);
         player.State.Health = Math.Min(player.State.Health, MaxHealth(player));
 
         // The weapon decides the attacks; the client learns it through the next snapshot.
@@ -2225,10 +2365,12 @@ public sealed class GameServer : IEnemyEvents
         var drawn = Tuning.Drawn(player.State.ShotDraw);
         var speed = Tuning.ArrowSpeed(drawn);
         var origin = ArrowOrigin(player.State.Position, flat);
+        var rain = drawn >= 1f && pitch >= Tuning.RainMinPitch && Mastery.Has(player.Stats.Weapon, player.MasteryTaken, "rain_of_arrows");
         var piercing = Mastery.Has(player.Stats.Weapon, player.MasteryTaken, "piercing_arrow");
         var share = Tuning.DrawShare(player.State.ShotDraw);
         var life = (int)MathF.Ceiling(Tuning.ArrowRange(drawn) / speed * Tuning.TickRate);
         AddArrow(aim, share);
+        _projectiles[^1].Rain = rain;
 
         // Bow mastery Triple Shot: two more arrows fan out either side of the aim, weaker.
         if (Mastery.Has(player.Stats.Weapon, player.MasteryTaken, "triple_shot"))
@@ -2295,6 +2437,29 @@ public sealed class GameServer : IEnemyEvents
             Grow = Tuning.StaffWallGrowTicks,
             Burn = Tuning.StaffWallBurnTicks,
         });
+
+        if (Mastery.Has(player.Stats.Weapon, player.MasteryTaken, "meteor"))
+        {
+            // Staff mastery Meteor: a burning rock comes down on the far end of the line.
+            var end = player.State.Position + flat * (0.6f + Tuning.StaffWallLength);
+            end.Y = _world.GroundHeight(end.X, end.Z);
+            var start = end + new Vector3(0, 16f, 0) - flat * 3f;
+            var ticks = (int)MathF.Ceiling(Tuning.MeteorFlightSeconds * Tuning.TickRate);
+            _projectiles.Add(new Projectile
+            {
+                Id = _nextId++,
+                Kind = ProjectileKind.Meteor,
+                Damage = 0,
+                Position = start,
+                Velocity = (end - start) / (ticks * Tuning.TickSeconds),
+                Shooter = player.Id,
+                Blow = AttackKind.StaffBolt,
+                Draw = Tuning.MeteorShare,
+                SplashRadius = Tuning.MeteorSplash,
+                Pierces = true,
+                Life = ticks,
+            });
+        }
     }
 
     /// <summary>Where a player's arrow starts: at the bow, in front of the chest.</summary>
@@ -2316,7 +2481,7 @@ public sealed class GameServer : IEnemyEvents
                 continue;
             }
 
-            var damage = (short)Math.Max(1, MathF.Round(BlowDamage(shooter, AttackKind.BowShot, enemy) * shot.Draw));
+            var damage = (short)Math.Max(1, MathF.Round(BlowDamage(shooter, shot.Blow, enemy) * shot.Draw));
             var killed = enemy.TakeHit(damage, shot.Position - shot.Velocity, shooter.Id);
             AfterBlow(shooter, enemy, damage);
             Stats.EnemyHits++;
@@ -2402,9 +2567,9 @@ public sealed class GameServer : IEnemyEvents
 
             if (shot.Shooter >= 0)
             {
-                if (shot.Kind == ProjectileKind.PlayerFireball)
+                if (shot.Kind is ProjectileKind.PlayerFireball or ProjectileKind.Meteor)
                 {
-                    if (struck || shot.Life <= 0 || TouchesEnemy(shot))
+                    if (struck || shot.Life <= 0 || (shot.Kind == ProjectileKind.PlayerFireball && TouchesEnemy(shot)))
                     {
                         BurstOnEnemies(shot);
                         shot.Life = 0;
@@ -2413,6 +2578,12 @@ public sealed class GameServer : IEnemyEvents
                 else if (struck || StrikeWithArrow(shot))
                 {
                     shot.Life = 0;
+                }
+
+                if (shot.Rain && shot.Life <= 0 && _players.TryGetValue(shot.Shooter, out var archer))
+                {
+                    shot.Rain = false;
+                    RainAt(archer, shot.Position);
                 }
 
                 continue;
@@ -2470,7 +2641,7 @@ public sealed class GameServer : IEnemyEvents
         }
 
         // Staff mastery Chain Lightning: the plain fireball's nearest victim sends a bolt leaping on.
-        var chain = shot.Skill < 0 && Mastery.Has(caster.Stats.Weapon, caster.MasteryTaken, "chain_lightning");
+        var chain = shot.Skill < 0 && shot.Kind == ProjectileKind.PlayerFireball && Mastery.Has(caster.Stats.Weapon, caster.MasteryTaken, "chain_lightning");
         var struck = new HashSet<int>();
         Enemy? first = null;
         var firstDistance = float.MaxValue;
@@ -2492,7 +2663,7 @@ public sealed class GameServer : IEnemyEvents
                 }
                 else
                 {
-                    Smite(caster, enemy, shot.Blow, distance < HitRadius ? 1f : 0.6f, shot.Position - shot.Velocity);
+                    Smite(caster, enemy, shot.Blow, (distance < HitRadius ? 1f : 0.6f) * shot.Draw, shot.Position - shot.Velocity);
                 }
             }
         }
@@ -2555,6 +2726,7 @@ public sealed class GameServer : IEnemyEvents
                 Blocks = player.Blocks,
                 Parries = player.Parries,
                 Ripostes = player.Ripostes,
+                Barrier = (short)player.Barrier,
                 Rank = player.Rank,
                 Gold = player.Gold,
                 QuestId = player.QuestId,
