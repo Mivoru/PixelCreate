@@ -53,6 +53,11 @@ Rules:
   photographs every weapon up close. Dagger attacks and the bow place the hands with keys and reach (`PlayerRig.Reach`).
 - Test a far area: set `PIXEL_SPAWN=x,z` before starting the server.
 - Enemy abilities and crystal drops are data in `world/enemies.json`; new effects go in `GameServer.Fire`.
+- Group AI (`EnemyTactics.cs`): fighters keep apart (`AllySpacing`), and a close blow needs a turn from the server
+  (`TryTakeTurn`, at most `GameServer.MaxCloseAttackers` = 2 per player, two blows or 5 s each, ended only after
+  the recovery). The rest hold a ring and feint. `behavior` in `enemies.json` picks the role: brute, flanker (works to
+  the player's back), skirmisher (falls back after a blow), ranged, support (keeps behind its front line) or pack;
+  a `leader` wolf's call rallies its kind and lets two more of the pack strike for 5 s. `net-tests/TacticsTests.cs`.
   Orcs fight by weapon: longswords swing flat (light) and send an `airSlash` crescent about 5 m (heavy); spears stab
   and throw (`spearThrow`, the spear is back in her hand at once); axes swing flat and split the ground in a small V
   (`earthCrack`, a `FireWallHazard` of kind `EarthCrack` drawn by `EarthCrackNode`, hurting only while it runs).

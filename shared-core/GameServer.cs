@@ -269,6 +269,17 @@ public sealed class GameServer : IEnemyEvents
     private readonly List<FireWallHazard> _walls = new();
     private readonly List<Enemy> _finishedTrials = new();
 
+    /// <summary>The fighters holding a turn to come in close at each player.</summary>
+    private readonly Dictionary<int, HashSet<Enemy>> _turns = new();
+
+    /// <summary>Until which tick a pack leader's call lets more of the pack strike a player at once.</summary>
+    private readonly Dictionary<int, uint> _rushUntil = new();
+
+    /// <summary>How many fighters may come in close at one player, and how many more in a pack's rush.</summary>
+    public const int MaxCloseAttackers = 2;
+    private const int RushExtra = 2;
+    private const int RushTicks = 60 * 5;
+
     /// <summary>Clones called up during this tick's enemy steps; they join the enemies after the loop.</summary>
     private readonly List<Enemy> _summons = new();
 
@@ -411,6 +422,7 @@ public sealed class GameServer : IEnemyEvents
                 .Select(p => new Target(p.Id, p.State.Position, p.State.Velocity)).ToArray();
             foreach (var enemy in _enemies)
             {
+                enemy.Crowd = _enemies;
                 enemy.Step(_world, _random, targets, this);
             }
 
@@ -1071,15 +1083,54 @@ public sealed class GameServer : IEnemyEvents
 
     private void CallForHelp(Enemy enemy, int targetId)
     {
+        // A pack leader rallies every wolf of its kind nearby, and its pack rushes the player for a while.
+        var leader = enemy.Def.Leader;
+        if (leader)
+        {
+            _rushUntil[targetId] = Tick + RushTicks;
+        }
+
         foreach (var other in _enemies)
         {
-            if (other.Alive && other.TargetId < 0 && !other.Returning && other.Home == enemy.Home &&
-                Vector3.Distance(other.Position, enemy.Position) < HelpRadius)
+            var kin = other.Home == enemy.Home || (leader && other.Def.Kind == enemy.Def.Kind);
+            if (other.Alive && other.TargetId < 0 && !other.Returning && kin &&
+                Vector3.Distance(other.Position, enemy.Position) < (leader ? HelpRadius * 2.5f : HelpRadius))
             {
                 other.TargetId = targetId;
             }
         }
     }
+
+    bool IEnemyEvents.TryTakeTurn(Enemy enemy, int targetId)
+    {
+        if (!_turns.TryGetValue(targetId, out var holders))
+        {
+            holders = new HashSet<Enemy>();
+            _turns[targetId] = holders;
+        }
+
+        holders.RemoveWhere(e => !e.Alive || !e.HasTurn || e.TargetId != targetId || e.Returning || !_enemies.Contains(e));
+        var rush = _rushUntil.TryGetValue(targetId, out var until) && Tick < until && enemy.Role == "pack";
+        if (holders.Count >= MaxCloseAttackers + (rush ? RushExtra : 0))
+        {
+            return false;
+        }
+
+        holders.Add(enemy);
+        return true;
+    }
+
+    void IEnemyEvents.EndTurn(Enemy enemy)
+    {
+        foreach (var holders in _turns.Values)
+        {
+            holders.Remove(enemy);
+        }
+    }
+
+    /// <summary>The fighters that hold a turn at a player right now.</summary>
+    public int CloseAttackers(int playerId) =>
+        _turns.TryGetValue(playerId, out var holders) ? holders.Count(e => e.Alive && e.HasTurn && e.TargetId == playerId) : 0;
 
     void IEnemyEvents.Splash(Enemy enemy)
     {

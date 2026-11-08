@@ -30,6 +30,9 @@ public sealed partial class Enemy
             if (_cooldowns[i] > 0) _cooldowns[i]--;
         }
 
+        StepTurn(events, Action == EnemyAction.Strike && _lastGoblinAction != EnemyAction.Strike);
+        _lastGoblinAction = Action;
+
         switch (Action)
         {
             case EnemyAction.Idle:
@@ -85,11 +88,14 @@ public sealed partial class Enemy
         Fall(world, random, events);
     }
 
+    private EnemyAction _lastGoblinAction;
+
     private void DecideGoblin(World world, Random random, IReadOnlyList<Target> targets, IEnemyEvents events)
     {
         var homeDistance = Flat(Home.Center - Position).Length();
         if (Returning)
         {
+            EndTurn(events);
             if (homeDistance < Home.Radius * 0.6f)
             {
                 Returning = false;
@@ -104,6 +110,7 @@ public sealed partial class Enemy
 
         if (TargetId >= 0 && (FindTarget(targets) is null || homeDistance > Home.Radius + LeashExtra * 1.5f))
         {
+            EndTurn(events);
             TargetId = -1;
             Returning = homeDistance > Home.Radius;
             Action = EnemyAction.Idle;
@@ -127,25 +134,22 @@ public sealed partial class Enemy
         for (var i = (Def.Abilities?.Length ?? 0) - 1; i >= 0; i--)
         {
             var ability = Def.Abilities![i];
-            if (_cooldowns[i] == 0 && distance <= ability.Range && distance >= ability.MinRange)
+            if (_cooldowns[i] != 0 || distance > ability.Range || distance < ability.MinRange)
             {
-                Cast((byte)i, ability, target, world, random);
-                return;
+                continue;
             }
+
+            // A close blow needs a turn; while others have them, this fighter waits its chance.
+            if (IsClose(ability) && Def.Kind != "human" && !TakeTurn(events, target))
+            {
+                continue;
+            }
+
+            Cast((byte)i, ability, target, world, random);
+            return;
         }
 
-        // Keep to the preferred distance: archers back away, fighters close in.
-        var toward = target.Position - Position;
-        var gap = distance - Def.PreferredRange;
-        if (MathF.Abs(gap) < 1f)
-        {
-            var side = Vector3.Cross(Flat(toward), Vector3.UnitY) * (Id % 2 == 0 ? 1f : -1f);
-            Walk(world, side, 0.7f);
-        }
-        else
-        {
-            Walk(world, gap > 0 ? toward : -toward, 1f);
-        }
+        Manoeuvre(world, random, target, distance);
     }
 
     private void Patrol(World world, Random random, float homeDistance)
@@ -175,6 +179,13 @@ public sealed partial class Enemy
         if (flat == Vector3.Zero)
         {
             return;
+        }
+
+        // A fighter keeps clear of its allies as it goes, so a group spreads round the player.
+        if (TargetId >= 0 && !IsAnimal)
+        {
+            var spread = Vector3.Normalize(flat) + AllySpacing();
+            flat = spread.LengthSquared() > 0.01f ? spread : flat;
         }
 
         var heading = Steer(world, Vector3.Normalize(flat));

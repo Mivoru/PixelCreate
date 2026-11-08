@@ -17,7 +17,8 @@ public sealed record EnemyDef(
     short SplashDamage = 0, byte SlowTicks = 0, float SpitRange = 0f, short SpitDamage = 0, int SpitCooldownTicks = 0,
     double RareChance = 0, string Kind = "slime", bool Rare = false, string Weapon = "", float PreferredRange = 2f,
     Ability[]? Abilities = null, DropEntry[]? Drops = null, string Temper = "hostile", LootEntry[]? Loot = null,
-    float AlertRange = 0f, float TagHeight = 0f, GearTable? Gear = null, int Defense = 0)
+    float AlertRange = 0f, float TagHeight = 0f, GearTable? Gear = null, int Defense = 0, string? Behavior = null,
+    bool Leader = false)
 {
     private static readonly Lazy<IReadOnlyList<EnemyDef>> Loaded = new(Load);
 
@@ -93,6 +94,12 @@ public interface IEnemyEvents
 
     /// <summary>The enemy has noticed a player; its neighbours join in.</summary>
     void CallForHelp(Enemy enemy, int targetId);
+
+    /// <summary>Asks for a turn to come in close at a player. Only a few fighters get one at a time.</summary>
+    bool TryTakeTurn(Enemy enemy, int targetId) => true;
+
+    /// <summary>The fighter has finished its turn and makes way.</summary>
+    void EndTurn(Enemy enemy) { }
 }
 
 /// <summary>
