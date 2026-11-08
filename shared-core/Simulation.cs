@@ -107,8 +107,12 @@ public static class Tuning
     /// <summary>The club whirled round once at arm's length: the blow lands on everything around.</summary>
     private static readonly AttackDef ClubSpin = new(56, 26, 36, 3.4f, -1f, 28f, 0.35f);
 
-    /// <summary>A fireball from the staff, loosed at the hit tick along the aim. Range and arc are the projectile's.</summary>
-    private static readonly AttackDef StaffBolt = new(30, 12, 18, 0f, 1f, 10f, 0.5f);
+    /// <summary>
+    /// A fireball from the staff, loosed at the hit tick along the aim. Range and arc are the projectile's.
+    /// It is slow and costly on purpose: about 60 % of a sword's damage a second, from 30 m away, and
+    /// it drains stamina a little faster than it comes back.
+    /// </summary>
+    private static readonly AttackDef StaffBolt = new(54, 12, 22, 0f, 1f, 16f, 0.5f);
 
     /// <summary>The staff driven into the ground, raising a straight line of fire ahead.</summary>
     private static readonly AttackDef StaffWall = new(50, 22, 26, 0f, 1f, 30f, 0.2f);

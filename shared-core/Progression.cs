@@ -6,7 +6,8 @@ public static class Progression
     public const int MaxLevel = 60;
 
     /// <summary>Experience needed to go from this level to the next.</summary>
-    public static int XpToNext(int level) => 60 + level * level * 25;
+    /// <remarks>About 5 slimes for level 2, 16 even-level kills at level 5 and 34 at level 10.</remarks>
+    public static int XpToNext(int level) => 100 + level * level * 40;
 
     public static short MaxHealth(int level) => (short)(Tuning.PlayerHealth + (level - 1) * 15);
 
