@@ -218,8 +218,9 @@ public partial class Studio : Node
                     await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
                 }
 
-                _stage.Camera.Fov = 30;
-                _stage.Camera.LookAtFromPosition(new Vector3(0, height * 0.9f + 0.4f, -distance * def.Size), new Vector3(0, height * 0.7f, 0));
+                // Goblins carry staves and clubs that reach well above their heads.
+                _stage.Camera.Fov = def.Kind == "slime" ? 30 : 40;
+                _stage.Camera.LookAtFromPosition(new Vector3(0, height * 0.9f + 0.4f, -distance * def.Size), new Vector3(0, height * (def.Kind == "slime" ? 0.7f : 0.85f), 0));
                 await Wait(2);
                 Save($"monster_{def.Id}_{pose}");
             }

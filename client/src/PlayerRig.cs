@@ -758,9 +758,10 @@ public sealed class PlayerRig
         switch (_look.Weapon)
         {
             case "bow":
+                // The bow hangs upright at the side, not pointing ahead like a spear.
                 _target[ArmL] = 0.5f;
                 _target[ForearmL] = -0.2f;
-                _target[SwordTilt] = 0f;
+                _target[SwordTilt] = 1.5708f;
                 _target[SwordYaw] = 0f;
                 _target[ArmR] = 0.1f;
                 _target[ArmRSide] = 0.2f;
