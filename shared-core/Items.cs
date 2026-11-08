@@ -16,7 +16,8 @@ namespace PixelCreate.Core;
 /// <param name="Shop">The role of the shopkeeper who sells it, such as alchemist, or empty.</param>
 public sealed record ItemDef(
     string Id, string Name, string Kind, int Tier, string Icon, string Description, int Price = 0, string Slot = "",
-    int Crystal = -1, int Heal = 0, string Weapon = "", float Power = 0f, int Defense = 0, int Health = 0, string Shop = "")
+    int Crystal = -1, int Heal = 0, string Weapon = "", float Power = 0f, int Defense = 0, int Health = 0, string Shop = "",
+    string Skill = "")
 {
     private static readonly Lazy<IReadOnlyList<ItemDef>> Loaded = new(Load);
     private static readonly Lazy<Dictionary<string, ushort>> Indices = new(() =>
@@ -29,6 +30,9 @@ public sealed record ItemDef(
 
     /// <summary>A potion heals at once like food, but shares a short cooldown with every other potion.</summary>
     public bool IsPotion => Kind == "potion";
+
+    /// <summary>A book that teaches the skill it names when read.</summary>
+    public bool IsSkillBook => Kind == "skillbook";
 
     /// <summary>Every item a shop sells, in file order; a buy command names one by its place here.</summary>
     public static IReadOnlyList<ushort> Wares => LoadedWares.Value;

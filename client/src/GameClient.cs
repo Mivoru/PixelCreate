@@ -582,6 +582,7 @@ public partial class GameClient : Node
             }
 
             _hud.Items.ApplyChest(snapshot.Storage, snapshot.StoredGear);
+            _hud.Items.ApplySkills(snapshot.KnownSkills);
             foreach (var (item, gained) in _hud.Items.Apply(snapshot.Bag))
             {
                 if (!first)
@@ -1153,7 +1154,26 @@ public partial class GameClient : Node
         _player.Root.Rotation = new Vector3(0, _facing, 0);
         _player.SetWeapon(Weapons.Name(_client.State.Weapon), _hud.Items.Equipped[EquipSlot.Weapon]?.Gear?.Def.Id);
         _player.SwordVisible = _hud.Items.HasWeapon;
+        // A skill cast from the hotbar: a short gesture and its sound, here on the client only.
+        if (_hud.SkillCast >= 0)
+        {
+            var effect = SkillDef.All[_hud.SkillCast].Effect;
+            _castTime = 0.35f;
+            _castMove = effect is "earthCrack" ? WeaponMove.ClubSmash : effect is "airSlash" or "fangSlash" ? WeaponMove.SwingAcross : WeaponMove.StaffThrust;
+            _sfx.Play(effect switch
+            {
+                "fireball" => "fireball",
+                "airSlash" => "air_slash",
+                "fangSlash" => "fang_slash",
+                "summonSpears" => "spear_summon",
+                _ => "earth_crack",
+            }, shown + Vector3.Up);
+            _hud.SkillCast = -1;
+        }
+
+        _castTime = Mathf.Max(0f, _castTime - (float)GetProcessDeltaTime());
         var bow = state.DrawTicks > 0 ? WeaponMove.BowDraw : state.Attack == AttackKind.BowShot ? WeaponMove.BowRelease
+            : _castTime > 0f ? _castMove
             : state.BlockTicks > 0 ? WeaponMove.Guard : state.SlideTicks > 0 ? WeaponMove.Slide : WeaponMove.None;
         SlideEffects(state, shown);
         _player.Animate(new MotionState(flat.Length(), state.Grounded, state.Velocity.Y,
@@ -1177,6 +1197,8 @@ public partial class GameClient : Node
     }
 
     private byte _lastSlideTicks;
+    private float _castTime;
+    private WeaponMove _castMove;
 
     private static float LerpFacing(float from, float to, float amount) =>
         from + Mathf.Wrap(to - from, -Mathf.Pi, Mathf.Pi) * Mathf.Clamp(amount, 0f, 1f);
@@ -1510,6 +1532,12 @@ public partial class GameClient : Node
                 && motion.LengthSquared() > 0.0001f)
             {
                 ball.LookAt(ball.GlobalPosition + motion, Vector3.Up);
+            }
+            else if (spit.Kind == ProjectileKind.SummonedSpear && ball.GlobalPosition.DistanceTo(_shownNow) < 4f)
+            {
+                // The player's own conjured spears hang over their head pointing where they look.
+                var look = new Vector3(-Mathf.Sin(_yaw), 0, -Mathf.Cos(_yaw));
+                ball.LookAt(ball.GlobalPosition + look, Vector3.Up);
             }
             else if (spit.Kind == ProjectileKind.SummonedSpear && ball.GlobalPosition.DistanceSquaredTo(_shownNow) > 0.01f)
             {

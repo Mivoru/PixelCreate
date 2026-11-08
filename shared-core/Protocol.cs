@@ -61,6 +61,10 @@ public sealed class Snapshot
     public byte[] Attributes = new byte[Core.Attributes.Count];
     public byte UnspentPoints;
 
+    /// <summary>Skills learned, one bit for each place in the skill list, and each one's cooldown left in tenths of a second.</summary>
+    public uint KnownSkills;
+    public byte[] SkillCooldowns = Array.Empty<byte>();
+
     /// <summary>Counts blows taken on the guard and blows parried, the same way.</summary>
     public byte Blocks;
     public byte Parries;
@@ -175,6 +179,9 @@ public static class Protocol
         writer.Write(snapshot.Parries);
         writer.Write(snapshot.Attributes, 0, Core.Attributes.Count);
         writer.Write(snapshot.UnspentPoints);
+        writer.Write(snapshot.KnownSkills);
+        writer.Write((byte)snapshot.SkillCooldowns.Length);
+        writer.Write(snapshot.SkillCooldowns);
         writer.Write((byte)snapshot.Rank);
         writer.Write(snapshot.Gold);
         writer.Write(snapshot.QuestId);
@@ -291,6 +298,8 @@ public static class Protocol
         snapshot.Parries = reader.ReadByte();
         snapshot.Attributes = reader.ReadBytes(Core.Attributes.Count);
         snapshot.UnspentPoints = reader.ReadByte();
+        snapshot.KnownSkills = reader.ReadUInt32();
+        snapshot.SkillCooldowns = reader.ReadBytes(reader.ReadByte());
         snapshot.Rank = (GuildRank)reader.ReadByte();
         snapshot.Gold = reader.ReadInt32();
         snapshot.QuestId = reader.ReadByte();

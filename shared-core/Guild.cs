@@ -28,6 +28,12 @@ public enum Command : byte
 
     /// <summary>Takes every attribute point back for gold, at the Guild receptionist.</summary>
     ResetAttributes = 205,
+
+    /// <summary>Uses an item from the bag, named by the argument: eats food, drinks a potion, reads a skill book.</summary>
+    UseItem = 206,
+
+    /// <summary>Casts a learned skill, named by its place in <see cref="SkillDef.All"/>, along the player's aim.</summary>
+    CastSkill = 207,
 }
 
 /// <summary>A newcomer must beat the guild examiner to become an adventurer.</summary>

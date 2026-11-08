@@ -39,6 +39,12 @@ Rules:
   level, spent with `Command.RaiseAttribute` (arg = attribute) in the character window (K), reset with Mira for 20 gold a
   level. Per-point values are starting guesses, not measured balance. Endurance rides in `PlayerState.Endurance` because
   it changes stamina, which movement predicts. `PIXEL_BOT=character` opens the window.
+- Skills (`world/skills.json`, `Skills.cs`): each reuses an enemy ability's effect turned on enemies (fireball, air
+  slash, earth crack, summoned spears, fang slash). Enemies listed as `teachers` drop `book_<skill>` items (rares at
+  `rareBookChance`); reading one (`Command.UseItem`) teaches the skill. A learned skill goes on the hotbar (slot 1 stays
+  for the weapon) and casts with `Command.CastSkill` along the latest aim, for stamina, with a cooldown cut by
+  Intelligence. Skill damage scales with level and Intelligence, not weapon power. Test mode knows every skill.
+  `Command.UseItem` (arg = item index) replaced the eat range for the interface, so there is no 64-item limit there.
 - Slide: Ctrl while running on the ground (`Buttons.Slide`, `PlayerState.SlideTicks`/`SlideDirection`, in `Movement.Step`):
   a burst from 17 to 7 m/s over half a second, steerable a little, for stamina; a jump out of it keeps the speed in the
   air, and an attack or a dash ends it. `net-tests/SlideTests.cs`.

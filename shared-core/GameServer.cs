@@ -34,6 +34,9 @@ public sealed class ServerStats
     public long Spits;
     public long Dodges;
     public long PotionsDrunk;
+    public long SkillsLearned;
+    public long SkillsCast;
+    public long BooksDropped;
     public long Blocks;
     public long Parries;
     public long LevelUps;
@@ -104,6 +107,9 @@ public sealed class FireWallHazard
     /// </summary>
     public float HalfWidth;
     public HazardKind Kind;
+
+    /// <summary>For a player's skill: the skill whose damage it deals, or -1.</summary>
+    public int Skill = -1;
 
     /// <summary>Half the opening of the V, in radians.</summary>
     public float Angle = HalfAngle;
@@ -209,6 +215,10 @@ public sealed class GameServer : IEnemyEvents
         public int CatchUpTicks;
         public byte Level = 1;
 
+        /// <summary>Skills learned, by place in the skill list, and the tick from which each can be cast again.</summary>
+        public readonly HashSet<int> Skills = new();
+        public readonly uint[] SkillReady = new uint[SkillDef.All.Count];
+
         /// <summary>Points spent in each attribute.</summary>
         public readonly byte[] Attributes = new byte[Core.Attributes.Count];
 
@@ -255,6 +265,13 @@ public sealed class GameServer : IEnemyEvents
 
         /// <summary>For a hunter's shot: the creature it is meant for, which it can hit as well as players.</summary>
         public Enemy? Prey;
+
+        /// <summary>For a player's skill shot: the skill it carries, or -1, and the enemies it has cut already.</summary>
+        public int Skill = -1;
+        public readonly HashSet<int> Struck = new();
+
+        /// <summary>For a player's conjured spear: the aim to shoot along when no enemy is near.</summary>
+        public Vector3 Aim;
 
         /// <summary>A heavy shot partly breaks through a guard; arrows and spit do not.</summary>
         public bool Heavy;
@@ -567,6 +584,14 @@ public sealed class GameServer : IEnemyEvents
             ToggleWorn(player, 0, player.Gear[0]!);
             if (_options.TestMode)
             {
+                // Test runs know every skill and carry one book, so skills can be tried at once.
+                for (var skill = 0; skill < SkillDef.All.Count; skill++)
+                {
+                    player.Skills.Add(skill);
+                }
+
+                AddItem(player, SkillDef.All[0].Book, 1);
+
                 // Test runs start with one piece of each rarity, so gear can be checked at once.
                 var kit = new[] { "twin_daggers", "iron_helm", "leather_jerkin", "chain_leggings", "hunters_longbow", "spiked_club", "bone_staff" };
                 for (var i = 0; i < kit.Length; i++)
@@ -709,6 +734,140 @@ public sealed class GameServer : IEnemyEvents
     private static short MaxHealth(Player player) => (short)(Progression.MaxHealth(player.Level) + player.Stats.MaxHealth
         + player.Attribute(PlayerAttribute.Vitality) * Core.Attributes.HealthPerVitality);
 
+    /// <summary>Eats, drinks or reads an item from the bag, the way its kind is used.</summary>
+    private void UseItem(Player player, ushort item)
+    {
+        var def = ItemDef.All[item];
+        if (player.Bag.GetValueOrDefault(item) <= 0)
+        {
+            return;
+        }
+
+        if (def.IsFood || def.IsPotion)
+        {
+            Obey(player, ItemCommands.Eat(item));
+            return;
+        }
+
+        if (def.IsSkillBook && SkillDef.Index(def.Skill) is var skill and >= 0 && player.Skills.Add(skill))
+        {
+            AddItem(player, item, -1);
+            Stats.SkillsLearned++;
+        }
+    }
+
+    /// <summary>
+    /// Casts a learned skill along the player's aim, if it is off cooldown and the player has the
+    /// stamina. Stamina is spent here on the server, so the client learns of it in the next snapshot.
+    /// </summary>
+    private void CastSkill(Player player, ushort index)
+    {
+        var skill = SkillDef.All[index];
+        if (!player.Skills.Contains(index) || Tick < player.SkillReady[index] || player.State.Stamina < skill.Stamina || player.State.Health <= 0)
+        {
+            return;
+        }
+
+        player.State.Stamina -= skill.Stamina;
+        player.State.StaminaDelay = Tuning.StaminaRegenDelayTicks;
+        player.SkillReady[index] = Tick + (uint)Skills.Cooldown(skill, player.Attribute(PlayerAttribute.Intelligence));
+        Stats.SkillsCast++;
+        var (aim, flat) = ShotDirection(player);
+        var origin = ArrowOrigin(player.State.Position, flat) + flat * 0.4f;
+        switch (skill.Effect)
+        {
+            case "fireball":
+                _projectiles.Add(new Projectile
+                {
+                    Id = _nextId++, Kind = ProjectileKind.PlayerFireball, Damage = 0, Position = origin, Velocity = aim * Tuning.StaffBoltSpeed,
+                    Shooter = player.Id, SplashRadius = skill.Radius, Skill = index,
+                    Life = (int)MathF.Ceiling(Tuning.StaffBoltRange / Tuning.StaffBoltSpeed * Tuning.TickRate),
+                });
+                break;
+            case "airSlash":
+                PlayerSlash(player, ProjectileKind.AirSlash, origin, flat, index, skill.Radius);
+                break;
+            case "fangSlash":
+                var across = new Vector3(-flat.Z, 0, flat.X);
+                for (var claw = -1; claw <= 1; claw++)
+                {
+                    PlayerSlash(player, ProjectileKind.FangSlash, origin + across * (claw * FangSlashSpacing), flat, index, skill.Radius);
+                }
+
+                break;
+            case "summonSpears":
+                var side = new Vector3(-flat.Z, 0, flat.X);
+                for (var i = 0; i < SpearDelays.Length; i++)
+                {
+                    _projectiles.Add(new Projectile
+                    {
+                        Id = _nextId++, Kind = ProjectileKind.SummonedSpear, Damage = 0, Shooter = player.Id, Skill = index,
+                        Position = player.State.Position + Vector3.UnitY * 2.4f + side * ((i - 1) * 0.9f),
+                        Velocity = Vector3.Zero, Delay = SpearDelays[i], Pierces = true, Life = SpearDelays[i] + ProjectileLifeTicks,
+                        Aim = aim,
+                    });
+                }
+
+                break;
+            case "earthCrack":
+                _walls.Add(new FireWallHazard
+                {
+                    Id = _nextId++, Origin = player.State.Position + flat * 0.8f, Direction = flat, Damage = skill.Damage,
+                    Kind = HazardKind.EarthCrack, Angle = EarthCrack.HalfAngle, Span = EarthCrack.Length,
+                    Grow = EarthCrack.GrowTicks, Burn = EarthCrack.LingerTicks, Owner = player.Id, Skill = index,
+                });
+                break;
+        }
+    }
+
+    /// <summary>A flying crescent from a player: it cuts every enemy it passes once, up to its reach.</summary>
+    private void PlayerSlash(Player player, ProjectileKind kind, Vector3 from, Vector3 flat, int skill, float radius)
+    {
+        var speed = kind == ProjectileKind.FangSlash ? FangSlashSpeed : AirSlashSpeed;
+        var reach = kind == ProjectileKind.FangSlash ? FangSlashReach : AirSlashReach + 1f;
+        _projectiles.Add(new Projectile
+        {
+            Id = _nextId++, Kind = kind, Damage = 0, Position = from, Velocity = flat * speed, Shooter = player.Id, Skill = skill,
+            Radius = radius, Life = (int)(reach / speed * Tuning.TickRate),
+        });
+    }
+
+    /// <summary>One blow of a skill on an enemy: its own damage, raised by Intelligence, with all that follows from a blow.</summary>
+    private void SkillBlow(Player player, Enemy enemy, int skill, float share, Vector3 from)
+    {
+        var damage = (short)Math.Max(1, MathF.Round(BlowDamage(player, AttackKind.Light, enemy, SkillDef.All[skill].Damage, PlayerAttribute.Intelligence) * share));
+        var killed = enemy.TakeHit(damage, from, player.Id);
+        AfterBlow(player, enemy, damage);
+        Stats.EnemyHits++;
+        CallForHelp(enemy, player.Id);
+        if (killed)
+        {
+            OnKilled(enemy, player);
+        }
+    }
+
+    /// <summary>A player's skill shot in flight: slashes cut every enemy they pass once; a spear stops at the first.</summary>
+    private bool SkillShotHits(Projectile shot, Player shooter)
+    {
+        foreach (var enemy in _enemies.ToList())
+        {
+            var chest = enemy.Position + new Vector3(0, enemy.Def.Size * 0.6f, 0);
+            if (!enemy.Alive || shot.Struck.Contains(enemy.Id) || Vector3.Distance(chest, shot.Position) >= shot.Radius + enemy.Def.Size * 0.35f)
+            {
+                continue;
+            }
+
+            shot.Struck.Add(enemy.Id);
+            SkillBlow(shooter, enemy, shot.Skill, 1f, shot.Position - shot.Velocity * Tuning.TickSeconds);
+            if (shot.Kind == ProjectileKind.SummonedSpear)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /// <summary>Puts what the attributes change about movement into the player state, which both sides simulate.</summary>
     private static void ApplyAttributes(Player player)
     {
@@ -729,6 +888,18 @@ public sealed class GameServer : IEnemyEvents
         if (command is Command.StoreItem or Command.TakeItem or Command.StoreGear or Command.TakeGear)
         {
             UseChest(player, command, arg);
+            return;
+        }
+
+        if (command == Command.UseItem && arg < ItemDef.All.Count)
+        {
+            UseItem(player, arg);
+            return;
+        }
+
+        if (command == Command.CastSkill && arg < SkillDef.All.Count)
+        {
+            CastSkill(player, arg);
             return;
         }
 
@@ -1003,10 +1174,13 @@ public sealed class GameServer : IEnemyEvents
     /// damage; then every percentage bonus that applies to this target and this blow; a critical
     /// hit; and last the target's defense, less the armour the weapon pierces.
     /// </summary>
-    private short BlowDamage(Player player, AttackKind kind, Enemy enemy)
+    private short BlowDamage(Player player, AttackKind kind, Enemy enemy, short? skillDamage = null, PlayerAttribute? attribute = null)
     {
         var gear = player.Stats;
-        var damage = Tuning.Attack(kind).Damage * Progression.DamageScale(player.Level) * gear.Power + gear.Damage;
+        // A skill hits with its own damage, not the weapon's.
+        var damage = skillDamage is { } own
+            ? own * Progression.DamageScale(player.Level) + gear.Damage
+            : Tuning.Attack(kind).Damage * Progression.DamageScale(player.Level) * gear.Power + gear.Damage;
         var bonus = gear.DamagePct;
         if (enemy.Def.Kind == "goblin")
         {
@@ -1032,7 +1206,7 @@ public sealed class GameServer : IEnemyEvents
         }
 
         // The attribute that goes with the weapon adds its share.
-        bonus += player.Attribute(Core.Attributes.ForWeapon(gear.Weapon)) * Core.Attributes.DamagePctPerPoint;
+        bonus += player.Attribute(attribute ?? Core.Attributes.ForWeapon(gear.Weapon)) * Core.Attributes.DamagePctPerPoint;
         damage *= 1f + bonus / 100f;
         var crit = gear.CritChance + player.Attribute(PlayerAttribute.Dexterity) * Core.Attributes.CritChancePerDexterity;
         if (_random.NextDouble() * 100 < crit)
@@ -1162,6 +1336,16 @@ public sealed class GameServer : IEnemyEvents
         }
 
         DropGear(enemy, winner);
+
+        // An enemy that uses a skill can drop the book that teaches it.
+        foreach (var skill in SkillDef.All)
+        {
+            if (skill.ChanceFrom(enemy.Def) is var chance and > 0 && _random.NextDouble() < chance)
+            {
+                Drop(enemy, winner, skill.Book);
+                Stats.BooksDropped++;
+            }
+        }
         foreach (var entry in enemy.Def.Loot ?? Array.Empty<LootEntry>())
         {
             if (_random.NextDouble() >= entry.Chance)
@@ -1766,6 +1950,26 @@ public sealed class GameServer : IEnemyEvents
     private void BurnEnemies(FireWallHazard wall, float length)
     {
         var caster = _players[wall.Owner];
+        if (wall.Kind == HazardKind.EarthCrack)
+        {
+            // A player's crack: everything inside the V while it runs takes the skill's blow, once.
+            if (wall.Age > wall.Grow + 2)
+            {
+                return;
+            }
+
+            foreach (var enemy in _enemies.ToList())
+            {
+                if (enemy.Alive && !wall.Struck.Contains(enemy.Id) && InWedge(wall, enemy.Position, length + enemy.Def.Size * 0.4f))
+                {
+                    wall.Struck.Add(enemy.Id);
+                    SkillBlow(caster, enemy, wall.Skill, 1f, wall.Origin);
+                }
+            }
+
+            return;
+        }
+
         foreach (var enemy in _enemies.ToList())
         {
             if (!enemy.Alive || wall.Struck.Contains(enemy.Id) || !InStrip(wall, enemy.Position, length, enemy.Def.Size * 0.4f))
@@ -1928,6 +2132,24 @@ public sealed class GameServer : IEnemyEvents
                 continue;
             }
 
+            if (shot.Delay > 0 && shot.Shooter >= 0)
+            {
+                // A player's conjured spear: when its moment comes it shoots at the nearest enemy,
+                // or along the aim kept in it when nobody is near.
+                shot.Life--;
+                if (--shot.Delay == 0)
+                {
+                    var mark = _enemies.Where(e => e.Alive && Vector3.Distance(e.Position, shot.Position) < 22f)
+                        .OrderBy(e => Vector3.Distance(e.Position, shot.Position)).FirstOrDefault();
+                    var aim = mark is null
+                        ? shot.Aim
+                        : mark.Position + Vector3.UnitY * (mark.Def.Size * 0.6f) - shot.Position;
+                    shot.Velocity = aim == Vector3.Zero ? Vector3.UnitZ : Vector3.Normalize(aim) * ConjuredSpearSpeed;
+                }
+
+                continue;
+            }
+
             if (shot.Delay > 0)
             {
                 // A conjured spear hangs still, then shoots straight at its player's chest.
@@ -1947,6 +2169,16 @@ public sealed class GameServer : IEnemyEvents
             shot.Position += shot.Velocity * Tuning.TickSeconds;
             shot.Life--;
             var struck = !shot.Pierces && _world.IsBlocked(shot.Position);
+            if (shot.Shooter >= 0 && shot.Skill >= 0 && shot.Kind != ProjectileKind.PlayerFireball)
+            {
+                if (struck || !_players.TryGetValue(shot.Shooter, out var caster) || SkillShotHits(shot, caster))
+                {
+                    shot.Life = 0;
+                }
+
+                continue;
+            }
+
             if (shot.Shooter >= 0)
             {
                 if (shot.Kind == ProjectileKind.PlayerFireball)
@@ -2022,7 +2254,14 @@ public sealed class GameServer : IEnemyEvents
             var distance = Vector3.Distance(chest, shot.Position) - enemy.Def.Size * 0.35f;
             if (enemy.Alive && distance < shot.SplashRadius)
             {
-                Smite(caster, enemy, shot.Blow, distance < HitRadius ? 1f : 0.6f, shot.Position - shot.Velocity);
+                if (shot.Skill >= 0)
+                {
+                    SkillBlow(caster, enemy, shot.Skill, distance < HitRadius ? 1f : 0.6f, shot.Position - shot.Velocity);
+                }
+                else
+                {
+                    Smite(caster, enemy, shot.Blow, distance < HitRadius ? 1f : 0.6f, shot.Position - shot.Velocity);
+                }
             }
         }
     }
@@ -2066,6 +2305,8 @@ public sealed class GameServer : IEnemyEvents
                 Self = player.State,
                 Level = player.Level,
                 Attributes = (byte[])player.Attributes.Clone(),
+                KnownSkills = player.Skills.Aggregate(0u, (bits, skill) => bits | (1u << skill)),
+                SkillCooldowns = player.SkillReady.Select(ready => (byte)Math.Clamp((ready > Tick ? ready - Tick : 0) / 6, 0, 255)).ToArray(),
                 UnspentPoints = (byte)Math.Clamp(player.UnspentPoints, 0, 255),
                 Xp = player.Xp,
                 XpToNext = Progression.XpToNext(player.Level),

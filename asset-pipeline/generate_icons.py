@@ -698,6 +698,26 @@ SHAPES.update({
 ................""",
 })
 
+SHAPES.update({
+    "book": """
+................
+................
+...kkkkkkkkkk...
+...k44444443ck..
+...k43333332ck..
+...k43yyyy32ck..
+...k43y33y32ck..
+...k43yyyy32ck..
+...k43333332ck..
+...k43333332ck..
+...k43333332ck..
+...k32222221ck..
+...kkkkkkkkkcc..
+....kccccccccc..
+................
+................""",
+})
+
 ICONS = {
     "crystal_common": ("crystal", "stone"), "crystal_rare": ("crystal", "blue"),
     "crystal_epic": ("crystal", "magic"), "crystal_legendary": ("crystal", "gold"),
@@ -711,6 +731,8 @@ ICONS = {
     "raw_beef": ("steak", "meat"), "goat_meat": ("steak", "goat"), "venison": ("steak", "venison"),
     "mutton": ("steak", "mutton"), "boar_meat": ("steak", "boar"), "raw_chicken": ("drumstick", "chicken"),
     "egg": ("egg", "egg"),
+    "skillbook_fire": ("book", "fire"), "skillbook_wind": ("book", "blue"), "skillbook_earth": ("book", "leather"),
+    "skillbook_spear": ("book", "iron"), "skillbook_blood": ("book", "potion"),
     "minor_healing_potion": ("potion", "potion"), "healing_potion": ("big_potion", "potion"),
     "rusty_dagger": ("dagger", "iron"), "spiked_club": ("club", "wood"), "goblin_shortbow": ("bow", "wood"),
     "hunters_longbow": ("longbow", "leather"), "bone_staff": ("staff", "wood"), "archer_hood": ("hood", "rag"),

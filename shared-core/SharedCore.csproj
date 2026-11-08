@@ -12,5 +12,6 @@
     <EmbeddedResource Include="..\world\items.json" LogicalName="items" />
     <EmbeddedResource Include="..\world\collision.json" LogicalName="collision" />
     <EmbeddedResource Include="..\world\affixes.json" LogicalName="affixes" />
+    <EmbeddedResource Include="..\world\skills.json" LogicalName="skills" />
   </ItemGroup>
 </Project>

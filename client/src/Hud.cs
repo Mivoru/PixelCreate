@@ -293,7 +293,7 @@ public partial class Hud : Control
     private void DrawCharacter()
     {
         _raiseButtons.Clear();
-        var window = new Rect2((Size.X - 760f) / 2f, (Size.Y - 560f) / 2f, 760, 560);
+        var window = new Rect2((Size.X - 760f) / 2f, (Size.Y - 660f) / 2f, 760, 660);
         Card(window, 22, GlassDeep, true);
         Label("Character", window.Position + new Vector2(34, 56), 24, Text, _bold);
         var unspent = Snapshot?.UnspentPoints ?? 0;
@@ -317,6 +317,19 @@ public partial class Hud : Control
             {
                 _raiseButtons.Add((button, attribute));
             }
+        }
+
+        // Skills learned from books: drag one onto the hotbar to cast it with that key.
+        Label("Skills", window.Position + new Vector2(34, 482), 18, Text, _bold);
+        for (var i = 0; i < SkillDef.All.Count; i++)
+        {
+            var rect = new Rect2(window.Position + new Vector2(34 + i * (SlotSize + 9), 494), SlotSize, SlotSize);
+            DrawSlot(rect, Items.Skill(i), new SlotRef("skill", i));
+        }
+
+        if (Enumerable.Range(0, SkillDef.All.Count).All(i => Items.Skill(i) is null))
+        {
+            Label("None yet. Enemies that use a skill can drop the book that teaches it.", window.Position + new Vector2(34 + SkillDef.All.Count * (SlotSize + 9) + 10, 532), 14, Muted);
         }
 
         var maxHealth = Snapshot?.MaxHealth ?? Tuning.PlayerHealth;
@@ -486,7 +499,7 @@ public partial class Hud : Control
             }
         }
 
-        if (!InventoryOpen)
+        if (!InventoryOpen && !CharacterOpen)
         {
             return;
         }
@@ -585,6 +598,12 @@ public partial class Hud : Control
             return;
         }
 
+        if (Items.Hotbar[index] is { IsSkill: true } skill)
+        {
+            Cast(skill);
+            return;
+        }
+
         if (Items.Hotbar[index] is { IsGear: true } piece && !Items.IsWorn(piece))
         {
             _commands.Enqueue((GearCommands.Toggle(piece.Place), 0));
@@ -593,11 +612,36 @@ public partial class Hud : Control
         Items.SelectedHotbar = index;
     }
 
+    /// <summary>Casts a skill from the hotbar, unless it is still cooling down.</summary>
+    private void Cast(Item skill)
+    {
+        if (SkillCooldown(skill.Index) > 0f)
+        {
+            return;
+        }
+
+        _commands.Enqueue((Command.CastSkill, (ushort)skill.Index));
+        SkillCast = skill.Index;
+    }
+
+    /// <summary>The skill just cast from the hotbar, for the cast pose and sound, or -1. The game clears it.</summary>
+    public int SkillCast { get; set; } = -1;
+
+    /// <summary>Seconds of cooldown a skill has left, as the server last said.</summary>
+    public float SkillCooldown(int index) =>
+        Snapshot is { } s && index >= 0 && index < s.SkillCooldowns.Length ? s.SkillCooldowns[index] / 10f : 0f;
+
     private void Use(Item? item)
     {
+        if (item is { Index: >= 0 } book && book.IsSkillBook && Items.Count(book) > 0)
+        {
+            _commands.Enqueue((Command.UseItem, (ushort)book.Index));
+            return;
+        }
+
         if (item is { Index: >= 0 } food && (food.IsFood || food.IsPotion) && Items.Count(food) > 0)
         {
-            _commands.Enqueue((ItemCommands.Eat((ushort)food.Index), 0));
+            _commands.Enqueue((Command.UseItem, (ushort)food.Index));
             if (food.IsPotion)
             {
                 _potionUsed = Time.GetTicksMsec();
@@ -622,6 +666,23 @@ public partial class Hud : Control
     private void Exchange(SlotRef slot)
     {
         var current = Read(slot);
+
+        // A learned skill is lifted as a shortcut, to put on the hotbar.
+        if (slot.Area == "skill")
+        {
+            if (Items.Held is null && current is not null)
+            {
+                Items.Held = current;
+                Items.HeldShortcut = true;
+            }
+            else if (Items.HeldShortcut)
+            {
+                Items.Held = null;
+                Items.HeldShortcut = false;
+            }
+
+            return;
+        }
 
         // The potion bar holds shortcuts to potions only, the same way the hotbar does.
         if (slot.Area == "potion")
@@ -711,6 +772,7 @@ public partial class Hud : Control
         "bag" => Items.Bag[slot.Index],
         "hotbar" => Items.Hotbar[slot.Index],
         "potion" => Items.Potions[slot.Index],
+        "skill" => Items.Skill(slot.Index),
         "chest" => slot.Index < Items.ChestContents().Count ? Items.ChestContents()[slot.Index].Item : null,
         _ => Items.Equipped[slot.Equip],
     };
@@ -1130,6 +1192,13 @@ public partial class Hud : Control
 
         var count = shownCount ?? Items.Count(item);
         _iconDraws.Add((rect.Grow(-6), item.Icon, count > 0 ? 1f : 0.35f));
+        if (item.IsSkill && SkillCooldown(item.Index) is var left and > 0f)
+        {
+            // A skill cooling down: a shade over the slot and the seconds left.
+            DrawRect(rect.Grow(-2), new Color(0, 0, 0, 0.55f));
+            var seconds = left >= 1f ? $"{Mathf.CeilToInt(left)}" : $"{left:0.0}".Replace(',', '.');
+            Label(seconds, rect.Position + new Vector2((rect.Size.X - Width(seconds, 20, _bold)) / 2f, rect.Size.Y / 2f + 8), 20, Colors.White, _bold);
+        }
         if (slot.Area == "hotbar" && Items.IsWorn(item))
         {
             // A small gold mark: this piece is the one worn.

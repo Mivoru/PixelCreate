@@ -38,6 +38,11 @@
   { "id": "minor_healing_potion", "name": "Minor Healing Potion", "kind": "potion", "tier": 0, "price": 15, "heal": 40, "shop": "alchemist", "icon": "minor_healing_potion", "description": "A small red draught. Heals 40 health at once." },
   { "id": "healing_potion", "name": "Healing Potion", "kind": "potion", "tier": 1, "price": 40, "heal": 100, "shop": "alchemist", "icon": "healing_potion", "description": "A full flask of the alchemist's best. Heals 100 health at once." },
 
+  { "id": "book_fireball", "name": "Book of Fireball", "kind": "skillbook", "tier": 2, "price": 0, "skill": "fireball", "icon": "skillbook_fire", "description": "Reading it teaches the skill Fireball for good." },
+  { "id": "book_air_slash", "name": "Book of Air Slash", "kind": "skillbook", "tier": 2, "price": 0, "skill": "air_slash", "icon": "skillbook_wind", "description": "Reading it teaches the skill Air Slash for good." },
+  { "id": "book_earth_crack", "name": "Book of Earth Crack", "kind": "skillbook", "tier": 2, "price": 0, "skill": "earth_crack", "icon": "skillbook_earth", "description": "Reading it teaches the skill Earth Crack for good." },
+  { "id": "book_summon_spears", "name": "Book of Summon Spears", "kind": "skillbook", "tier": 2, "price": 0, "skill": "summon_spears", "icon": "skillbook_spear", "description": "Reading it teaches the skill Summon Spears for good." },
+  { "id": "book_fang_slash", "name": "Book of Fang Slash", "kind": "skillbook", "tier": 2, "price": 0, "skill": "fang_slash", "icon": "skillbook_blood", "description": "Reading it teaches the skill Fang Slash for good." },
   { "id": "wooden_sword", "name": "Wooden Sword", "kind": "equipment", "slot": "weapon", "tier": 0, "price": 5, "icon": "wooden_sword", "description": "A training blade. It still hurts.", "weapon": "sword", "power": 1.0 },
   { "id": "rusty_dagger", "name": "Rusty Dagger", "kind": "equipment", "slot": "weapon", "tier": 1, "price": 30, "icon": "rusty_dagger", "description": "A goblin's knife. Short, quick and dirty.", "weapon": "dagger", "power": 1.05 },
   { "id": "spiked_club", "name": "Spiked Club", "kind": "equipment", "slot": "weapon", "tier": 1, "price": 40, "icon": "spiked_club", "description": "A log with nails in it. Subtle it is not.", "weapon": "club", "power": 1.3 },

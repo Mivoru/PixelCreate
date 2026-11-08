@@ -57,7 +57,7 @@ public static class Attributes
     {
         PlayerAttribute.Strength => $"+{DamagePctPerPoint}% sword, club and fist damage",
         PlayerAttribute.Dexterity => $"+{DamagePctPerPoint}% bow and dagger damage, +{CritChancePerDexterity.ToString(System.Globalization.CultureInfo.InvariantCulture)}% critical chance",
-        PlayerAttribute.Intelligence => $"+{DamagePctPerPoint}% staff damage (and skills, later)",
+        PlayerAttribute.Intelligence => $"+{DamagePctPerPoint}% staff and skill damage, -1% skill cooldowns",
         PlayerAttribute.Vitality => $"+{HealthPerVitality} health, +{RegenPctPerVitality}% health regeneration",
         _ => $"+{StaminaPerEndurance:0} stamina, +{StaminaRegenPctPerEndurance:0}% stamina regeneration",
     };

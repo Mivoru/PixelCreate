@@ -26,6 +26,17 @@ public sealed record Item(string Id, string Name, string Description, string Ico
 
     public bool IsPotion => Kind == "potion";
 
+    public bool IsSkillBook => Kind == "skillbook";
+
+    /// <summary>A learned skill on the hotbar; Index is its place in the skill list.</summary>
+    public bool IsSkill => Kind == "skill";
+
+    public static Item FromSkill(int index)
+    {
+        var skill = SkillDef.All[index];
+        return new Item($"skill:{skill.Id}", skill.Name, skill.Description, skill.Icon, EquipSlot.None, 2, "skill", 0, 0, index);
+    }
+
     public bool IsGear => Gear is not null;
 
     /// <summary>A piece of gear as the interface shows it; its tier is its rarity.</summary>
@@ -151,7 +162,33 @@ public sealed class Inventory
 
     public static Item Def(int index) => Defs[index];
 
-    public int Count(Item item) => item.Index < 0 || item.IsGear ? 1 : Counts.GetValueOrDefault(item.Index);
+    public int Count(Item item) => item.Index < 0 || item.IsGear || item.IsSkill ? 1 : Counts.GetValueOrDefault(item.Index);
+
+    /// <summary>Skills learned so far, as hotbar items by skill index.</summary>
+    private readonly Dictionary<int, Item> _skills = new();
+
+    /// <summary>A learned skill as an item, or null if it is not learned.</summary>
+    public Item? Skill(int index) => _skills.GetValueOrDefault(index);
+
+    /// <summary>Takes in the learned skills from a snapshot; each new one goes to the first empty hotbar slot.</summary>
+    public void ApplySkills(uint known)
+    {
+        for (var i = 0; i < SkillDef.All.Count; i++)
+        {
+            if ((known & (1u << i)) == 0 || _skills.ContainsKey(i))
+            {
+                continue;
+            }
+
+            var skill = Item.FromSkill(i);
+            _skills[i] = skill;
+            // The first slot stays for the weapon a player starts with.
+            if (Array.IndexOf(Hotbar, null, 1) is var free and >= 1)
+            {
+                Hotbar[free] = skill;
+            }
+        }
+    }
 
     /// <summary>The Guild chest as the server last sent it: stacks by item index, and gear by place in the chest.</summary>
     public Dictionary<int, int> Stored { get; } = new();
@@ -280,7 +317,7 @@ public sealed class Inventory
         if (!_hotbarSeeded && Equipped[EquipSlot.Weapon] is { } weapon)
         {
             _hotbarSeeded = true;
-            if (Hotbar.All(i => i is null))
+            if (Hotbar[0] is null)
             {
                 Hotbar[0] = weapon;
             }
