@@ -678,6 +678,7 @@ public partial class GameClient : Node
         if (Input.IsMouseButtonPressed(MouseButton.Left)) buttons |= Buttons.Light;
         if (Input.IsMouseButtonPressed(MouseButton.Right)) buttons |= Buttons.Heavy;
         if (Input.IsMouseButtonPressed(MouseButton.Middle)) buttons |= Buttons.Block;
+        if (Input.IsKeyPressed(Key.Ctrl)) buttons |= Buttons.Slide;
         return ToMove(side, forward, buttons);
     }
 
@@ -1123,10 +1124,29 @@ public partial class GameClient : Node
         _player.SetWeapon(Weapons.Name(_client.State.Weapon), _hud.Items.Equipped[EquipSlot.Weapon]?.Gear?.Def.Id);
         _player.SwordVisible = _hud.Items.HasWeapon;
         var bow = state.DrawTicks > 0 ? WeaponMove.BowDraw : state.Attack == AttackKind.BowShot ? WeaponMove.BowRelease
-            : state.BlockTicks > 0 ? WeaponMove.Guard : WeaponMove.None;
+            : state.BlockTicks > 0 ? WeaponMove.Guard : state.SlideTicks > 0 ? WeaponMove.Slide : WeaponMove.None;
+        SlideEffects(state, shown);
         _player.Animate(new MotionState(flat.Length(), state.Grounded, state.Velocity.Y,
             state.DashTicks > 0, state.Attack, state.AttackTick, bow, Tuning.Drawn(state.DrawTicks), _shotPitch), delta);
     }
+
+    /// <summary>A slide kicks up dust from under the feet, with a scrape when it starts.</summary>
+    private void SlideEffects(in PlayerState state, Vector3 feet)
+    {
+        if (state.SlideTicks > 0 && _lastSlideTicks == 0)
+        {
+            _sfx.Play("slide", feet);
+        }
+
+        if (state.SlideTicks > 0 && state.SlideTicks % 3 == 0 && state.SlideTicks != _lastSlideTicks)
+        {
+            _fx.Burst(feet + Vector3.Up * 0.1f, new Color("b86f50"), 4, 2.5f, 0.4f, 0.08f, -4f, 60f);
+        }
+
+        _lastSlideTicks = state.SlideTicks;
+    }
+
+    private byte _lastSlideTicks;
 
     private static float LerpFacing(float from, float to, float amount) =>
         from + Mathf.Wrap(to - from, -Mathf.Pi, Mathf.Pi) * Mathf.Clamp(amount, 0f, 1f);

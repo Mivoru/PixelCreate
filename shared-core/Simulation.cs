@@ -20,6 +20,19 @@ public static class Tuning
     /// A guard takes all of a light blow and lets the given share of a heavy one through, for stamina.
     /// </summary>
     public const float BlockMoveScale = 0.45f;
+
+    /// <summary>
+    /// The slide: a low burst along the way the player runs that bleeds speed as it goes. It needs a
+    /// running start on the ground, costs stamina, can be steered a little and jumped out of, keeping
+    /// the speed. Speeds are metres a second at the start and at the end of the slide.
+    /// </summary>
+    public const byte SlideTicks = 30;
+    public const byte SlideCooldownTicks = 24;
+    public const float SlideStartSpeed = 17f;
+    public const float SlideEndSpeed = 7f;
+    public const float SlideStamina = 12f;
+    public const float SlideMinSpeed = 5.5f;
+    public const float SlideSteer = 0.05f;
     public const float BlockMinDot = 0.34f;
     public const byte ParryTicks = 10;
     public const float BlockHeavyShare = 0.4f;
@@ -213,6 +226,7 @@ public enum Buttons : byte
     Light = 4,
     Heavy = 8,
     Block = 16,
+    Slide = 32,
 }
 
 /// <summary>One tick of player input. Stored quantized, so both sides simulate the same values.</summary>
@@ -262,6 +276,11 @@ public struct PlayerState
     /// <summary>Ticks the bow has been drawn so far, and how far it was drawn when the last arrow left.</summary>
     public byte DrawTicks;
     public byte ShotDraw;
+
+    /// <summary>Ticks of slide left, the wait before the next, and the way the slide goes.</summary>
+    public byte SlideTicks;
+    public byte SlideCooldown;
+    public Vector3 SlideDirection;
 
     /// <summary>Ticks the guard has been up (0 when not blocking), and where it faces.</summary>
     public byte BlockTicks;
@@ -480,12 +499,14 @@ public static class Movement
         }
 
         if (state.DashCooldown > 0) state.DashCooldown--;
+        if (state.SlideCooldown > 0) state.SlideCooldown--;
         if (state.SlowTicks > 0) state.SlowTicks--;
         if (state.StaminaDelay > 0) state.StaminaDelay--;
 
         var landed = StepAttack(ref state, input);
         StepDash(ref state, input, wish);
         StepBlock(ref state, input);
+        StartSlide(ref state, input);
 
         if (state.StaminaDelay == 0)
         {
@@ -510,6 +531,10 @@ public static class Movement
             state.Velocity.X = aim.X * Tuning.LeapSpeed;
             state.Velocity.Z = aim.Z * Tuning.LeapSpeed;
         }
+        else if (state.SlideTicks > 0)
+        {
+            Slide(ref state, wish);
+        }
         else
         {
             Accelerate(ref state, wish);
@@ -517,8 +542,10 @@ public static class Movement
 
         if (input.Buttons.HasFlag(Buttons.Jump) && state.Grounded && state.Stamina >= Tuning.JumpStamina)
         {
+            // A jump out of a slide keeps its speed, so the two chain into a long, fast leap.
             state.Velocity.Y = Tuning.JumpSpeed;
             Spend(ref state, Tuning.JumpStamina);
+            EndSlide(ref state);
         }
 
         state.Velocity.Y -= Tuning.Gravity * Tuning.TickSeconds;
@@ -529,6 +556,57 @@ public static class Movement
         MoveAxis(ref state, world, 1, state.Velocity.Y * Tuning.TickSeconds);
         LandOnGround(ref state, world, wasGrounded);
         return landed;
+    }
+
+    /// <summary>Ctrl while running on the ground drops into a slide along the way the player is going.</summary>
+    private static void StartSlide(ref PlayerState state, in InputCmd input)
+    {
+        var flat = new Vector3(state.Velocity.X, 0, state.Velocity.Z);
+        if (!input.Buttons.HasFlag(Buttons.Slide) || state.SlideTicks > 0 || state.SlideCooldown > 0 || !state.Grounded
+            || state.DashTicks > 0 || state.Attack != AttackKind.None || state.BlockTicks > 0 || state.DrawTicks > 0
+            || state.Stamina < Tuning.SlideStamina || flat.Length() < Tuning.SlideMinSpeed)
+        {
+            return;
+        }
+
+        state.SlideTicks = Tuning.SlideTicks;
+        state.SlideDirection = Vector3.Normalize(flat);
+        Spend(ref state, Tuning.SlideStamina);
+    }
+
+    /// <summary>One tick of a slide: fast at first and slowing, nudged a little towards where the player steers.</summary>
+    private static void Slide(ref PlayerState state, Vector2 wish)
+    {
+        if (state.Attack != AttackKind.None || state.DashTicks > 0)
+        {
+            EndSlide(ref state);
+            return;
+        }
+
+        if (wish != Vector2.Zero)
+        {
+            var steer = state.SlideDirection + new Vector3(wish.X, 0, wish.Y) * Tuning.SlideSteer;
+            state.SlideDirection = Vector3.Normalize(steer);
+        }
+
+        var done = 1f - state.SlideTicks / (float)Tuning.SlideTicks;
+        var speed = Tuning.SlideStartSpeed + (Tuning.SlideEndSpeed - Tuning.SlideStartSpeed) * done;
+        state.Velocity.X = state.SlideDirection.X * speed;
+        state.Velocity.Z = state.SlideDirection.Z * speed;
+        state.SlideTicks--;
+        if (state.SlideTicks == 0)
+        {
+            state.SlideCooldown = Tuning.SlideCooldownTicks;
+        }
+    }
+
+    private static void EndSlide(ref PlayerState state)
+    {
+        if (state.SlideTicks > 0)
+        {
+            state.SlideTicks = 0;
+            state.SlideCooldown = Tuning.SlideCooldownTicks;
+        }
     }
 
     private static void Spend(ref PlayerState state, float amount)

@@ -437,6 +437,9 @@ public static class Protocol
         writer.Write(state.ShotDraw);
         writer.Write(state.BlockTicks);
         writer.Write(state.BlockAim);
+        writer.Write(state.SlideTicks);
+        writer.Write(state.SlideCooldown);
+        WriteVector(writer, state.SlideDirection);
     }
 
     private static PlayerState ReadState(BinaryReader reader) => new()
@@ -459,5 +462,8 @@ public static class Protocol
         ShotDraw = reader.ReadByte(),
         BlockTicks = reader.ReadByte(),
         BlockAim = reader.ReadByte(),
+        SlideTicks = reader.ReadByte(),
+        SlideCooldown = reader.ReadByte(),
+        SlideDirection = ReadVector(reader),
     };
 }

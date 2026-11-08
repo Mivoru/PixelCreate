@@ -33,6 +33,9 @@ public enum WeaponMove
     /// <summary>A spear driven straight out in front at chest height.</summary>
     SpearThrust,
 
+    /// <summary>A slide: low and leaning back, the front leg out straight and the back one folded, a hand trailing.</summary>
+    Slide,
+
     /// <summary>On guard: the blade held level across the face, the free hand braced behind it.</summary>
     Guard,
 
@@ -1353,6 +1356,21 @@ public sealed class PlayerRig
                 _target[ThighL] = -0.6f;
                 _target[ThighR] = 0.5f;
                 _target[ShinR] = 0.4f;
+                break;
+            case WeaponMove.Slide:
+                _target[Lean] = -0.55f;
+                _target[Bob] = -0.5f;
+                _target[ThighL] = 1.35f;
+                _target[ShinL] = 0.1f;
+                _target[ThighR] = 0.35f;
+                _target[ShinR] = 1.8f;
+                _target[ArmL] = -0.6f;
+                _target[ArmLSide] = 0.5f;
+                _target[ForearmL] = -0.2f;
+                _target[ArmR] = 0.6f;
+                _target[ArmRSide] = 0.3f;
+                _target[ForearmR] = -0.6f;
+                _target[Head] = 0.15f;
                 break;
             case WeaponMove.Guard:
                 _target[ArmR] = 1.15f;
