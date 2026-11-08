@@ -247,6 +247,9 @@ public partial class Hud : Control
 
     public string Prompt { get; set; } = "";
 
+    /// <summary>Signs over things a player can use: where they float and what they say.</summary>
+    public List<(Vector3 At, string Text)> Signs { get; } = new();
+
     public string Objective { get; set; } = "";
 
     public bool DialogOpen => _dialogName.Length > 0;
@@ -1305,6 +1308,24 @@ public partial class Hud : Control
             }
 
             DrawTag(ToHud(head), enemy, def);
+        }
+
+        foreach (var (at, text) in Signs)
+        {
+            var distance = Camera.GlobalPosition.DistanceTo(at);
+            if (Camera.IsPositionBehind(at) || distance > 16f)
+            {
+                continue;
+            }
+
+            // A gold name with the E key beside it, bobbing gently.
+            var bob = Mathf.Sin(Time.GetTicksMsec() / 400f) * 3f;
+            var point = ToHud(at) + new Vector2(0, bob);
+            var width = Width(text, 16, _bold);
+            var plate = new Rect2(point.X - width / 2f - 40, point.Y - 22, width + 56, 32);
+            Rounded(plate, 10, new Color(0.05f, 0.05f, 0.08f, 0.72f), Accent with { A = 0.6f }, 1);
+            Keycap("E", new Vector2(plate.Position.X + 8, plate.Position.Y + 6), 13);
+            Label(text, new Vector2(plate.Position.X + 40, point.Y), 16, Accent, _bold);
         }
     }
 

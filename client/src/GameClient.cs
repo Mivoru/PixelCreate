@@ -163,6 +163,11 @@ public partial class GameClient : Node
                 _stage.View.AddChild(rig.Root);
                 _npcs.Add(npc.Id, rig);
             }
+            else if (npc.Role == "storage")
+            {
+                // Things you can use, like the Guild chest, carry a floating sign so players see them.
+                _hud.Signs.Add((ToGodot(npc.Position) + Vector3.Up * 1.25f, npc.Name));
+            }
         }
 
         _hud.ShowStory(new[]
@@ -341,7 +346,8 @@ public partial class GameClient : Node
         }
 
         var door = _world.Portals.Any(p => new Vector2(p.From.X - shown.X, p.From.Z - shown.Z).Length() < Guild.DoorRange);
-        _hud.Prompt = nearest is { } target ? $"[E] Talk to {target.Name}" : door ? "[E] Use door" : "";
+        _hud.Prompt = nearest is { Role: "storage" } chest ? $"[E] Open the {chest.Name}"
+            : nearest is { } target ? $"[E] Talk to {target.Name}" : door ? "[E] Use door" : "";
         if (_hud.DialogOpen && nearest is null)
         {
             _hud.CloseDialog();
