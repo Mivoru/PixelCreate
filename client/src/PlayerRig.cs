@@ -18,6 +18,8 @@ public enum WeaponMove
     StaffRaise,
     StaffThrust,
     StaffPlant,
+    ClawRaise,
+    ClawRake,
 }
 
 /// <summary>What a character is doing this frame. The rig turns it into a pose.</summary>
@@ -33,7 +35,10 @@ public sealed record RigLook(string Kind, Color Skin, float Scale, string Weapon
     public static readonly RigLook Player = new("player", new Color("e8b796"), 1f, "sword");
 
     /// <summary>Goblins and orcs share the brute rig: thick limbs, clawed hands, heads and torsos from Blender.</summary>
-    public bool Goblin => Kind is "skirmisher" or "brute" or "archer" or "sharpshooter" or "shaman" || Orc;
+    public bool Goblin => Kind is "skirmisher" or "brute" or "archer" or "sharpshooter" or "shaman" || Orc || Werewolf;
+
+    /// <summary>A werewolf: a hunched, shaggy giant with a wolf's head, clawed hands, hind paws and a tail.</summary>
+    public bool Werewolf => Kind.StartsWith("werewolf");
 
     /// <summary>An orc: a goblin's rig at a man's height. Kind is orc_ and the head: warrior, berserker, spearwoman or huntress.</summary>
     public bool Orc => Kind.StartsWith("orc_");
@@ -177,14 +182,18 @@ public sealed class PlayerRig
         var skin = look.Skin;
         Root.Scale = Vector3.One * look.Scale;
         _look = look;
-        _hipHeight = look.Orc ? 0.98f : look.Goblin ? 0.6f : 0.98f;
+        _hipHeight = look.Orc || look.Werewolf ? 0.98f : look.Goblin ? 0.6f : 0.98f;
         Root.AddChild(_hips);
         _hips.Position = new Vector3(0, _hipHeight, 0);
         _hips.AddChild(_torso);
         _torso.Position = new Vector3(0, 0.1f, 0);
         _torso.AddChild(_head);
-        _head.Position = look.Orc ? new Vector3(0, 0.47f, 0.01f) : new Vector3(0, look.Goblin ? 0.5f : 0.3f, look.Goblin ? -0.06f : 0f);
-        if (look.Orc)
+        _head.Position = look.Werewolf ? new Vector3(0, 0.55f, 0.06f) : look.Orc ? new Vector3(0, 0.47f, 0.01f) : new Vector3(0, look.Goblin ? 0.5f : 0.3f, look.Goblin ? -0.06f : 0f);
+        if (look.Werewolf)
+        {
+            BuildWerewolf(skin);
+        }
+        else if (look.Orc)
         {
             BuildOrc(skin);
         }
@@ -469,6 +478,13 @@ public sealed class PlayerRig
                         material.SetShaderParameter("rim_strength", 0.08f);
                     }
 
+                    if (original.ResourceName is "were_eye")
+                    {
+                        // Eyes that burn in the dark: lit from every side.
+                        material.SetShaderParameter("shade", color * 0.95f);
+                        material.SetShaderParameter("rim_strength", 0f);
+                    }
+
                     if (original.ResourceName == "anime_hair" || cap)
                     {
                         material.SetShaderParameter("shine", 1f);
@@ -591,6 +607,29 @@ public sealed class PlayerRig
         BuildArm(_armR, _forearmR, width + 0.06f, skin, skin, leather);
     }
 
+    /// <summary>
+    /// A werewolf: a deep, hunched chest under shaggy fur, a wolf's head with glowing eyes, long thick
+    /// arms ending in clawed hands, hind legs on paws, and a tail hanging from the hips.
+    /// </summary>
+    private void BuildWerewolf(Color fur)
+    {
+        _hips.AddChild(Part(new BoxMesh { Size = new Vector3(0.4f, 0.2f, 0.3f) }, fur, Vector3.Zero));
+        _torso.AddChild(Model("were_torso"));
+        _head.AddChild(Model("were_head"));
+        var tail = Model("were_tail");
+        tail.Position = new Vector3(0, 0.02f, 0.12f);
+        _hips.AddChild(tail);
+        BuildLeg(_thighL, _shinL, -0.13f, fur, fur, 1.2f, true);
+        BuildLeg(_thighR, _shinR, 0.13f, fur, fur, 1.2f, true);
+        BuildArm(_armL, _forearmL, -0.4f, fur, fur, fur.Darkened(0.3f));
+        BuildArm(_armR, _forearmR, 0.4f, fur, fur, fur.Darkened(0.3f));
+        // Shaggy fur hangs from the thighs and the upper arms, so the limbs are not smooth pillars.
+        foreach (var (limb, model) in new[] { (_thighL, "were_thigh_fur"), (_thighR, "were_thigh_fur"), (_armL, "were_arm_fur"), (_armR, "were_arm_fur") })
+        {
+            limb.AddChild(Model(model));
+        }
+    }
+
     /// <summary>A goblin head from Blender: big nose, scowling brow, grin and long ears, with the gear of its kind.</summary>
     private void BuildGoblinHead(Color skin, Color cloth, Color dark, Color bone)
     {
@@ -624,7 +663,7 @@ public sealed class PlayerRig
             child.QueueFree();
         }
 
-        if (weapon == "none")
+        if (weapon is "none" or "claws")
         {
             return;
         }
@@ -699,6 +738,16 @@ public sealed class PlayerRig
         else if (_look.Weapon != "sword")
         {
             CarryWeapon();
+        }
+
+        if (_look.Werewolf)
+        {
+            // A werewolf never stands straight: it crouches on bent knees, ready to spring.
+            _target[ThighL] += 0.5f;
+            _target[ThighR] += 0.42f;
+            _target[ShinL] += 0.85f;
+            _target[ShinR] += 0.8f;
+            _target[Bob] -= 0.14f;
         }
 
         if (state.Attack is AttackKind.DaggerFlurry or AttackKind.DaggerLeap)
@@ -818,6 +867,15 @@ public sealed class PlayerRig
                 _target[ForearmR] = -1f;
                 _target[SwordTilt] = 0f;
                 _target[SwordYaw] = 0f;
+                break;
+            case "claws":
+                // Long arms hanging forward, hands open and ready to tear.
+                _target[ArmR] = 0.45f;
+                _target[ArmRSide] = 0.3f;
+                _target[ForearmR] = -0.55f;
+                _target[ArmL] = 0.45f;
+                _target[ArmLSide] = 0.3f;
+                _target[ForearmL] = -0.55f;
                 break;
             case "spear":
                 // Upright in the right hand, butt by the foot, point well over the head.
@@ -1162,6 +1220,31 @@ public sealed class PlayerRig
                 _target[ArmL] = 1.5f;
                 _target[ForearmL] = -0.1f;
                 _target[Lean] = 0.3f;
+                break;
+            case WeaponMove.ClawRaise:
+                // Both arms flung up and wide, the body rearing back before it tears.
+                _target[ArmR] = 2.5f;
+                _target[ArmL] = 2.5f;
+                _target[ArmRSide] = 0.7f;
+                _target[ArmLSide] = 0.7f;
+                _target[ForearmR] = -1.1f;
+                _target[ForearmL] = -1.1f;
+                _target[Lean] = -0.25f;
+                _target[Head] = 0.25f;
+                break;
+            case WeaponMove.ClawRake:
+                // Claws raked down across each other, the body thrown forward behind them.
+                _target[ArmR] = 0.85f;
+                _target[ArmL] = 0.85f;
+                _target[ArmRSide] = -0.35f;
+                _target[ArmLSide] = -0.35f;
+                _target[ForearmR] = -0.25f;
+                _target[ForearmL] = -0.25f;
+                _target[Lean] = 0.6f;
+                _target[Bob] = -0.12f;
+                _target[ThighL] = -0.7f;
+                _target[ThighR] = 0.5f;
+                _target[ShinR] = 0.5f;
                 break;
             case WeaponMove.StaffPlant:
                 // Both hands drive the staff straight down into the ground.
@@ -1645,7 +1728,7 @@ public sealed class PlayerRig
         _hips.Position = new Vector3(shake, _hipHeight + _pose[Bob], 0);
 
         // Goblins stoop, with the head craned forward.
-        var hunch = _look.Orc ? 0.12f : _look.Goblin ? 0.32f : 0f;
+        var hunch = _look.Werewolf ? 0.62f : _look.Orc ? 0.12f : _look.Goblin ? 0.32f : 0f;
         _torso.Rotation = new Vector3(-_pose[Lean] - hunch, _pose[Twist], 0);
         _head.Rotation = new Vector3(-_pose[Head] + hunch * 0.8f, -_pose[Twist] * 0.6f, 0);
         _thighL.Rotation = new Vector3(_pose[ThighL], 0, 0);
@@ -1690,7 +1773,7 @@ public sealed class PlayerRig
             return;
         }
 
-        var clawed = Model(_look.Orc ? "orc_boot" : "gob_foot");
+        var clawed = Model(_look.Werewolf ? "were_paw" : _look.Orc ? "orc_boot" : "gob_foot");
         clawed.Position = new Vector3(0, foot + 0.045f, 0);
         shin.AddChild(clawed);
     }
@@ -1699,8 +1782,8 @@ public sealed class PlayerRig
     {
         var goblin = _look.Goblin;
         _torso.AddChild(arm);
-        arm.Position = new Vector3(x, _look.Orc ? 0.43f : goblin ? 0.36f : 0.45f, 0);
-        var top = _look.Orc ? (_look.Female ? 0.068f : 0.082f) : goblin ? 0.09f : 0.058f;
+        arm.Position = new Vector3(x, _look.Werewolf ? 0.47f : _look.Orc ? 0.43f : goblin ? 0.36f : 0.45f, _look.Werewolf ? -0.04f : 0f);
+        var top = _look.Werewolf ? 0.1f : _look.Orc ? (_look.Female ? 0.068f : 0.082f) : goblin ? 0.09f : 0.058f;
         arm.AddChild(Part(new CylinderMesh { TopRadius = top, BottomRadius = top * 0.78f, Height = 0.32f, RadialSegments = 12 }, cloth, new Vector3(0, -0.16f, 0)));
         arm.AddChild(forearm);
         if (!goblin)
@@ -1722,7 +1805,7 @@ public sealed class PlayerRig
         forearm.AddChild(Part(new CylinderMesh { TopRadius = wrist + 0.018f, BottomRadius = wrist + 0.012f, Height = 0.1f, RadialSegments = 8 }, glove, new Vector3(0, -0.21f, 0)));
         if (goblin)
         {
-            var hand = Model("gob_hand");
+            var hand = Model(_look.Werewolf ? "were_hand" : "gob_hand");
             hand.Position = new Vector3(0, -0.22f, 0);
             forearm.AddChild(hand);
             return;

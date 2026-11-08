@@ -139,6 +139,29 @@
     "loot": [{"item": "orc_tusk", "chance": 0.4, "min": 1, "max": 1}, {"item": "wolf_pelt", "chance": 0.3, "min": 1, "max": 1}]
   },
   {
+    "id": "werewolf", "name": "Werewolf", "kind": "werewolf", "weapon": "claws", "defense": 8,
+    "minLevel": 12, "maxLevel": 14, "health": 320, "healthPerLevel": 40, "speed": 5.6, "size": 1.3,
+    "aggroRange": 16, "preferredRange": 2.4, "tagHeight": 3.0,
+    "abilities": [
+      { "effect": "melee", "range": 2.8, "windupTicks": 18, "recoverTicks": 16, "cooldownTicks": 34, "damage": 22, "radius": 1.8 },
+      { "effect": "dashStrike", "range": 11, "minRange": 4, "windupTicks": 30, "recoverTicks": 24, "cooldownTicks": 220, "damage": 34, "radius": 2.0, "telegraph": "line" }
+    ],
+    "drops": [{ "rarity": 0, "chance": 1 }, { "rarity": 1, "chance": 0.2 }, { "rarity": 2, "chance": 0.04 }],
+    "loot": [{"item": "wolf_pelt", "chance": 0.8, "min": 1, "max": 2}, {"item": "wolf_fang", "chance": 0.6, "min": 1, "max": 2}]
+  },
+  {
+    "id": "werewolf_alpha", "name": "Blackfang", "kind": "werewolf", "weapon": "claws", "defense": 12,
+    "minLevel": 15, "maxLevel": 15, "health": 900, "healthPerLevel": 60, "speed": 6.0, "size": 1.55,
+    "aggroRange": 18, "preferredRange": 2.8, "tagHeight": 3.6,
+    "abilities": [
+      { "effect": "melee", "range": 3.2, "windupTicks": 18, "recoverTicks": 16, "cooldownTicks": 30, "damage": 32, "radius": 2.1 },
+      { "effect": "slam", "range": 3.4, "windupTicks": 40, "recoverTicks": 30, "cooldownTicks": 200, "damage": 44, "radius": 3.0, "telegraph": "circle" },
+      { "effect": "dashStrike", "range": 13, "minRange": 4, "windupTicks": 30, "recoverTicks": 24, "cooldownTicks": 260, "damage": 46, "radius": 2.2, "telegraph": "line" }
+    ],
+    "drops": [{ "rarity": 1, "chance": 1 }, { "rarity": 2, "chance": 0.3 }, { "rarity": 3, "chance": 0.05 }],
+    "loot": [{"item": "wolf_pelt", "chance": 1, "min": 2, "max": 3}, {"item": "wolf_fang", "chance": 1, "min": 2, "max": 3}]
+  },
+  {
     "id": "wolf", "name": "Wolf", "kind": "wolf",
     "minLevel": 5, "maxLevel": 7, "health": 70, "healthPerLevel": 14, "speed": 6.4, "size": 1.0,
     "aggroRange": 14, "preferredRange": 1.8, "tagHeight": 1.5,

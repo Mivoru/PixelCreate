@@ -32,6 +32,8 @@ public sealed class GoblinView : IEnemyView
         _def = def;
         var (kind, cloth) = def.Id switch
         {
+            "werewolf" => ("werewolf", "4a4e5a"),
+            "werewolf_alpha" => ("werewolf_alpha", "2e3038"),
             "orc_warrior" => ("orc_warrior", "5a3a2c"),
             "orc_berserker" => ("orc_berserker", "5a3a2c"),
             "orc_spearwoman" => ("orc_spearwoman", "6a3a2a"),
@@ -45,6 +47,8 @@ public sealed class GoblinView : IEnemyView
         // Each kind has its own shade of skin, so a camp reads as a crowd and not as copies.
         var skin = new Color(def.Id switch
         {
+            "werewolf" => "5e5248",
+            "werewolf_alpha" => "26242c",
             "orc_warrior" => "6e8a3e",
             "orc_berserker" => "5e7a34",
             "orc_spearwoman" => "7a9448",
@@ -94,6 +98,11 @@ public sealed class GoblinView : IEnemyView
         }
 
         var winding = action == EnemyAction.Cast;
+        if (_def.Kind == "werewolf" && ability.Effect is "melee" or "dashStrike" or "slam")
+        {
+            return winding ? WeaponMove.ClawRaise : WeaponMove.ClawRake;
+        }
+
         if (_def.Weapon is "longsword" or "axe" && ability.Effect is "melee" or "slam")
         {
             // Heavy blades come down from overhead.
@@ -120,13 +129,13 @@ public sealed class GoblinView : IEnemyView
             if (enemy.Health < _lastHealth)
             {
                 DamageTaken = _lastHealth - enemy.Health;
-                var voice = _def.Kind == "orc" ? (_def.Id is "orc_spearwoman" or "orc_huntress" ? "orc_f" : "orc") : "goblin";
+                var voice = _def.Kind == "werewolf" ? "werewolf" : _def.Kind == "orc" ? (_def.Id is "orc_spearwoman" or "orc_huntress" ? "orc_f" : "orc") : "goblin";
                 sfx.Play(enemy.Action == EnemyAction.Dead ? $"{voice}_die" : $"{voice}_hit", position + Vector3.Up);
             }
 
             if (enemy.Fighting && !_lastFighting)
             {
-                sfx.Play(_def.Kind == "orc" ? (_def.Id is "orc_spearwoman" or "orc_huntress" ? "orc_f_alert" : "orc_alert") : "goblin_alert", position + Vector3.Up);
+                sfx.Play(_def.Kind == "werewolf" ? "werewolf_roar" : _def.Kind == "orc" ? (_def.Id is "orc_spearwoman" or "orc_huntress" ? "orc_f_alert" : "orc_alert") : "goblin_alert", position + Vector3.Up);
             }
 
             if (enemy.Action != _lastAction && enemy.Action == EnemyAction.Strike && _def.Abilities is { } list)
@@ -135,7 +144,7 @@ public sealed class GoblinView : IEnemyView
                 {
                     "slam" => "club_slam",
                     "spin" => "club_spin",
-                    "melee" or "dashStrike" => _def.Kind == "orc" ? "orc_swing" : "goblin_swing",
+                    "melee" or "dashStrike" => _def.Kind == "werewolf" ? "werewolf_swipe" : _def.Kind == "orc" ? "orc_swing" : "goblin_swing",
                     _ => null,
                 };
                 if (sound is not null)

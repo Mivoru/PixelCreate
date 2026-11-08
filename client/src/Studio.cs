@@ -200,7 +200,7 @@ public partial class Studio : Node
     {
         Floor();
         var sfx = new Sfx(this) { Muted = true };
-        var monsters = EnemyDef.All.Select((def, index) => (def, index)).Where(p => p.def.Kind is "slime" or "goblin" or "orc").ToList();
+        var monsters = EnemyDef.All.Select((def, index) => (def, index)).Where(p => p.def.Kind is "slime" or "goblin" or "orc" or "werewolf").ToList();
         foreach (var (def, index) in monsters)
         {
             IEnemyView view = def.Kind == "slime" ? new SlimeView() : new GoblinView(def);
@@ -209,6 +209,7 @@ public partial class Studio : Node
             foreach (var (pose, yaw, distance, action) in new[]
             {
                 ("front", 0f, 3.6f, EnemyAction.Idle), ("three", 0.7f, 4.2f, EnemyAction.Idle), ("windup", 0.5f, 4.2f, EnemyAction.Windup),
+                ("side", 1.57f, 4.2f, EnemyAction.Idle),
             })
             {
                 for (var frame = 0; frame < 50; frame++)
