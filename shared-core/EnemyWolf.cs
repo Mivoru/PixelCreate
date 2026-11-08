@@ -45,6 +45,21 @@ public sealed partial class Enemy
     /// <summary>Set by the server when a blow lands on someone, so a leap knows whether it hit.</summary>
     public bool Landed;
 
+    /// <summary>Knocks the enemy off balance after a parry: it reels, unable to act, for the given time.</summary>
+    public void Stagger(int ticks)
+    {
+        if (!Alive || ticks <= 0)
+        {
+            return;
+        }
+
+        Action = EnemyAction.Stagger;
+        ActionTicks = ticks;
+        ComboLeft = 0;
+        Velocity.X = 0;
+        Velocity.Z = 0;
+    }
+
     /// <summary>Leaps from where the enemy stands to the spot, landing after the air time.</summary>
     private void PounceAt(Vector3 spot, int airTicks = PounceAirTicks)
     {

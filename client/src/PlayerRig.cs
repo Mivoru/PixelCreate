@@ -33,6 +33,12 @@ public enum WeaponMove
     /// <summary>A spear driven straight out in front at chest height.</summary>
     SpearThrust,
 
+    /// <summary>On guard: the blade held level across the face, the free hand braced behind it.</summary>
+    Guard,
+
+    /// <summary>Knocked off balance by a parry: leaning back, arms flung wide, head rocked.</summary>
+    Reel,
+
     /// <summary>Squatting deep to spring, arms swept back.</summary>
     Crouch,
 
@@ -1347,6 +1353,35 @@ public sealed class PlayerRig
                 _target[ThighL] = -0.6f;
                 _target[ThighR] = 0.5f;
                 _target[ShinR] = 0.4f;
+                break;
+            case WeaponMove.Guard:
+                _target[ArmR] = 1.15f;
+                _target[ArmRSide] = -0.55f;
+                _target[ForearmR] = -1.25f;
+                _target[SwordTilt] = 0.15f;
+                _target[SwordYaw] = 1.45f;
+                _target[ArmL] = 1.2f;
+                _target[ArmLSide] = 0.35f;
+                _target[ForearmL] = -1.35f;
+                _target[Lean] = 0.12f;
+                _target[ThighL] = -0.35f;
+                _target[ThighR] = 0.3f;
+                _target[ShinL] = 0.3f;
+                _target[ShinR] = 0.35f;
+                _target[Bob] = -0.06f;
+                break;
+            case WeaponMove.Reel:
+                _target[ArmR] = 0.9f;
+                _target[ArmL] = 0.9f;
+                _target[ArmRSide] = 1.0f;
+                _target[ArmLSide] = 1.0f;
+                _target[ForearmR] = -0.4f;
+                _target[ForearmL] = -0.4f;
+                _target[Lean] = -0.35f;
+                _target[Head] = -0.35f;
+                _target[ThighL] = 0.35f;
+                _target[ThighR] = -0.2f;
+                _target[ShinR] = 0.3f;
                 break;
             case WeaponMove.Crouch:
                 _target[ThighL] = -0.8f;

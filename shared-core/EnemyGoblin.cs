@@ -33,7 +33,7 @@ public sealed partial class Enemy
 
         StepTurn(events, Action == EnemyAction.Strike && _lastGoblinAction != EnemyAction.Strike);
         _lastGoblinAction = Action;
-        if (DodgeIfAttacked(random, targets))
+        if (Action != EnemyAction.Stagger && DodgeIfAttacked(random, targets))
         {
             Fall(world, random, events);
             return;
@@ -80,6 +80,16 @@ public sealed partial class Enemy
                 break;
             case EnemyAction.Roll:
                 StepRoll();
+                break;
+            case EnemyAction.Stagger:
+                Velocity.X = 0;
+                Velocity.Z = 0;
+                if (ActionTicks <= 0)
+                {
+                    Action = EnemyAction.Idle;
+                    ActionTicks = 6;
+                }
+
                 break;
             case EnemyAction.Strike:
                 Velocity.X = 0;

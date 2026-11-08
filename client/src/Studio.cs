@@ -442,6 +442,18 @@ public partial class Studio : Node
 
         await GreatLeaps();
 
+        // The guard, from the side and from the front, and an orc reeling from a parry.
+        foreach (var (view, eye) in new[] { ("side", new Vector3(4.2f, 1.4f, 0f)), ("front", new Vector3(0f, 1.5f, -4.2f)) })
+        {
+            var rig = Rig(RigLook.Player, Vector3.Zero, 0f);
+            rig.SetWeapon("sword");
+            _stage.Camera.Fov = 28;
+            _stage.Camera.LookAtFromPosition(eye, new Vector3(0, 1.2f, 0));
+            await Wait(40, new MotionState(0f, true, 0f, false, AttackKind.None, 0, WeaponMove.Guard));
+            Save($"attack_guard_{view}");
+            Dismiss(rig);
+        }
+
         // The bow: drawing to a full draw, loosing and nocking the next arrow, from the side and over the shoulder.
         foreach (var (view, eye, look, pitch) in new[]
         {

@@ -26,6 +26,9 @@ public sealed class GoblinView : IEnemyView
     private float _pitch;
     private EnemyAction _lastLeapAction;
 
+    /// <summary>Set for one frame when the enemy starts to reel from a parry.</summary>
+    public bool Staggered { get; private set; }
+
     /// <summary>Where a great leap just left the ground, once; the game cracks the earth there.</summary>
     public Vector3? Launch { get; set; }
 
@@ -166,6 +169,11 @@ public sealed class GoblinView : IEnemyView
             return WeaponMove.Tuck;
         }
 
+        if (action == EnemyAction.Stagger)
+        {
+            return WeaponMove.Reel;
+        }
+
         if (ability is null || action is not (EnemyAction.Cast or EnemyAction.Strike or EnemyAction.Leap))
         {
             return WeaponMove.None;
@@ -246,6 +254,8 @@ public sealed class GoblinView : IEnemyView
         {
             sfx.Play("dash", position + Vector3.Up);
         }
+
+        Staggered = !_first && enemy.Action == EnemyAction.Stagger && _lastAction != EnemyAction.Stagger;
 
         DamageTaken = 0;
         if (!_first)

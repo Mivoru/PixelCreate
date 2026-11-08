@@ -102,6 +102,8 @@ public partial class GameClient : Node
     private GuildRank _lastRank;
     private readonly Dictionary<string, PlayerRig> _npcs = new();
     private byte _lastDodges;
+    private byte _lastBlocks;
+    private byte _lastParries;
     private int _lastXp;
     private bool _rareSeen;
     private float _ghostClock;
@@ -501,6 +503,23 @@ public partial class GameClient : Node
             _hud.AddFloating("Dodged!", chest + Vector3.Up, new Color("2ce8f5"));
         }
 
+        if (snapshot.Blocks != _lastBlocks)
+        {
+            _lastBlocks = snapshot.Blocks;
+            _sfx.Play("block", chest);
+            _fx.Burst(chest + Vector3.Up * 0.3f, new Color("ead4aa"), 10, 4f, 0.25f, 0.05f);
+        }
+
+        if (snapshot.Parries != _lastParries)
+        {
+            // A parry: a bright ring of sparks and a clear note.
+            _lastParries = snapshot.Parries;
+            _sfx.Play("parry", chest);
+            _fx.Burst(chest + Vector3.Up * 0.3f, new Color("fee761"), 26, 7f, 0.35f, 0.07f, 0f, 180f);
+            _fx.Burst(chest + Vector3.Up * 0.3f, new Color("ffffff"), 12, 5f, 0.25f, 0.05f, 0f, 180f);
+            _hud.AddFloating("Parry!", chest + Vector3.Up, new Color("fee761"));
+        }
+
         if (snapshot.Level > _lastLevel)
         {
             _lastLevel = snapshot.Level;
@@ -651,6 +670,7 @@ public partial class GameClient : Node
         if (Input.IsKeyPressed(Key.Shift)) buttons |= Buttons.Dash;
         if (Input.IsMouseButtonPressed(MouseButton.Left)) buttons |= Buttons.Light;
         if (Input.IsMouseButtonPressed(MouseButton.Right)) buttons |= Buttons.Heavy;
+        if (Input.IsKeyPressed(Key.Q)) buttons |= Buttons.Block;
         return ToMove(side, forward, buttons);
     }
 
@@ -1078,6 +1098,11 @@ public partial class GameClient : Node
             // A drawn bow points where the camera aims.
             _facing = LerpFacing(_facing, _yaw, 30f * delta);
         }
+        else if (state.BlockTicks > 0)
+        {
+            // The guard faces where it covers.
+            _facing = LerpFacing(_facing, state.BlockAim / 256f * Mathf.Tau, 30f * delta);
+        }
         else if (state.Attack != AttackKind.None)
         {
             _facing = LerpFacing(_facing, state.AttackAim / 256f * Mathf.Tau, 30f * delta);
@@ -1090,7 +1115,8 @@ public partial class GameClient : Node
         _player.Root.Rotation = new Vector3(0, _facing, 0);
         _player.SetWeapon(Weapons.Name(_client.State.Weapon), _hud.Items.Equipped[EquipSlot.Weapon]?.Gear?.Def.Id);
         _player.SwordVisible = _hud.Items.HasWeapon;
-        var bow = state.DrawTicks > 0 ? WeaponMove.BowDraw : state.Attack == AttackKind.BowShot ? WeaponMove.BowRelease : WeaponMove.None;
+        var bow = state.DrawTicks > 0 ? WeaponMove.BowDraw : state.Attack == AttackKind.BowShot ? WeaponMove.BowRelease
+            : state.BlockTicks > 0 ? WeaponMove.Guard : WeaponMove.None;
         _player.Animate(new MotionState(flat.Length(), state.Grounded, state.Velocity.Y,
             state.DashTicks > 0, state.Attack, state.AttackTick, bow, Tuning.Drawn(state.DrawTicks), _shotPitch), delta);
     }
@@ -1163,6 +1189,11 @@ public partial class GameClient : Node
             // A respawn is a jump across the map, not a move.
             position = position.DistanceTo(target) > 6f ? target : position.Lerp(target, blend);
             slime.Update(enemy, position, delta, _sfx);
+            if (slime is GoblinView { Staggered: true })
+            {
+                _hud.AddFloating("Staggered!", position + Vector3.Up * (def.TagHeight > 0 ? def.TagHeight : 2f), new Color("feae34"));
+            }
+
             if (slime is GoblinView { Launch: { } launch } leaper)
             {
                 // The ground bursts where a werewolf springs for its great leap.

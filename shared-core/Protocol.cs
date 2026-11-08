@@ -56,6 +56,10 @@ public sealed class Snapshot
 
     /// <summary>Counts attacks avoided with a dash, so the client can show each one.</summary>
     public byte Dodges;
+
+    /// <summary>Counts blows taken on the guard and blows parried, the same way.</summary>
+    public byte Blocks;
+    public byte Parries;
     public GuildRank Rank;
     public int Gold;
     public byte QuestId;
@@ -154,6 +158,8 @@ public static class Protocol
         writer.Write(snapshot.XpToNext);
         writer.Write(snapshot.MaxHealth);
         writer.Write(snapshot.Dodges);
+        writer.Write(snapshot.Blocks);
+        writer.Write(snapshot.Parries);
         writer.Write((byte)snapshot.Rank);
         writer.Write(snapshot.Gold);
         writer.Write(snapshot.QuestId);
@@ -274,6 +280,8 @@ public static class Protocol
         snapshot.XpToNext = reader.ReadInt32();
         snapshot.MaxHealth = reader.ReadInt16();
         snapshot.Dodges = reader.ReadByte();
+        snapshot.Blocks = reader.ReadByte();
+        snapshot.Parries = reader.ReadByte();
         snapshot.Rank = (GuildRank)reader.ReadByte();
         snapshot.Gold = reader.ReadInt32();
         snapshot.QuestId = reader.ReadByte();
@@ -389,6 +397,8 @@ public static class Protocol
         writer.Write(state.Weapon);
         writer.Write(state.DrawTicks);
         writer.Write(state.ShotDraw);
+        writer.Write(state.BlockTicks);
+        writer.Write(state.BlockAim);
     }
 
     private static PlayerState ReadState(BinaryReader reader) => new()
@@ -409,5 +419,7 @@ public static class Protocol
         Weapon = reader.ReadByte(),
         DrawTicks = reader.ReadByte(),
         ShotDraw = reader.ReadByte(),
+        BlockTicks = reader.ReadByte(),
+        BlockAim = reader.ReadByte(),
     };
 }

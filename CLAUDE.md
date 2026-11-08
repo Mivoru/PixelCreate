@@ -30,6 +30,11 @@ than special code, and the world is built from zones that one server process can
 
 Rules:
 
+- Block: hold Q (`Buttons.Block`, `PlayerState.BlockTicks`/`BlockAim`, predicted in `Movement.Step`). The guard covers
+  the front, slows the player and costs stamina per blow: light blows (`melee`, `combo`, arrows) stop completely,
+  heavy ones let 40 % through, and an empty stamina bar breaks the guard. A blow in the first `Tuning.ParryTicks` is
+  parried: an attacker of the player's level or lower reels 1.5 s, one or two levels higher 0.6 s
+  (`EnemyAction.Stagger`), and takes 1.5x damage meanwhile. `GameServer.Guard`, `net-tests/BlockTests.cs`.
 - Never use Godot physics for players. Reconciliation replays ticks, so movement stays in
   `Movement.Step` and collision against `World`.
 - Every value that affects movement lives in `PlayerState`, and client and server both call

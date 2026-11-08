@@ -13,6 +13,24 @@ public static class Tuning
 
     public const float MoveSpeed = 9f;
     public const float SlowFactor = 0.5f;
+
+    /// <summary>
+    /// Blocking: the share of normal speed while guarding, how wide the guard covers to each side of
+    /// the aim (as the cosine of the angle), and the first ticks of a guard that count as a parry.
+    /// A guard takes all of a light blow and lets the given share of a heavy one through, for stamina.
+    /// </summary>
+    public const float BlockMoveScale = 0.45f;
+    public const float BlockMinDot = 0.34f;
+    public const byte ParryTicks = 10;
+    public const float BlockHeavyShare = 0.4f;
+    public const float BlockLightStamina = 8f;
+    public const float BlockHeavyStamina = 18f;
+
+    /// <summary>How long a parried enemy reels, by how its level compares with the player's, and how much more it takes meanwhile.</summary>
+    public const int ParryStaggerTicks = 90;
+    public const int ParryStaggerTicksStronger = 36;
+    public const int ParryLevelReach = 2;
+    public const float StaggerDamageScale = 1.5f;
     public const float GroundAcceleration = 60f;
     public const float AirAcceleration = 20f;
     public const float Gravity = 24f;
@@ -194,6 +212,7 @@ public enum Buttons : byte
     Dash = 2,
     Light = 4,
     Heavy = 8,
+    Block = 16,
 }
 
 /// <summary>One tick of player input. Stored quantized, so both sides simulate the same values.</summary>
@@ -240,6 +259,10 @@ public struct PlayerState
     /// <summary>Ticks the bow has been drawn so far, and how far it was drawn when the last arrow left.</summary>
     public byte DrawTicks;
     public byte ShotDraw;
+
+    /// <summary>Ticks the guard has been up (0 when not blocking), and where it faces.</summary>
+    public byte BlockTicks;
+    public byte BlockAim;
 
     public static PlayerState Spawn(Vector3 position, short health = Tuning.PlayerHealth) => new()
     {
@@ -459,6 +482,7 @@ public static class Movement
 
         var landed = StepAttack(ref state, input);
         StepDash(ref state, input, wish);
+        StepBlock(ref state, input);
 
         if (state.StaminaDelay == 0)
         {
@@ -630,12 +654,37 @@ public static class Movement
         Spend(ref state, Tuning.DashStamina);
     }
 
+    /// <summary>
+    /// Holding block raises the guard, unless the player is mid-attack, dashing or out of stamina. It
+    /// faces where the player aims and counts the ticks it has been up, for the parry window.
+    /// </summary>
+    private static void StepBlock(ref PlayerState state, in InputCmd input)
+    {
+        var free = state.Attack == AttackKind.None && state.DashTicks == 0 && state.DrawTicks == 0 && state.Stamina > 0f;
+        if (!input.Buttons.HasFlag(Buttons.Block) || !free)
+        {
+            state.BlockTicks = 0;
+            return;
+        }
+
+        state.BlockAim = input.Aim;
+        if (state.BlockTicks < byte.MaxValue)
+        {
+            state.BlockTicks++;
+        }
+    }
+
     private static void Accelerate(ref PlayerState state, Vector2 wish)
     {
         var speed = Tuning.MoveSpeed;
         if (state.SlowTicks > 0)
         {
             speed *= Tuning.SlowFactor;
+        }
+
+        if (state.BlockTicks > 0)
+        {
+            speed *= Tuning.BlockMoveScale;
         }
 
         if (state.Attack != AttackKind.None)

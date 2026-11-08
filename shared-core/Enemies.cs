@@ -74,6 +74,9 @@ public enum EnemyAction : byte
 
     /// <summary>A werewolf that missed its great leap, rolling forward out of the landing.</summary>
     Roll = 16,
+
+    /// <summary>Reeling from a parried blow: it cannot act, and takes more from every hit.</summary>
+    Stagger = 17,
 }
 
 /// <summary>The nametag colour rule: how an enemy compares with the player.</summary>
@@ -395,6 +398,12 @@ public sealed partial class Enemy
             return false;
         }
 
+        // A reeling enemy has its guard wide open.
+        if (Action == EnemyAction.Stagger)
+        {
+            damage = (short)MathF.Round(damage * Tuning.StaggerDamageScale);
+        }
+
         if (TaggedBy < 0)
         {
             TaggedBy = attackerId;
@@ -417,7 +426,7 @@ public sealed partial class Enemy
         {
             Action = EnemyAction.Hop;
         }
-        else if (Def.Kind != "slime" && Action is not (EnemyAction.Cast or EnemyAction.Leap or EnemyAction.Strike))
+        else if (Def.Kind != "slime" && Action is not (EnemyAction.Cast or EnemyAction.Leap or EnemyAction.Strike or EnemyAction.Stagger))
         {
             // A short stagger, then it turns on the attacker. Without this a grazing boar kept an
             // action the fighting code does not know and slid away on the knockback for good, still

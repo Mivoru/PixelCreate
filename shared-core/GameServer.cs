@@ -33,6 +33,8 @@ public sealed class ServerStats
     public long Splashes;
     public long Spits;
     public long Dodges;
+    public long Blocks;
+    public long Parries;
     public long LevelUps;
     public long CrystalsDropped;
     public long CrystalsLooted;
@@ -200,6 +202,8 @@ public sealed class GameServer : IEnemyEvents
         public int Xp;
         public uint LastHurtTick;
         public byte Dodges;
+        public byte Blocks;
+        public byte Parries;
         public GuildRank Rank;
         public int Gold;
         public byte QuestId;
@@ -232,6 +236,9 @@ public sealed class GameServer : IEnemyEvents
 
         /// <summary>For a hunter's shot: the creature it is meant for, which it can hit as well as players.</summary>
         public Enemy? Prey;
+
+        /// <summary>A heavy shot partly breaks through a guard; arrows and spit do not.</summary>
+        public bool Heavy;
         public int HunterId = -1;
         public required ProjectileKind Kind;
         public required short Damage;
@@ -783,13 +790,22 @@ public sealed class GameServer : IEnemyEvents
 
     private void EndTrial(Player player) => _enemies.RemoveAll(e => e.TrialOf == player.Id);
 
-    /// <summary>Hurts a player, unless a dash avoids it. Returns true when the attack connects.</summary>
-    private bool Hurt(Player player, short damage, byte slowTicks, Enemy? attacker = null)
+    /// <summary>
+    /// Hurts a player, unless a dash avoids it or the guard takes it. Returns true when the attack
+    /// connects. From is where the blow comes from, for the guard; heavy blows break through a guard
+    /// in part, and a blow caught just as the guard rises is parried.
+    /// </summary>
+    private bool Hurt(Player player, short damage, byte slowTicks, Enemy? attacker = null, bool heavy = false, Vector3? from = null)
     {
         if (player.State.DashTicks > 0)
         {
             player.Dodges++;
             Stats.Dodges++;
+            return false;
+        }
+
+        if (Guard(player, ref damage, attacker, heavy, from ?? attacker?.Position))
+        {
             return false;
         }
 
@@ -809,6 +825,60 @@ public sealed class GameServer : IEnemyEvents
         player.LastHurtTick = Tick;
         Stats.PlayerHits++;
         return true;
+    }
+
+    /// <summary>
+    /// The player's guard against one blow. Returns true when nothing gets through; otherwise the
+    /// damage may be cut. A parry staggers an attacker no more than a couple of levels stronger.
+    /// </summary>
+    private bool Guard(Player player, ref short damage, Enemy? attacker, bool heavy, Vector3? from)
+    {
+        ref var state = ref player.State;
+        if (state.BlockTicks == 0 || from is not { } source)
+        {
+            return false;
+        }
+
+        var toward = (source - state.Position) with { Y = 0 };
+        var facing = toward.LengthSquared() < 0.01f || Vector3.Dot(Vector3.Normalize(toward), Movement.AimDirection(state.BlockAim)) >= Tuning.BlockMinDot;
+        if (!facing)
+        {
+            return false;
+        }
+
+        if (state.BlockTicks <= Tuning.ParryTicks)
+        {
+            player.Parries++;
+            Stats.Parries++;
+            if (attacker is { Alive: true } && Vector3.Distance(attacker.Position, state.Position) < 6f)
+            {
+                var gap = attacker.Level - player.Level;
+                attacker.Stagger(gap <= 0 ? Tuning.ParryStaggerTicks : gap <= Tuning.ParryLevelReach ? Tuning.ParryStaggerTicksStronger : 0);
+            }
+
+            return true;
+        }
+
+        var cost = heavy ? Tuning.BlockHeavyStamina : Tuning.BlockLightStamina;
+        if (state.Stamina < cost)
+        {
+            // Out of stamina the guard breaks: the blow lands in full and the guard drops.
+            state.Stamina = 0f;
+            state.BlockTicks = 0;
+            return false;
+        }
+
+        state.Stamina -= cost;
+        state.StaminaDelay = Tuning.StaminaRegenDelayTicks;
+        player.Blocks++;
+        Stats.Blocks++;
+        if (!heavy)
+        {
+            return true;
+        }
+
+        damage = (short)Math.Max(1, MathF.Round(damage * Tuning.BlockHeavyShare));
+        return false;
     }
 
     private void Strike(Player player, AttackKind kind)
@@ -1179,7 +1249,7 @@ public sealed class GameServer : IEnemyEvents
         foreach (var player in _players.Values)
         {
             var away = player.State.Position - enemy.Position;
-            if (away.Length() > enemy.Def.SplashRadius || !Hurt(player, enemy.Def.SplashDamage, enemy.Def.SlowTicks, enemy))
+            if (away.Length() > enemy.Def.SplashRadius || !Hurt(player, enemy.Def.SplashDamage, enemy.Def.SlowTicks, enemy, heavy: true))
             {
                 continue;
             }
@@ -1229,6 +1299,11 @@ public sealed class GameServer : IEnemyEvents
                 _projectiles[i].HunterId = enemy.Id;
             }
         }
+
+        for (var i = shotsBefore; i < _projectiles.Count; i++)
+        {
+            _projectiles[i].Heavy = ability.Effect is not ("arrow" or "volley");
+        }
     }
 
     private void Fire(Enemy enemy, Ability ability, Target? target)
@@ -1238,6 +1313,9 @@ public sealed class GameServer : IEnemyEvents
         var aimPoint = enemy.LeapTarget + Vector3.UnitY;
         var direction = aimPoint - chest;
         direction = direction == Vector3.Zero ? Vector3.UnitZ : Vector3.Normalize(direction);
+
+        // A plain blow is light: a guard takes all of it. Everything else is heavy and partly breaks through.
+        _heavy = ability.Effect is not ("melee" or "combo");
         switch (ability.Effect)
         {
             case "melee":
@@ -1369,6 +1447,9 @@ public sealed class GameServer : IEnemyEvents
         }
     }
 
+    /// <summary>Whether the ability going off in <see cref="Fire(Enemy, Ability, Target?)"/> is a heavy blow.</summary>
+    private bool _heavy;
+
     private static Vector3 Facing(Enemy enemy) => new(-MathF.Sin(enemy.Facing), 0, -MathF.Cos(enemy.Facing));
 
     /// <summary>
@@ -1377,9 +1458,10 @@ public sealed class GameServer : IEnemyEvents
     /// </summary>
     private void Area(Vector3 center, float radius, short damage, Enemy attacker)
     {
+        var heavy = _heavy;
         foreach (var player in _players.Values.ToList())
         {
-            if (Vector3.Distance(player.State.Position, center) <= radius + 0.4f && Hurt(player, damage, 0, attacker))
+            if (Vector3.Distance(player.State.Position, center) <= radius + 0.4f && Hurt(player, damage, 0, attacker, heavy))
             {
                 attacker.Landed = true;
             }
@@ -1482,7 +1564,7 @@ public sealed class GameServer : IEnemyEvents
                 if (!wall.Struck.Contains(player.Id) && InWedge(wall, player.State.Position, length))
                 {
                     wall.Struck.Add(player.Id);
-                    Hurt(player, wall.Damage, 0);
+                    Hurt(player, wall.Damage, 0, heavy: true, from: wall.Origin);
                 }
             }
         }
@@ -1714,7 +1796,7 @@ public sealed class GameServer : IEnemyEvents
                 }
                 else
                 {
-                    Hurt(player, shot.Damage, shot.SlowTicks);
+                    Hurt(player, shot.Damage, shot.SlowTicks, heavy: shot.Heavy, from: shot.Position - shot.Velocity * Tuning.TickSeconds * 4f);
                     struck = true;
                 }
             }
@@ -1763,7 +1845,7 @@ public sealed class GameServer : IEnemyEvents
             var chest = player.State.Position + Vector3.UnitY;
             if (Vector3.Distance(chest, shot.Position) < shot.SplashRadius)
             {
-                Hurt(player, shot.Damage, shot.SlowTicks);
+                Hurt(player, shot.Damage, shot.SlowTicks, heavy: true, from: shot.Position - shot.Velocity * Tuning.TickSeconds * 4f);
             }
         }
     }
@@ -1797,6 +1879,8 @@ public sealed class GameServer : IEnemyEvents
                 XpToNext = Progression.XpToNext(player.Level),
                 MaxHealth = MaxHealth(player),
                 Dodges = player.Dodges,
+                Blocks = player.Blocks,
+                Parries = player.Parries,
                 Rank = player.Rank,
                 Gold = player.Gold,
                 QuestId = player.QuestId,
