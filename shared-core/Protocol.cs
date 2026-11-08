@@ -65,6 +65,11 @@ public sealed class Snapshot
     public uint KnownSkills;
     public byte[] SkillCooldowns = Array.Empty<byte>();
 
+    /// <summary>Weapon mastery, by place in <see cref="Mastery.Weapons"/>: level and experience; and the tree nodes taken.</summary>
+    public byte[] MasteryLevels = new byte[Mastery.Weapons.Length];
+    public int[] MasteryXp = new int[Mastery.Weapons.Length];
+    public ulong MasteryTaken;
+
     /// <summary>Counts blows taken on the guard and blows parried, the same way.</summary>
     public byte Blocks;
     public byte Parries;
@@ -182,6 +187,13 @@ public static class Protocol
         writer.Write(snapshot.KnownSkills);
         writer.Write((byte)snapshot.SkillCooldowns.Length);
         writer.Write(snapshot.SkillCooldowns);
+        writer.Write(snapshot.MasteryLevels, 0, Mastery.Weapons.Length);
+        foreach (var xp in snapshot.MasteryXp)
+        {
+            writer.Write(xp);
+        }
+
+        writer.Write(snapshot.MasteryTaken);
         writer.Write((byte)snapshot.Rank);
         writer.Write(snapshot.Gold);
         writer.Write(snapshot.QuestId);
@@ -300,6 +312,14 @@ public static class Protocol
         snapshot.UnspentPoints = reader.ReadByte();
         snapshot.KnownSkills = reader.ReadUInt32();
         snapshot.SkillCooldowns = reader.ReadBytes(reader.ReadByte());
+        snapshot.MasteryLevels = reader.ReadBytes(Mastery.Weapons.Length);
+        snapshot.MasteryXp = new int[Mastery.Weapons.Length];
+        for (var i = 0; i < snapshot.MasteryXp.Length; i++)
+        {
+            snapshot.MasteryXp[i] = reader.ReadInt32();
+        }
+
+        snapshot.MasteryTaken = reader.ReadUInt64();
         snapshot.Rank = (GuildRank)reader.ReadByte();
         snapshot.Gold = reader.ReadInt32();
         snapshot.QuestId = reader.ReadByte();

@@ -219,6 +219,11 @@ public sealed class GameServer : IEnemyEvents
         public readonly HashSet<int> Skills = new();
         public readonly uint[] SkillReady = new uint[SkillDef.All.Count];
 
+        /// <summary>Weapon mastery by place in <see cref="Mastery.Weapons"/>: level and experience toward the next; and the nodes taken.</summary>
+        public readonly byte[] MasteryLevels = new byte[Mastery.Weapons.Length];
+        public readonly int[] MasteryXp = new int[Mastery.Weapons.Length];
+        public ulong MasteryTaken;
+
         /// <summary>Points spent in each attribute.</summary>
         public readonly byte[] Attributes = new byte[Core.Attributes.Count];
 
@@ -591,6 +596,7 @@ public sealed class GameServer : IEnemyEvents
                 }
 
                 AddItem(player, SkillDef.All[0].Book, 1);
+                player.MasteryLevels[Mastery.WeaponIndex("sword")] = 3;
 
                 // Test runs start with one piece of each rarity, so gear can be checked at once.
                 var kit = new[] { "twin_daggers", "iron_helm", "leather_jerkin", "chain_leggings", "hunters_longbow", "spiked_club", "bone_staff" };
@@ -894,6 +900,20 @@ public sealed class GameServer : IEnemyEvents
         if (command == Command.UseItem && arg < ItemDef.All.Count)
         {
             UseItem(player, arg);
+            return;
+        }
+
+        if (command == Command.TakeMastery && arg < Mastery.Nodes.Count)
+        {
+            var node = Mastery.Nodes[arg];
+            var weapon = Mastery.WeaponIndex(node.Weapon);
+            var free = player.MasteryLevels[weapon] - Mastery.Spent(node.Weapon, player.MasteryTaken);
+            if (Mastery.CanTake(node, player.MasteryTaken, free))
+            {
+                player.MasteryTaken |= 1ul << node.Index;
+                RecomputeStats(player);
+            }
+
             return;
         }
 
@@ -1278,12 +1298,44 @@ public sealed class GameServer : IEnemyEvents
         }
 
         player.GearChanged.Add(place);
+        RecomputeStats(player);
+    }
+
+    /// <summary>Worn gear, then the mastery of the weapon in hand, make the stats every blow uses.</summary>
+    private static void RecomputeStats(Player player)
+    {
         player.Stats = GearStats.Of(player.Worn.Select(w => player.Gear[w]!));
+        Mastery.AddTo(player.Stats, player.MasteryTaken);
         player.State.Health = Math.Min(player.State.Health, MaxHealth(player));
 
         // The weapon decides the attacks; the client learns it through the next snapshot.
         player.State.Weapon = Weapons.Of(player.Stats.Weapon);
     }
+
+    /// <summary>A kill earns the weapon in hand mastery experience, the same as the kill's experience.</summary>
+    private static void AwardMastery(Player player, int xp)
+    {
+        var weapon = Mastery.WeaponIndex(player.Stats.Weapon);
+        if (weapon < 0 || player.MasteryLevels[weapon] >= Mastery.MaxLevel)
+        {
+            return;
+        }
+
+        player.MasteryXp[weapon] += xp;
+        while (player.MasteryLevels[weapon] < Mastery.MaxLevel && player.MasteryXp[weapon] >= Mastery.XpToNext(player.MasteryLevels[weapon]))
+        {
+            player.MasteryXp[weapon] -= Mastery.XpToNext(player.MasteryLevels[weapon]);
+            player.MasteryLevels[weapon]++;
+        }
+    }
+
+    /// <summary>A player's mastery level with a weapon kind. For tests and tools.</summary>
+    public int GetMasteryLevel(int id, string weapon) => _players[id].MasteryLevels[Mastery.WeaponIndex(weapon)];
+
+    public bool HasMastery(int id, int node) => (_players[id].MasteryTaken & (1ul << node)) != 0;
+
+    /// <summary>Gives a player mastery experience with the weapon in hand. For tests and tools.</summary>
+    public void GiveMasteryXp(int id, int xp) => AwardMastery(_players[id], xp);
 
     /// <summary>Rolls an enemy's gear table: maybe one piece, of a rarity picked by the table's weights.</summary>
     private void DropGear(Enemy enemy, Player owner)
@@ -1326,6 +1378,7 @@ public sealed class GameServer : IEnemyEvents
 
         var winner = _players.TryGetValue(enemy.TaggedBy, out var tagged) ? tagged : killer;
         AwardXp(winner.Id, Progression.KillXp(enemy.Level, winner.Level, enemy.Def.Rare));
+        AwardMastery(killer, Progression.KillXp(enemy.Level, killer.Level, enemy.Def.Rare));
         foreach (var drop in enemy.Def.Drops ?? Array.Empty<DropEntry>())
         {
             if (_random.NextDouble() < drop.Chance)
@@ -2306,6 +2359,9 @@ public sealed class GameServer : IEnemyEvents
                 Level = player.Level,
                 Attributes = (byte[])player.Attributes.Clone(),
                 KnownSkills = player.Skills.Aggregate(0u, (bits, skill) => bits | (1u << skill)),
+                MasteryLevels = (byte[])player.MasteryLevels.Clone(),
+                MasteryXp = (int[])player.MasteryXp.Clone(),
+                MasteryTaken = player.MasteryTaken,
                 SkillCooldowns = player.SkillReady.Select(ready => (byte)Math.Clamp((ready > Tick ? ready - Tick : 0) / 6, 0, 255)).ToArray(),
                 UnspentPoints = (byte)Math.Clamp(player.UnspentPoints, 0, 255),
                 Xp = player.Xp,

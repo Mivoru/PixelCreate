@@ -1,0 +1,554 @@
+{
+ "weapons": [
+  {
+   "weapon": "sword",
+   "branches": [
+    {
+     "name": "Edge",
+     "nodes": [
+      {
+       "name": "Keen Edge",
+       "text": "+4% sword damage",
+       "stats": {
+        "damagePct": 4
+       },
+       "cost": 1
+      },
+      {
+       "name": "Honed Edge",
+       "text": "+4% sword damage",
+       "stats": {
+        "damagePct": 4
+       },
+       "cost": 1
+      },
+      {
+       "name": "Master's Edge",
+       "text": "+6% sword damage",
+       "stats": {
+        "damagePct": 6
+       },
+       "cost": 1
+      },
+      {
+       "name": "Rising Slash",
+       "text": "A new heavy blow that throws enemies up",
+       "unlock": "rising_slash",
+       "cost": 3
+      }
+     ]
+    },
+    {
+     "name": "Precision",
+     "nodes": [
+      {
+       "name": "Steady Hand",
+       "text": "+2% critical chance",
+       "stats": {
+        "critChance": 2
+       },
+       "cost": 1
+      },
+      {
+       "name": "Vital Points",
+       "text": "+10% critical damage",
+       "stats": {
+        "critDamage": 10
+       },
+       "cost": 1
+      },
+      {
+       "name": "Perfect Line",
+       "text": "+3% critical chance",
+       "stats": {
+        "critChance": 3
+       },
+       "cost": 1
+      },
+      {
+       "name": "Riposte",
+       "text": "A parry answered with an instant counter-blow",
+       "unlock": "riposte",
+       "cost": 3
+      }
+     ]
+    },
+    {
+     "name": "Steel",
+     "nodes": [
+      {
+       "name": "Piercing Point",
+       "text": "+3 armour piercing",
+       "stats": {
+        "armorPen": 3
+       },
+       "cost": 1
+      },
+      {
+       "name": "Through the Guard",
+       "text": "+3 armour piercing",
+       "stats": {
+        "armorPen": 3
+       },
+       "cost": 1
+      },
+      {
+       "name": "Heavy Strikes",
+       "text": "+15% heavy attack damage",
+       "stats": {
+        "crushing": 15
+       },
+       "cost": 1
+      },
+      {
+       "name": "Whirlwind",
+       "text": "A spinning flurry of sword blows",
+       "unlock": "whirlwind",
+       "cost": 3
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "weapon": "dagger",
+   "branches": [
+    {
+     "name": "Venom",
+     "nodes": [
+      {
+       "name": "Serrated",
+       "text": "+5% bleed chance",
+       "stats": {
+        "bleed": 5
+       },
+       "cost": 1
+      },
+      {
+       "name": "Deep Cuts",
+       "text": "+5% bleed chance",
+       "stats": {
+        "bleed": 5
+       },
+       "cost": 1
+      },
+      {
+       "name": "Open Veins",
+       "text": "+8% bleed chance",
+       "stats": {
+        "bleed": 8
+       },
+       "cost": 1
+      },
+      {
+       "name": "Fan of Knives",
+       "text": "A ring of thrown knives",
+       "unlock": "fan_of_knives",
+       "cost": 3
+      }
+     ]
+    },
+    {
+     "name": "Shadow",
+     "nodes": [
+      {
+       "name": "Unseen",
+       "text": "+10% damage from behind",
+       "stats": {
+        "backstab": 10
+       },
+       "cost": 1
+      },
+      {
+       "name": "Ambush",
+       "text": "+10% damage from behind",
+       "stats": {
+        "backstab": 10
+       },
+       "cost": 1
+      },
+      {
+       "name": "Assassin",
+       "text": "+15% damage from behind",
+       "stats": {
+        "backstab": 15
+       },
+       "cost": 1
+      },
+      {
+       "name": "Shadow Step",
+       "text": "Step through the shadows behind an enemy",
+       "unlock": "shadow_step",
+       "cost": 3
+      }
+     ]
+    },
+    {
+     "name": "Swift",
+     "nodes": [
+      {
+       "name": "Quick Hands",
+       "text": "+3% critical chance",
+       "stats": {
+        "critChance": 3
+       },
+       "cost": 1
+      },
+      {
+       "name": "Twin Fangs",
+       "text": "+3% dagger damage",
+       "stats": {
+        "damagePct": 3
+       },
+       "cost": 1
+      },
+      {
+       "name": "Flicker",
+       "text": "+4% critical chance",
+       "stats": {
+        "critChance": 4
+       },
+       "cost": 1
+      },
+      {
+       "name": "Blade Dance",
+       "text": "A long chain of dagger strikes",
+       "unlock": "blade_dance",
+       "cost": 3
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "weapon": "club",
+   "branches": [
+    {
+     "name": "Brute",
+     "nodes": [
+      {
+       "name": "Heavy Head",
+       "text": "+5% club damage",
+       "stats": {
+        "damagePct": 5
+       },
+       "cost": 1
+      },
+      {
+       "name": "Bone Breaker",
+       "text": "+5% club damage",
+       "stats": {
+        "damagePct": 5
+       },
+       "cost": 1
+      },
+      {
+       "name": "Smasher",
+       "text": "+7% club damage",
+       "stats": {
+        "damagePct": 7
+       },
+       "cost": 1
+      },
+      {
+       "name": "Ground Pound",
+       "text": "A leap that ends in a crushing slam",
+       "unlock": "ground_pound",
+       "cost": 3
+      }
+     ]
+    },
+    {
+     "name": "Crush",
+     "nodes": [
+      {
+       "name": "Momentum",
+       "text": "+10% heavy attack damage",
+       "stats": {
+        "crushing": 10
+       },
+       "cost": 1
+      },
+      {
+       "name": "Avalanche",
+       "text": "+10% heavy attack damage",
+       "stats": {
+        "crushing": 10
+       },
+       "cost": 1
+      },
+      {
+       "name": "Earthshaker",
+       "text": "+15% heavy attack damage",
+       "stats": {
+        "crushing": 15
+       },
+       "cost": 1
+      },
+      {
+       "name": "Shockwave",
+       "text": "The spin sends out a ring of force",
+       "unlock": "shockwave",
+       "cost": 3
+      }
+     ]
+    },
+    {
+     "name": "Iron",
+     "nodes": [
+      {
+       "name": "Dent",
+       "text": "+4 armour piercing",
+       "stats": {
+        "armorPen": 4
+       },
+       "cost": 1
+      },
+      {
+       "name": "Crack Shells",
+       "text": "+4 armour piercing",
+       "stats": {
+        "armorPen": 4
+       },
+       "cost": 1
+      },
+      {
+       "name": "Sunder",
+       "text": "+6 armour piercing",
+       "stats": {
+        "armorPen": 6
+       },
+       "cost": 1
+      },
+      {
+       "name": "Stunning Bash",
+       "text": "A blow that stuns for a moment",
+       "unlock": "stunning_bash",
+       "cost": 3
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "weapon": "bow",
+   "branches": [
+    {
+     "name": "Marksman",
+     "nodes": [
+      {
+       "name": "Taut String",
+       "text": "+4% bow damage",
+       "stats": {
+        "damagePct": 4
+       },
+       "cost": 1
+      },
+      {
+       "name": "True Flight",
+       "text": "+4% bow damage",
+       "stats": {
+        "damagePct": 4
+       },
+       "cost": 1
+      },
+      {
+       "name": "Deadeye",
+       "text": "+6% bow damage",
+       "stats": {
+        "damagePct": 6
+       },
+       "cost": 1
+      },
+      {
+       "name": "Triple Shot",
+       "text": "Loose three arrows in a fan",
+       "unlock": "triple_shot",
+       "cost": 3
+      }
+     ]
+    },
+    {
+     "name": "Hunter",
+     "nodes": [
+      {
+       "name": "Tracker",
+       "text": "+8% damage to beasts",
+       "stats": {
+        "beastBane": 8
+       },
+       "cost": 1
+      },
+      {
+       "name": "Stalker",
+       "text": "+8% damage to beasts",
+       "stats": {
+        "beastBane": 8
+       },
+       "cost": 1
+      },
+      {
+       "name": "Apex",
+       "text": "+12% damage to beasts",
+       "stats": {
+        "beastBane": 12
+       },
+       "cost": 1
+      },
+      {
+       "name": "Piercing Arrow",
+       "text": "An arrow that passes through every enemy",
+       "unlock": "piercing_arrow",
+       "cost": 3
+      }
+     ]
+    },
+    {
+     "name": "Eagle",
+     "nodes": [
+      {
+       "name": "Sharp Eyes",
+       "text": "+3% critical chance",
+       "stats": {
+        "critChance": 3
+       },
+       "cost": 1
+      },
+      {
+       "name": "Heartseeker",
+       "text": "+10% critical damage",
+       "stats": {
+        "critDamage": 10
+       },
+       "cost": 1
+      },
+      {
+       "name": "Eagle Eye",
+       "text": "+15% critical damage",
+       "stats": {
+        "critDamage": 15
+       },
+       "cost": 1
+      },
+      {
+       "name": "Rain of Arrows",
+       "text": "Arrows fall on a spot you aim at",
+       "unlock": "rain_of_arrows",
+       "cost": 3
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "weapon": "staff",
+   "branches": [
+    {
+     "name": "Pyromancy",
+     "nodes": [
+      {
+       "name": "Kindling",
+       "text": "+5% staff damage",
+       "stats": {
+        "damagePct": 5
+       },
+       "cost": 1
+      },
+      {
+       "name": "Blaze",
+       "text": "+5% staff damage",
+       "stats": {
+        "damagePct": 5
+       },
+       "cost": 1
+      },
+      {
+       "name": "Inferno",
+       "text": "+7% staff damage",
+       "stats": {
+        "damagePct": 7
+       },
+       "cost": 1
+      },
+      {
+       "name": "Meteor",
+       "text": "A burning rock falls from the sky",
+       "unlock": "meteor",
+       "cost": 3
+      }
+     ]
+    },
+    {
+     "name": "Focus",
+     "nodes": [
+      {
+       "name": "Clarity",
+       "text": "+3% critical chance",
+       "stats": {
+        "critChance": 3
+       },
+       "cost": 1
+      },
+      {
+       "name": "Power Word",
+       "text": "+10% critical damage",
+       "stats": {
+        "critDamage": 10
+       },
+       "cost": 1
+      },
+      {
+       "name": "Overload",
+       "text": "+15% critical damage",
+       "stats": {
+        "critDamage": 15
+       },
+       "cost": 1
+      },
+      {
+       "name": "Chain Lightning",
+       "text": "Lightning that leaps from enemy to enemy",
+       "unlock": "chain_lightning",
+       "cost": 3
+      }
+     ]
+    },
+    {
+     "name": "Siphon",
+     "nodes": [
+      {
+       "name": "Leech",
+       "text": "+2% lifesteal",
+       "stats": {
+        "lifesteal": 2
+       },
+       "cost": 1
+      },
+      {
+       "name": "Drain",
+       "text": "+2% lifesteal",
+       "stats": {
+        "lifesteal": 2
+       },
+       "cost": 1
+      },
+      {
+       "name": "Soul Feast",
+       "text": "+3% lifesteal",
+       "stats": {
+        "lifesteal": 3
+       },
+       "cost": 1
+      },
+      {
+       "name": "Arcane Barrier",
+       "text": "A shield that soaks up blows",
+       "unlock": "arcane_barrier",
+       "cost": 3
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

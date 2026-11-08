@@ -243,6 +243,10 @@ public partial class GameClient : Node
             {
                 _hud.ToggleCharacter();
             }
+            else if (key.Keycode == Key.J)
+            {
+                _hud.ToggleMastery();
+            }
             else if (key.Keycode is Key.Z or Key.X or Key.C && !_hud.DialogOpen)
             {
                 _hud.DrinkPotion(key.Keycode == Key.Z ? 0 : key.Keycode == Key.X ? 1 : 2);
@@ -730,12 +734,12 @@ public partial class GameClient : Node
             return MeleeBot(mode);
         }
 
-        if (mode == "character")
+        if (mode is "character" or "mastery")
         {
-            // K as a real key opens the character window.
+            // K or J as a real key opens the character or the mastery window.
             if (_client.Tick is 60 or 61)
             {
-                PressKey(Key.K, _client.Tick == 60);
+                PressKey(mode == "character" ? Key.K : Key.J, _client.Tick == 60);
             }
 
             return (0, 0, Buttons.None);

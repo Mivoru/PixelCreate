@@ -45,6 +45,12 @@ Rules:
   for the weapon) and casts with `Command.CastSkill` along the latest aim, for stamina, with a cooldown cut by
   Intelligence. Skill damage scales with level and Intelligence, not weapon power. Test mode knows every skill.
   `Command.UseItem` (arg = item index) replaced the eat range for the interface, so there is no 64-item limit there.
+- Weapon mastery (`world/mastery.json`, `Mastery.cs`, window on J): kills earn the weapon kind in hand mastery
+  experience (as much as the kill's experience); each mastery level is a point for that weapon's tree: three branches
+  taken top down, stat and passive nodes feeding `GearStats` (`Mastery.AddTo` in `RecomputeStats`) only while that
+  weapon is in hand. The last node of each branch is a new move; it can be taken once its id is in
+  `MasteryNode.BuiltUnlocks`, and shows as coming soon until then. At most 64 nodes (one mask in the snapshot).
+  `PIXEL_BOT=mastery` opens the window.
 - Slide: Ctrl while running on the ground (`Buttons.Slide`, `PlayerState.SlideTicks`/`SlideDirection`, in `Movement.Step`):
   a burst from 17 to 7 m/s over half a second, steerable a little, for stamina; a jump out of it keeps the speed in the
   air, and an attack or a dash ends it. `net-tests/SlideTests.cs`.

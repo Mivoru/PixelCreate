@@ -272,7 +272,7 @@ public partial class Hud : Control
     {
         _dialogName = "";
         DialogRole = "";
-        if (!InventoryOpen && !CharacterOpen && Camera is not null)
+        if (!InventoryOpen && !CharacterOpen && !MasteryOpen && Camera is not null)
         {
             Input.MouseMode = Input.MouseModeEnum.Captured;
         }
@@ -280,6 +280,87 @@ public partial class Hud : Control
 
     /// <summary>The character window: attributes and the points to spend on them.</summary>
     public bool CharacterOpen { get; private set; }
+
+    /// <summary>The weapon mastery window, and the weapon whose tree it shows.</summary>
+    public bool MasteryOpen { get; private set; }
+    private int _masteryTab = -1;
+    private readonly List<(Rect2 Rect, int Node)> _masteryButtons = new();
+    private readonly List<(Rect2 Rect, int Tab)> _masteryTabs = new();
+
+    public void ToggleMastery()
+    {
+        MasteryOpen = !MasteryOpen;
+        _masteryTab = MasteryOpen ? Mathf.Max(0, Mastery.WeaponIndex(Weapons.Name(Player.Weapon))) : _masteryTab;
+        Input.MouseMode = MasteryOpen || CharacterOpen || InventoryOpen || DialogOpen ? Input.MouseModeEnum.Visible : Input.MouseModeEnum.Captured;
+    }
+
+    /// <summary>
+    /// The mastery window: a tab for each weapon kind, its level and experience, and its tree as three
+    /// columns, one per branch, taken from the top down. Taken nodes glow gold; the next one in a
+    /// branch can be clicked when a point is free; the moves at the ends say when they are not built yet.
+    /// </summary>
+    private void DrawMastery()
+    {
+        _masteryButtons.Clear();
+        _masteryTabs.Clear();
+        var window = new Rect2((Size.X - 980f) / 2f, (Size.Y - 680f) / 2f, 980, 680);
+        Card(window, 22, GlassDeep, true);
+        Label("Weapon Mastery", window.Position + new Vector2(34, 56), 24, Text, _bold);
+        var levels = Snapshot?.MasteryLevels ?? new byte[Mastery.Weapons.Length];
+        var xps = Snapshot?.MasteryXp ?? new int[Mastery.Weapons.Length];
+        var taken = Snapshot?.MasteryTaken ?? 0;
+        var x = window.Position.X + 34;
+        for (var i = 0; i < Mastery.Weapons.Length; i++)
+        {
+            var name = char.ToUpper(Mastery.Weapons[i][0]) + Mastery.Weapons[i][1..];
+            var label = $"{name}  {levels[i]}";
+            var tab = new Rect2(x, window.Position.Y + 76, Width(label, 16, _bold) + 32, 36);
+            Rounded(tab, 12, i == _masteryTab ? Accent : new Color(1, 1, 1, 0.06f), Colors.Transparent, 0);
+            Label(label, tab.Position + new Vector2(16, 24), 16, i == _masteryTab ? Ink : Text, _bold);
+            _masteryTabs.Add((tab, i));
+            x += tab.Size.X + 10;
+        }
+
+        var weapon = Mastery.Weapons[_masteryTab];
+        var level = levels[_masteryTab];
+        var free = level - Mastery.Spent(weapon, taken);
+        var bar = new Rect2(window.Position + new Vector2(34, 134), window.Size.X - 68, 8);
+        var next = Mastery.XpToNext(level);
+        Bar(bar, level >= Mastery.MaxLevel ? 1f : xps[_masteryTab] / (float)next, 0f, Accent, new Color("ffe29a"), false);
+        Label($"Level {level}   {xps[_masteryTab]} / {next} experience from kills with a {weapon}", bar.Position + new Vector2(0, 30), 15, Muted, _bold);
+        var points = $"{free} point{(free == 1 ? "" : "s")} free";
+        Label(points, new Vector2(bar.End.X - Width(points, 17, _bold), bar.Position.Y + 30), 17, free > 0 ? Accent : Muted, _bold);
+
+        var branches = Mastery.Branches(weapon);
+        var column = (window.Size.X - 68 - 2 * 20) / 3f;
+        for (var b = 0; b < branches.Count; b++)
+        {
+            var left = window.Position.X + 34 + b * (column + 20);
+            Label(branches[b], new Vector2(left, window.Position.Y + 206), 19, Text, _bold);
+            foreach (var node in Mastery.Nodes.Where(n => n.Weapon == weapon && n.Branch == b))
+            {
+                var box = new Rect2(left, window.Position.Y + 222 + node.Tier * 104, column, 92);
+                var has = (taken & (1ul << node.Index)) != 0;
+                var can = Mastery.CanTake(node, taken, free);
+                var hover = can && box.HasPoint(GetLocalMousePosition());
+                var fill = has ? Accent with { A = 0.22f } : hover ? new Color(1, 1, 1, 0.12f) : new Color(1, 1, 1, 0.05f);
+                var rim = has ? Accent : can ? Accent with { A = 0.7f } : new Color(1, 1, 1, 0.1f);
+                Rounded(box, 14, fill, rim, has || can ? 2 : 1);
+                var dim = !has && !can;
+                Label(node.Name, box.Position + new Vector2(16, 30), 17, dim ? Muted : Text, _bold);
+                Label(node.Text, box.Position + new Vector2(16, 54), 13, Muted);
+                var tag = has ? "Taken" : !node.Ready ? "Coming soon" : node.Cost > 1 ? $"{node.Cost} points" : "1 point";
+                Label(tag, box.Position + new Vector2(16, 80), 13, has ? Accent : !node.Ready ? new Color("8b9bb4") : Muted, _bold);
+                if (can)
+                {
+                    _masteryButtons.Add((box, node.Index));
+                }
+            }
+        }
+
+        Keycap("J", new Vector2(window.End.X - 120, window.End.Y - 46), 14);
+        Label("close", new Vector2(window.End.X - 86, window.End.Y - 24), 15, Muted);
+    }
 
     public void ToggleCharacter()
     {
@@ -447,6 +528,11 @@ public partial class Hud : Control
             DrawCharacter();
         }
 
+        if (MasteryOpen)
+        {
+            DrawMastery();
+        }
+
         if (Items.Held is { } held)
         {
             _iconDraws.Add((new Rect2(GetLocalMousePosition() - new Vector2(32, 32), 64, 64), held.Icon, 1f));
@@ -482,6 +568,27 @@ public partial class Hud : Control
                         _commands.Enqueue((command, 0));
                     }
 
+                    return;
+                }
+            }
+        }
+
+        if (MasteryOpen && click.ButtonIndex == MouseButton.Left)
+        {
+            foreach (var (rect, tab) in _masteryTabs)
+            {
+                if (rect.HasPoint(click.Position))
+                {
+                    _masteryTab = tab;
+                    return;
+                }
+            }
+
+            foreach (var (rect, node) in _masteryButtons)
+            {
+                if (rect.HasPoint(click.Position))
+                {
+                    _commands.Enqueue((Command.TakeMastery, (ushort)node));
                     return;
                 }
             }

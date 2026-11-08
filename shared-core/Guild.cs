@@ -34,6 +34,9 @@ public enum Command : byte
 
     /// <summary>Casts a learned skill, named by its place in <see cref="SkillDef.All"/>, along the player's aim.</summary>
     CastSkill = 207,
+
+    /// <summary>Takes a node of a weapon mastery tree, named by its place in <see cref="Mastery.Nodes"/>.</summary>
+    TakeMastery = 208,
 }
 
 /// <summary>A newcomer must beat the guild examiner to become an adventurer.</summary>
