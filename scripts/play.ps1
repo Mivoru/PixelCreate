@@ -1,5 +1,5 @@
 # Starts a local server and the game client. Pass -ServerHost to join another server instead.
-# Controls: WASD move, mouse look, Space jump, Shift dash, left button attack, Esc quit.
+# Controls: WASD move, mouse look, Space jump, Shift dash, left button attack, Esc menu (settings, quit).
 # With -Capture <folder> a bot plays, saves frames, prints a STATS line and quits.
 # -Test starts the local server in test mode: a kit of gear in the bag and a frail examiner.
 param(

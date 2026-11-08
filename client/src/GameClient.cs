@@ -131,6 +131,7 @@ public partial class GameClient : Node
         _captureFrames = int.Parse(args.ElementAtOrDefault(3) ?? "8");
         _yaw = float.TryParse(OS.GetEnvironment("PIXEL_YAW"), System.Globalization.CultureInfo.InvariantCulture, out var yaw) ? yaw : 0f;
 
+        Settings.Load();
         var zone = Zone.Load("meadow-valley");
         _world = zone.World;
         _zone = zone;
@@ -175,10 +176,12 @@ public partial class GameClient : Node
 
     public override void _Input(InputEvent @event)
     {
-        if (@event is InputEventMouseMotion motion && !_hud.InventoryOpen && !_hud.DialogOpen)
+        if (@event is InputEventMouseMotion motion && !_hud.InventoryOpen && !_hud.DialogOpen && !_hud.MenuOpen)
         {
-            _yaw -= motion.Relative.X * MouseSensitivity;
-            _pitch = Mathf.Clamp(_pitch - motion.Relative.Y * MouseSensitivity, MinPitch, Mathf.Lerp(MaxPitch, AimMaxPitch, _aimBlend));
+            // A drawn bow turns at its own speed, for fine aim.
+            var speed = MouseSensitivity * Settings.Sensitivity * Mathf.Lerp(1f, Settings.AimSensitivity, _aimBlend);
+            _yaw -= motion.Relative.X * speed;
+            _pitch = Mathf.Clamp(_pitch - motion.Relative.Y * speed, MinPitch, Mathf.Lerp(MaxPitch, AimMaxPitch, _aimBlend));
         }
         else if (@event is InputEventKey { Pressed: true, Echo: false } key)
         {
@@ -190,7 +193,13 @@ public partial class GameClient : Node
                     return;
                 }
 
-                GetTree().Quit();
+                if (_hud.InventoryOpen && !_hud.MenuOpen)
+                {
+                    _hud.ToggleInventory();
+                    return;
+                }
+
+                _hud.ToggleMenu();
             }
             else if (key.Keycode == Key.E)
             {
@@ -230,6 +239,12 @@ public partial class GameClient : Node
         {
             _frameSeconds += delta;
             _measuredFrames++;
+        }
+
+        if (_hud.QuitRequested)
+        {
+            GetTree().Quit();
+            return;
         }
 
         _transport.Poll();
@@ -616,7 +631,7 @@ public partial class GameClient : Node
 
     private (sbyte X, sbyte Z, Buttons Buttons) ReadInput()
     {
-        if (_hud.InventoryOpen || _hud.DialogOpen)
+        if (_hud.InventoryOpen || _hud.DialogOpen || _hud.MenuOpen)
         {
             return (0, 0, Buttons.None);
         }
@@ -657,6 +672,22 @@ public partial class GameClient : Node
         if (mode is "club" or "staff")
         {
             return MeleeBot(mode);
+        }
+
+        if (mode == "menu")
+        {
+            // Esc as a real key opens the menu; then the settings page shows.
+            if (_client.Tick is 60 or 61)
+            {
+                PressKey(Key.Escape, _client.Tick == 60);
+            }
+
+            if (_client.Tick == 200)
+            {
+                _hud.ShowMenuPage("settings");
+            }
+
+            return (0, 0, Buttons.None);
         }
 
         if (mode is "talk" or "trial" && _client.Tick == 60)

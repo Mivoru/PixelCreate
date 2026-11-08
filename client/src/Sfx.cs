@@ -23,7 +23,7 @@ public sealed class Sfx
     {
         for (var i = 0; i < PoolSize; i++)
         {
-            var player = new AudioStreamPlayer3D { MaxDistance = MaxDistance, UnitSize = 7f, AttenuationFilterCutoffHz = 20500f };
+            var player = new AudioStreamPlayer3D { MaxDistance = MaxDistance, UnitSize = 7f, AttenuationFilterCutoffHz = 20500f, Bus = "SFX" };
             parent.AddChild(player);
             _pool.Add(player);
         }

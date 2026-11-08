@@ -91,6 +91,11 @@ public partial class Hud : Control
 
         public override void _Draw()
         {
+            if (Hud.MenuOpen)
+            {
+                return;
+            }
+
             // Pixel art grows only by whole steps: the largest that fits the place, centred in it.
             foreach (var (rect, icon, alpha) in Hud._iconDraws)
             {
@@ -108,7 +113,13 @@ public partial class Hud : Control
     {
         public Hud Hud = null!;
 
-        public override void _Draw() => Hud.DrawTooltip(this);
+        public override void _Draw()
+        {
+            if (!Hud.MenuOpen)
+            {
+                Hud.DrawTooltip(this);
+            }
+        }
     }
 
     private readonly List<FloatingText> _floating = new();
@@ -351,10 +362,20 @@ public partial class Hud : Control
         {
             _iconDraws.Add((new Rect2(GetLocalMousePosition() - new Vector2(32, 32), 64, 64), held.Icon, 1f));
         }
+
+        if (MenuOpen)
+        {
+            DrawMenu();
+        }
     }
 
     public override void _GuiInput(InputEvent @event)
     {
+        if (MenuInput(@event))
+        {
+            return;
+        }
+
         if (@event is not InputEventMouseButton { Pressed: true } click)
         {
             return;
