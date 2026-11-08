@@ -343,7 +343,9 @@ public partial class GameClient : Node
         _stage.SetGloom(_gloom);
         _stage.PlaceMoon();
         // A staff shows the crosshair all the time, as its fireballs fly to whatever lies under it.
-        _hud.Aiming = Mathf.Max(_aimBlend, _client.State.Weapon == Weapons.Staff ? 0.7f : 0f);
+        // So does any weapon once a skill is known, since skills fly through it too.
+        var skills = (_client.Latest?.KnownSkills ?? 0) != 0;
+        _hud.Aiming = Mathf.Max(_aimBlend, _client.State.Weapon == Weapons.Staff ? 0.7f : skills ? 0.45f : 0f);
         _hud.WorldScale = _stage.PixelScale;
         _hud.Player = _client.State;
         _hud.Snapshot = _client.Latest;
@@ -698,8 +700,9 @@ public partial class GameClient : Node
     {
         if (_client.State.Weapon is not (Weapons.Bow or Weapons.Staff))
         {
-            var aim = AimByte();
-            return (aim, (ushort)(aim << 8), 0);
+            // Movement and blows use the camera's turn; skills fly through the crosshair.
+            var (_, crossYaw, crossPitch) = CrosshairAim();
+            return (AimByte(), crossYaw, crossPitch);
         }
 
         if (_botShot is { } bot)
@@ -708,6 +711,14 @@ public partial class GameClient : Node
             return ((byte)((bot.Yaw + 128) >> 8), bot.Yaw, bot.Pitch);
         }
 
+        var (byteAim, fineYaw, finePitch) = CrosshairAim();
+        _shotPitch = Mathf.Clamp(finePitch / 65536f * Mathf.Tau, -Tuning.MaxShotPitch, Tuning.MaxShotPitch);
+        return (byteAim, fineYaw, finePitch);
+    }
+
+    /// <summary>The aim from the bow (in front of the chest) to whatever lies under the crosshair.</summary>
+    private (byte Aim, ushort Yaw, short Pitch) CrosshairAim()
+    {
         var camera = _stage.Camera.GlobalTransform;
         var point = AimPoint(camera.Origin, -camera.Basis.Z);
         var feet = _client.State.Position;
@@ -717,7 +728,6 @@ public partial class GameClient : Node
         var yaw = Mathf.Atan2(-to.X, -to.Z);
         var pitch = Mathf.Atan2(to.Y, new Vector2(to.X, to.Z).Length());
         var fineYaw = (ushort)((int)Mathf.Round(Mathf.PosMod(yaw / Mathf.Tau, 1f) * 65536f) & 0xFFFF);
-        _shotPitch = Mathf.Clamp(pitch, -Tuning.MaxShotPitch, Tuning.MaxShotPitch);
         return ((byte)((fineYaw + 128) >> 8), fineYaw, (short)Mathf.Round(pitch / Mathf.Tau * 65536f));
     }
 
@@ -1610,7 +1620,10 @@ public partial class GameClient : Node
                     or ProjectileKind.Knife or ProjectileKind.Meteor
                 && motion.LengthSquared() > 0.0001f)
             {
-                ball.LookAt(ball.GlobalPosition + motion, Vector3.Up);
+                // A shot falling straight down (the rain of arrows) needs another up, or LookAt
+                // warns every frame, and a flood of warnings stalls the game.
+                var up = Mathf.Abs(motion.Normalized().Dot(Vector3.Up)) > 0.98f ? Vector3.Forward : Vector3.Up;
+                ball.LookAt(ball.GlobalPosition + motion, up);
             }
             else if (spit.Kind == ProjectileKind.SummonedSpear && ball.GlobalPosition.DistanceTo(_shownNow) < 4f)
             {

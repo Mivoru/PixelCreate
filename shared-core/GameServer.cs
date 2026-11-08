@@ -213,6 +213,10 @@ public sealed class GameServer : IEnemyEvents
         public int WaitTicks;
         public readonly Queue<(Command Command, ushort Arg)> Commands = new();
 
+        /// <summary>The fine aim of the last skill cast: through the crosshair.</summary>
+        public ushort SkillYaw;
+        public short SkillPitch;
+
         /// <summary>The Guild chest: stacks of items, and gear pieces by place, sent in slices like the bag.</summary>
         public readonly Dictionary<ushort, int> Storage = new();
         public readonly GearPiece?[] StoredGear = new GearPiece?[GearSlots];
@@ -309,8 +313,7 @@ public sealed class GameServer : IEnemyEvents
         /// <summary>For a chain bolt: leaps still to make after this one.</summary>
         public int Jumps;
 
-        /// <summary>Bow mastery Rain of Arrows: where this arrow ends, arrows rain down.</summary>
-        public bool Rain;
+
 
         /// <summary>For a player's arrow: who loosed it and how far the bow was drawn, as a share of a full draw.</summary>
         public int Shooter = -1;
@@ -658,6 +661,12 @@ public sealed class GameServer : IEnemyEvents
             {
                 player.LastCommandTick = command.Tick;
                 player.Commands.Enqueue((command.Command, command.Arg));
+                if (command.Command == Command.CastSkill)
+                {
+                    // A skill flies where the crosshair pointed when it was cast.
+                    player.SkillYaw = command.AimYaw;
+                    player.SkillPitch = command.AimPitch;
+                }
             }
         }
     }
@@ -823,7 +832,7 @@ public sealed class GameServer : IEnemyEvents
         player.State.StaminaDelay = Tuning.StaminaRegenDelayTicks;
         player.SkillReady[index] = Tick + (uint)Skills.Cooldown(skill, player.Attribute(PlayerAttribute.Intelligence));
         Stats.SkillsCast++;
-        var (aim, flat) = ShotDirection(player);
+        var (aim, flat) = Direction(player.SkillYaw, player.SkillPitch);
         var origin = ArrowOrigin(player.State.Position, flat) + flat * 0.4f;
         switch (skill.Effect)
         {
@@ -1362,7 +1371,22 @@ public sealed class GameServer : IEnemyEvents
         }
     }
 
-    /// <summary>Bow mastery Rain of Arrows: arrows fall from high above round where the steep shot came down.</summary>
+    /// <summary>Where the aim from the bow first meets the ground or something solid, within the rain's range; else the ground below its end.</summary>
+    private Vector3 RainSpot(Vector3 origin, Vector3 aim)
+    {
+        for (var along = 0.5f; along <= Tuning.RainRange; along += 0.5f)
+        {
+            var point = origin + aim * along;
+            if (point.Y <= _world.GroundHeight(point.X, point.Z) || _world.IsBlocked(point))
+            {
+                return point;
+            }
+        }
+
+        return origin + aim * Tuning.RainRange;
+    }
+
+    /// <summary>Bow mastery Rain of Arrows: arrows fall from high above round the spot.</summary>
     private void RainAt(Player player, Vector3 where)
     {
         var ground = _world.GroundHeight(where.X, where.Z);
@@ -2365,12 +2389,17 @@ public sealed class GameServer : IEnemyEvents
         var drawn = Tuning.Drawn(player.State.ShotDraw);
         var speed = Tuning.ArrowSpeed(drawn);
         var origin = ArrowOrigin(player.State.Position, flat);
-        var rain = drawn >= 1f && pitch >= Tuning.RainMinPitch && Mastery.Has(player.Stats.Weapon, player.MasteryTaken, "rain_of_arrows");
+        if (player.State.ShotDraw >= Tuning.FullDraw + Tuning.RainHoldTicks && Mastery.Has(player.Stats.Weapon, player.MasteryTaken, "rain_of_arrows"))
+        {
+            // Bow mastery Rain of Arrows: the held draw calls arrows down where the crosshair points.
+            RainAt(player, RainSpot(origin, aim));
+            return;
+        }
+
         var piercing = Mastery.Has(player.Stats.Weapon, player.MasteryTaken, "piercing_arrow");
         var share = Tuning.DrawShare(player.State.ShotDraw);
         var life = (int)MathF.Ceiling(Tuning.ArrowRange(drawn) / speed * Tuning.TickRate);
         AddArrow(aim, share);
-        _projectiles[^1].Rain = rain;
 
         // Bow mastery Triple Shot: two more arrows fan out either side of the aim, weaker.
         if (Mastery.Has(player.Stats.Weapon, player.MasteryTaken, "triple_shot"))
@@ -2395,10 +2424,13 @@ public sealed class GameServer : IEnemyEvents
     }
 
     /// <summary>The aim a player last fixed for a shot or a spell, as a direction, and flat.</summary>
-    private static (Vector3 Aim, Vector3 Flat) ShotDirection(Player player)
+    private static (Vector3 Aim, Vector3 Flat) ShotDirection(Player player) => Direction(player.ShotYaw, player.ShotPitch);
+
+    /// <summary>A fine aim (yaw and pitch in 65536ths of a turn) as a direction, and flat.</summary>
+    private static (Vector3 Aim, Vector3 Flat) Direction(ushort fineYaw, short finePitch)
     {
-        var yaw = player.ShotYaw / 65536f * MathF.Tau;
-        var pitch = Math.Clamp(player.ShotPitch / 65536f * MathF.Tau, -Tuning.MaxShotPitch, Tuning.MaxShotPitch);
+        var yaw = fineYaw / 65536f * MathF.Tau;
+        var pitch = Math.Clamp(finePitch / 65536f * MathF.Tau, -Tuning.MaxShotPitch, Tuning.MaxShotPitch);
         var flat = new Vector3(-MathF.Sin(yaw), 0, -MathF.Cos(yaw));
         return (flat * MathF.Cos(pitch) + Vector3.UnitY * MathF.Sin(pitch), flat);
     }
@@ -2578,12 +2610,6 @@ public sealed class GameServer : IEnemyEvents
                 else if (struck || StrikeWithArrow(shot))
                 {
                     shot.Life = 0;
-                }
-
-                if (shot.Rain && shot.Life <= 0 && _players.TryGetValue(shot.Shooter, out var archer))
-                {
-                    shot.Rain = false;
-                    RainAt(archer, shot.Position);
                 }
 
                 continue;

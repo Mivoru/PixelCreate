@@ -432,7 +432,7 @@
       },
       {
        "name": "Rain of Arrows",
-       "text": "A full draw aimed high comes down as a rain",
+       "text": "Hold a full draw on: arrows rain on the aim",
        "unlock": "rain_of_arrows",
        "cost": 3
       }

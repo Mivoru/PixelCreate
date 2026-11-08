@@ -291,16 +291,18 @@ public class MasteryMoveTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void RainOfArrows_FallsWhereASteepShotLands(bool taken)
+    public void RainOfArrows_FallsWhereAHeldDrawAims(bool taken)
     {
         var (server, client, network) = Start("hunters_longbow", taken ? "rain_of_arrows" : null, new Vector3(0, 0, -40));
-        var pitch = (short)MathF.Round(0.9f / MathF.Tau * 65536f);
+        // Aimed a little down, at the ground some metres ahead, and held past a full draw.
+        var pitch = (short)MathF.Round(-0.12f / MathF.Tau * 65536f);
+        var hold = Tuning.FullDraw + Tuning.RainHoldTicks + 4;
         var most = 0;
-        for (var tick = 0; tick < Tuning.FullDraw + 240; tick++)
+        for (var tick = 0; tick < hold + 200; tick++)
         {
             network.Advance(1000.0 / Tuning.TickRate);
             server.Step();
-            client.Step(0, 0, tick < Tuning.FullDraw + 4 ? Buttons.Light : Buttons.None, 0, Command.None, 0, pitch);
+            client.Step(0, 0, tick < hold ? Buttons.Light : Buttons.None, 0, Command.None, 0, pitch);
             most = Math.Max(most, server.ProjectileCount);
         }
 

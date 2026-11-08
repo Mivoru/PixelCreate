@@ -96,8 +96,12 @@ public static class Tuning
     public const float MeteorSplash = 3.2f;
     public const float MeteorShare = 1.6f;
 
-    /// <summary>Bow mastery Rain of Arrows: a full-draw shot aimed at least this steeply up comes down as this many arrows, spread this wide.</summary>
-    public const float RainMinPitch = 0.5f;
+    /// <summary>
+    /// Bow mastery Rain of Arrows: holding a full draw this many ticks longer turns the shot into
+    /// this many arrows falling round the spot under the crosshair, spread this wide, at most this far.
+    /// </summary>
+    public const byte RainHoldTicks = 45;
+    public const float RainRange = 40f;
     public const int RainArrows = 12;
     public const float RainRadius = 3.5f;
     public const float RainShare = 0.45f;
@@ -286,6 +290,7 @@ public enum MasteryMoves : byte
     BladeDance = 4,
     ShadowStep = 8,
     GroundPound = 16,
+    RainOfArrows = 32,
 }
 
 public enum AttackKind : byte
@@ -851,7 +856,9 @@ public static class Movement
         }
         else if (holding || state.DrawTicks < Tuning.MinDraw)
         {
-            state.DrawTicks = (byte)Math.Min(state.DrawTicks + 1, Tuning.FullDraw);
+            // Rain of Arrows lets the draw be held on past full, to call the rain.
+            var most = ((MasteryMoves)state.Moves).HasFlag(MasteryMoves.RainOfArrows) ? Tuning.FullDraw + Tuning.RainHoldTicks : Tuning.FullDraw;
+            state.DrawTicks = (byte)Math.Min(state.DrawTicks + 1, most);
         }
         else
         {

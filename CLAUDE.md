@@ -39,6 +39,10 @@ Rules:
   level, spent with `Command.RaiseAttribute` (arg = attribute) in the character window (K), reset with Mira for 20 gold a
   level. Per-point values are starting guesses, not measured balance. Endurance rides in `PlayerState.Endurance` because
   it changes stamina, which movement predicts. `PIXEL_BOT=character` opens the window.
+- Skills fly through the crosshair: the client sends the crosshair aim (`CrosshairAim`) as `InputCmd.AimYaw`/`AimPitch`
+  with every weapon, and the server keeps the aim of the input that carried `Command.CastSkill`. The crosshair shows
+  faintly once a skill is known. Projectiles falling straight down need another up vector for `LookAt`: Godot warns
+  every frame otherwise, and that flood of warnings froze the client once.
 - Skills (`world/skills.json`, `Skills.cs`): each reuses an enemy ability's effect turned on enemies (fireball, air
   slash, earth crack, summoned spears, fang slash). Enemies listed as `teachers` drop `book_<skill>` items (rares at
   `rareBookChance`); reading one (`Command.UseItem`) teaches the skill. A learned skill goes on the hotbar (slot 1 stays
@@ -63,8 +67,9 @@ Rules:
   Whirlwind (sword, floats down), Ground Pound (club, the blow lands where the plunge meets the ground) or Shadow Step
   (daggers: the server moves the player behind the enemy ahead, which the client takes from the snapshot). Runs of
   blows use `AttackDef.HitEvery`/`LastHitAt`. Server-side moves: Fan of Knives (`ProjectileKind.Knife` ring when the
-  leap lands), Meteor (`ProjectileKind.Meteor` on the far end of the fire line), Rain of Arrows (a full draw aimed
-  above `Tuning.RainMinPitch` rains arrows where it ends) and Arcane Barrier (`Player.Barrier`, soaks blows before
+  leap lands), Meteor (`ProjectileKind.Meteor` on the far end of the fire line), Rain of Arrows (`MasteryMoves.RainOfArrows` lets the draw
+  run `Tuning.RainHoldTicks` past full, with a blue ring round the crosshair; letting go rains arrows on the spot the
+  aim meets, `GameServer.RainSpot`) and Arcane Barrier (`Player.Barrier`, soaks blows before
   health, refills when unhurt, `Snapshot.Barrier`). The studio's attacks job films the new player attacks.
 - Slide: Ctrl while running on the ground (`Buttons.Slide`, `PlayerState.SlideTicks`/`SlideDirection`, in `Movement.Step`):
   a burst from 17 to 7 m/s over half a second, steerable a little, for stamina; a jump out of it keeps the speed in the

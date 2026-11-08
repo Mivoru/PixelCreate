@@ -1510,6 +1510,20 @@ public partial class Hud : Control
 
         DrawCircle(centre, 2.5f, shadow);
         DrawCircle(centre, 1.5f, colour);
+
+        // Bow mastery Rain of Arrows: held past a full draw, a blue ring fills round the crosshair.
+        if (Player.DrawTicks > Tuning.FullDraw)
+        {
+            var charge = Mathf.Clamp((Player.DrawTicks - Tuning.FullDraw) / (float)Tuning.RainHoldTicks, 0f, 1f);
+            var rain = new Color("2ce8f5") { A = Aiming };
+            DrawArc(centre, 34f, -Mathf.Pi / 2f, -Mathf.Pi / 2f + Mathf.Tau * charge, 40, shadow, 5f);
+            DrawArc(centre, 34f, -Mathf.Pi / 2f, -Mathf.Pi / 2f + Mathf.Tau * charge, 40, rain, 3f);
+            if (charge >= 1f)
+            {
+                const string label = "Rain of Arrows";
+                Label(label, centre + new Vector2(-Width(label, 15, _bold) / 2f, 58), 15, rain, _bold, true);
+            }
+        }
     }
 
     /// <summary>

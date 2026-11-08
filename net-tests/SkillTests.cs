@@ -45,6 +45,25 @@ public class SkillTests
     }
 
     [Fact]
+    public void Skill_FliesThroughTheCrosshairOfTheCastingInput()
+    {
+        // The foe stands to the side; the cast carries a fine aim at it, while the body faces ahead.
+        var (server, client, network) = Start(new Vector3(8, 0, 0));
+        var foe = server.Enemies[0];
+        var skill = Learn(server, client, network, "fireball");
+        var health = foe.Health;
+        const ushort right = 49152;
+        for (var i = 0; i < 90; i++)
+        {
+            network.Advance(1000.0 / Tuning.TickRate);
+            server.Step();
+            client.Step(0, 0, Buttons.None, 0, i == 0 ? Command.CastSkill : Command.None, right, 0, i == 0 ? skill : (ushort)0);
+        }
+
+        Assert.True(foe.Health < health);
+    }
+
+    [Fact]
     public void Book_TeachesItsSkillOnce()
     {
         var (server, client, network) = Start();

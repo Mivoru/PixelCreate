@@ -68,7 +68,7 @@ public static class Mastery
         foreach (var (unlock, move) in new[]
         {
             ("rising_slash", MasteryMoves.RisingSlash), ("whirlwind", MasteryMoves.Whirlwind), ("blade_dance", MasteryMoves.BladeDance),
-            ("shadow_step", MasteryMoves.ShadowStep), ("ground_pound", MasteryMoves.GroundPound),
+            ("shadow_step", MasteryMoves.ShadowStep), ("ground_pound", MasteryMoves.GroundPound), ("rain_of_arrows", MasteryMoves.RainOfArrows),
         })
         {
             if (Has(weaponInHand, taken, unlock))
