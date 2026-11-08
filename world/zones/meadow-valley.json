@@ -54,7 +54,9 @@
     [176, 172, 5],
     [236, 229, 11],
     [204, 190, 8],
-    [174.0, -50.0, 9]
+    [174.0, -50.0, 9],
+    [-226, 192, 10],
+    [-214, 226, 11]
   ],
   "yards": [
     [21, -16.5, 6],
@@ -203,7 +205,10 @@
     { "x": 218.0, "z": -136.0, "radius": 6, "count": 3, "respawnTicks": 2400, "types": ["orc_spearwoman", "orc_huntress"] },
     { "x": 215.4, "z": -139.2, "radius": 4, "count": 2, "respawnTicks": 3000, "types": ["orc_berserker"] },
     { "x": 202.0, "z": -126.0, "radius": 5, "count": 2, "respawnTicks": 2400, "types": ["orc_huntress", "orc_warrior"] },
-    { "x": 174.0, "z": -50.0, "radius": 4, "count": 3, "respawnTicks": 2400, "types": ["orc_warrior", "orc_spearwoman"] }
+    { "x": 174.0, "z": -50.0, "radius": 4, "count": 3, "respawnTicks": 2400, "types": ["orc_warrior", "orc_spearwoman"] },
+    { "x": -192, "z": 204, "radius": 7, "count": 2, "respawnTicks": 3000, "types": ["werewolf"] },
+    { "x": -208, "z": 214, "radius": 6, "count": 2, "respawnTicks": 3000, "types": ["werewolf"] },
+    { "x": -226, "z": 196, "radius": 3, "count": 1, "respawnTicks": 6000, "types": ["werewolf_alpha"] }
   ],
   "props": [
     { "model": "palisade", "x": 97.2, "z": -74.6, "yaw": -0.7 },
@@ -463,7 +468,28 @@
     { "model": "orc_tent", "x": 170.5, "z": -47.5, "yaw": -0.95 },
     { "model": "camp_fire", "x": 172.5, "z": -51.0, "yaw": 0.0 },
     { "model": "war_banner", "x": 178.0, "z": -46.0, "yaw": -2.03 },
-    { "model": "arms_rack", "x": 172.0, "z": -55.0, "yaw": -2.76 }
+    { "model": "arms_rack", "x": 172.0, "z": -55.0, "yaw": -2.76 },
+    { "model": "ruined_cottage", "x": -180, "z": 196, "yaw": 0.0 },
+    { "model": "ruined_cottage_b", "x": -182, "z": 214, "yaw": 3.14 },
+    { "model": "ruined_cottage_b", "x": -196, "z": 193, "yaw": 0.0 },
+    { "model": "ruined_cottage", "x": -200, "z": 219, "yaw": 3.14 },
+    { "model": "ruined_cottage", "x": -212, "z": 200, "yaw": 0.0 },
+    { "model": "well", "x": -194, "z": 206, "yaw": 0.4 },
+    { "model": "cart", "x": -175, "z": 197.5, "yaw": 1.9 },
+    { "model": "lantern_post", "x": -186, "z": 206.5, "yaw": 0.0 },
+    { "model": "lantern_post", "x": -205, "z": 207, "yaw": 0.0 },
+    { "model": "signpost", "x": -168, "z": 208, "yaw": 1.4 },
+    { "model": "chapel_ruin", "x": -214, "z": 226, "yaw": -0.84 },
+    { "model": "gravestones", "x": -202, "z": 236, "yaw": -0.94 },
+    { "model": "gravestones", "x": -206, "z": 242, "yaw": -0.69 },
+    { "model": "gravestones", "x": -224, "z": 238, "yaw": -0.94 },
+    { "model": "gravestones", "x": -228, "z": 230, "yaw": -0.69 },
+    { "model": "grave_fence", "x": -196, "z": 232, "yaw": 1.57 },
+    { "model": "grave_fence", "x": -198, "z": 242, "yaw": 1.4 },
+    { "model": "grave_fence", "x": -232, "z": 222, "yaw": 1.7 },
+    { "model": "grave_fence", "x": -230, "z": 242, "yaw": 0.2 },
+    { "model": "grave_fence", "x": -212, "z": 247, "yaw": 0.0 },
+    { "model": "moon_altar", "x": -226, "z": 192, "yaw": -2.11 }
   ],
   "scatter": [
     { "model": "tree_a", "count": 120, "area": [-165, -165, 165, 165], "minScale": 0.9, "maxScale": 1.4, "spacing": 6, "clusters": 0.42 },

@@ -51,8 +51,10 @@ public sealed class PixelStage
         // SetAnchorsPreset alone keeps the old size, which is zero here.
         screen.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
 
-        View.AddChild(BuildEnvironment());
-        View.AddChild(new DirectionalLight3D
+        var environment = BuildEnvironment();
+        _environment = environment.Environment;
+        View.AddChild(environment);
+        View.AddChild(_sun = new DirectionalLight3D
         {
             RotationDegrees = new Vector3(-38, -50, 0),
             LightColor = new Color("fff0d8"),
@@ -65,6 +67,7 @@ public sealed class PixelStage
 
         Camera = new Camera3D { Fov = 58, Far = 260 };
         View.AddChild(Camera);
+        BuildMoon();
         PostQuad = BuildPostQuad();
         Camera.AddChild(PostQuad);
     }
@@ -87,6 +90,66 @@ public sealed class PixelStage
         foreach (var child in node.GetChildren())
         {
             Limit(child, range);
+        }
+    }
+
+    private Godot.Environment _environment = null!;
+    private DirectionalLight3D _sun = null!;
+
+    /// <summary>
+    /// Darkens the world towards a cold, misty night, from 0 (a clear day) to 1 (Moonfell): the light
+    /// turns blue and weak, the fog thickens and greys the sky.
+    /// </summary>
+    public void SetGloom(float gloom)
+    {
+        var g = Mathf.Clamp(gloom, 0f, 1f);
+        _environment.AmbientLightColor = new Color("cfd8ea").Lerp(new Color("6a7898"), g);
+        _environment.AmbientLightEnergy = Mathf.Lerp(0.82f, 0.66f, g);
+        _environment.FogLightColor = new Color("bcd8ea").Lerp(new Color("4e5c7a"), g);
+        _environment.FogDensity = Mathf.Lerp(0.0024f, 0.0085f, g);
+        _environment.FogSkyAffect = 0.6f * g;
+        _environment.VolumetricFogDensity = Mathf.Lerp(0.002f, 0.009f, g);
+        _environment.VolumetricFogAlbedo = new Color("fff3e0").Lerp(new Color("9aa8c8"), g);
+        _sun.LightColor = new Color("fff0d8").Lerp(new Color("a8b8e8"), g);
+        _sun.LightEnergy = Mathf.Lerp(1.2f, 0.5f, g);
+        _moon.Visible = g > 0.02f;
+        _moonMaterial.SetShaderParameter("strength", g);
+    }
+
+    /// <summary>A great pale moon low over the north-west, seen where the world is cursed.</summary>
+    private MeshInstance3D _moon = null!;
+    private ShaderMaterial _moonMaterial = null!;
+
+    private void BuildMoon()
+    {
+        _moonMaterial = new ShaderMaterial { Shader = new Shader { Code = @"
+shader_type spatial;
+render_mode unshaded, blend_add, depth_draw_never, cull_disabled, fog_disabled;
+uniform float strength = 0.0;
+void vertex() {
+    // Always face the camera.
+    MODELVIEW_MATRIX = VIEW_MATRIX * mat4(INV_VIEW_MATRIX[0], INV_VIEW_MATRIX[1], INV_VIEW_MATRIX[2], MODEL_MATRIX[3]);
+}
+void fragment() {
+    vec2 p = UV * 2.0 - 1.0;
+    float r = length(p);
+    float disc = 1.0 - smoothstep(0.42, 0.45, r);
+    float halo = (1.0 - smoothstep(0.45, 1.0, r)) * 0.25;
+    // Grey seas on the face of the moon.
+    float seas = 0.08 * step(0.6, sin(p.x * 9.0 + 1.3) * sin(p.y * 7.0 - 0.4) + 0.5);
+    vec3 face = vec3(0.92, 0.94, 0.86) - seas;
+    ALBEDO = (face * disc + vec3(0.55, 0.62, 0.8) * halo) * strength;
+}" } };
+        _moon = new MeshInstance3D { Mesh = new QuadMesh { Size = new Vector2(70, 70) }, MaterialOverride = _moonMaterial, Visible = false, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
+        View.AddChild(_moon);
+    }
+
+    /// <summary>Keeps the moon far off in the same part of the sky, wherever the camera goes.</summary>
+    public void PlaceMoon()
+    {
+        if (_moon.Visible)
+        {
+            _moon.GlobalPosition = Camera.GlobalPosition + new Vector3(-0.86f, 0.3f, 0.42f).Normalized() * 230f;
         }
     }
 

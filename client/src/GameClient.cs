@@ -49,6 +49,9 @@ public partial class GameClient : Node
 
     /// <summary>How far up the last aim pointed, in radians, for the archer's arms.</summary>
     private float _shotPitch;
+
+    /// <summary>How dark and misty the world is drawn, following the blight under the player.</summary>
+    private float _gloom;
     private const int BotDialogTicks = 70;
     private const int HuntTicks = 1400;
     private const int MaxTicksPerFrame = 6;
@@ -293,6 +296,11 @@ public partial class GameClient : Node
         _fx.Update(d);
         UpdateAim(d);
         PlaceCamera(shown, d);
+        // Cursed ground darkens the world as the player walks into it, and lifts as they leave.
+        var (_, blight, _) = _zone.GroundAt(shown.X, shown.Z);
+        _gloom = Mathf.MoveToward(_gloom, blight, d * 0.6f);
+        _stage.SetGloom(_gloom);
+        _stage.PlaceMoon();
         // A staff shows the crosshair all the time, as its fireballs fly to whatever lies under it.
         _hud.Aiming = Mathf.Max(_aimBlend, _client.State.Weapon == Weapons.Staff ? 0.7f : 0f);
         _hud.WorldScale = _stage.PixelScale;

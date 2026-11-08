@@ -538,6 +538,9 @@ public partial class Studio : Node
 
             var eye = new Vector3(shot.Eye[0], zone.World.GroundHeight(shot.Eye[0], shot.Eye[2]) + shot.Eye[1], shot.Eye[2]);
             var at = new Vector3(shot.At[0], zone.World.GroundHeight(shot.At[0], shot.At[2]) + shot.At[1], shot.At[2]);
+            _stage.SetGloom(zone.GroundAt(shot.Eye[0], shot.Eye[2]).Blight);
+            _stage.Camera.LookAtFromPosition(eye, at);
+            _stage.PlaceMoon();
             _stage.Camera.LookAtFromPosition(eye, at);
             await Wait(4);
             Save($"{(boxes ? "box" : "world")}_{shot.Name}");

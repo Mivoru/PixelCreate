@@ -56,5 +56,10 @@
   { "name": "warcamp_gate", "eye": [200, 3, -104], "at": [210, 2.5, -128] },
   { "name": "warcamp_hall", "eye": [210, 4, -126], "at": [218, 3, -146] },
   { "name": "warcamp_tents", "eye": [222, 5, -120], "at": [205, 2, -140] },
-  { "name": "warcamp_outpost", "eye": [184, 3, -40], "at": [174, 1.5, -50] }
+  { "name": "warcamp_outpost", "eye": [184, 3, -40], "at": [174, 1.5, -50] },
+  { "name": "moonfell_street", "eye": [-168, 3, 205], "at": [-196, 2, 206] },
+  { "name": "moonfell_chapel", "eye": [-190, 4, 212], "at": [-214, 5, 226] },
+  { "name": "moonfell_graves", "eye": [-193, 2.5, 238], "at": [-212, 1, 238] },
+  { "name": "moonfell_altar", "eye": [-214, 2.5, 186], "at": [-226, 1.5, 193] },
+  { "name": "moonfell_moon", "eye": [-180, 2, 200], "at": [-223, 17, 221] }
 ]
