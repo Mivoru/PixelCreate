@@ -594,7 +594,8 @@ public sealed class EnemyTests
             new Aabb(new Vector3(2, 0, 2), new Vector3(3, 3, 8)),
         };
         var network = new SimNetwork(1, 0, 0, 0);
-        var camp = new EnemySpawn(new Vector3(30, 0, 30), 1f, 1, Types: new[] { "goblin_skirmisher" });
+        // The camp lies beyond the chase leash, so the trapped goblin gives up the player and goes home.
+        var camp = new EnemySpawn(new Vector3(45, 0, 45), 1f, 1, Types: new[] { "goblin_skirmisher" });
         var world = new World(boxes, null, Vector3.Zero, new[] { camp });
         var server = new GameServer(network.Connect(0), world, new ServerOptions { Seed = 4 });
         var client = new ClientPrediction(network.Connect(1), world);

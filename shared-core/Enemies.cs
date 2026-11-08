@@ -126,6 +126,12 @@ public sealed partial class Enemy
     private const float HopSpeed = 5.5f;
     private const float LeashExtra = 16f;
 
+    /// <summary>
+    /// How far past its camp a fighter chases a player before it gives up and goes home. Long enough
+    /// that a player can pull one or two away from a group and fight them alone.
+    /// </summary>
+    public const float ChaseLeash = 45f;
+
     /// <summary>How long a hit walker or fighter reels before it acts again.</summary>
     private const int StaggerTicks = 6;
     private const float LeapLead = 0.3f;

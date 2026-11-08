@@ -128,7 +128,7 @@ public sealed partial class Enemy
             return;
         }
 
-        if (TargetId >= 0 && (FindTarget(targets) is null || homeDistance > Home.Radius + LeashExtra * 1.5f))
+        if (TargetId >= 0 && (FindTarget(targets) is null || homeDistance > Home.Radius + ChaseLeash))
         {
             EndTurn(events);
             TargetId = -1;

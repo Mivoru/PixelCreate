@@ -55,7 +55,8 @@ Rules:
 - Enemy abilities and crystal drops are data in `world/enemies.json`; new effects go in `GameServer.Fire`.
 - Group AI (`EnemyTactics.cs`): fighters keep apart (`AllySpacing`), and a close blow needs a turn from the server
   (`TryTakeTurn`, at most `GameServer.MaxCloseAttackers` = 2 per player, two blows or 5 s each, ended only after
-  the recovery). The rest hold a ring and feint. `behavior` in `enemies.json` picks the role: brute, flanker (works to
+  the recovery). The rest hold a ring and feint. A fighter chases up to `Enemy.ChaseLeash` (45 m) past its camp, so
+  players can pull one or two away from a group. `behavior` in `enemies.json` picks the role: brute, flanker (works to
   the player's back), skirmisher (falls back after a blow), ranged, support (keeps behind its front line) or pack;
   a `leader` wolf's call rallies its kind and lets two more of the pack strike for 5 s. `net-tests/TacticsTests.cs`.
 - Goblins and orcs also roam: a camp with a `route` in the zone file is a patrol (`Patrol.cs`) that walks its points
