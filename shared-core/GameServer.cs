@@ -195,7 +195,15 @@ public sealed class GameServer : IEnemyEvents
         public readonly int[] Crystals = new int[Core.Crystals.Tiers];
         public uint NextTick;
         public int WaitTicks;
-        public readonly Queue<Command> Commands = new();
+        public readonly Queue<(Command Command, ushort Arg)> Commands = new();
+
+        /// <summary>The Guild chest: stacks of items, and gear pieces by place, sent in slices like the bag.</summary>
+        public readonly Dictionary<ushort, int> Storage = new();
+        public readonly GearPiece?[] StoredGear = new GearPiece?[GearSlots];
+        public readonly HashSet<ushort> StorageChanged = new();
+        public readonly HashSet<int> StoredGearChanged = new();
+        public int StorageCursor;
+        public int StoredGearCursor;
         public uint LastCommandTick;
         public uint DoorReadyTick;
         public int CatchUpTicks;
@@ -377,6 +385,9 @@ public sealed class GameServer : IEnemyEvents
 
     /// <summary>How many of an item a player holds. For tests and tools.</summary>
     public int GetBagCount(int id, ushort item) => _players[id].Bag.GetValueOrDefault(item);
+
+    /// <summary>Puts items in a player's bag. For tests and tools.</summary>
+    public void GiveItem(int id, ushort item, int count) => AddItem(_players[id], item, count);
 
     /// <summary>Hands a player gold. For tests and tools.</summary>
     public void GiveGold(int id, int gold) => _players[id].Gold += gold;
@@ -570,7 +581,7 @@ public sealed class GameServer : IEnemyEvents
             if (command.Command != Command.None && command.Tick > player.LastCommandTick)
             {
                 player.LastCommandTick = command.Tick;
-                player.Commands.Enqueue(command.Command);
+                player.Commands.Enqueue((command.Command, command.Arg));
             }
         }
     }
@@ -651,7 +662,7 @@ public sealed class GameServer : IEnemyEvents
 
         while (player.Commands.TryDequeue(out var request))
         {
-            Obey(player, request);
+            Obey(player, request.Command, request.Arg);
         }
 
         var maxHealth = MaxHealth(player);
@@ -688,8 +699,14 @@ public sealed class GameServer : IEnemyEvents
     private static short MaxHealth(Player player) => (short)(Progression.MaxHealth(player.Level) + player.Stats.MaxHealth);
 
     /// <summary>Carries out what a player asked for, when the player is allowed to and close enough.</summary>
-    private void Obey(Player player, Command command)
+    private void Obey(Player player, Command command, ushort arg = 0)
     {
+        if (command is Command.StoreItem or Command.TakeItem or Command.StoreGear or Command.TakeGear)
+        {
+            UseChest(player, command, arg);
+            return;
+        }
+
         switch (command)
         {
             case Command.UseDoor when Tick >= player.DoorReadyTick:
@@ -1171,6 +1188,109 @@ public sealed class GameServer : IEnemyEvents
 
         _loot.RemoveAll(l => l.Life <= 0);
     }
+
+    /// <summary>
+    /// The Guild chest, used while standing by it. A stack moves whole, either way; a gear piece that
+    /// is not worn goes to the first free place in the chest, and comes back to the first free place
+    /// in the gear list.
+    /// </summary>
+    private void UseChest(Player player, Command command, ushort arg)
+    {
+        if (!Near(player, "storage"))
+        {
+            return;
+        }
+
+        switch (command)
+        {
+            case Command.StoreItem when arg < ItemDef.All.Count && player.Bag.GetValueOrDefault(arg) is var held and > 0 && !ItemDef.All[arg].IsCrystal:
+                AddItem(player, arg, -held);
+                player.Storage[arg] = player.Storage.GetValueOrDefault(arg) + held;
+                player.StorageChanged.Add(arg);
+                break;
+            case Command.TakeItem when player.Storage.GetValueOrDefault(arg) is var kept and > 0:
+                player.Storage[arg] = 0;
+                player.StorageChanged.Add(arg);
+                AddItem(player, arg, kept);
+                break;
+            case Command.StoreGear when arg < GearSlots && player.Gear[arg] is { } piece && !player.Worn.Contains(arg)
+                                        && Array.IndexOf(player.StoredGear, null) is var room and >= 0:
+                player.StoredGear[room] = piece;
+                player.StoredGearChanged.Add(room);
+                player.Gear[arg] = null;
+                player.GearChanged.Add(arg);
+                break;
+            case Command.TakeGear when arg < GearSlots && player.StoredGear[arg] is { } stored
+                                       && Array.IndexOf(player.Gear, null) is var free and >= 0:
+                player.Gear[free] = stored;
+                player.GearChanged.Add(free);
+                player.StoredGear[arg] = null;
+                player.StoredGearChanged.Add(arg);
+                break;
+        }
+    }
+
+    /// <summary>The chest's stacks for a snapshot: changed ones first, then a slice of the rest, only by the chest.</summary>
+    private BagEntry[] StorageSlice(Player player)
+    {
+        if (!Near(player, "storage"))
+        {
+            return Array.Empty<BagEntry>();
+        }
+
+        var entries = new List<BagEntry>(BagEntriesPerSnapshot);
+        foreach (var item in player.StorageChanged.Take(BagEntriesPerSnapshot).ToList())
+        {
+            entries.Add(new BagEntry(item, (ushort)player.Storage[item]));
+            player.StorageChanged.Remove(item);
+        }
+
+        var keys = player.Storage.Keys.ToList();
+        for (var i = 0; i < keys.Count && entries.Count < BagEntriesPerSnapshot; i++)
+        {
+            var item = keys[player.StorageCursor++ % keys.Count];
+            if (entries.All(e => e.Item != item))
+            {
+                entries.Add(new BagEntry(item, (ushort)player.Storage[item]));
+            }
+        }
+
+        return entries.ToArray();
+    }
+
+    /// <summary>The chest's gear for a snapshot, the same way as the gear list, only by the chest.</summary>
+    private GearEntry[] StoredGearSlice(Player player)
+    {
+        if (!Near(player, "storage"))
+        {
+            return Array.Empty<GearEntry>();
+        }
+
+        var entries = new List<GearEntry>(GearEntriesPerSnapshot);
+        foreach (var place in player.StoredGearChanged.Take(GearEntriesPerSnapshot).ToList())
+        {
+            entries.Add(new GearEntry((byte)place, player.StoredGear[place], false));
+            player.StoredGearChanged.Remove(place);
+        }
+
+        if (entries.Count < GearEntriesPerSnapshot)
+        {
+            var place = player.StoredGearCursor++ % GearSlots;
+            if (entries.All(e => e.Index != place))
+            {
+                entries.Add(new GearEntry((byte)place, player.StoredGear[place], false));
+            }
+        }
+
+        return entries.ToArray();
+    }
+
+    /// <summary>What a player keeps in the Guild chest. For tests and tools.</summary>
+    public int GetStoredCount(int id, ushort item) => _players[id].Storage.GetValueOrDefault(item);
+
+    public GearPiece? GetStoredGear(int id, int place) => _players[id].StoredGear[place];
+
+    public GearPiece? GetGear(int id, int place) => _players[id].Gear[place];
 
     /// <summary>Changed places of the gear list first, then one more place that moves on each snapshot.</summary>
     private static GearEntry[] GearSlice(Player player)
@@ -1920,6 +2040,8 @@ public sealed class GameServer : IEnemyEvents
                 Drops = drops,
                 Bag = BagSlice(player),
                 Gear = GearSlice(player),
+                Storage = StorageSlice(player),
+                StoredGear = StoredGearSlice(player),
                 FireWalls = _walls.Where(w => Vector3.Distance(w.Origin, origin) < InterestRange).Take(2)
                     .Select(w => new FireWallView(w.Id, w.Origin, MathF.Atan2(-w.Direction.X, -w.Direction.Z), w.Length, w.HalfWidth, w.Kind)).ToArray(),
             };

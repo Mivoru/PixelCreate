@@ -153,6 +153,32 @@ public sealed class Inventory
 
     public int Count(Item item) => item.Index < 0 || item.IsGear ? 1 : Counts.GetValueOrDefault(item.Index);
 
+    /// <summary>The Guild chest as the server last sent it: stacks by item index, and gear by place in the chest.</summary>
+    public Dictionary<int, int> Stored { get; } = new();
+    public Item?[] StoredGear { get; } = new Item?[GameServer.GearSlots];
+
+    /// <summary>Takes in a slice of the chest from a snapshot.</summary>
+    public void ApplyChest(IEnumerable<BagEntry> stacks, IEnumerable<GearEntry> gear)
+    {
+        foreach (var entry in stacks)
+        {
+            Stored[entry.Item] = entry.Count;
+        }
+
+        foreach (var entry in gear)
+        {
+            StoredGear[entry.Index] = entry.Piece is { } piece ? Item.FromGear(piece, entry.Index) : null;
+        }
+    }
+
+    /// <summary>What the chest window lists: stacks first, then gear, each with how many there are.</summary>
+    public List<(Item Item, int Count, bool Gear)> ChestContents()
+    {
+        var list = Stored.Where(p => p.Value > 0).OrderBy(p => p.Key).Select(p => (Defs[p.Key], p.Value, false)).ToList();
+        list.AddRange(StoredGear.Where(g => g is not null).Select(g => (g!, 1, true)));
+        return list;
+    }
+
     /// <summary>Gear by its place in the server's gear list.</summary>
     private readonly Dictionary<int, Item> _gear = new();
 

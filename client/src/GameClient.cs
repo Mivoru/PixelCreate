@@ -98,6 +98,7 @@ public partial class GameClient : Node
     private Fx _fx = null!;
     private PlayerState _last;
     private byte _lastLevel = 1;
+    private ushort _pendingArg;
     private Command _pendingCommand;
     private GuildRank _lastRank;
     private readonly Dictionary<string, PlayerRig> _npcs = new();
@@ -277,12 +278,13 @@ public partial class GameClient : Node
             _shownBefore = _shownNow;
             if (_pendingCommand == Command.None)
             {
-                _pendingCommand = _hud.TakeCommand();
+                (_pendingCommand, _pendingArg) = _hud.TakeCommand();
             }
 
             var (aim, aimYaw, aimPitch) = ShotAim();
-            _client.Step(x, z, buttons, aim, _pendingCommand, aimYaw, aimPitch);
+            _client.Step(x, z, buttons, aim, _pendingCommand, aimYaw, aimPitch, _pendingArg);
             _pendingCommand = Command.None;
+            _pendingArg = 0;
             _shownNow = ToGodot(_client.ShownPosition);
             var position = _client.State.Position;
             _maxHeight = Mathf.Max(_maxHeight, position.Y - _world.GroundHeight(position.X, position.Z));
@@ -566,6 +568,7 @@ public partial class GameClient : Node
                 _hud.AddLoot(piece, 1);
             }
 
+            _hud.Items.ApplyChest(snapshot.Storage, snapshot.StoredGear);
             foreach (var (item, gained) in _hud.Items.Apply(snapshot.Bag))
             {
                 if (!first)

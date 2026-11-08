@@ -13,6 +13,7 @@
   { "name": "guild_counter", "eye": [420, 1.6, -3], "at": [420, 1.4, -6.6] },
   { "name": "guild_side", "eye": [429, 3, -7], "at": [412, 1.5, 3] },
   { "name": "guild_board", "eye": [416, 2, 2], "at": [410, 2, 2] },
+  { "name": "guild_chest", "eye": [414.5, 1.8, 3.2], "at": [411, 0.6, 5.4] },
   { "name": "guild_appraiser", "eye": [424, 2.2, -1.5], "at": [430, 2, -1] },
   { "name": "guild_entry_cam", "eye": [420, 2.5, 8.6], "at": [420, 1.75, 6.5] },
   { "name": "guild_entry_wide", "eye": [424, 2.2, 3], "at": [420, 1.5, 8.5] },

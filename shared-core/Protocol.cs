@@ -81,6 +81,13 @@ public sealed class Snapshot
     /// <summary>Part of the gear list, sent the same way as the bag.</summary>
     public GearEntry[] Gear = Array.Empty<GearEntry>();
     public FireWallView[] FireWalls = Array.Empty<FireWallView>();
+
+    /// <summary>
+    /// The player's Guild chest, sent only while they stand by it, in slices like the bag: stacks by
+    /// item, and gear pieces by their place in the chest.
+    /// </summary>
+    public BagEntry[] Storage = Array.Empty<BagEntry>();
+    public GearEntry[] StoredGear = Array.Empty<GearEntry>();
 }
 
 /// <summary>Binary encoding of the two packets the game sends.</summary>
@@ -91,7 +98,7 @@ public static class Protocol
 
     private const byte InputPacket = 1;
     private const byte SnapshotPacket = 2;
-    private const int InputSize = 13;
+    private const int InputSize = 15;
 
     public static byte[] EncodeInputs(ReadOnlySpan<InputCmd> commands)
     {
@@ -109,6 +116,7 @@ public static class Protocol
             writer.Write(command.AimYaw);
             writer.Write(command.AimPitch);
             writer.Write((byte)command.Command);
+            writer.Write(command.Arg);
         }
 
         writer.Flush();
@@ -137,6 +145,7 @@ public static class Protocol
                 AimYaw = reader.ReadUInt16(),
                 AimPitch = reader.ReadInt16(),
                 Command = (Command)reader.ReadByte(),
+                Arg = reader.ReadUInt16(),
             };
         }
 
@@ -227,24 +236,7 @@ public static class Protocol
             writer.Write(entry.Count);
         }
 
-        writer.Write((byte)snapshot.Gear.Length);
-        foreach (var entry in snapshot.Gear)
-        {
-            writer.Write(entry.Index);
-            writer.Write(entry.Worn);
-            writer.Write(entry.Piece is null ? ushort.MaxValue : entry.Piece.Item);
-            if (entry.Piece is { } piece)
-            {
-                writer.Write((byte)piece.Rarity);
-                writer.Write(piece.Level);
-                writer.Write((byte)piece.Affixes.Length);
-                foreach (var affix in piece.Affixes)
-                {
-                    writer.Write(affix.Affix);
-                    writer.Write(affix.Value);
-                }
-            }
-        }
+        WriteGear(writer, snapshot.Gear);
 
         writer.Write((byte)snapshot.FireWalls.Length);
         foreach (var wall in snapshot.FireWalls)
@@ -256,6 +248,15 @@ public static class Protocol
             writer.Write(wall.HalfWidth);
             writer.Write((byte)wall.Kind);
         }
+
+        writer.Write((byte)snapshot.Storage.Length);
+        foreach (var entry in snapshot.Storage)
+        {
+            writer.Write(entry.Item);
+            writer.Write(entry.Count);
+        }
+
+        WriteGear(writer, snapshot.StoredGear);
 
         writer.Flush();
         return stream.ToArray();
@@ -334,8 +335,61 @@ public static class Protocol
             snapshot.Bag[i] = new BagEntry(reader.ReadUInt16(), reader.ReadUInt16());
         }
 
-        snapshot.Gear = new GearEntry[reader.ReadByte()];
-        for (var i = 0; i < snapshot.Gear.Length; i++)
+        snapshot.Gear = ReadGear(reader);
+
+        snapshot.FireWalls = new FireWallView[reader.ReadByte()];
+        for (var i = 0; i < snapshot.FireWalls.Length; i++)
+        {
+            snapshot.FireWalls[i] = new FireWallView(reader.ReadInt32(), ReadVector(reader), reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle(), (HazardKind)reader.ReadByte());
+        }
+
+        snapshot.Storage = new BagEntry[reader.ReadByte()];
+        for (var i = 0; i < snapshot.Storage.Length; i++)
+        {
+            snapshot.Storage[i] = new BagEntry(reader.ReadUInt16(), reader.ReadUInt16());
+        }
+
+        snapshot.StoredGear = ReadGear(reader);
+
+        return true;
+    }
+
+    private static bool ShowsTarget(EnemyAction action) =>
+        action is EnemyAction.Windup or EnemyAction.Leap or EnemyAction.Cast;
+
+    private static void WriteVector(BinaryWriter writer, Vector3 value)
+    {
+        writer.Write(value.X);
+        writer.Write(value.Y);
+        writer.Write(value.Z);
+    }
+
+    private static void WriteGear(BinaryWriter writer, GearEntry[] entries)
+    {
+        writer.Write((byte)entries.Length);
+        foreach (var entry in entries)
+        {
+            writer.Write(entry.Index);
+            writer.Write(entry.Worn);
+            writer.Write(entry.Piece is null ? ushort.MaxValue : entry.Piece.Item);
+            if (entry.Piece is { } piece)
+            {
+                writer.Write((byte)piece.Rarity);
+                writer.Write(piece.Level);
+                writer.Write((byte)piece.Affixes.Length);
+                foreach (var affix in piece.Affixes)
+                {
+                    writer.Write(affix.Affix);
+                    writer.Write(affix.Value);
+                }
+            }
+        }
+    }
+
+    private static GearEntry[] ReadGear(BinaryReader reader)
+    {
+        var entries = new GearEntry[reader.ReadByte()];
+        for (var i = 0; i < entries.Length; i++)
         {
             var index = reader.ReadByte();
             var worn = reader.ReadBoolean();
@@ -354,26 +408,10 @@ public static class Protocol
                 piece = new GearPiece(item, rarity, level, affixes);
             }
 
-            snapshot.Gear[i] = new GearEntry(index, piece, worn);
+            entries[i] = new GearEntry(index, piece, worn);
         }
 
-        snapshot.FireWalls = new FireWallView[reader.ReadByte()];
-        for (var i = 0; i < snapshot.FireWalls.Length; i++)
-        {
-            snapshot.FireWalls[i] = new FireWallView(reader.ReadInt32(), ReadVector(reader), reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle(), (HazardKind)reader.ReadByte());
-        }
-
-        return true;
-    }
-
-    private static bool ShowsTarget(EnemyAction action) =>
-        action is EnemyAction.Windup or EnemyAction.Leap or EnemyAction.Cast;
-
-    private static void WriteVector(BinaryWriter writer, Vector3 value)
-    {
-        writer.Write(value.X);
-        writer.Write(value.Y);
-        writer.Write(value.Z);
+        return entries;
     }
 
     private static Vector3 ReadVector(BinaryReader reader) =>

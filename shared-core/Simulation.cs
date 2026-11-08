@@ -234,6 +234,9 @@ public struct InputCmd
     public short AimPitch;
 
     public Command Command;
+
+    /// <summary>What a command acts on, for commands that need more than the command byte (the Guild chest).</summary>
+    public ushort Arg;
 }
 
 /// <summary>Everything that decides how a player moves next. Position is the centre of the feet.</summary>

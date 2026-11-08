@@ -51,6 +51,8 @@ Rules:
   Potions (`kind: potion`) drink the same way with a shared 3 s cooldown; three potion slots sit beside the hotbar
   (Z, X, C, client-side shortcuts). Shops sell items whose `shop` names the keeper's role (`ItemDef.Wares`,
   `ShopCommands.BuyBase`); Wren the alchemist has her stall by the Guild road.
+  The Guild chest (an NPC of role `storage` by the quest board wall) keeps stacks and unworn gear per player:
+  `Command.StoreItem/TakeItem/StoreGear/TakeGear` with `InputCmd.Arg`, sent in slices only while the player stands by it.
 - Item icons: `python asset-pipeline/generate_icons.py --sheet` paints every icon at 32x32: text shapes at 16x16 doubled with Scale2x and edge-lit
   and writes a preview to `export/previews/icons.png`. A test fails if an item has no icon. Weapons get
   32x32 icons painted from their profile in `asset-pipeline/weapon_icons.py`. The HUD scales icons by whole

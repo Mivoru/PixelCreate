@@ -46,7 +46,7 @@ public partial class Hud : Control
     private readonly List<(Rect2 Rect, SlotRef Slot)> _slots = new();
     private readonly List<(Rect2 Rect, string Icon, float Alpha)> _iconDraws = new();
     private readonly List<LootLine> _lootFeed = new();
-    private readonly Queue<Command> _commands = new();
+    private readonly Queue<(Command Command, ushort Arg)> _commands = new();
     private Font _font = null!;
     private Font _bold = null!;
     private TooltipLayer _tooltipLayer = null!;
@@ -215,7 +215,20 @@ public partial class Hud : Control
     }
 
     /// <summary>Commands the interface itself asks for, such as eating, for the client to send.</summary>
-    public Command TakeCommand() => _commands.Count > 0 ? _commands.Dequeue() : Command.None;
+    public (Command Command, ushort Arg) TakeCommand() => _commands.Count > 0 ? _commands.Dequeue() : (Command.None, (ushort)0);
+
+    /// <summary>The Guild chest window is open beside the bag.</summary>
+    public bool ChestOpen { get; private set; }
+
+    /// <summary>Opens the bag with the Guild chest beside it.</summary>
+    public void OpenChest()
+    {
+        ChestOpen = true;
+        if (!InventoryOpen)
+        {
+            ToggleInventory();
+        }
+    }
 
     /// <summary>Shows a large message across the top of the screen for a few seconds.</summary>
     public void ShowBanner(string text, Color color)
@@ -284,6 +297,7 @@ public partial class Hud : Control
     public void ToggleInventory()
     {
         InventoryOpen = !InventoryOpen;
+        ChestOpen &= InventoryOpen;
         if (!InventoryOpen && Items.Held is { } held)
         {
             // Whatever is still in hand goes back to the first free place.
@@ -390,7 +404,7 @@ public partial class Hud : Control
                     var command = Choose(i);
                     if (command != Command.None)
                     {
-                        _commands.Enqueue(command);
+                        _commands.Enqueue((command, 0));
                     }
 
                     return;
@@ -410,17 +424,24 @@ public partial class Hud : Control
                 continue;
             }
 
+            // With the chest open, a left click moves things between the bag and the chest.
+            if (ChestOpen && click.ButtonIndex == MouseButton.Left && slot.Area is "bag" or "chest")
+            {
+                Stow(slot);
+                return;
+            }
+
             if (click.ButtonIndex == MouseButton.Right && Read(slot) is { IsGear: true } piece)
             {
                 // Right click puts a piece on or takes it off; with Shift it throws a piece away.
                 var worn = slot.Area == "equip";
                 if (click.ShiftPressed && slot.Area == "bag")
                 {
-                    _commands.Enqueue(GearCommands.Discard(piece.Place));
+                    _commands.Enqueue((GearCommands.Discard(piece.Place), 0));
                 }
                 else if (!click.ShiftPressed)
                 {
-                    _commands.Enqueue(GearCommands.Toggle(piece.Place));
+                    _commands.Enqueue((GearCommands.Toggle(piece.Place), 0));
                 }
             }
             else if (click.ButtonIndex == MouseButton.Right)
@@ -433,6 +454,34 @@ public partial class Hud : Control
             }
 
             return;
+        }
+    }
+
+    /// <summary>Puts a bag item in the chest, or takes a chest item back: a whole stack, or one piece of gear.</summary>
+    private void Stow(SlotRef slot)
+    {
+        if (slot.Area == "chest")
+        {
+            var contents = Items.ChestContents();
+            if (slot.Index < contents.Count)
+            {
+                var (item, _, gear) = contents[slot.Index];
+                _commands.Enqueue(gear ? (Command.TakeGear, (ushort)item.Place) : (Command.TakeItem, (ushort)item.Index));
+            }
+
+            return;
+        }
+
+        if (Items.Bag[slot.Index] is { } bagged)
+        {
+            if (bagged.IsGear && !Items.IsWorn(bagged))
+            {
+                _commands.Enqueue((Command.StoreGear, (ushort)bagged.Place));
+            }
+            else if (!bagged.IsGear && bagged.Index >= 0)
+            {
+                _commands.Enqueue((Command.StoreItem, (ushort)bagged.Index));
+            }
         }
     }
 
@@ -464,7 +513,7 @@ public partial class Hud : Control
 
         if (Items.Hotbar[index] is { IsGear: true } piece && !Items.IsWorn(piece))
         {
-            _commands.Enqueue(GearCommands.Toggle(piece.Place));
+            _commands.Enqueue((GearCommands.Toggle(piece.Place), 0));
         }
 
         Items.SelectedHotbar = index;
@@ -474,7 +523,7 @@ public partial class Hud : Control
     {
         if (item is { Index: >= 0 } food && (food.IsFood || food.IsPotion) && Items.Count(food) > 0)
         {
-            _commands.Enqueue(ItemCommands.Eat((ushort)food.Index));
+            _commands.Enqueue((ItemCommands.Eat((ushort)food.Index), 0));
             if (food.IsPotion)
             {
                 _potionUsed = Time.GetTicksMsec();
@@ -563,11 +612,11 @@ public partial class Hud : Control
         {
             if (Items.Held is { IsGear: true } wearing)
             {
-                _commands.Enqueue(GearCommands.Toggle(wearing.Place));
+                _commands.Enqueue((GearCommands.Toggle(wearing.Place), 0));
             }
             else if (Items.Held is null && current is { IsGear: true } worn)
             {
-                _commands.Enqueue(GearCommands.Toggle(worn.Place));
+                _commands.Enqueue((GearCommands.Toggle(worn.Place), 0));
             }
 
         }
@@ -588,6 +637,7 @@ public partial class Hud : Control
         "bag" => Items.Bag[slot.Index],
         "hotbar" => Items.Hotbar[slot.Index],
         "potion" => Items.Potions[slot.Index],
+        "chest" => slot.Index < Items.ChestContents().Count ? Items.ChestContents()[slot.Index].Item : null,
         _ => Items.Equipped[slot.Equip],
     };
 
@@ -969,7 +1019,7 @@ public partial class Hud : Control
     }
 
     /// <summary>A slot: its rim takes the item's tier colour, and a stack shows its count in the corner.</summary>
-    private void DrawSlot(Rect2 rect, Item? item, SlotRef slot, bool selected = false)
+    private void DrawSlot(Rect2 rect, Item? item, SlotRef slot, bool selected = false, int? shownCount = null)
     {
         _slots.Add((rect, slot));
         var hover = InventoryOpen && rect.HasPoint(GetLocalMousePosition());
@@ -992,7 +1042,7 @@ public partial class Hud : Control
             return;
         }
 
-        var count = Items.Count(item);
+        var count = shownCount ?? Items.Count(item);
         _iconDraws.Add((rect.Grow(-6), item.Icon, count > 0 ? 1f : 0.35f));
         if (slot.Area == "hotbar" && Items.IsWorn(item))
         {
@@ -1028,7 +1078,14 @@ public partial class Hud : Control
 
     private void DrawInventory()
     {
-        var window = new Rect2((Size.X - 1064f) / 2f, (Size.Y - 690f) / 2f, 1064, 690);
+        // With the chest open, the bag moves right to make room for the chest beside it.
+        var chestWidth = ChestOpen ? 486f : 0f;
+        var window = new Rect2((Size.X - 1064f - chestWidth) / 2f + chestWidth, (Size.Y - 690f) / 2f, 1064, 690);
+        if (ChestOpen)
+        {
+            DrawChest(new Rect2(window.Position.X - chestWidth, window.Position.Y, chestWidth - 14, 690));
+        }
+
         Card(window, 22, GlassDeep, true);
         Label("Equipment", window.Position + new Vector2(34, 56), 24, Text, _bold);
         Label("Bag", window.Position + new Vector2(340, 56), 24, Text, _bold);
@@ -1067,9 +1124,28 @@ public partial class Hud : Control
         }
 
         var bottom = window.Position + new Vector2(340, window.Size.Y - 30);
-        Label("Left click: move    Right click: eat or wear    Shift + right click: discard", bottom, 15, Muted);
+        Label(ChestOpen ? "Left click: store or take    Right click: eat or wear" : "Left click: move    Right click: eat or wear    Shift + right click: discard", bottom, 15, Muted);
         Keycap("I", new Vector2(window.End.X - 120, bottom.Y - 22), 14);
         Label("close", new Vector2(window.End.X - 86, bottom.Y), 15, Muted);
+    }
+
+    /// <summary>The Guild chest: everything stored, stacks first and then gear, six to a row.</summary>
+    private void DrawChest(Rect2 window)
+    {
+        Card(window, 22, GlassDeep, true);
+        Label("Guild Chest", window.Position + new Vector2(30, 56), 24, Text, _bold);
+        var contents = Items.ChestContents();
+        const int columns = 6;
+        const int rows = 7;
+        for (var i = 0; i < columns * rows; i++)
+        {
+            var rect = new Rect2(window.Position + new Vector2(28 + i % columns * (SlotSize + 9), 86 + i / columns * (SlotSize + 9)), SlotSize, SlotSize);
+            var entry = i < contents.Count ? contents[i] : default;
+            DrawSlot(rect, i < contents.Count ? entry.Item : null, new SlotRef("chest", i), false, i < contents.Count ? entry.Count : null);
+        }
+
+        Label(contents.Count == 0 ? "Empty. Click things in your bag to store them." : "Click to take back.",
+            window.Position + new Vector2(30, window.Size.Y - 30), 15, Muted);
     }
 
     /// <summary>A small card next to the pointer naming the item under it, drawn on the given layer.</summary>

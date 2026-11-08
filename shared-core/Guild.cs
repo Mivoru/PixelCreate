@@ -13,6 +13,15 @@ public enum Command : byte
     AcceptGoblinQuest = 5,
     TurnInQuest = 6,
     SellLoot = 7,
+
+    /// <summary>
+    /// The Guild chest. The input's argument names what: an item index for a stack (all of it moves),
+    /// a place in the gear list to store a piece, or a place in the chest to take one back.
+    /// </summary>
+    StoreItem = 200,
+    TakeItem = 201,
+    StoreGear = 202,
+    TakeGear = 203,
 }
 
 /// <summary>A newcomer must beat the guild examiner to become an adventurer.</summary>

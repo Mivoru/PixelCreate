@@ -310,6 +310,9 @@ public static class Dialogues
             case "alchemist":
                 Alchemist(hud, npc, snapshot);
                 break;
+            case "storage":
+                hud.OpenChest();
+                break;
             case "guard":
                 hud.ShowDialog(npc.Name, "The south road leads to Goblin Hollow. Do not go there before the Guild gives you its badge.", ("Understood", Command.None));
                 break;
