@@ -71,6 +71,14 @@ Rules:
   run `Tuning.RainHoldTicks` past full, with a blue ring round the crosshair; letting go rains arrows on the spot the
   aim meets, `GameServer.RainSpot`) and Arcane Barrier (`Player.Barrier`, soaks blows before
   health, refills when unhurt, `Snapshot.Barrier`). The studio's attacks job films the new player attacks.
+  Air moves need the feet `Tuning.AirMoveHeight` above the ground (running over bumps leaves the ground for a tick,
+  which once let a held heavy chain ground pounds), and every predicted mastery move sets `PlayerState.MoveCooldown`.
+- Attack reaches in `Tuning` are the weapon tip's reach at the blow plus about half a metre; the enemy's half size is
+  added in `GameServer.Strike`. The studio's attacks job saves `attack_reach_all` (each blow from above with its area:
+  red the reach and arc, yellow the reach to a goblin's middle) and `attack_carry_all` (each weapon idle, walking,
+  running, in the air and dashing). Check both after changing a weapon model, pose or reach.
+- Enemy views are placed from `GameClient._enemyShown`, never from their own root: a leaping werewolf's root is
+  tipped round its middle, and feeding that back into the easing made Moonleaper stutter in the air.
 - Slide: Ctrl while running on the ground (`Buttons.Slide`, `PlayerState.SlideTicks`/`SlideDirection`, in `Movement.Step`):
   a burst from 17 to 7 m/s over half a second, steerable a little, for stamina; a jump out of it keeps the speed in the
   air, and an attack or a dash ends it. `net-tests/SlideTests.cs`.

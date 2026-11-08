@@ -131,13 +131,49 @@ public class MasteryMoveTests
         state.Weapon = weapon;
         state.Moves = (byte)moves;
         Tick(ref state, Buttons.Jump);
-        for (var i = 0; i < 6; i++)
+        for (var i = 0; i < 14; i++)
         {
             Tick(ref state, Buttons.None);
         }
 
         Assert.False(state.Grounded);
         return state;
+    }
+
+    [Fact]
+    public void AirMoves_NeedRealHeightAboveTheGround()
+    {
+        // A small hop, as running over bumpy ground gives, keeps the plain heavy attack.
+        var state = PlayerState.Spawn(Vector3.Zero);
+        state.Weapon = Weapons.Club;
+        state.Moves = (byte)MasteryMoves.GroundPound;
+        Tick(ref state, Buttons.Jump);
+        Tick(ref state, Buttons.None);
+        Assert.False(state.Grounded);
+        Tick(ref state, Buttons.Heavy);
+        Assert.Equal(AttackKind.ClubSpin, state.Attack);
+    }
+
+    [Fact]
+    public void MasteryMoves_WaitForTheirCooldown()
+    {
+        var state = Airborne(Weapons.Club, MasteryMoves.GroundPound);
+        Tick(ref state, Buttons.Heavy);
+        Assert.Equal(AttackKind.GroundPound, state.Attack);
+        while (state.Attack != AttackKind.None)
+        {
+            Tick(ref state, Buttons.None);
+        }
+
+        Assert.True(state.MoveCooldown > 0);
+        Tick(ref state, Buttons.Jump);
+        for (var i = 0; i < 14; i++)
+        {
+            Tick(ref state, Buttons.None);
+        }
+
+        Tick(ref state, Buttons.Heavy);
+        Assert.Equal(AttackKind.ClubSpin, state.Attack);
     }
 
     /// <summary>Counts the blows that land over some ticks with no buttons held.</summary>
@@ -248,7 +284,7 @@ public class MasteryMoveTests
         var (server, client, network) = Start("twin_daggers", taken ? "shadow_step" : null, new Vector3(0, 0, -6));
         var foe = server.Enemies[0];
         Run(server, client, network, 1, Buttons.Jump);
-        Run(server, client, network, 6, Buttons.None);
+        Run(server, client, network, 14, Buttons.None);
         Run(server, client, network, 1, Buttons.Heavy);
         Run(server, client, network, 6, Buttons.None);
         var player = server.GetPlayer(1)!.Value.Position;

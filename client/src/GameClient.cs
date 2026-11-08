@@ -81,6 +81,12 @@ public partial class GameClient : Node
     private readonly Dictionary<int, PlayerRig> _remotes = new();
     private readonly Dictionary<int, IEnemyView> _enemies = new();
     private readonly Dictionary<int, byte> _enemyTypes = new();
+
+    /// <summary>
+    /// Where each enemy is shown, eased toward the server's position. Kept apart from the view's root,
+    /// which a leaping werewolf tips round its middle, so the tip never feeds back into the easing.
+    /// </summary>
+    private readonly Dictionary<int, Vector3> _enemyShown = new();
     private readonly Dictionary<int, TelegraphView> _telegraphs = new();
     private readonly Dictionary<int, MeshInstance3D> _spits = new();
     private readonly Dictionary<int, ProjectileKind> _spitKinds = new();
@@ -1351,9 +1357,9 @@ public partial class GameClient : Node
             }
 
             var target = ToGodot(enemy.Position);
-            var position = slime.Root.Position;
             // A respawn is a jump across the map, not a move.
-            position = position.DistanceTo(target) > 6f ? target : position.Lerp(target, blend);
+            var position = _enemyShown.TryGetValue(enemy.Id, out var shownAt) && shownAt.DistanceTo(target) <= 6f ? shownAt.Lerp(target, blend) : target;
+            _enemyShown[enemy.Id] = position;
             slime.Update(enemy, position, delta, _sfx);
             if (slime is GoblinView { Staggered: true })
             {

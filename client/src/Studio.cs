@@ -436,12 +436,38 @@ public partial class Studio : Node
                     var t = (tick - 2) / (float)(Tuning.LeapHitAt - 2);
                     rig.Root.Position = new Vector3(0, airborne ? 4f * 1.1f * t * (1f - t) : 0f, 0);
                     await Wait(1, new MotionState(0f, !airborne, 0f, false, kind, tick));
+                    if (tick == attack.HitAt)
+                    {
+                        await Reach(weapon, kind, rig, attack);
+                    }
                     if (tick % 4 == 0)
                     {
                         Save($"attack_{weapon}_{kind}_{tick:00}");
                     }
                 }
 
+                Dismiss(rig);
+            }
+        }
+
+        // How each weapon is carried: standing, walking, running, in the air and dashing, from the side.
+        foreach (var weapon in new[] { "sword", "dagger", "club", "bow", "staff" })
+        {
+            foreach (var (name, state) in new[]
+            {
+                ("idle", new MotionState(0f, true, 0f, false, AttackKind.None, 0)),
+                ("walk", new MotionState(4f, true, 0f, false, AttackKind.None, 0)),
+                ("run", new MotionState(9f, true, 0f, false, AttackKind.None, 0)),
+                ("air", new MotionState(3f, false, 2f, false, AttackKind.None, 0)),
+                ("dash", new MotionState(20f, true, 0f, true, AttackKind.None, 0)),
+            })
+            {
+                var rig = Rig(RigLook.Player, Vector3.Zero, Mathf.Pi / 2f);
+                rig.SetWeapon(weapon);
+                _stage.Camera.Fov = 24;
+                _stage.Camera.LookAtFromPosition(new Vector3(0, 1.4f, 7f), new Vector3(0, 1.15f, 0));
+                await Wait(40, state);
+                Save($"attack_carry_all_{weapon}_{name}");
                 Dismiss(rig);
             }
         }
@@ -699,6 +725,63 @@ public partial class Studio : Node
         Save("map_marked");
         _stage.View.GetChildren().OfType<WorldEnvironment>().First().Environment.FogEnabled = true;
         _stage.View.Size = new Vector2I(960, 540);
+    }
+
+    /// <summary>
+    /// The blow's frame from straight above, with the area it hits laid on the ground: red is the
+    /// attack's reach and arc, the yellow ring the reach to a goblin-sized enemy's middle.
+    /// </summary>
+    private async Task Reach(string weapon, AttackKind kind, PlayerRig rig, AttackDef attack)
+    {
+        var half = attack.MinDot <= -1f ? Mathf.Pi : Mathf.Acos(Mathf.Clamp(attack.MinDot, -1f, 1f));
+        var stipple = GD.Load<Shader>("res://shaders/stipple.gdshader");
+        ShaderMaterial Paint(Color color)
+        {
+            var material = new ShaderMaterial { Shader = stipple };
+            material.SetShaderParameter("color", color);
+            material.SetShaderParameter("strength", 0.75f);
+            return material;
+        }
+
+        const int steps = 48;
+        Vector3 At(float angle, float distance) => new Vector3(-Mathf.Sin(angle), 0, -Mathf.Cos(angle)) * distance + Vector3.Up * 0.03f;
+        var area = new ArrayMesh();
+        var fill = new SurfaceTool();
+        fill.Begin(Mesh.PrimitiveType.Triangles);
+        var ring = new SurfaceTool();
+        ring.Begin(Mesh.PrimitiveType.Triangles);
+        for (var i = 0; i < steps; i++)
+        {
+            var a0 = -half + 2f * half * i / steps;
+            var a1 = -half + 2f * half * (i + 1) / steps;
+            fill.AddVertex(Vector3.Up * 0.03f);
+            fill.AddVertex(At(a0, attack.Range));
+            fill.AddVertex(At(a1, attack.Range));
+            var outer = attack.Range + 0.5f;
+            ring.AddVertex(At(a0, outer - 0.06f));
+            ring.AddVertex(At(a0, outer + 0.06f));
+            ring.AddVertex(At(a1, outer + 0.06f));
+            ring.AddVertex(At(a0, outer - 0.06f));
+            ring.AddVertex(At(a1, outer + 0.06f));
+            ring.AddVertex(At(a1, outer - 0.06f));
+        }
+
+        fill.Commit(area);
+        ring.Commit(area);
+        area.SurfaceSetMaterial(0, Paint(new Color("e43b44")));
+        area.SurfaceSetMaterial(1, Paint(new Color("fee761")));
+        var wedge = new MeshInstance3D { Mesh = area, Position = rig.Root.Position with { Y = 0 }, Rotation = new Vector3(0, rig.Root.Rotation.Y, 0) };
+        _set.AddChild(wedge);
+        var fov = _stage.Camera.Fov;
+        var place = _stage.Camera.GlobalTransform;
+        _stage.Camera.Fov = 60;
+        _stage.Camera.LookAtFromPosition(new Vector3(0, 9f, 0.4f), Vector3.Zero);
+        await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+        await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+        Save($"attack_reach_all_{weapon}_{kind}");
+        wedge.QueueFree();
+        _stage.Camera.Fov = fov;
+        _stage.Camera.GlobalTransform = place;
     }
 
     private static StandardMaterial3D LineMaterial(Color color) => new()

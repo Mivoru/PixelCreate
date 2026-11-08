@@ -149,7 +149,9 @@ public sealed class GoblinView : IEnemyView
         _rig.SwordVisible = !(enemy.Action == EnemyAction.Strike && ability?.Effect == "spearThrow");
         // A duelist's dash uses the hero's own dash pose.
         var dodging = enemy.Action == EnemyAction.Dodge;
-        _rig.Animate(new MotionState(speed > 20f ? 0f : speed, true, 0f, dodging, AttackKind.None, 0, dodging ? WeaponMove.None : MoveFor(enemy.Action, ability)), delta);
+        // In the air or rolling, the legs hold the pose instead of running.
+        var flying = enemy.Action is EnemyAction.Leap or EnemyAction.Roll;
+        _rig.Animate(new MotionState(speed > 20f || flying ? 0f : speed, true, 0f, dodging, AttackKind.None, 0, dodging ? WeaponMove.None : MoveFor(enemy.Action, ability)), delta);
     }
 
     /// <summary>Five turns in the server's tornado time, in radians a second.</summary>

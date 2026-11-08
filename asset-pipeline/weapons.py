@@ -192,13 +192,13 @@ def bone_staff(k):
     points, radii = [], []
     for i in range(14):
         s = i / 13
-        points.append((0.025 * math.sin(s * 11.0), -0.5 + s * 1.85, 0.02 * math.sin(s * 7.0 + 1.0)))
+        # Held a little above its middle, so standing its foot nearly touches the ground.
+        points.append((0.025 * math.sin(s * 11.0), -0.82 + s * 1.72, 0.02 * math.sin(s * 7.0 + 1.0)))
         radii.append(0.034 + 0.01 * math.sin(s * 17.0) + 0.012 * s)
     k.tube(points, radii, radii, "wpn_wood", sides=8)
-    for y in (0.0, 0.42, 1.05, 1.22):
+    for y in (-0.08, 0.08, 0.66, 0.8):
         k.tube([(0, y - 0.02, 0), (0, y + 0.02, 0)], [0.05, 0.05], [0.05, 0.05], "wpn_wrap", sides=8)
     top = mathutils.Vector(points[-1])
-    skull = top + mathutils.Vector((0, 0.13, 0.0))
     skull = top + mathutils.Vector((0, 0.17, 0.0))
     k.round(skull, (0.13, 0.155, 0.14), "wpn_bone", subdivisions=3)
     k.round(skull + mathutils.Vector((0, 0.04, 0.1)), (0.095, 0.075, 0.065), "wpn_bone")
