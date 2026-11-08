@@ -59,6 +59,15 @@ public sealed class Zone
 {
     private sealed record HillData(float X, float Z, float Radius, float Height);
 
+    /// <summary>
+    /// A kind of ground over a round area: forest (a dark floor of needles and moss, little grass),
+    /// blight (grey, dying grass) or trampled (bare earth where many feet have gone).
+    /// </summary>
+    private sealed record GroundData(string Kind, float X, float Z, float Radius);
+
+    /// <summary>A mountain chain along a line: its height on the crest, and how far its slopes reach to each side.</summary>
+    private sealed record RidgeData(float Width, float Height, float[][] Points);
+
     private const float BedStep = 2f;
     private const float BridgeRamp = 11f;
     private const float BridgeRampWidth = 6f;
@@ -97,7 +106,7 @@ public sealed class Zone
         PropData[] Props, ScatterData[] Scatter, EnemySpawnData[]? Enemies, RegionData[]? Regions,
         RiverData[]? Rivers = null, RectData[]? Platforms = null, RectData[]? Walls = null, PortalData[]? Portals = null,
         NpcData[]? Npcs = null, float[]? Trial = null, float[]? Waterfall = null, float[][]? Clearings = null, LakeData[]? Lakes = null,
-        float[][]? Yards = null);
+        float[][]? Yards = null, RidgeData[]? Ridges = null, GroundData[]? Grounds = null);
 
     /// <summary>
     /// Models a walker passes through or over: plants, flat things, and the bridges, piers and
@@ -175,6 +184,7 @@ public sealed class Zone
     private Zone(ZoneData data)
     {
         Name = data.Name;
+        _grounds = data.Grounds ?? Array.Empty<GroundData>();
         Size = data.Size;
         _paths = data.Paths;
         _yards = data.Yards ?? Array.Empty<float[]>();
@@ -326,6 +336,31 @@ public sealed class Zone
         return nearest;
     }
 
+    private GroundData[] _grounds = Array.Empty<GroundData>();
+
+    /// <summary>
+    /// How much of each kind of ground lies at a point, from 0 to 1: forest floor, blight and
+    /// trampled earth. Each area is full inside and fades out over its outer third, with a ragged edge.
+    /// </summary>
+    public (float Forest, float Blight, float Trampled) GroundAt(float x, float z)
+    {
+        float forest = 0f, blight = 0f, trampled = 0f;
+        foreach (var ground in _grounds)
+        {
+            var distance = new Vector2(x - ground.X, z - ground.Z).Length() / ground.Radius;
+            var ragged = 0.08f * MathF.Sin(x * 0.21f + z * 0.13f) + 0.06f * MathF.Sin(x * 0.07f - z * 0.19f);
+            var weight = Math.Clamp((1f - distance + ragged) / 0.33f, 0f, 1f);
+            switch (ground.Kind)
+            {
+                case "forest": forest = MathF.Max(forest, weight); break;
+                case "blight": blight = MathF.Max(blight, weight); break;
+                case "trampled": trampled = MathF.Max(trampled, weight); break;
+            }
+        }
+
+        return (forest, blight, trampled);
+    }
+
     /// <summary>Distance from a point to the edge of the nearest path; negative means on the path.</summary>
     public float PathDistance(float x, float z)
     {
@@ -388,6 +423,21 @@ public sealed class Zone
             {
                 var falloff = 1f - distance * distance;
                 height += hill.Height * falloff * falloff;
+            }
+        }
+
+        foreach (var ridge in data.Ridges ?? Array.Empty<RidgeData>())
+        {
+            var (near, travelled) = NearestOnPolyline(ridge.Points, x, z);
+            var distance = near / ridge.Width;
+            if (distance < 1f)
+            {
+                // A rugged crest: the height wanders along the chain, and shoulders break the slopes.
+                // Both ends sink gently to the ground, so a gap between two chains is a walkable pass.
+                var falloff = 1f - distance * distance;
+                var crags = 0.72f + 0.16f * MathF.Sin(x * 0.09f + z * 0.05f) + 0.12f * MathF.Sin(x * 0.23f - z * 0.31f);
+                var end = Math.Clamp(MathF.Min(travelled, PolylineLength(ridge.Points) - travelled) / RidgeTaper, 0f, 1f);
+                height += ridge.Height * falloff * falloff * crags * end * end * (3f - 2f * end);
             }
         }
 
@@ -481,6 +531,20 @@ public sealed class Zone
     }
 
     private static float PolylineDistance(float[][] points, float x, float z) => NearestOnPolyline(points, x, z).Distance;
+
+    /// <summary>How far the ends of a ridge take to sink to the ground, in metres.</summary>
+    private const float RidgeTaper = 34f;
+
+    private static float PolylineLength(float[][] points)
+    {
+        var length = 0f;
+        for (var i = 0; i + 1 < points.Length; i++)
+        {
+            length += Vector2.Distance(new Vector2(points[i][0], points[i][1]), new Vector2(points[i + 1][0], points[i + 1][1]));
+        }
+
+        return length;
+    }
 
     /// <summary>How far a point lies from a polyline, and how far along the line that nearest spot is.</summary>
     private static (float Distance, float Travelled) NearestOnPolyline(float[][] points, float x, float z)

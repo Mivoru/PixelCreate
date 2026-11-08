@@ -512,50 +512,93 @@ public static class ZoneView
         return material;
     }
 
-    private static MeshInstance3D BuildTerrain(Zone zone)
+    /// <summary>Cells along each side of one terrain chunk. Chunks off screen are not drawn.</summary>
+    private const int TerrainChunk = 60;
+
+    /// <summary>
+    /// The ground as square chunks that share one material, so the camera culls what it cannot see.
+    /// Each vertex is worked out once: its height, its normal from the slope around it (the same on
+    /// both sides of a chunk seam, so the light does not jump), and its colour, which marks worn
+    /// paths in red and steep rock in green for the shader.
+    /// </summary>
+    private static Node3D BuildTerrain(Zone zone)
     {
         var terrain = zone.World.Terrain!;
-        var surface = new SurfaceTool();
-        surface.Begin(Mesh.PrimitiveType.Triangles);
-        for (var row = 0; row < terrain.Cells; row++)
+        var size = terrain.Cells + 1;
+        var positions = new Vector3[size * size];
+        var normals = new Vector3[size * size];
+        var colors = new Color[size * size];
+        for (var row = 0; row < size; row++)
         {
-            for (var column = 0; column < terrain.Cells; column++)
+            for (var column = 0; column < size; column++)
             {
-                AddVertex(surface, zone, terrain, column, row);
-                AddVertex(surface, zone, terrain, column + 1, row);
-                AddVertex(surface, zone, terrain, column, row + 1);
-                AddVertex(surface, zone, terrain, column + 1, row + 1);
-                AddVertex(surface, zone, terrain, column, row + 1);
-                AddVertex(surface, zone, terrain, column + 1, row);
+                var x = terrain.GridX(column);
+                var z = terrain.GridX(row);
+                var left = terrain.Vertex(Math.Max(column - 1, 0), row);
+                var right = terrain.Vertex(Math.Min(column + 1, terrain.Cells), row);
+                var near = terrain.Vertex(column, Math.Max(row - 1, 0));
+                var far = terrain.Vertex(column, Math.Min(row + 1, terrain.Cells));
+                var span = terrain.CellSize * 2f;
+                var slope = new Vector2(right - left, far - near).Length() / span;
+
+                // Red fades out across the edge of the path, so the shader can cut a ragged line through it.
+                // Trampled ground counts as path; blue marks forest floor and alpha falls with blight.
+                var (forest, blight, trampled) = zone.GroundAt(x, z);
+                var path = Mathf.Max(Mathf.Clamp(0.5f - zone.WornPathDistance(x, z) / 1.6f, 0f, 1f), trampled * 0.62f);
+                var rock = Mathf.Clamp((slope - 0.55f) * 3f, 0f, 1f);
+                var i = row * size + column;
+                positions[i] = new Vector3(x, terrain.Vertex(column, row), z);
+                normals[i] = new Vector3((left - right) / span, 1f, (near - far) / span).Normalized();
+                colors[i] = new Color(path, rock, forest, 1f - blight);
             }
         }
 
-        surface.Index();
-        surface.GenerateNormals();
         var material = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/terrain.gdshader") };
         foreach (var (uniform, file) in new[] { ("grass_tex", "grass"), ("dry_tex", "grass_dry"), ("dirt_tex", "dirt"), ("rock_tex", "rock") })
         {
             material.SetShaderParameter(uniform, GD.Load<Texture2D>($"res://assets/textures/{file}.png"));
         }
 
-        return new MeshInstance3D { Mesh = surface.Commit(), MaterialOverride = material };
-    }
+        var root = new Node3D { Name = "Terrain" };
+        for (var top = 0; top < terrain.Cells; top += TerrainChunk)
+        {
+            for (var left = 0; left < terrain.Cells; left += TerrainChunk)
+            {
+                var surface = new SurfaceTool();
+                surface.Begin(Mesh.PrimitiveType.Triangles);
+                var rows = Math.Min(TerrainChunk, terrain.Cells - top);
+                var columns = Math.Min(TerrainChunk, terrain.Cells - left);
+                for (var row = 0; row <= rows; row++)
+                {
+                    for (var column = 0; column <= columns; column++)
+                    {
+                        var i = (top + row) * size + left + column;
+                        surface.SetNormal(normals[i]);
+                        surface.SetColor(colors[i]);
+                        surface.AddVertex(positions[i]);
+                    }
+                }
 
-    private static void AddVertex(SurfaceTool surface, Zone zone, HeightField terrain, int column, int row)
-    {
-        var x = terrain.GridX(column);
-        var z = terrain.GridX(row);
-        var left = terrain.Vertex(Math.Max(column - 1, 0), row);
-        var right = terrain.Vertex(Math.Min(column + 1, terrain.Cells), row);
-        var near = terrain.Vertex(column, Math.Max(row - 1, 0));
-        var far = terrain.Vertex(column, Math.Min(row + 1, terrain.Cells));
-        var slope = new Vector2(right - left, far - near).Length() / (terrain.CellSize * 2f);
+                var stride = columns + 1;
+                for (var row = 0; row < rows; row++)
+                {
+                    for (var column = 0; column < columns; column++)
+                    {
+                        var a = row * stride + column;
+                        surface.AddIndex(a);
+                        surface.AddIndex(a + 1);
+                        surface.AddIndex(a + stride);
+                        surface.AddIndex(a + stride + 1);
+                        surface.AddIndex(a + stride);
+                        surface.AddIndex(a + 1);
+                    }
+                }
 
-        // Red fades out across the edge of the path, so the shader can cut a ragged line through it.
-        var path = Mathf.Clamp(0.5f - zone.WornPathDistance(x, z) / 1.6f, 0f, 1f);
-        var rock = Mathf.Clamp((slope - 0.55f) * 3f, 0f, 1f);
-        surface.SetColor(new Color(path, rock, 0f));
-        surface.AddVertex(new Vector3(x, terrain.Vertex(column, row), z));
+                root.AddChild(new MeshInstance3D { Mesh = surface.Commit(), MaterialOverride = material });
+            }
+        }
+
+        return root;
     }
 
     /// <summary>
@@ -625,6 +668,13 @@ public static class ZoneView
                         continue;
                     }
 
+                    // Under the trees the grass thins out; on trampled earth none grows.
+                    var (forest, blight, trampled) = zone.GroundAt(x, z);
+                    if (random.NextDouble() < forest * 0.72f || trampled > 0.45f)
+                    {
+                        continue;
+                    }
+
                     var basis = Basis.Identity.Rotated(Vector3.Up, (float)random.NextDouble() * Mathf.Tau)
                         .Scaled(Vector3.One * (0.7f + (float)random.NextDouble() * 0.8f));
                     multi.SetInstanceTransform(placed, new Transform3D(basis, new Vector3(x, zone.World.GroundHeight(x, z), z)));
@@ -632,7 +682,8 @@ public static class ZoneView
                     // Patches of paler and deeper grass, so a meadow is never one flat colour.
                     var patch = Mathf.Sin(x * 0.09f + 1f) * Mathf.Cos(z * 0.07f) * 0.5f + 0.5f;
                     var pick = Mathf.Clamp((int)(patch * colors.Length + random.Next(-1, 2)), 0, colors.Length - 1);
-                    multi.SetInstanceColor(placed, colors[pick].SrgbToLinear());
+                    var shade = colors[pick].Lerp(new Color("4a5a3a"), forest * 0.45f).Lerp(new Color("8a8468"), blight * 0.7f);
+                    multi.SetInstanceColor(placed, shade.SrgbToLinear());
                     placed++;
                 }
 

@@ -4,6 +4,7 @@ Usage: blender -b --factory-startup -P asset-pipeline/build_meshes.py
 Writes one .glb per model into client/assets. Colours come from the Endesga 32 palette.
 """
 import math
+import types
 import random
 from pathlib import Path
 
@@ -17,6 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import beasts  # noqa: E402
 import goblins  # noqa: E402
 import weapons  # noqa: E402
+import lands  # noqa: E402
 import houses  # noqa: E402
 import landmarks  # noqa: E402
 import collision  # noqa: E402
@@ -37,6 +39,7 @@ COLORS = {
 COLORS.update(beasts.COLORS)
 COLORS.update(goblins.COLORS)
 COLORS.update(weapons.COLORS)
+COLORS.update(lands.COLORS)
 MATERIALS = {}
 
 
@@ -1837,6 +1840,8 @@ MODELS = {
 MODELS.update(goblins.models(add_object, smooth))
 MODELS.update(goblins.camp_models(box, timber, blob, cylinder, loft, tube))
 MODELS.update(weapons.models(add_object, smooth))
+MODELS.update(lands.models(types.SimpleNamespace(box=box, timber=timber, blob=blob, cylinder=cylinder, loft=loft, tube=tube,
+                                                  add_object=add_object, smooth=smooth)))
 for beast in beasts.NAMES:
     MODELS["beast_" + beast] = (lambda kind: lambda: beasts.build(kind, add_object, smooth))(beast)
 

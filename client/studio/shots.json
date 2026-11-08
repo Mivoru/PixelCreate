@@ -47,5 +47,9 @@
   { "name": "goblin_fort", "eye": [82, 4, -96], "at": [84, 1, -114] },
   { "name": "goblin_outpost", "eye": [44, 3, -90], "at": [54, 1, -80] },
   { "name": "shaman_camp", "eye": [91, 2.5, -88], "at": [101, 1, -95] },
-  { "name": "valley_view", "eye": [0, 34, 70], "at": [-20, 0, -20] }
+  { "name": "valley_view", "eye": [0, 34, 70], "at": [-20, 0, -20] },
+  { "name": "greyfang_road", "eye": [150, 4, 196], "at": [190, 3, 192] },
+  { "name": "greyfang_den", "eye": [229, 3.2, 219], "at": [238, 2, 233] },
+  { "name": "greyfang_camp", "eye": [211, 2.5, 184], "at": [204, 1.2, 189] },
+  { "name": "pass_north", "eye": [100, 8, 130], "at": [124, 6, 180] }
 ]

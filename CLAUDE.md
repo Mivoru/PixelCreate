@@ -60,6 +60,10 @@ Rules:
 - Pose check: run the Godot console executable with `--path client res://scenes/pose_test.tscn -- <folder>`.
 - Regenerate textures, palette and UI font with `python asset-pipeline/generate_textures.py`.
 - Zones live in `world/zones/*.json`: the layout is authored, the scattered detail comes from the seed.
+  Meadow Valley is 600 m across: the old 360 m valley is ringed by `ridges` (mountain chains along a line, ends sinking
+  into walkable passes), and beyond them lie Greyfang Forest (wolves, north-east), Moonfell (north-west) and the
+  Ironjaw Warcamp (south-east). `grounds` paint forest floor, blight or trampled earth on terrain and grass. Props for
+  these lands come from `asset-pipeline/lands.py`. The terrain is drawn in 60 m chunks so off-screen ground is culled.
 - Blender: `D:\Program\Blender Foundation\Blender 5.2\blender.exe -b --factory-startup -P <script>`.
 - Play: `powershell -ExecutionPolicy Bypass -File scripts/play.ps1` starts a local server and the client. Add `-Test` for test mode (gear kit, frail examiner).
 - Live check: add `-Capture <folder>` to that command. A bot plays, saves frames and prints a `STATS` line.

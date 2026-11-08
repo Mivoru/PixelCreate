@@ -25,7 +25,7 @@ public class ZoneAuditTests
             foreach (var (dx, dz) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) })
             {
                 var next = (cell.X + dx, cell.Z + dz);
-                if (seen.Contains(next) || Math.Abs(next.Item1) > 600 || Math.Abs(next.Item2) > 200)
+                if (seen.Contains(next) || Math.Abs(next.Item1) > 600 || Math.Abs(next.Item2) > 300)
                 {
                     continue;
                 }

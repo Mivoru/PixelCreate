@@ -1,4 +1,5 @@
-// Ground: grass with dry patches, paths and rock. Vertex colour: red = path, green = rock.
+// Ground: grass with dry patches, paths and rock. Vertex colour: red = path, green = rock,
+// blue = forest floor, alpha = 1 - blight.
 shader_type spatial;
 
 uniform sampler2D grass_tex : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
@@ -23,6 +24,19 @@ void fragment() {
 	// Wide washes of warmer and cooler green, as a painter would lay them down.
 	float wash = texture(dry_tex, world_position.xz / 61.0 + 0.3).g;
 	color *= mix(vec3(0.82, 0.96, 0.8), vec3(1.14, 1.08, 0.82), smoothstep(0.3, 0.75, wash));
+	// Forest floor: dark moss and fallen needles, broken by patches of bare earth.
+	float forest = COLOR.b;
+	if (forest > 0.01) {
+		vec3 needles = mix(vec3(0.17, 0.2, 0.12), vec3(0.29, 0.22, 0.15), smoothstep(0.35, 0.7, grain + large * 0.4));
+		needles *= 0.85 + 0.3 * texture(dirt_tex, uv * 1.3).r;
+		color = mix(color, needles, forest * 0.85);
+	}
+	// Blight drains the green out of the grass, leaving it grey and brown.
+	float blight = 1.0 - COLOR.a;
+	if (blight > 0.01) {
+		float grey = dot(color, vec3(0.3, 0.55, 0.15));
+		color = mix(color, vec3(grey * 0.95, grey * 0.88, grey * 0.72) * 0.8, blight * 0.8);
+	}
 	// Noise on the threshold gives ragged edges instead of straight blends.
 	if (COLOR.g + (grain - 0.5) * 0.5 > 0.5) {
 		// Steep ground takes its texture from the side, so it does not smear into streaks.
