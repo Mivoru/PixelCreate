@@ -239,6 +239,10 @@ public partial class GameClient : Node
             {
                 _hud.ToggleInventory();
             }
+            else if (key.Keycode == Key.K)
+            {
+                _hud.ToggleCharacter();
+            }
             else if (key.Keycode is Key.Z or Key.X or Key.C && !_hud.DialogOpen)
             {
                 _hud.DrinkPotion(key.Keycode == Key.Z ? 0 : key.Keycode == Key.X ? 1 : 2);
@@ -541,7 +545,7 @@ public partial class GameClient : Node
             _lastXp = snapshot.Xp;
             _sfx.Play("level_up", chest);
             _fx.LevelUp(shown);
-            _hud.ShowBanner($"Level Up!  Lv {snapshot.Level}", new Color("fee761"));
+            _hud.ShowBanner($"Level Up!  Lv {snapshot.Level}  +{Attributes.PointsPerLevel} attribute points", new Color("fee761"));
         }
         else if (snapshot.Xp > _lastXp)
         {
@@ -723,6 +727,17 @@ public partial class GameClient : Node
         if (mode is "club" or "staff")
         {
             return MeleeBot(mode);
+        }
+
+        if (mode == "character")
+        {
+            // K as a real key opens the character window.
+            if (_client.Tick is 60 or 61)
+            {
+                PressKey(Key.K, _client.Tick == 60);
+            }
+
+            return (0, 0, Buttons.None);
         }
 
         if (mode == "menu")

@@ -57,6 +57,10 @@ public sealed class Snapshot
     /// <summary>Counts attacks avoided with a dash, so the client can show each one.</summary>
     public byte Dodges;
 
+    /// <summary>Points in each attribute (see <see cref="PlayerAttribute"/>), and points still to spend.</summary>
+    public byte[] Attributes = new byte[Core.Attributes.Count];
+    public byte UnspentPoints;
+
     /// <summary>Counts blows taken on the guard and blows parried, the same way.</summary>
     public byte Blocks;
     public byte Parries;
@@ -169,6 +173,8 @@ public static class Protocol
         writer.Write(snapshot.Dodges);
         writer.Write(snapshot.Blocks);
         writer.Write(snapshot.Parries);
+        writer.Write(snapshot.Attributes, 0, Core.Attributes.Count);
+        writer.Write(snapshot.UnspentPoints);
         writer.Write((byte)snapshot.Rank);
         writer.Write(snapshot.Gold);
         writer.Write(snapshot.QuestId);
@@ -283,6 +289,8 @@ public static class Protocol
         snapshot.Dodges = reader.ReadByte();
         snapshot.Blocks = reader.ReadByte();
         snapshot.Parries = reader.ReadByte();
+        snapshot.Attributes = reader.ReadBytes(Core.Attributes.Count);
+        snapshot.UnspentPoints = reader.ReadByte();
         snapshot.Rank = (GuildRank)reader.ReadByte();
         snapshot.Gold = reader.ReadInt32();
         snapshot.QuestId = reader.ReadByte();
@@ -437,6 +445,7 @@ public static class Protocol
         writer.Write(state.ShotDraw);
         writer.Write(state.BlockTicks);
         writer.Write(state.BlockAim);
+        writer.Write(state.Endurance);
         writer.Write(state.SlideTicks);
         writer.Write(state.SlideCooldown);
         WriteVector(writer, state.SlideDirection);
@@ -462,6 +471,7 @@ public static class Protocol
         ShotDraw = reader.ReadByte(),
         BlockTicks = reader.ReadByte(),
         BlockAim = reader.ReadByte(),
+        Endurance = reader.ReadByte(),
         SlideTicks = reader.ReadByte(),
         SlideCooldown = reader.ReadByte(),
         SlideDirection = ReadVector(reader),

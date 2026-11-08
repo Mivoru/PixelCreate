@@ -277,6 +277,9 @@ public struct PlayerState
     public byte DrawTicks;
     public byte ShotDraw;
 
+    /// <summary>Endurance points: more stamina and faster stamina regeneration. The server sets it.</summary>
+    public byte Endurance;
+
     /// <summary>Ticks of slide left, the wait before the next, and the way the slide goes.</summary>
     public byte SlideTicks;
     public byte SlideCooldown;
@@ -510,7 +513,7 @@ public static class Movement
 
         if (state.StaminaDelay == 0)
         {
-            state.Stamina = MathF.Min(Tuning.MaxStamina, state.Stamina + Tuning.StaminaRegenPerTick);
+            state.Stamina = MathF.Min(Attributes.MaxStamina(state), state.Stamina + Attributes.StaminaRegen(state));
         }
 
         if (state.DashTicks > 0)

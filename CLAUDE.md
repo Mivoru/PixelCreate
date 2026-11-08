@@ -35,6 +35,10 @@ Rules:
   heavy ones let 40 % through, and an empty stamina bar breaks the guard. A blow in the first `Tuning.ParryTicks` is
   parried: an attacker of the player's level or lower reels 1.5 s, one or two levels higher 0.6 s
   (`EnemyAction.Stagger`), and takes 1.5x damage meanwhile. `GameServer.Guard`, `net-tests/BlockTests.cs`.
+- Attributes (`Attributes.cs`, `PlayerAttribute`): Strength, Dexterity, Intelligence, Vitality, Endurance; 3 points a
+  level, spent with `Command.RaiseAttribute` (arg = attribute) in the character window (K), reset with Mira for 20 gold a
+  level. Per-point values are starting guesses, not measured balance. Endurance rides in `PlayerState.Endurance` because
+  it changes stamina, which movement predicts. `PIXEL_BOT=character` opens the window.
 - Slide: Ctrl while running on the ground (`Buttons.Slide`, `PlayerState.SlideTicks`/`SlideDirection`, in `Movement.Step`):
   a burst from 17 to 7 m/s over half a second, steerable a little, for stamina; a jump out of it keeps the speed in the
   air, and an attack or a dash ends it. `net-tests/SlideTests.cs`.

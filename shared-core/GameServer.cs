@@ -208,6 +208,13 @@ public sealed class GameServer : IEnemyEvents
         public uint DoorReadyTick;
         public int CatchUpTicks;
         public byte Level = 1;
+
+        /// <summary>Points spent in each attribute.</summary>
+        public readonly byte[] Attributes = new byte[Core.Attributes.Count];
+
+        public int UnspentPoints => Core.Attributes.Points(Level) - Attributes.Sum(a => a);
+
+        public int Attribute(PlayerAttribute which) => Attributes[(int)which];
         public int Xp;
         public uint LastHurtTick;
 
@@ -675,14 +682,17 @@ public sealed class GameServer : IEnemyEvents
             }
 
             player.State = PlayerState.Spawn(_world.Spawn, maxHealth);
-            // Worn gear survives death, so the weapon it picks does too.
+            // Worn gear survives death, so the weapon it picks does too; so do the attributes.
             player.State.Weapon = Weapons.Of(player.Stats.Weapon);
+            player.State.Endurance = player.Attributes[(int)PlayerAttribute.Endurance];
+            player.State.Stamina = Core.Attributes.MaxStamina(player.State);
         }
         else if (Tick - player.LastHurtTick > RegenDelayTicks && player.State.Health < maxHealth)
         {
             // One point every third of a second, plus what regen gear gives each second; below a
             // third of the health, second wind makes it all heal faster.
-            var perSecond = Tuning.TickRate / (float)RegenIntervalTicks + player.Stats.Regen;
+            var perSecond = (Tuning.TickRate / (float)RegenIntervalTicks + player.Stats.Regen)
+                * (1f + player.Attribute(PlayerAttribute.Vitality) * Core.Attributes.RegenPctPerVitality / 100f);
             if (player.State.Health < maxHealth / 3)
             {
                 perSecond *= 1f + player.Stats.SecondWind / 100f;
@@ -696,7 +706,22 @@ public sealed class GameServer : IEnemyEvents
     }
 
     /// <summary>A player's maximum health: from the level, plus what the worn gear adds.</summary>
-    private static short MaxHealth(Player player) => (short)(Progression.MaxHealth(player.Level) + player.Stats.MaxHealth);
+    private static short MaxHealth(Player player) => (short)(Progression.MaxHealth(player.Level) + player.Stats.MaxHealth
+        + player.Attribute(PlayerAttribute.Vitality) * Core.Attributes.HealthPerVitality);
+
+    /// <summary>Puts what the attributes change about movement into the player state, which both sides simulate.</summary>
+    private static void ApplyAttributes(Player player)
+    {
+        player.State.Endurance = player.Attributes[(int)PlayerAttribute.Endurance];
+        player.State.Stamina = MathF.Min(player.State.Stamina, Core.Attributes.MaxStamina(player.State));
+        player.State.Health = Math.Min(player.State.Health, MaxHealth(player));
+    }
+
+    /// <summary>Points spent in one attribute. For tests and tools.</summary>
+    public int GetAttribute(int id, PlayerAttribute which) => _players[id].Attribute(which);
+
+    /// <summary>Gives a player levels. For tests and tools.</summary>
+    public void SetLevel(int id, byte level) => _players[id].Level = level;
 
     /// <summary>Carries out what a player asked for, when the player is allowed to and close enough.</summary>
     private void Obey(Player player, Command command, ushort arg = 0)
@@ -704,6 +729,21 @@ public sealed class GameServer : IEnemyEvents
         if (command is Command.StoreItem or Command.TakeItem or Command.StoreGear or Command.TakeGear)
         {
             UseChest(player, command, arg);
+            return;
+        }
+
+        if (command == Command.RaiseAttribute && arg < Core.Attributes.Count && player.UnspentPoints > 0)
+        {
+            player.Attributes[arg]++;
+            ApplyAttributes(player);
+            return;
+        }
+
+        if (command == Command.ResetAttributes && Near(player, "receptionist") && player.Gold >= Core.Attributes.ResetGoldPerLevel * player.Level)
+        {
+            player.Gold -= Core.Attributes.ResetGoldPerLevel * player.Level;
+            Array.Clear(player.Attributes);
+            ApplyAttributes(player);
             return;
         }
 
@@ -991,8 +1031,11 @@ public sealed class GameServer : IEnemyEvents
             bonus += gear.Backstab;
         }
 
+        // The attribute that goes with the weapon adds its share.
+        bonus += player.Attribute(Core.Attributes.ForWeapon(gear.Weapon)) * Core.Attributes.DamagePctPerPoint;
         damage *= 1f + bonus / 100f;
-        if (_random.Next(100) < gear.CritChance)
+        var crit = gear.CritChance + player.Attribute(PlayerAttribute.Dexterity) * Core.Attributes.CritChancePerDexterity;
+        if (_random.NextDouble() * 100 < crit)
         {
             damage *= 1f + (GearStats.BaseCritDamage + gear.CritDamage) / 100f;
             Stats.CriticalHits++;
@@ -2022,6 +2065,8 @@ public sealed class GameServer : IEnemyEvents
                 BufferedInputs = (byte)Math.Min(player.Inputs.Count, byte.MaxValue),
                 Self = player.State,
                 Level = player.Level,
+                Attributes = (byte[])player.Attributes.Clone(),
+                UnspentPoints = (byte)Math.Clamp(player.UnspentPoints, 0, 255),
                 Xp = player.Xp,
                 XpToNext = Progression.XpToNext(player.Level),
                 MaxHealth = MaxHealth(player),

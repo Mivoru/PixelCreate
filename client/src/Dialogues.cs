@@ -358,8 +358,17 @@ public static class Dialogues
             return;
         }
 
+        var reset = Attributes.ResetGoldPerLevel * (snapshot?.Level ?? 1);
+        var spent = snapshot?.Attributes.Sum(a => a) ?? 0;
+        var options = new List<(string, Command)> { ($"Sell all crystals ({worth} gold)", Command.SellCrystals) };
+        if (spent > 0)
+        {
+            options.Add(($"Reset my attribute points ({reset} gold)", (snapshot?.Gold ?? 0) >= reset ? Command.ResetAttributes : Command.None));
+        }
+
+        options.Add(("Goodbye", Command.None));
         hud.ShowDialog(npc.Name, "Good to see you. The Guild buys every magic crystal you bring. Hides, teeth and the like go to Hollis at the side counter.",
-            ($"Sell all crystals ({worth} gold)", Command.SellCrystals), ("Goodbye", Command.None));
+            options.ToArray());
     }
 
     /// <summary>Wren sells healing potions for gold, one at a time.</summary>

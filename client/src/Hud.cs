@@ -272,10 +272,60 @@ public partial class Hud : Control
     {
         _dialogName = "";
         DialogRole = "";
-        if (!InventoryOpen && Camera is not null)
+        if (!InventoryOpen && !CharacterOpen && Camera is not null)
         {
             Input.MouseMode = Input.MouseModeEnum.Captured;
         }
+    }
+
+    /// <summary>The character window: attributes and the points to spend on them.</summary>
+    public bool CharacterOpen { get; private set; }
+
+    public void ToggleCharacter()
+    {
+        CharacterOpen = !CharacterOpen;
+        Input.MouseMode = CharacterOpen || InventoryOpen || DialogOpen ? Input.MouseModeEnum.Visible : Input.MouseModeEnum.Captured;
+    }
+
+    private readonly List<(Rect2 Rect, PlayerAttribute Attribute)> _raiseButtons = new();
+
+    /// <summary>The character window: each attribute with its points, what a point does, and a button to add one.</summary>
+    private void DrawCharacter()
+    {
+        _raiseButtons.Clear();
+        var window = new Rect2((Size.X - 760f) / 2f, (Size.Y - 560f) / 2f, 760, 560);
+        Card(window, 22, GlassDeep, true);
+        Label("Character", window.Position + new Vector2(34, 56), 24, Text, _bold);
+        var unspent = Snapshot?.UnspentPoints ?? 0;
+        var points = unspent > 0 ? $"{unspent} point{(unspent == 1 ? "" : "s")} to spend" : "No points to spend";
+        Label(points, window.Position + new Vector2(window.Size.X - 34 - Width(points, 17, _bold), 56), 17, unspent > 0 ? Accent : Muted, _bold);
+        for (var i = 0; i < Attributes.Count; i++)
+        {
+            var attribute = (PlayerAttribute)i;
+            var value = Snapshot?.Attributes[i] ?? 0;
+            var row = new Rect2(window.Position + new Vector2(28, 90 + i * 74), window.Size.X - 56, 64);
+            Rounded(row, 14, new Color(1, 1, 1, 0.05f), new Color(1, 1, 1, 0.08f), 1);
+            Label(Attributes.Name(attribute), row.Position + new Vector2(20, 28), 20, Text, _bold);
+            Label(Attributes.Describe(attribute), row.Position + new Vector2(20, 52), 14, Muted);
+            var number = value.ToString();
+            Label(number, new Vector2(row.End.X - 96 - Width(number, 26, _bold), row.Position.Y + 42), 26, value > 0 ? Accent : Text, _bold);
+            var button = new Rect2(row.End.X - 64, row.Position.Y + 12, 44, 40);
+            var hover = button.HasPoint(GetLocalMousePosition());
+            Rounded(button, 12, unspent > 0 ? (hover ? Accent : Accent with { A = 0.75f }) : new Color(1, 1, 1, 0.06f), Colors.Transparent, 0);
+            Label("+", new Vector2(button.Position.X + 14, button.Position.Y + 31), 26, unspent > 0 ? Ink : Muted, _bold);
+            if (unspent > 0)
+            {
+                _raiseButtons.Add((button, attribute));
+            }
+        }
+
+        var maxHealth = Snapshot?.MaxHealth ?? Tuning.PlayerHealth;
+        var summary = $"Health {maxHealth}     Stamina {Attributes.MaxStamina(Player):0}     Level {Level}";
+        Label(summary, window.Position + new Vector2(34, window.Size.Y - 52), 17, Text, _bold);
+        var reset = $"Reset all points with Mira at the Guild for {Attributes.ResetGoldPerLevel * Level} gold";
+        Label(reset, window.Position + new Vector2(34, window.Size.Y - 24), 14, Muted);
+        Keycap("K", new Vector2(window.End.X - 120, window.End.Y - 46), 14);
+        Label("close", new Vector2(window.End.X - 86, window.End.Y - 24), 15, Muted);
     }
 
     /// <summary>Picks the option with this command, as a player would by reading the list.</summary>
@@ -344,7 +394,7 @@ public partial class Hud : Control
 
         _floating.RemoveAll(t => t.Age > 1.2f);
         _lootFeed.RemoveAll(l => l.Age > LootFeedSeconds);
-        var stamina = Mathf.Clamp(Player.Stamina / Tuning.MaxStamina, 0f, 1f);
+        var stamina = Mathf.Clamp(Player.Stamina / Attributes.MaxStamina(Player), 0f, 1f);
         _shownHealth = Mathf.Lerp(_shownHealth, health, 1f - Mathf.Exp(-16f * d));
         _shownStamina = Mathf.Lerp(_shownStamina, stamina, 1f - Mathf.Exp(-22f * d));
 
@@ -377,6 +427,11 @@ public partial class Hud : Control
         if (InventoryOpen)
         {
             DrawInventory();
+        }
+
+        if (CharacterOpen)
+        {
+            DrawCharacter();
         }
 
         if (Items.Held is { } held)
@@ -414,6 +469,18 @@ public partial class Hud : Control
                         _commands.Enqueue((command, 0));
                     }
 
+                    return;
+                }
+            }
+        }
+
+        if (CharacterOpen && click.ButtonIndex == MouseButton.Left)
+        {
+            foreach (var (rect, attribute) in _raiseButtons)
+            {
+                if (rect.HasPoint(click.Position))
+                {
+                    _commands.Enqueue((Command.RaiseAttribute, (ushort)attribute));
                     return;
                 }
             }
@@ -783,6 +850,17 @@ public partial class Hud : Control
         var numbers = $"{Math.Max(Player.Health, (short)0)} / {maxHealth}";
         Label(numbers, new Vector2(health.End.X - 12 - Width(numbers, 15, _bold), health.Position.Y + 17), 15, Colors.White, _bold, true);
         Bar(new Rect2(card.Position + new Vector2(22, 87), card.Size.X - 44, 6), _shownStamina, _shownStamina, StaminaColor, new Color("8ff0b8"), Player.Stamina < 15f);
+
+        // Unspent attribute points wait under the card, with the key that opens the window.
+        if ((Snapshot?.UnspentPoints ?? 0) > 0 && !CharacterOpen)
+        {
+            var label = $"{Snapshot!.UnspentPoints} attribute points";
+            var pulse = 0.75f + Mathf.Sin(Time.GetTicksMsec() / 260f) * 0.25f;
+            var rect = new Rect2(card.End.X - Width(label, 15, _bold) - 70, card.End.Y + 8, Width(label, 15, _bold) + 70, 32);
+            Card(rect, 16, new Color(0.35f, 0.27f, 0.08f, 0.85f * pulse));
+            Keycap("K", rect.Position + new Vector2(8, 5), 13);
+            Label(label, rect.Position + new Vector2(42, 22), 15, Accent, _bold);
+        }
 
         if (Player.SlowTicks > 0)
         {

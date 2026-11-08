@@ -22,6 +22,12 @@ public enum Command : byte
     TakeItem = 201,
     StoreGear = 202,
     TakeGear = 203,
+
+    /// <summary>Spends one attribute point; the argument names the <see cref="PlayerAttribute"/>.</summary>
+    RaiseAttribute = 204,
+
+    /// <summary>Takes every attribute point back for gold, at the Guild receptionist.</summary>
+    ResetAttributes = 205,
 }
 
 /// <summary>A newcomer must beat the guild examiner to become an adventurer.</summary>
