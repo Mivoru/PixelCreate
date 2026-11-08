@@ -743,7 +743,7 @@ public sealed class GameServer : IEnemyEvents
         {
             bonus += gear.GoblinBane;
         }
-        else if (enemy.Def.Kind is "animal" or "slime")
+        else if (enemy.Def.Kind is "animal" or "slime" or "wolf")
         {
             bonus += gear.BeastBane;
         }

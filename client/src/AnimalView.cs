@@ -9,6 +9,8 @@ namespace PixelCreate;
 /// Legs swing in a diagonal gait that quickens into a gallop. What the server says the animal is
 /// doing sets the pose: grazing puts the head down to chew, alert lifts it with the ears pricked,
 /// idle lets it look around, and a running hen flaps. Hens peck instead of grazing.
+/// A wolf is a hunter: it lopes with its head low and its tail out, crouches and bares its teeth
+/// before it strikes, and snaps its jaw shut on the bite.
 /// </summary>
 public sealed class AnimalView : IEnemyView
 {
@@ -18,6 +20,9 @@ public sealed class AnimalView : IEnemyView
     private readonly Node3D _head;
     private readonly Node3D? _neck;
     private readonly Node3D? _tail;
+    private readonly Node3D? _jaw;
+    private readonly bool _hunter;
+    private float _snarl;
     private readonly List<(Node3D Leg, Node3D? Shin, float Phase, bool Front)> _legs = new();
     private readonly List<(Node3D Ear, float Side)> _ears = new();
     private readonly List<(Node3D Wing, float Side)> _wings = new();
@@ -56,6 +61,8 @@ public sealed class AnimalView : IEnemyView
         _head = Part(scene, "head")!;
         _neck = Part(scene, "neck");
         _tail = Part(scene, "tail");
+        _jaw = Part(scene, "jaw");
+        _hunter = def.Kind == "wolf";
         _bodyRest = _body.Position;
         foreach (var (name, phase) in new[] { ("fl", 0f), ("br", 0f), ("fr", Mathf.Pi), ("bl", Mathf.Pi) })
         {
@@ -155,16 +162,31 @@ public sealed class AnimalView : IEnemyView
         }
 
         // A boar about to strike drops its head and lowers its tusks.
-        if (enemy.Action is EnemyAction.Windup or EnemyAction.Strike)
+        if (enemy.Action is EnemyAction.Windup or EnemyAction.Strike && !_hunter)
         {
             _alert = 0f;
             _graze = Mathf.Lerp(_graze, 0.45f, 1f - Mathf.Exp(-12f * delta));
         }
 
+        // A wolf winding up crouches with its teeth bared; on the strike its jaw snaps shut.
+        var crouch = 0f;
+        if (_hunter)
+        {
+            var winding = enemy.Action == EnemyAction.Windup;
+            var striking = enemy.Action is EnemyAction.Strike or EnemyAction.Leap;
+            _snarl = Mathf.Lerp(_snarl, winding ? 1f : striking ? 0.2f : enemy.Fighting ? 0.35f : 0f, 1f - Mathf.Exp(-14f * delta));
+            crouch = winding ? 1f : 0f;
+            if (_jaw is not null)
+            {
+                _jaw.Rotation = new Vector3(_snarl * 0.55f + (striking ? 0f : 0f), 0, 0);
+            }
+        }
+
         var bob = moving ? Mathf.Abs(Mathf.Sin(_phase)) * (_bird ? 0.03f : 0.03f + gallop * 0.08f) : Mathf.Sin(_clock * 1.6f) * 0.006f;
         var shake = enemy.HitFlash > 0 ? (float)GD.RandRange(-0.04, 0.04) : 0f;
-        _body.Position = _bodyRest + new Vector3(shake, bob, 0);
-        _body.Rotation = new Vector3(gallop * Mathf.Sin(_phase * 2f) * 0.05f, 0, 0);
+        // The crouch tips the shoulders down a little; legs keep their length, so the body barely sinks.
+        _body.Position = _bodyRest + new Vector3(shake, bob - crouch * 0.03f * _snarl, 0);
+        _body.Rotation = new Vector3(gallop * Mathf.Sin(_phase * 2f) * 0.05f - crouch * _snarl * 0.06f, 0, 0);
 
         var grazing = !moving && enemy.Action == EnemyAction.Graze;
         var alert = !moving && enemy.Action == EnemyAction.Alert;
@@ -185,6 +207,11 @@ public sealed class AnimalView : IEnemyView
     /// </summary>
     private void Voice(in EnemyView enemy, Vector3 position, float delta, bool moving, Sfx sfx)
     {
+        if (sfx is null)
+        {
+            return;
+        }
+
         var at = position + Vector3.Up * 0.8f;
         var dead = enemy.Action == EnemyAction.Dead;
         if (DamageTaken > 0)
@@ -211,7 +238,7 @@ public sealed class AnimalView : IEnemyView
             {
                 sfx.Play("chicken_squawk", at, -2f);
             }
-            else if (_id % 3 == 0)
+            else if (_id % 3 == 0 && !_hunter)
             {
                 sfx.Play("hooves", position, -3f);
             }
@@ -222,13 +249,18 @@ public sealed class AnimalView : IEnemyView
             sfx.Play("pig_angry", at);
         }
 
+        if (_hunter && enemy.Action == EnemyAction.Windup && _snarl < 0.3f)
+        {
+            sfx.Play("wolf_growl", at, _id % 2 == 0 ? 0f : -3f);
+        }
+
         // Calm animals call out every so often, each on its own clock.
         _calmFor = bolting || alert || dead ? 0f : _calmFor + delta;
         _callTimer -= delta;
         if (_callTimer <= 0f)
         {
             _callTimer = 9f + (float)GD.RandRange(0.0, 18.0);
-            if (_calmFor > 4f && !dead && _kind is not ("deer"))
+            if (_calmFor > 4f && !dead && _kind is not ("deer") && (!_hunter || _id % 3 == 0))
             {
                 sfx.Play(Sound("call"), at, -5f);
             }
@@ -250,6 +282,8 @@ public sealed class AnimalView : IEnemyView
         ("chicken", "call") => "chicken_cluck",
         ("chicken", _) => "chicken_squawk",
         ("deer", _) => "deer_hurt",
+        ("wolf" or "alpha_wolf", "call") => "wolf_howl",
+        ("wolf" or "alpha_wolf", _) => "wolf_hurt",
         (_, _) => $"{_kind}_hurt",
     };
 
@@ -267,6 +301,11 @@ public sealed class AnimalView : IEnemyView
             // Grazing animals chew with small nods; alert ones raise the head high.
             var chew = Mathf.Sin(_clock * 6f) * 0.04f * _graze;
             pitch = -_graze * 1.35f + chew + _alert * 0.3f - gallop * 0.15f;
+            if (_hunter)
+            {
+                // A hunter carries its head low and level, lower still when it snarls.
+                pitch = -0.25f - gallop * 0.2f - _snarl * 0.35f + _alert * 0.3f;
+            }
         }
 
         var look = moving || _graze > 0.5f ? 0f : Mathf.Sin(_clock * 0.5f) * 0.35f * (1f - _alert);
@@ -296,6 +335,14 @@ public sealed class AnimalView : IEnemyView
     {
         if (_tail is null)
         {
+            return;
+        }
+
+        if (_hunter)
+        {
+            // Out level behind while running, raised stiff when it snarls, hanging when calm.
+            var stiff = Mathf.Max(_snarl, moving ? 0.6f : 0f);
+            _tail.Rotation = new Vector3(-stiff * 0.9f, 0, Mathf.Sin(_clock * 2.2f) * 0.12f * (1f - stiff));
             return;
         }
 

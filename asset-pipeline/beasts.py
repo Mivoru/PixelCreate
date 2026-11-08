@@ -153,7 +153,9 @@ def quadruped(b, s):
         b.round((0, my, mz), (mr * 1.05, mr * 0.9, mr * 0.85), s["nose"])
         for side in (-1, 1):
             ex, ey, ez = s["eyes"]
-            b.round((side * ex, ey, ez), (0.022, 0.03, 0.032), "eye_black", 2)
+            b.round((side * ex, ey, ez), (0.022, 0.03, 0.032), s.get("eye", "eye_black"), 2)
+            if s.get("eye", "eye_black") != "eye_black":
+                b.round((side * (ex + 0.004), ey + 0.016, ez), (0.008, 0.02, 0.022), "eye_black", 1)
             b.round((side * (ex + 0.006), ey + 0.012, ez + 0.012), (0.007, 0.007, 0.007), "eye_glint", 1)
             b.round((side * mr * 0.4, my + mr * 0.82, mz + mr * 0.1), (mr * 0.13, mr * 0.1, mr * 0.17), "eye_black", 1)
             for horn in s.get("horns", []):
@@ -164,6 +166,17 @@ def quadruped(b, s):
 
     hy, hz = s["head_pivot"]
     b.part("head", (0, hy, hz), build_head, "neck")
+
+    if "jaw" in s:
+        jaw_spec = s["jaw"]
+
+        def jaw():
+            b.tube([(0, y, z) for y, z, _, _ in jaw_spec["sections"]], [w for _, _, w, _ in jaw_spec["sections"]],
+                   [h for _, _, _, h in jaw_spec["sections"]], s["face"], 12)
+            for extra in jaw_spec.get("extras", []):
+                extra(b)
+
+        b.part("jaw", jaw_spec["pivot"], jaw, "head")
 
     for side, name in ((1, "ear_l"), (-1, "ear_r")):
         ex, ey, ez, length, width, droop = s["ear"]
@@ -180,6 +193,15 @@ def quadruped(b, s):
     ty, tz, length, tuft = s["tail"]
 
     def tail():
+        if "brush" in s:
+            # A bushy tail that hangs back and down, thickest past the middle, with a coloured tip.
+            widths, droop = s["brush"]
+            points = [(0, ty - math.sin(droop) * length * f, tz - math.cos(droop) * length * f) for f in (0.0, 0.2, 0.45, 0.7, 0.88, 1.0)]
+            b.tube(points, widths, [w * 1.15 for w in widths], s.get("tail_coat", s["coat"]), 10)
+            if tuft:
+                tip = points[-1]
+                b.round((0, tip[1] + math.sin(droop) * 0.03, tip[2] + math.cos(droop) * 0.03), (widths[-2] * 0.8, widths[-2] * 0.8, widths[-2] * 1.1), tuft, 2)
+            return
         b.tube([(0, ty, tz), (0, ty - 0.06, tz - length * 0.45), (0, ty - 0.07, tz - length)], [0.03, 0.022, 0.016], [0.035, 0.024, 0.016], s.get("tail_coat", s["coat"]), 7)
         if tuft:
             b.round((0, ty - 0.07, tz - length - 0.04), (0.045, 0.045, 0.1), tuft, 2)
@@ -243,6 +265,62 @@ def udder(b):
     b.round((0, -0.42, 0.62), (0.13, 0.15, 0.09), "cow_pink", 2)
     for x, y in ((-0.05, -0.37), (0.05, -0.37), (-0.05, -0.48), (0.05, -0.48)):
         b.tube([(x, y, 0.56), (x, y, 0.5)], [0.016, 0.012], [0.016, 0.012], "cow_pink", 6)
+
+
+def wolf_ruff(coat, pale):
+    """The thick fur of a wolf's neck and chest: layered tufts that hide where the neck meets the body."""
+    def build(b):
+        for ring, (y, z, w, h) in enumerate(((0.5, 0.86, 0.19, 0.22), (0.58, 0.93, 0.17, 0.19), (0.66, 1.0, 0.14, 0.15))):
+            for i in range(7):
+                # Only round the sides and the throat: tufts along the top read as a spiny crest.
+                a = -math.pi * 0.62 + i / 6 * math.pi * 1.24
+                x, dz = math.sin(a) * w, -math.cos(a) * h
+                colour = pale if dz < -h * 0.4 else coat
+                b.tube([(x * 0.85, y, z + dz * 0.85), (x * 1.12, y - 0.07, z + dz * 1.12 - 0.02)], [0.04, 0.004], [0.03, 0.004], colour, 5)
+        b.round((0, 0.52, 0.7), (0.12, 0.11, 0.14), pale, 2)
+        # The mane: a thick, soft roll of fur over the top of the neck and shoulders.
+        b.tube([(0, 0.4, 0.94), (0, 0.52, 1.0), (0, 0.62, 1.06), (0, 0.7, 1.1)], [0.12, 0.14, 0.12, 0.08], [0.07, 0.09, 0.08, 0.05], coat, 12)
+    return build
+
+
+def wolf_brow(coat, dark, pale):
+    def build(b):
+        for side in (-1, 1):
+            # A heavy brow over each eye and pale cheeks that flare back.
+            b.tube([(side * 0.04, 0.915, 1.195), (side * 0.085, 0.87, 1.2)], [0.02, 0.014], [0.014, 0.009], dark, 6)
+            b.tube([(side * 0.06, 0.95, 1.09), (side * 0.12, 0.82, 1.1), (side * 0.135, 0.75, 1.07)], [0.048, 0.042, 0.007], [0.04, 0.036, 0.007], pale, 6)
+        b.tube([(0, 1.0, 1.14), (0, 0.85, 1.22), (0, 0.7, 1.22)], [0.034, 0.06, 0.06], [0.014, 0.024, 0.024], dark, 6)
+    return build
+
+
+def wolf_teeth(b):
+    for side in (-1, 1):
+        b.tube([(side * 0.03, 1.08, 1.035), (side * 0.032, 1.085, 0.995)], [0.01, 0.001], [0.01, 0.001], "fang", 5)
+
+
+def wolf_lower_teeth(b):
+    for side in (-1, 1):
+        b.tube([(side * 0.026, 1.05, 1.005), (side * 0.027, 1.055, 1.035)], [0.008, 0.001], [0.008, 0.001], "fang", 5)
+
+
+def wolf_spec(coat, dark, pale, size_note=""):
+    return dict(
+        height=0.76, coat=coat, face=coat, nose="wolf_nose", hoof="wolf_paw", leg_radius=0.03, eye="wolf_eye",
+        ear_inner="wolf_ear", ear_coat=dark, shin_coat=pale,
+        trunk=[(-0.58, 0.75, 0.09, 0.11), (-0.5, 0.77, 0.16, 0.18), (-0.3, 0.77, 0.16, 0.18), (-0.08, 0.75, 0.14, 0.16),
+               (0.15, 0.77, 0.16, 0.22), (0.35, 0.79, 0.19, 0.26), (0.5, 0.81, 0.17, 0.24), (0.6, 0.85, 0.09, 0.13)],
+        neck=[(0.5, 0.88, 0.15, 0.17), (0.62, 1.0, 0.12, 0.13), (0.72, 1.09, 0.105, 0.11)],
+        neck_extras=[wolf_ruff(coat, pale)],
+        head_pivot=(0.72, 1.1),
+        head=[(0.68, 1.17, 0.1, 0.1), (0.79, 1.17, 0.125, 0.115), (0.9, 1.13, 0.092, 0.085), (1.01, 1.08, 0.058, 0.052), (1.11, 1.06, 0.04, 0.034)],
+        muzzle=(1.12, 1.065, 0.034), eyes=(0.066, 0.9, 1.17),
+        head_extras=[wolf_brow(coat, dark, pale), wolf_teeth],
+        jaw=dict(pivot=(0, 0.84, 1.07), sections=[(0.84, 1.06, 0.085, 0.04), (0.97, 1.03, 0.058, 0.03), (1.08, 1.015, 0.035, 0.02)], extras=[wolf_lower_teeth]),
+        ear=(0.065, 0.78, 1.25, 0.13, 0.06, 1.3), front=(0.11, 0.42, 0.74), back=(0.11, -0.46, 0.72),
+        tail=(-0.58, 0.78, 0.46, pale), brush=([0.03, 0.05, 0.07, 0.065, 0.045, 0.02], 0.55),
+        body_extras=[hips([(0.11, -0.47, 0.86, 0.07)], coat), hips([(0.12, 0.44, 0.86, 0.07)], coat)],
+        patches=[((0, 0.12, 0.62), (0.11, 0.38, 0.07), pale)],
+    )
 
 
 SPECS = {
@@ -321,6 +399,9 @@ SPECS = {
 
 
 SPECS["doe"] = dict(SPECS["deer"], head_extras=[], height=0.94)
+SPECS["wolf"] = wolf_spec("wolf_coat", "wolf_dark", "wolf_pale")
+# The pack leader: a darker, heavier wolf with a grizzled ruff.
+SPECS["alpha_wolf"] = wolf_spec("alpha_coat", "alpha_dark", "alpha_pale")
 
 
 def chicken(b):
@@ -369,7 +450,10 @@ COLORS = {
     "wool": "F6F2EA", "sheep_face": "2A2628",
     "boar_coat": "5A4038", "boar_dark": "3A2A24", "boar_snout": "C08A80", "tusk": "F0E8D8",
     "chicken_white": "F4F0E8", "chicken_wing": "E4DCCE", "comb": "E43B44", "beak": "FEAE34", "chicken_leg": "F7A52A",
+    "wolf_coat": "7E8494", "wolf_dark": "3A4466", "wolf_pale": "D6D2C8", "wolf_nose": "181425", "wolf_paw": "8B8A94",
+    "wolf_eye": "FEAE34", "wolf_ear": "5A4A50", "fang": "F4EEDC",
+    "alpha_coat": "3E3A48", "alpha_dark": "1E1C26", "alpha_pale": "9A98A0",
     "eye_black": "15161C", "eye_glint": "FFFFFF", "antler": "D8C8A8", "ear_pink": "D89A92", "deer_leg": "8A5A34", "deer_dark": "7A4A26", "boar_belly": "7A5A4C",
 }
 
-NAMES = ["cow", "goat", "deer", "doe", "sheep", "pig", "chicken"]
+NAMES = ["cow", "goat", "deer", "doe", "sheep", "pig", "chicken", "wolf", "alpha_wolf"]

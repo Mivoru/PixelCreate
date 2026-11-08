@@ -1137,7 +1137,7 @@ public partial class GameClient : Node
                 slime = def.Kind switch
                 {
                     "slime" => new SlimeView(),
-                    "animal" => new AnimalView(def, enemy.Id),
+                    "animal" or "wolf" => new AnimalView(def, enemy.Id),
                     _ => new GoblinView(def),
                 };
                 _enemies.Add(enemy.Id, slime);
@@ -1162,7 +1162,7 @@ public partial class GameClient : Node
                 var heavy = _client.State.Attack == AttackKind.Heavy;
                 _sfx.Play(heavy ? "hit_heavy" : "hit", position + Vector3.Up, -3f);
                 _hud.AddFloating(slime.DamageTaken.ToString(), position + Vector3.Up * 1.6f, heavy ? new Color("feae34") : Colors.White);
-                var blood = def.Kind is "goblin" or "animal" ? "a22633" : def.Rare ? "f6757a" : "63c74d";
+                var blood = def.Kind is "goblin" or "animal" or "wolf" ? "a22633" : def.Rare ? "f6757a" : "63c74d";
                 _fx.Burst(position + Vector3.Up * 0.6f, new Color(blood), heavy ? 22 : 12, 6f, 0.5f, 0.09f);
             }
         }

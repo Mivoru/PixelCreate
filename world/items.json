@@ -23,6 +23,8 @@
   { "id": "wool", "name": "Wool", "kind": "material", "tier": 0, "price": 4, "icon": "wool", "description": "A soft white tuft. It smells of meadow." },
   { "id": "boar_tusk", "name": "Boar Tusk", "kind": "material", "tier": 0, "price": 9, "icon": "boar_tusk", "description": "Curved and sharp. It made a fine weapon for the boar." },
   { "id": "boar_hide", "name": "Boar Hide", "kind": "material", "tier": 0, "price": 8, "icon": "boar_hide", "description": "Bristly and tough." },
+  { "id": "wolf_pelt", "name": "Wolf Pelt", "kind": "material", "tier": 0, "price": 12, "icon": "wolf_pelt", "description": "Thick grey fur, warm through the worst winter." },
+  { "id": "wolf_fang", "name": "Wolf Fang", "kind": "material", "tier": 0, "price": 10, "icon": "wolf_fang", "description": "Long, curved and still sharp." },
   { "id": "feather", "name": "Feather", "kind": "material", "tier": 0, "price": 1, "icon": "feather", "description": "A small white feather. Good for arrows and pillows." },
 
   { "id": "raw_beef", "name": "Raw Steak", "kind": "food", "tier": 0, "price": 6, "heal": 30, "icon": "raw_beef", "description": "A thick cut of beef. Better cooked, but it fills you up." },

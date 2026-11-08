@@ -50,6 +50,7 @@ RAMPS = {
     "iron": ["262b44", "3a4466", "8b9bb4", "c0cbdc"],
     "wood": ["3e2731", "733e39", "b86f50", "e4a672"],
     "wool": ["c0cbdc", "ead4aa", "ffffff", "ffffff"],
+    "wolf": ["262b44", "3a4466", "5a6988", "8b9bb4"],
 }
 
 # Fixed accents shared by every icon.
@@ -668,7 +669,7 @@ ICONS = {
     "hawk_feather": ("barred_feather", "hawk"), "ember_shard": ("shard", "fire"), "shaman_totem": ("totem", "wood"),
     "cowhide": ("spotted_hide", "cowhide"), "goat_horn": ("horn", "horn"), "deer_hide": ("hide", "deerhide"),
     "antler": ("antler", "antler"), "wool": ("wool", "wool"), "boar_tusk": ("tusk", "bone"),
-    "boar_hide": ("hide", "boarhide"), "feather": ("feather", "white"),
+    "boar_hide": ("hide", "boarhide"), "wolf_pelt": ("hide", "wolf"), "wolf_fang": ("tusk", "ivory"), "feather": ("feather", "white"),
     "raw_beef": ("steak", "meat"), "goat_meat": ("steak", "goat"), "venison": ("steak", "venison"),
     "mutton": ("steak", "mutton"), "boar_meat": ("steak", "boar"), "raw_chicken": ("drumstick", "chicken"),
     "egg": ("egg", "egg"),
