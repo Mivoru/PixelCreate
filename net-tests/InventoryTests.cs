@@ -53,9 +53,47 @@ public sealed class InventoryTests
         inventory.ApplyGear(state.Values);
         AssertShown(inventory, state.Values);
 
-        // The hotbar's weapon slot follows the worn weapon through every swap.
-        Assert.Same(inventory.Equipped[EquipSlot.Weapon], inventory.Hotbar[0]);
+        // The first weapon worn went on the hotbar once, and stays a shortcut to that piece.
         Assert.Equal(daggers.Item, inventory.Hotbar[0]!.Gear!.Item);
+    }
+
+    [Fact]
+    public void TheHotbar_HoldsShortcutsAndLosesNothing()
+    {
+        var inventory = new Inventory();
+        var sword = new GearPiece(ItemDef.Index("wooden_sword"), Rarity.Common, 1, Array.Empty<AffixRoll>());
+        var daggers = Piece("twin_daggers");
+        var bow = Piece("hunters_longbow");
+        var state = new[] { new GearEntry(0, sword, true), new GearEntry(1, daggers, false), new GearEntry(2, bow, false) };
+        inventory.ApplyGear(state);
+
+        // Lift the daggers out of the bag and put them on the third hotbar slot.
+        var from = Array.FindIndex(inventory.Bag, i => i?.Gear?.Item == daggers.Item);
+        inventory.Held = inventory.Bag[from];
+        inventory.HeldFrom = from;
+        inventory.Bag[from] = null;
+        inventory.PutOnHotbar(2, inventory.Held!);
+        Assert.Null(inventory.Held);
+        Assert.Equal(daggers.Item, inventory.Bag[from]!.Gear!.Item);
+        Assert.Equal(daggers.Item, inventory.Hotbar[2]!.Gear!.Item);
+
+        // The server resends everything; nothing turns into the worn sword.
+        inventory.ApplyGear(state);
+        Assert.Equal(daggers.Item, inventory.Hotbar[2]!.Gear!.Item);
+        Assert.Equal(sword.Item, inventory.Hotbar[0]!.Gear!.Item);
+        AssertShown(inventory, state);
+
+        // Wearing the daggers keeps the shortcut and marks it worn.
+        var worn = new[] { new GearEntry(1, daggers, true), new GearEntry(0, sword, false), new GearEntry(2, bow, false) };
+        inventory.ApplyGear(worn);
+        Assert.True(inventory.IsWorn(inventory.Hotbar[2]!));
+        Assert.False(inventory.IsWorn(inventory.Hotbar[0]!));
+        AssertShown(inventory, worn);
+
+        // Throwing the bow away leaves no shortcut behind.
+        inventory.PutOnHotbar(4, inventory.Bag.First(i => i?.Gear?.Item == bow.Item)!);
+        inventory.ApplyGear(new[] { new GearEntry(2, null, false) });
+        Assert.Null(inventory.Hotbar[4]);
     }
 
     [Fact]
@@ -85,6 +123,6 @@ public sealed class InventoryTests
         inventory.ApplyGear(after);
         AssertShown(inventory, after);
         Assert.Contains(inventory.Bag, i => i?.Gear?.Item == sword.Item);
-        Assert.Equal(daggers.Item, inventory.Hotbar[0]!.Gear!.Item);
+        Assert.Equal(sword.Item, inventory.Hotbar[0]!.Gear!.Item);
     }
 }

@@ -82,6 +82,46 @@ public sealed class Inventory
     /// <summary>The item picked up with the mouse and not yet put down.</summary>
     public Item? Held { get; set; }
 
+    /// <summary>
+    /// True when the held item is a hotbar shortcut lifted off the hotbar: the item itself never left
+    /// the bag, so putting the shortcut down anywhere but the hotbar simply drops it.
+    /// </summary>
+    public bool HeldShortcut { get; set; }
+
+    /// <summary>The bag slot the held item was lifted from, so it can go back there.</summary>
+    public int HeldFrom { get; set; } = -1;
+
+    /// <summary>Whether the starting weapon has been put on the hotbar yet; that happens only once.</summary>
+    private bool _hotbarSeeded;
+
+    /// <summary>True when this piece of gear is worn.</summary>
+    public bool IsWorn(Item item) => item.IsGear && _worn.Contains(item.Place) && ReferenceEquals(_gear.GetValueOrDefault(item.Place), item);
+
+    /// <summary>
+    /// Puts a shortcut to an item on the hotbar. The hotbar only points at items: whatever was held
+    /// goes back to the bag, to the slot it came from when that is still free.
+    /// </summary>
+    public void PutOnHotbar(int index, Item item)
+    {
+        Hotbar[index] = item;
+        if (HeldShortcut || !ReferenceEquals(Held, item))
+        {
+            return;
+        }
+
+        Held = null;
+        if (Bag.Any(i => ReferenceEquals(i, item)) || IsWorn(item))
+        {
+            return;
+        }
+
+        var free = HeldFrom >= 0 && HeldFrom < Bag.Length && Bag[HeldFrom] is null ? HeldFrom : Array.IndexOf(Bag, null);
+        if (free >= 0)
+        {
+            Bag[free] = item;
+        }
+    }
+
 
     public bool HasWeapon => Equipped[EquipSlot.Weapon] is not null;
 
@@ -177,17 +217,22 @@ public sealed class Inventory
             }
         }
 
-        // The first hotbar slot shows the worn weapon; with none worn it keeps the last one.
-        if (Equipped[EquipSlot.Weapon] is { } weapon && (Hotbar[0] is null || Hotbar[0]!.Slot == EquipSlot.Weapon))
+        // Hotbar shortcuts follow their piece when the server sends it anew, and go when it is gone.
+        for (var i = 0; i < Hotbar.Length; i++)
         {
-            Hotbar[0] = weapon;
+            if (Hotbar[i] is { IsGear: true } shortcut)
+            {
+                Hotbar[i] = _gear.TryGetValue(shortcut.Place, out var current) && SamePiece(current.Gear!, shortcut.Gear!) ? current : null;
+            }
         }
 
-        for (var i = 1; i < Hotbar.Length; i++)
+        // The weapon a player starts with goes on the first hotbar slot, once.
+        if (!_hotbarSeeded && Equipped[EquipSlot.Weapon] is { } weapon)
         {
-            if (Hotbar[i]?.Slot == EquipSlot.Weapon && Equipped[EquipSlot.Weapon] is { } worn)
+            _hotbarSeeded = true;
+            if (Hotbar.All(i => i is null))
             {
-                Hotbar[i] = worn;
+                Hotbar[0] = weapon;
             }
         }
     }
@@ -198,7 +243,7 @@ public sealed class Inventory
     /// <summary>Puts an item in the first free bag slot unless it already sits in the bag, on the hotbar or in hand.</summary>
     private void Place(Item item)
     {
-        if (ReferenceEquals(Held, item) || Bag.Any(i => ReferenceEquals(i, item)) || Hotbar.Any(i => ReferenceEquals(i, item) && !(item.Slot == EquipSlot.Weapon)))
+        if ((ReferenceEquals(Held, item) && !HeldShortcut) || Bag.Any(i => ReferenceEquals(i, item)))
         {
             return;
         }
@@ -260,8 +305,8 @@ public sealed class Inventory
         return gained;
     }
 
-    private bool Holds(Item item) => ReferenceEquals(Held, item) || Bag.Any(i => ReferenceEquals(i, item)) ||
-                                     Hotbar.Any(i => ReferenceEquals(i, item)) || Equipped.Values.Any(i => ReferenceEquals(i, item));
+    private bool Holds(Item item) => (ReferenceEquals(Held, item) && !HeldShortcut) || Bag.Any(i => ReferenceEquals(i, item)) ||
+                                     Equipped.Values.Any(i => ReferenceEquals(i, item));
 
     private void Forget(Item item)
     {

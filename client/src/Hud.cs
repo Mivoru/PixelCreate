@@ -393,7 +393,7 @@ public partial class Hud : Control
             {
                 // Right click puts a piece on or takes it off; with Shift it throws a piece away.
                 var worn = slot.Area == "equip";
-                if (click.ShiftPressed && !worn)
+                if (click.ShiftPressed && slot.Area == "bag")
                 {
                     _commands.Enqueue(GearCommands.Discard(piece.Place));
                 }
@@ -429,13 +429,21 @@ public partial class Hud : Control
         return null;
     }
 
-    /// <summary>The number keys pick a hotbar slot; food in that slot is eaten instead.</summary>
+    /// <summary>
+    /// The number keys use a hotbar slot: food in it is eaten, and gear in it is put on, which for a
+    /// weapon takes it in hand.
+    /// </summary>
     public void SelectHotbar(int index)
     {
         if (Items.Hotbar[index] is { IsFood: true } food)
         {
             Use(food);
             return;
+        }
+
+        if (Items.Hotbar[index] is { IsGear: true } piece && !Items.IsWorn(piece))
+        {
+            _commands.Enqueue(GearCommands.Toggle(piece.Place));
         }
 
         Items.SelectedHotbar = index;
@@ -452,6 +460,35 @@ public partial class Hud : Control
     private void Exchange(SlotRef slot)
     {
         var current = Read(slot);
+
+        // The hotbar holds shortcuts: an item put there stays in the bag, and a shortcut lifted off
+        // it vanishes when put down anywhere else.
+        if (slot.Area == "hotbar")
+        {
+            if (Items.Held is { } item)
+            {
+                Items.PutOnHotbar(slot.Index, item);
+                Items.Held = null;
+                Items.HeldShortcut = false;
+            }
+            else if (current is not null)
+            {
+                Items.Held = current;
+                Items.HeldShortcut = true;
+                Items.Hotbar[slot.Index] = null;
+            }
+
+            return;
+        }
+
+        if (Items.HeldShortcut)
+        {
+            Items.Held = null;
+            Items.HeldShortcut = false;
+            return;
+        }
+
+        Items.HeldFrom = slot.Area == "bag" && current is not null && Items.Held is null ? slot.Index : -1;
         if (Items.Held is { } held && slot.Equip != EquipSlot.None && held.Slot != slot.Equip)
         {
             return;
@@ -869,6 +906,12 @@ public partial class Hud : Control
 
         var count = Items.Count(item);
         _iconDraws.Add((rect.Grow(-6), item.Icon, count > 0 ? 1f : 0.35f));
+        if (slot.Area == "hotbar" && Items.IsWorn(item))
+        {
+            // A small gold mark: this piece is the one worn.
+            DrawCircle(rect.Position + new Vector2(rect.Size.X - 10, 10), 4.5f, new Color(0, 0, 0, 0.6f));
+            DrawCircle(rect.Position + new Vector2(rect.Size.X - 10, 10), 3f, Accent);
+        }
         if (count > 1)
         {
             var text = count.ToString();
