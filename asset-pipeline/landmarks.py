@@ -201,6 +201,92 @@ def stall():
     box("sign_face", (0, -1.12, 2.0), (1.2, 0.03, 0.2), "gold")
 
 
+def bottle(name, x, y, z, radius, colour, tall=1.0):
+    """A glass potion bottle: a round belly of coloured liquid, a narrow neck and a cork."""
+    h = radius * 2.4 * tall
+    loft(name, [(z, radius * 0.7, radius * 0.7), (z + h * 0.15, radius, radius), (z + h * 0.55, radius, radius),
+                (z + h * 0.7, radius * 0.4, radius * 0.4), (z + h * 0.92, radius * 0.32, radius * 0.32)], colour, 10, (x, y, 0))
+    loft(name + "_cork", [(z + h * 0.92, radius * 0.3, radius * 0.3), (z + h * 1.05, radius * 0.34, radius * 0.34)], "wood", 8, (x, y, 0))
+
+
+def alchemy_stall():
+    """The alchemist's stall: a market stall under a purple and cream awning, its counter and two
+    shelves crowded with potion bottles, a bubbling cauldron on embers at one side, bundles of
+    drying herbs from the beam, and a board with a painted flask."""
+    for x, y, height in ((-1.5, -1.0, 2.2), (1.5, -1.0, 2.2), (-1.5, 1.0, 2.6), (1.5, 1.0, 2.6)):
+        box("pad", (x, y, 0.06), (0.3, 0.3, 0.12), "stone_dark")
+        timber("post", (x, y, 0.1), (x, y, height), 0.13)
+    box("counter", (0, -0.7, 0.92), (3.25, 0.95, 0.1), "wood")
+    box("apron", (0, -1.12, 0.48), (3.15, 0.06, 0.8), "wood_dark")
+    box("apron_cloth", (0, -1.16, 0.62), (2.2, 0.03, 0.45), "cloth_purple")
+    for z in (0.7, 1.35):
+        box("shelf", (0, 0.8, z), (3.0, 0.4, 0.07), "wood")
+    box("back_board", (0, 1.0, 1.25), (3.0, 0.06, 1.3), "wood_dark")
+    rng = random.Random(7)
+    colours = ("potion_red", "potion_red", "potion_blue", "potion_green", "cloth_purple", "potion_red")
+    for z in (0.74, 1.39):
+        for k in range(11):
+            x = -1.3 + k * 0.26 + rng.uniform(-0.04, 0.04)
+            bottle("shelf_bottle", x, 0.8, z, rng.uniform(0.06, 0.08), colours[rng.randrange(len(colours))], rng.uniform(0.85, 1.3))
+    for k, (x, colour) in enumerate(((-1.1, "potion_red"), (-0.75, "potion_red"), (-0.4, "potion_red"), (0.5, "potion_blue"), (0.85, "potion_green"))):
+        bottle("counter_bottle", x, -0.7, 0.97, 0.1, colour, 1.1)
+    # A pestle and mortar and an open book of recipes on the counter.
+    loft("mortar", [(0.97, 0.12, 0.12), (1.1, 0.14, 0.14), (1.14, 0.11, 0.11)], "stone", 10, (1.25, -0.65, 0))
+    timber("pestle", (1.25, -0.65, 1.05), (1.33, -0.6, 1.25), 0.04, "wood_dark")
+    box("book", (0.05, -0.65, 0.99), (0.5, 0.36, 0.04), "paper")
+    box("book_spine", (0.05, -0.65, 1.01), (0.04, 0.36, 0.03), "cloth_red")
+    # The cauldron, off to the side on a ring of embers.
+    for k in range(6):
+        a = k * math.tau / 6
+        blob("cauldron_stone", (2.35 + math.cos(a) * 0.55, -0.3 + math.sin(a) * 0.55, 0.1), 0.16, "stone_dark", k, 0.9, 1)
+    blob("embers", (2.35, -0.3, 0.06), 0.32, "ember", 5, 0.4, 1)
+    loft("cauldron", [(0.15, 0.2, 0.2), (0.3, 0.42, 0.42), (0.6, 0.5, 0.5), (0.85, 0.44, 0.44), (0.9, 0.47, 0.47)], "iron", 14, (2.35, -0.3, 0))
+    loft("brew", [(0.82, 0.42, 0.42), (0.84, 0.42, 0.42)], "potion_green", 14, (2.35, -0.3, 0))
+    for k in range(3):
+        blob("bubble", (2.25 + k * 0.12, -0.25 + (k % 2) * 0.1, 0.86), 0.05, "potion_green", k, 1, 1)
+    # Herbs drying from the front beam.
+    timber("beam", (-1.6, -1.0, 2.1), (1.6, -1.0, 2.1), 0.12)
+    timber("beam", (-1.6, 1.0, 2.6), (1.6, 1.0, 2.6), 0.12)
+    for k, x in enumerate((-1.1, -0.6, 0.6, 1.1)):
+        timber("herb_cord", (x, -0.95, 2.05), (x, -0.95, 1.8), 0.015, "wood_dark")
+        blob("herbs", (x, -0.95, 1.7), 0.12, "leaf" if k % 2 == 0 else "moss", k + 11, 0.8, 1)
+    strips = 8
+    for k in range(strips):
+        x0 = -1.75 + 3.5 * k / strips
+        x1 = -1.75 + 3.5 * (k + 1) / strips
+        verts = [(x0, -1.45, 2.12), (x1, -1.45, 2.12), (x1, 1.15, 2.72), (x0, 1.15, 2.72)]
+        top = [(x, y, z + 0.03) for x, y, z in verts]
+        faces = [(0, 1, 2, 3), (7, 6, 5, 4), (0, 4, 5, 1), (1, 5, 6, 2), (2, 6, 7, 3), (3, 7, 4, 0)]
+        add_object("awning", mesh_from("awning", verts + top, faces), "cloth_purple" if k % 2 == 0 else "paper")
+        flap = [(x0, -1.46, 2.12), (x1, -1.46, 2.12), (x1, -1.46, 1.95), ((x0 + x1) / 2, -1.46, 1.84), (x0, -1.46, 1.95)]
+        add_object("valance", mesh_from("valance", flap, [(0, 1, 2, 3, 4)]), "cloth_purple" if k % 2 == 0 else "paper")
+    # The board: a red flask painted on gold.
+    box("sign", (0, -1.08, 2.0), (1.4, 0.06, 0.32), "wood_dark")
+    box("sign_face", (0, -1.12, 2.0), (1.2, 0.03, 0.2), "gold")
+    box("sign_flask", (0, -1.14, 1.97), (0.12, 0.02, 0.1), "potion_red")
+    box("sign_neck", (0, -1.14, 2.06), (0.04, 0.02, 0.07), "potion_red")
+
+
+def storage_chest():
+    """A sturdy chest for an adventurer's things: oak planks, a rounded lid, iron bands and corners,
+    and a heavy lock."""
+    box("chest_body", (0, 0, 0.3), (1.1, 0.62, 0.6), "wood")
+    for x in (-0.36, 0.0, 0.36):
+        box("plank_line", (x, -0.315, 0.3), (0.02, 0.01, 0.58), "wood_dark")
+    for k in range(9):
+        x0 = -0.55 + 1.1 * k / 9
+        box("lid", (x0 + 0.061, 0, 0.66), (0.122, 0.62, 0.12), "wood")
+    box("lid_top", (0, 0, 0.75), (1.1, 0.44, 0.08), "wood")
+    for x in (-0.42, 0.42):
+        box("band", (x, 0, 0.45), (0.06, 0.66, 0.66), "iron")
+        box("band_top", (x, 0, 0.8), (0.06, 0.46, 0.06), "iron")
+    for x in (-0.55, 0.55):
+        for y in (-0.31, 0.31):
+            box("corner", (x, y, 0.06), (0.08, 0.08, 0.12), "iron")
+    box("lock", (0, -0.33, 0.55), (0.14, 0.04, 0.16), "gold")
+    box("keyhole", (0, -0.355, 0.54), (0.03, 0.01, 0.06), "iron")
+
+
 # --- The watchtower ------------------------------------------------------------------------------
 
 def watchtower():

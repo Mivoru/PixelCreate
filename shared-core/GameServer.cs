@@ -33,6 +33,7 @@ public sealed class ServerStats
     public long Splashes;
     public long Spits;
     public long Dodges;
+    public long PotionsDrunk;
     public long Blocks;
     public long Parries;
     public long LevelUps;
@@ -201,6 +202,9 @@ public sealed class GameServer : IEnemyEvents
         public byte Level = 1;
         public int Xp;
         public uint LastHurtTick;
+
+        /// <summary>The tick from which the next potion may be drunk.</summary>
+        public uint PotionReady;
         public byte Dodges;
         public byte Blocks;
         public byte Parries;
@@ -308,6 +312,9 @@ public sealed class GameServer : IEnemyEvents
     private const int RushExtra = 2;
     private const int RushTicks = 60 * 5;
 
+    /// <summary>How long after one potion the next can be drunk: three seconds.</summary>
+    public const int PotionCooldownTicks = 60 * 3;
+
     /// <summary>Clones called up during this tick's enemy steps; they join the enemies after the loop.</summary>
     private readonly List<Enemy> _summons = new();
 
@@ -367,6 +374,15 @@ public sealed class GameServer : IEnemyEvents
     public GuildRank GetRank(int id) => _players[id].Rank;
 
     public int GetGold(int id) => _players[id].Gold;
+
+    /// <summary>How many of an item a player holds. For tests and tools.</summary>
+    public int GetBagCount(int id, ushort item) => _players[id].Bag.GetValueOrDefault(item);
+
+    /// <summary>Hands a player gold. For tests and tools.</summary>
+    public void GiveGold(int id, int gold) => _players[id].Gold += gold;
+
+    /// <summary>Sets a player's health. For tests and tools.</summary>
+    public void SetHealth(int id, short health) => _players[id].State.Health = health;
 
     public byte GetQuest(int id) => _players[id].QuestId;
 
@@ -726,6 +742,17 @@ public sealed class GameServer : IEnemyEvents
                 AddItem(player, food, -1);
                 player.State.Health = (short)Math.Min(player.State.Health + ItemDef.All[food].Heal, MaxHealth(player));
                 Stats.MealsEaten++;
+                break;
+            case var drink when ItemCommands.TryEat(drink, out var potion) && ItemDef.All[potion].IsPotion &&
+                                player.Bag.GetValueOrDefault(potion) > 0 && player.State.Health > 0 && Tick >= player.PotionReady:
+                AddItem(player, potion, -1);
+                player.State.Health = (short)Math.Min(player.State.Health + ItemDef.All[potion].Heal, MaxHealth(player));
+                player.PotionReady = Tick + PotionCooldownTicks;
+                Stats.PotionsDrunk++;
+                break;
+            case var buy when ShopCommands.TryBuy(buy, out var ware) && Near(player, ItemDef.All[ware].Shop) && player.Gold >= ItemDef.All[ware].Price:
+                player.Gold -= ItemDef.All[ware].Price;
+                AddItem(player, ware, 1);
                 break;
             case var wear when GearCommands.TryToggle(wear, out var place) && player.Gear[place] is { } piece:
                 ToggleWorn(player, place, piece);

@@ -24,6 +24,8 @@ public sealed record Item(string Id, string Name, string Description, string Ico
 {
     public bool IsFood => Kind == "food";
 
+    public bool IsPotion => Kind == "potion";
+
     public bool IsGear => Gear is not null;
 
     /// <summary>A piece of gear as the interface shows it; its tier is its rarity.</summary>
@@ -60,10 +62,16 @@ public sealed class Inventory
     public const int BagSlots = 30;
     public const int HotbarSlots = 8;
 
+    /// <summary>The potion bar: three shortcuts to potions, drunk with Z, X and C.</summary>
+    public const int PotionSlots = 3;
+
     private static readonly Item[] Defs = ItemDef.All.Select(Item.From).ToArray();
 
     public Item?[] Bag { get; } = new Item?[BagSlots];
     public Item?[] Hotbar { get; } = new Item?[HotbarSlots];
+
+    /// <summary>Potion shortcuts. They stay put when the potion runs out, so the slot shows what to buy again.</summary>
+    public Item?[] Potions { get; } = new Item?[PotionSlots];
     public Dictionary<EquipSlot, Item?> Equipped { get; } = new()
     {
         [EquipSlot.Head] = null,
@@ -96,6 +104,22 @@ public sealed class Inventory
 
     /// <summary>True when this piece of gear is worn.</summary>
     public bool IsWorn(Item item) => item.IsGear && _worn.Contains(item.Place) && ReferenceEquals(_gear.GetValueOrDefault(item.Place), item);
+
+    /// <summary>Puts an item lifted from the bag back where it came from, or in the first free slot.</summary>
+    public void ReturnHeld(Item item)
+    {
+        Held = null;
+        if (Bag.Any(i => ReferenceEquals(i, item)))
+        {
+            return;
+        }
+
+        var free = HeldFrom >= 0 && HeldFrom < Bag.Length && Bag[HeldFrom] is null ? HeldFrom : Array.IndexOf(Bag, null);
+        if (free >= 0)
+        {
+            Bag[free] = item;
+        }
+    }
 
     /// <summary>
     /// Puts a shortcut to an item on the hotbar. The hotbar only points at items: whatever was held
@@ -286,6 +310,12 @@ public sealed class Inventory
             if (entry.Count > before)
             {
                 gained.Add((item, entry.Count - before));
+
+                // A new kind of potion fills the first empty slot of the potion bar by itself.
+                if (item.IsPotion && !Potions.Contains(item) && Array.IndexOf(Potions, null) is var empty and >= 0)
+                {
+                    Potions[empty] = item;
+                }
             }
 
             if (entry.Count > 0 && !Holds(item))

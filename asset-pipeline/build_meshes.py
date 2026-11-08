@@ -36,7 +36,7 @@ COLORS = {
     "foliage_oak": "5F9A3C", "foliage_oak_b": "6FA63E", "foliage_birch": "A8C850", "foliage_blossom": "F4A8C0", "foliage_pine": "2F6A58",
     "foliage_willow": "8FB84A", "foliage_bush": "4F8E42", "foliage_jungle": "3F9048", "foliage_core": "1F4A3A",
     "bark": "6E4E3C", "bark_dark": "4A3634", "bark_birch": "E0DACC", "bark_grey": "8A8078", "reed": "9AA850", "grass_tall": "7FBF52",
-    "hide": "8A6A4A", "hide_dark": "4A3428", "sand": "D8C49A", "crop": "D8B85A", "paper": "EEE4C8", "glass": "CFE6F2", "pane": "3C5268", "rock": "8E909C", "rock_dark": "666874", "iron": "3E3E48", "moss": "4E6E3C", "ember": "B03A1E", "rune": "2CE8F5", "anime_glove": "23252E", "anime_vest": "2F4070", "anime_accent": "C84848", "anime_armor": "B8C4D4", "anime_armor_dark": "7A889C",
+    "hide": "8A6A4A", "hide_dark": "4A3428", "sand": "D8C49A", "crop": "D8B85A", "paper": "EEE4C8", "glass": "CFE6F2", "pane": "3C5268", "rock": "8E909C", "rock_dark": "666874", "iron": "3E3E48", "moss": "4E6E3C", "ember": "B03A1E", "rune": "2CE8F5", "potion_red": "E43B44", "potion_blue": "2C8CF5", "potion_green": "63C74D", "cloth_purple": "6A3A8A", "anime_glove": "23252E", "anime_vest": "2F4070", "anime_accent": "C84848", "anime_armor": "B8C4D4", "anime_armor_dark": "7A889C",
 }
 COLORS.update(beasts.COLORS)
 COLORS.update(goblins.COLORS)
@@ -900,6 +900,7 @@ cottage, cottage_b, tavern = houses.cottage, houses.cottage_b, houses.tavern
 landmarks.bind({"box": box, "timber": timber, "blob": blob, "loft": loft, "add_object": add_object, "mesh_from": mesh_from})
 houses.bind({"round_log": lambda *a: round_log(*a)})
 windmill, watchtower, well, stall = landmarks.windmill, landmarks.watchtower, landmarks.well, landmarks.stall
+alchemy_stall, storage_chest = landmarks.alchemy_stall, landmarks.storage_chest
 ruin_arch, ruin_wall, ruin = landmarks.ruin_arch, landmarks.ruin_wall, landmarks.ruin
 
 
@@ -1813,6 +1814,8 @@ MODELS = {
     "tavern": tavern,
     "well": well,
     "stall": stall,
+    "alchemy_stall": alchemy_stall,
+    "storage_chest": storage_chest,
     "barrel": barrel,
     "crate": crate,
     "sacks": sacks,

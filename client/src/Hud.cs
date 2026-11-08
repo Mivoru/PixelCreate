@@ -456,9 +456,9 @@ public partial class Hud : Control
     /// </summary>
     public void SelectHotbar(int index)
     {
-        if (Items.Hotbar[index] is { IsFood: true } food)
+        if (Items.Hotbar[index] is { IsFood: true } or { IsPotion: true })
         {
-            Use(food);
+            Use(Items.Hotbar[index]);
             return;
         }
 
@@ -472,15 +472,57 @@ public partial class Hud : Control
 
     private void Use(Item? item)
     {
-        if (item is { IsFood: true, Index: >= 0 } food && Items.Count(food) > 0)
+        if (item is { Index: >= 0 } food && (food.IsFood || food.IsPotion) && Items.Count(food) > 0)
         {
             _commands.Enqueue(ItemCommands.Eat((ushort)food.Index));
+            if (food.IsPotion)
+            {
+                _potionUsed = Time.GetTicksMsec();
+            }
         }
     }
+
+    /// <summary>Drinks the potion in a slot of the potion bar, unless the last one was too recent.</summary>
+    public void DrinkPotion(int index)
+    {
+        if (Time.GetTicksMsec() - _potionUsed < PotionCooldownMs)
+        {
+            return;
+        }
+
+        Use(Items.Potions[index]);
+    }
+
+    private const ulong PotionCooldownMs = (ulong)(GameServer.PotionCooldownTicks * 1000 / Tuning.TickRate);
+    private ulong _potionUsed;
 
     private void Exchange(SlotRef slot)
     {
         var current = Read(slot);
+
+        // The potion bar holds shortcuts to potions only, the same way the hotbar does.
+        if (slot.Area == "potion")
+        {
+            if (Items.Held is { IsPotion: true } potion)
+            {
+                Items.Potions[slot.Index] = potion;
+                if (!Items.HeldShortcut)
+                {
+                    Items.ReturnHeld(potion);
+                }
+
+                Items.Held = null;
+                Items.HeldShortcut = false;
+            }
+            else if (Items.Held is null && current is not null)
+            {
+                Items.Held = current;
+                Items.HeldShortcut = true;
+                Items.Potions[slot.Index] = null;
+            }
+
+            return;
+        }
 
         // The hotbar holds shortcuts: an item put there stays in the bag, and a shortcut lifted off
         // it vanishes when put down anywhere else.
@@ -545,6 +587,7 @@ public partial class Hud : Control
     {
         "bag" => Items.Bag[slot.Index],
         "hotbar" => Items.Hotbar[slot.Index],
+        "potion" => Items.Potions[slot.Index],
         _ => Items.Equipped[slot.Equip],
     };
 
@@ -554,6 +597,9 @@ public partial class Hud : Control
         {
             case "bag":
                 Items.Bag[slot.Index] = item;
+                break;
+            case "potion":
+                Items.Potions[slot.Index] = item;
                 break;
             case "hotbar":
                 Items.Hotbar[slot.Index] = item;
@@ -899,6 +945,27 @@ public partial class Hud : Control
         var label = $"{Snapshot?.Xp ?? 0} / {Snapshot?.XpToNext ?? 0} XP";
         Label(label, new Vector2(bar.End.X - Width(label, 14, _bold), bar.Position.Y - 8), 14, Text, _bold, true);
         Label($"Level {Level}", new Vector2(bar.Position.X, bar.Position.Y - 8), 14, Accent, _bold, true);
+        DrawPotionBar(left + width + 14, top);
+    }
+
+    /// <summary>The potion bar beside the hotbar: three slots, Z X C, dimmed while potions cool down.</summary>
+    private void DrawPotionBar(float left, float top)
+    {
+        var width = Inventory.PotionSlots * (SlotSize + SlotGap) - SlotGap + 24;
+        Card(new Rect2(left, top - 12, width, SlotSize + 24), 18);
+        var cooling = Mathf.Clamp(1f - (Time.GetTicksMsec() - _potionUsed) / (float)PotionCooldownMs, 0f, 1f);
+        for (var i = 0; i < Inventory.PotionSlots; i++)
+        {
+            var rect = new Rect2(left + 12 + i * (SlotSize + SlotGap), top, SlotSize, SlotSize);
+            DrawSlot(rect, Items.Potions[i], new SlotRef("potion", i));
+            if (cooling > 0f && Items.Potions[i] is not null)
+            {
+                // A shade that drains away from the top as the cooldown runs out.
+                DrawRect(new Rect2(rect.Position.X, rect.Position.Y + rect.Size.Y * (1f - cooling), rect.Size.X, rect.Size.Y * cooling), new Color(0, 0, 0, 0.45f));
+            }
+
+            Label("ZXC"[i].ToString(), rect.Position + new Vector2(7, 18), 13, Muted, _bold);
+        }
     }
 
     /// <summary>A slot: its rim takes the item's tier colour, and a stack shows its count in the corner.</summary>

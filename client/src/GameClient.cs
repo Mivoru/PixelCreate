@@ -230,6 +230,10 @@ public partial class GameClient : Node
             {
                 _hud.ToggleInventory();
             }
+            else if (key.Keycode is Key.Z or Key.X or Key.C && !_hud.DialogOpen)
+            {
+                _hud.DrinkPotion(key.Keycode == Key.Z ? 0 : key.Keycode == Key.X ? 1 : 2);
+            }
             else if (key.Keycode >= Key.Key1 && key.Keycode <= Key.Key8)
             {
                 _hud.SelectHotbar((int)(key.Keycode - Key.Key1));
@@ -670,7 +674,7 @@ public partial class GameClient : Node
         if (Input.IsKeyPressed(Key.Shift)) buttons |= Buttons.Dash;
         if (Input.IsMouseButtonPressed(MouseButton.Left)) buttons |= Buttons.Light;
         if (Input.IsMouseButtonPressed(MouseButton.Right)) buttons |= Buttons.Heavy;
-        if (Input.IsKeyPressed(Key.Q)) buttons |= Buttons.Block;
+        if (Input.IsMouseButtonPressed(MouseButton.Middle)) buttons |= Buttons.Block;
         return ToMove(side, forward, buttons);
     }
 

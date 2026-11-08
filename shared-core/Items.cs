@@ -13,9 +13,10 @@ namespace PixelCreate.Core;
 /// <param name="Power">For a weapon: damage compared with the wooden sword, which is 1.</param>
 /// <param name="Defense">For armour: the defense it gives before rarity and level.</param>
 /// <param name="Health">Extra maximum health it gives before rarity and level.</param>
+/// <param name="Shop">The role of the shopkeeper who sells it, such as alchemist, or empty.</param>
 public sealed record ItemDef(
     string Id, string Name, string Kind, int Tier, string Icon, string Description, int Price = 0, string Slot = "",
-    int Crystal = -1, int Heal = 0, string Weapon = "", float Power = 0f, int Defense = 0, int Health = 0)
+    int Crystal = -1, int Heal = 0, string Weapon = "", float Power = 0f, int Defense = 0, int Health = 0, string Shop = "")
 {
     private static readonly Lazy<IReadOnlyList<ItemDef>> Loaded = new(Load);
     private static readonly Lazy<Dictionary<string, ushort>> Indices = new(() =>
@@ -25,6 +26,15 @@ public sealed record ItemDef(
 
     public bool IsCrystal => Crystal >= 0;
     public bool IsFood => Kind == "food";
+
+    /// <summary>A potion heals at once like food, but shares a short cooldown with every other potion.</summary>
+    public bool IsPotion => Kind == "potion";
+
+    /// <summary>Every item a shop sells, in file order; a buy command names one by its place here.</summary>
+    public static IReadOnlyList<ushort> Wares => LoadedWares.Value;
+
+    private static readonly Lazy<IReadOnlyList<ushort>> LoadedWares = new(() =>
+        All.Select((def, index) => (def, (ushort)index)).Where(p => p.def.Shop != "").Select(p => p.Item2).ToList());
     public bool IsEquipment => Kind == "equipment";
 
     /// <summary>Materials and food can be sold to the appraiser; equipment and crystals cannot.</summary>
@@ -70,6 +80,25 @@ public static class ItemCommands
     {
         item = (ushort)Math.Max(0, (int)command - EatBase);
         return (int)command >= EatBase && (int)command < GearCommands.ToggleBase && item < ItemDef.All.Count;
+    }
+}
+
+/// <summary>
+/// Buying from a shop: commands from <see cref="BuyBase"/> up buy one of the item at that place in
+/// <see cref="ItemDef.Wares"/>, if the player stands at the right shopkeeper and has the gold.
+/// </summary>
+public static class ShopCommands
+{
+    public const int BuyBase = 8;
+    public const int MaxWares = 24;
+
+    public static Command Buy(ushort item) => (Command)(BuyBase + ItemDef.Wares.ToList().IndexOf(item));
+
+    public static bool TryBuy(Command command, out ushort item)
+    {
+        var place = (int)command - BuyBase;
+        item = place >= 0 && place < Math.Min(MaxWares, ItemDef.Wares.Count) ? ItemDef.Wares[place] : (ushort)0;
+        return place >= 0 && place < Math.Min(MaxWares, ItemDef.Wares.Count);
     }
 }
 

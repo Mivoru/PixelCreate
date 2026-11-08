@@ -112,6 +112,28 @@ public static class NpcLooks
         },
     };
 
+    private static readonly RigLook Alchemist = new("alchemist", Skin, 0.95f, "none")
+    {
+        Hair = "lina",
+        Feminine = true,
+        Skirt = true,
+        Cloak = true,
+        Rest = "clasped",
+        Extras = new[] { "apron" },
+        Eyes = new Color("3e8948"),
+        Brows = new Color("3a2a24"),
+        Palette = new Dictionary<string, Color>
+        {
+            ["anime_hair"] = new("2e2a3a"),
+            ["anime_shirt"] = new("6a3a8a"),
+            ["anime_cloak"] = new("3a2450"),
+            ["anime_trousers"] = new("2e2440"),
+            ["anime_dark"] = new("6a3a8a"),
+            ["anime_vest"] = new("c8b48c"),
+            ["anime_glove"] = Skin,
+        },
+    };
+
     private static readonly RigLook Appraiser = new("appraiser", new Color("e0b494"), 1.02f, "none")
     {
         Hair = "short",
@@ -235,6 +257,7 @@ public static class NpcLooks
         "villager" => Villager,
         "villager_b" => VillagerB,
         "merchant" => Merchant,
+        "alchemist" => Alchemist,
         "guard" => Guard,
         "appraiser" => Appraiser,
         "baker" => Baker,
@@ -255,6 +278,7 @@ public static class Dialogues
         "appraiser" => "Guild Appraiser",
         "quest_board" => "Jobs and Bounties",
         "merchant" => "Merchant",
+        "alchemist" => "Alchemist",
         "guard" => "Village Guard",
         "baker" => "Baker",
         "farmer" => "Farmer",
@@ -282,6 +306,9 @@ public static class Dialogues
                 break;
             case "merchant":
                 hud.ShowDialog(npc.Name, "Fresh from the mill and the orchard! Hides and horns? Take those to Hollis at the Guild, he pays fair.", ("Goodbye", Command.None));
+                break;
+            case "alchemist":
+                Alchemist(hud, npc, snapshot);
                 break;
             case "guard":
                 hud.ShowDialog(npc.Name, "The south road leads to Goblin Hollow. Do not go there before the Guild gives you its badge.", ("Understood", Command.None));
@@ -330,6 +357,23 @@ public static class Dialogues
 
         hud.ShowDialog(npc.Name, "Good to see you. The Guild buys every magic crystal you bring. Hides, teeth and the like go to Hollis at the side counter.",
             ($"Sell all crystals ({worth} gold)", Command.SellCrystals), ("Goodbye", Command.None));
+    }
+
+    /// <summary>Wren sells healing potions for gold, one at a time.</summary>
+    private static void Alchemist(Hud hud, Npc npc, Snapshot? snapshot)
+    {
+        var gold = snapshot?.Gold ?? 0;
+        var offers = new List<(string, Command)>();
+        foreach (var ware in ItemDef.Wares.Where(w => ItemDef.All[w].Shop == "alchemist"))
+        {
+            var def = ItemDef.All[ware];
+            offers.Add(($"Buy {def.Name} ({def.Price} gold)", gold >= def.Price ? ShopCommands.Buy(ware) : Command.None));
+        }
+
+        offers.Add(("Goodbye", Command.None));
+        hud.ShowDialog(npc.Name, gold > 0
+            ? $"Potions, fresh from the cauldron! One heals you at once, but give your body three breaths before the next. You have {gold} gold."
+            : "Potions, fresh from the cauldron! Come back when the Guild has paid you; I do not give them away.", offers.ToArray());
     }
 
     private static void Appraiser(Hud hud, Npc npc, GuildRank rank)

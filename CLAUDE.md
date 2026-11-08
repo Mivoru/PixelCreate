@@ -30,7 +30,7 @@ than special code, and the world is built from zones that one server process can
 
 Rules:
 
-- Block: hold Q (`Buttons.Block`, `PlayerState.BlockTicks`/`BlockAim`, predicted in `Movement.Step`). The guard covers
+- Block: hold the mouse wheel button (`Buttons.Block`, `PlayerState.BlockTicks`/`BlockAim`, predicted in `Movement.Step`). The guard covers
   the front, slows the player and costs stamina per blow: light blows (`melee`, `combo`, arrows) stop completely,
   heavy ones let 40 % through, and an empty stamina bar breaks the guard. A blow in the first `Tuning.ParryTicks` is
   parried: an attacker of the player's level or lower reels 1.5 s, one or two levels higher 0.6 s
