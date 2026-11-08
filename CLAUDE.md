@@ -50,7 +50,9 @@ Rules:
   taken top down, stat and passive nodes feeding `GearStats` (`Mastery.AddTo` in `RecomputeStats`) only while that
   weapon is in hand. The last node of each branch is a new move; it can be taken once its id is in
   `MasteryNode.BuiltUnlocks`, and shows as coming soon until then. At most 64 nodes (one mask in the snapshot).
-  `PIXEL_BOT=mastery` opens the window.
+  `PIXEL_BOT=mastery` opens the window. `Mastery.Has` asks for a move with its weapon in hand; `GrantMastery` takes a
+  branch in tests. Built moves: Riposte (sword: a parry within `Tuning.RiposteReach` lands a heavy blow at once,
+  `Snapshot.Ripostes`) and Triple Shot (bow: two weaker arrows either side of every shot).
 - Slide: Ctrl while running on the ground (`Buttons.Slide`, `PlayerState.SlideTicks`/`SlideDirection`, in `Movement.Step`):
   a burst from 17 to 7 m/s over half a second, steerable a little, for stamina; a jump out of it keeps the speed in the
   air, and an attack or a dash ends it. `net-tests/SlideTests.cs`.

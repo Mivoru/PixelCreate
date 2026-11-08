@@ -73,6 +73,9 @@ public sealed class Snapshot
     /// <summary>Counts blows taken on the guard and blows parried, the same way.</summary>
     public byte Blocks;
     public byte Parries;
+
+    /// <summary>Counts parries answered by the sword's Riposte, the same way.</summary>
+    public byte Ripostes;
     public GuildRank Rank;
     public int Gold;
     public byte QuestId;
@@ -182,6 +185,7 @@ public static class Protocol
         writer.Write(snapshot.Dodges);
         writer.Write(snapshot.Blocks);
         writer.Write(snapshot.Parries);
+        writer.Write(snapshot.Ripostes);
         writer.Write(snapshot.Attributes, 0, Core.Attributes.Count);
         writer.Write(snapshot.UnspentPoints);
         writer.Write(snapshot.KnownSkills);
@@ -308,6 +312,7 @@ public static class Protocol
         snapshot.Dodges = reader.ReadByte();
         snapshot.Blocks = reader.ReadByte();
         snapshot.Parries = reader.ReadByte();
+        snapshot.Ripostes = reader.ReadByte();
         snapshot.Attributes = reader.ReadBytes(Core.Attributes.Count);
         snapshot.UnspentPoints = reader.ReadByte();
         snapshot.KnownSkills = reader.ReadUInt32();

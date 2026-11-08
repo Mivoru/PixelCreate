@@ -43,6 +43,13 @@ public static class Tuning
     public const int ParryStaggerTicks = 90;
     public const int ParryStaggerTicksStronger = 36;
     public const int ParryLevelReach = 2;
+
+    /// <summary>Sword mastery Riposte: a parried foe this close takes a heavy blow at once.</summary>
+    public const float RiposteReach = 3.2f;
+
+    /// <summary>Bow mastery Triple Shot: two more arrows this far either side (radians), each with this share of the damage.</summary>
+    public const float TripleShotSpread = 0.11f;
+    public const float TripleShotShare = 0.6f;
     public const float StaggerDamageScale = 1.5f;
     public const float GroundAcceleration = 60f;
     public const float AirAcceleration = 20f;

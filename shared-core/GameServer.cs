@@ -39,6 +39,7 @@ public sealed class ServerStats
     public long BooksDropped;
     public long Blocks;
     public long Parries;
+    public long Ripostes;
     public long LevelUps;
     public long CrystalsDropped;
     public long CrystalsLooted;
@@ -238,6 +239,7 @@ public sealed class GameServer : IEnemyEvents
         public byte Dodges;
         public byte Blocks;
         public byte Parries;
+        public byte Ripostes;
         public GuildRank Rank;
         public int Gold;
         public byte QuestId;
@@ -1129,6 +1131,7 @@ public sealed class GameServer : IEnemyEvents
             {
                 var gap = attacker.Level - player.Level;
                 attacker.Stagger(gap <= 0 ? Tuning.ParryStaggerTicks : gap <= Tuning.ParryLevelReach ? Tuning.ParryStaggerTicksStronger : 0);
+                Riposte(player, attacker);
             }
 
             return true;
@@ -1154,6 +1157,30 @@ public sealed class GameServer : IEnemyEvents
 
         damage = (short)Math.Max(1, MathF.Round(damage * Tuning.BlockHeavyShare));
         return false;
+    }
+
+    /// <summary>
+    /// Sword mastery Riposte: a parried foe within reach takes a heavy blow at once, and while it
+    /// reels that blow lands harder still.
+    /// </summary>
+    private void Riposte(Player player, Enemy attacker)
+    {
+        var reach = Tuning.RiposteReach + attacker.Def.Size * 0.5f;
+        if (!Mastery.Has(player.Stats.Weapon, player.MasteryTaken, "riposte") || Vector3.Distance(attacker.Position, player.State.Position) > reach)
+        {
+            return;
+        }
+
+        var damage = BlowDamage(player, AttackKind.Heavy, attacker);
+        var killed = attacker.TakeHit(damage, player.State.Position, player.Id);
+        AfterBlow(player, attacker, damage);
+        player.Ripostes++;
+        Stats.Ripostes++;
+        Stats.EnemyHits++;
+        if (killed)
+        {
+            OnKilled(attacker, player);
+        }
     }
 
     private void Strike(Player player, AttackKind kind)
@@ -1336,6 +1363,19 @@ public sealed class GameServer : IEnemyEvents
 
     /// <summary>Gives a player mastery experience with the weapon in hand. For tests and tools.</summary>
     public void GiveMasteryXp(int id, int xp) => AwardMastery(_players[id], xp);
+
+    /// <summary>Takes the whole branch that ends in a move, without points. For tests and tools.</summary>
+    public void GrantMastery(int id, string unlock)
+    {
+        var player = _players[id];
+        var end = Mastery.Nodes.Single(n => n.Unlock == unlock);
+        foreach (var node in Mastery.Nodes.Where(n => n.Weapon == end.Weapon && n.Branch == end.Branch))
+        {
+            player.MasteryTaken |= 1ul << node.Index;
+        }
+
+        RecomputeStats(player);
+    }
 
     /// <summary>Rolls an enemy's gear table: maybe one piece, of a rarity picked by the table's weights.</summary>
     private void DropGear(Enemy enemy, Player owner)
@@ -2081,17 +2121,29 @@ public sealed class GameServer : IEnemyEvents
         var aim = flat * MathF.Cos(pitch) + Vector3.UnitY * MathF.Sin(pitch);
         var drawn = Tuning.Drawn(player.State.ShotDraw);
         var speed = Tuning.ArrowSpeed(drawn);
-        _projectiles.Add(new Projectile
+        var origin = ArrowOrigin(player.State.Position, flat);
+        var share = Tuning.DrawShare(player.State.ShotDraw);
+        var life = (int)MathF.Ceiling(Tuning.ArrowRange(drawn) / speed * Tuning.TickRate);
+        AddArrow(aim, share);
+
+        // Bow mastery Triple Shot: two more arrows fan out either side of the aim, weaker.
+        if (Mastery.Has(player.Stats.Weapon, player.MasteryTaken, "triple_shot"))
+        {
+            AddArrow(Vector3.Transform(aim, Matrix4x4.CreateRotationY(Tuning.TripleShotSpread)), share * Tuning.TripleShotShare);
+            AddArrow(Vector3.Transform(aim, Matrix4x4.CreateRotationY(-Tuning.TripleShotSpread)), share * Tuning.TripleShotShare);
+        }
+
+        void AddArrow(Vector3 direction, float draw) => _projectiles.Add(new Projectile
         {
             Id = _nextId++,
             Kind = ProjectileKind.PlayerArrow,
             Damage = 0,
-            Position = ArrowOrigin(player.State.Position, flat),
-            Velocity = aim * speed,
+            Position = origin,
+            Velocity = direction * speed,
             Gravity = Tuning.ArrowGravity,
             Shooter = player.Id,
-            Draw = Tuning.DrawShare(player.State.ShotDraw),
-            Life = (int)MathF.Ceiling(Tuning.ArrowRange(drawn) / speed * Tuning.TickRate),
+            Draw = draw,
+            Life = life,
         });
     }
 
@@ -2370,6 +2422,7 @@ public sealed class GameServer : IEnemyEvents
                 Dodges = player.Dodges,
                 Blocks = player.Blocks,
                 Parries = player.Parries,
+                Ripostes = player.Ripostes,
                 Rank = player.Rank,
                 Gold = player.Gold,
                 QuestId = player.QuestId,

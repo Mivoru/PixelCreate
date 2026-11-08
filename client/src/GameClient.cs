@@ -106,6 +106,7 @@ public partial class GameClient : Node
     private byte _lastDodges;
     private byte _lastBlocks;
     private byte _lastParries;
+    private byte _lastRipostes;
     private int _lastXp;
     private bool _rareSeen;
     private float _ghostClock;
@@ -541,6 +542,16 @@ public partial class GameClient : Node
             _fx.Burst(chest + Vector3.Up * 0.3f, new Color("fee761"), 26, 7f, 0.35f, 0.07f, 0f, 180f);
             _fx.Burst(chest + Vector3.Up * 0.3f, new Color("ffffff"), 12, 5f, 0.25f, 0.05f, 0f, 180f);
             _hud.AddFloating("Parry!", chest + Vector3.Up, new Color("fee761"));
+        }
+
+        if (snapshot.Ripostes != _lastRipostes)
+        {
+            // Riposte: the sword answers the parry with a fast cut across.
+            _lastRipostes = snapshot.Ripostes;
+            _castTime = 0.3f;
+            _castMove = WeaponMove.SwingAcross;
+            _sfx.Play("air_slash", chest);
+            _hud.AddFloating("Riposte!", chest + Vector3.Up * 1.4f, new Color("ffffff"));
         }
 
         if (snapshot.Level > _lastLevel)

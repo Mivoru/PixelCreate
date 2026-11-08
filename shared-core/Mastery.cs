@@ -15,7 +15,7 @@ public sealed record MasteryNode(string Name, string Text, Dictionary<string, in
     public int Index { get; init; }
 
     /// <summary>Unlocks for moves that exist in the game; others cannot be taken yet.</summary>
-    public static readonly HashSet<string> BuiltUnlocks = new();
+    public static readonly HashSet<string> BuiltUnlocks = new() { "riposte", "triple_shot" };
 
     public bool Ready => Unlock is null || BuiltUnlocks.Contains(Unlock);
 }
@@ -51,6 +51,10 @@ public static class Mastery
     public static bool CanTake(MasteryNode node, ulong taken, int freePoints) =>
         node.Ready && (taken & (1ul << node.Index)) == 0 && freePoints >= node.Cost
         && (node.Tier == 0 || Nodes.Any(n => n.Weapon == node.Weapon && n.Branch == node.Branch && n.Tier == node.Tier - 1 && (taken & (1ul << n.Index)) != 0));
+
+    /// <summary>True when a move at the end of a branch is taken and a weapon of its kind is in hand.</summary>
+    public static bool Has(string weaponInHand, ulong taken, string unlock) =>
+        Nodes.Any(n => n.Unlock == unlock && n.Weapon == weaponInHand && (taken & (1ul << n.Index)) != 0);
 
     /// <summary>Points spent in one weapon's tree.</summary>
     public static int Spent(string weapon, ulong taken) => Nodes.Where(n => n.Weapon == weapon && (taken & (1ul << n.Index)) != 0).Sum(n => n.Cost);
