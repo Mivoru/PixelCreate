@@ -220,6 +220,10 @@ public sealed class GameServer : IEnemyEvents
     private sealed class Projectile
     {
         public required int Id;
+
+        /// <summary>For a hunter's shot: the creature it is meant for, which it can hit as well as players.</summary>
+        public Enemy? Prey;
+        public int HunterId = -1;
         public required ProjectileKind Kind;
         public required short Damage;
         public byte SlowTicks;
@@ -272,6 +276,11 @@ public sealed class GameServer : IEnemyEvents
     /// <summary>Groups that walk a route instead of staying in one camp.</summary>
     private readonly List<Patrol> _patrols = new();
 
+    /// <summary>Camps and patrols that go hunting now and then.</summary>
+    private readonly List<Hunt> _hunts = new();
+
+    public IReadOnlyList<Hunt> Hunts => _hunts;
+
     /// <summary>The fighters holding a turn to come in close at each player.</summary>
     private readonly Dictionary<int, HashSet<Enemy>> _turns = new();
 
@@ -322,6 +331,11 @@ public sealed class GameServer : IEnemyEvents
             if (spawn.Route is { Length: > 0 })
             {
                 _patrols.Add(new Patrol(spawn, herd));
+            }
+
+            if (spawn.Hunts)
+            {
+                _hunts.Add(new Hunt(herd, spawn, _random));
             }
         }
     }
@@ -427,7 +441,7 @@ public sealed class GameServer : IEnemyEvents
         if (!EnemiesFrozen)
         {
             var targets = _players.Values.OrderBy(p => p.Id)
-                .Select(p => new Target(p.Id, p.State.Position, p.State.Velocity)).ToArray();
+                .Select(p => new Target(p.Id, p.State.Position, p.State.Velocity)).Concat(CreatureTargets()).ToArray();
             foreach (var enemy in _enemies)
             {
                 enemy.Crowd = _enemies;
@@ -440,6 +454,11 @@ public sealed class GameServer : IEnemyEvents
             // A clone is gone once it falls or fades, and with the wolf that called it.
             var living = _enemies.Where(e => e.Alive && e.SummonedBy < 0).Select(e => e.Id).ToHashSet();
             _enemies.RemoveAll(e => e.SummonedBy >= 0 && (!e.Alive || !living.Contains(e.SummonedBy)));
+        }
+
+        foreach (var hunt in _hunts)
+        {
+            hunt.Step(_enemies, _random);
         }
 
         foreach (var patrol in _patrols)
@@ -1191,6 +1210,20 @@ public sealed class GameServer : IEnemyEvents
 
     void IEnemyEvents.Fire(Enemy enemy, Ability ability, Target? target)
     {
+        var shotsBefore = _projectiles.Count;
+        Fire(enemy, ability, target);
+        if (Creature(enemy.TargetId) is { } prey)
+        {
+            for (var i = shotsBefore; i < _projectiles.Count; i++)
+            {
+                _projectiles[i].Prey = prey;
+                _projectiles[i].HunterId = enemy.Id;
+            }
+        }
+    }
+
+    private void Fire(Enemy enemy, Ability ability, Target? target)
+    {
         var chest = enemy.Position + Vector3.UnitY * (enemy.Def.Size * 1.1f);
         // The attack goes where the warning showed, even if the player moved after it locked.
         var aimPoint = enemy.LeapTarget + Vector3.UnitY;
@@ -1316,7 +1349,10 @@ public sealed class GameServer : IEnemyEvents
 
     private static Vector3 Facing(Enemy enemy) => new(-MathF.Sin(enemy.Facing), 0, -MathF.Cos(enemy.Facing));
 
-    /// <summary>A blow that lands on every player in a circle; the attacker feels any thorns.</summary>
+    /// <summary>
+    /// A blow that lands on every player in a circle; the attacker feels any thorns. A hunter's blow
+    /// also lands on its prey, and a boar's on the hunter it turned on.
+    /// </summary>
     private void Area(Vector3 center, float radius, short damage, Enemy attacker)
     {
         foreach (var player in _players.Values.ToList())
@@ -1324,6 +1360,54 @@ public sealed class GameServer : IEnemyEvents
             if (Vector3.Distance(player.State.Position, center) <= radius + 0.4f)
             {
                 Hurt(player, damage, 0, attacker);
+            }
+        }
+
+        if (Creature(attacker.TargetId) is { } victim && Vector3.Distance(victim.Position, center) <= radius + victim.Def.Size * 0.4f + 0.4f)
+        {
+            victim.TakeHit(damage, attacker.Position, Enemy.CreatureBase + attacker.Id);
+        }
+    }
+
+    /// <summary>The enemy or animal a creature target id names, if it is alive.</summary>
+    private Enemy? Creature(int targetId) =>
+        targetId >= Enemy.CreatureBase ? _enemies.FirstOrDefault(e => e.Id == targetId - Enemy.CreatureBase && e.Alive) : null;
+
+    /// <summary>
+    /// Creatures given to the enemies as targets alongside the players: every hunter, so animals run
+    /// from it, and every creature that something is after, so the chaser can find it.
+    /// </summary>
+    private IEnumerable<Target> CreatureTargets()
+    {
+        var wanted = new HashSet<int>();
+        foreach (var enemy in _enemies)
+        {
+            if (!enemy.Alive)
+            {
+                continue;
+            }
+
+            if (enemy.Hunting)
+            {
+                wanted.Add(enemy.Id);
+            }
+
+            if (enemy.TargetId >= Enemy.CreatureBase)
+            {
+                wanted.Add(enemy.TargetId - Enemy.CreatureBase);
+            }
+        }
+
+        if (wanted.Count == 0)
+        {
+            yield break;
+        }
+
+        foreach (var enemy in _enemies)
+        {
+            if (enemy.Alive && wanted.Contains(enemy.Id))
+            {
+                yield return new Target(Enemy.CreatureBase + enemy.Id, enemy.Position, enemy.Velocity);
             }
         }
     }
@@ -1584,6 +1668,13 @@ public sealed class GameServer : IEnemyEvents
                 }
 
                 continue;
+            }
+
+            if (shot.Prey is { Alive: true } prey &&
+                Vector3.Distance(prey.Position + Vector3.UnitY * (prey.Def.Size * 0.6f), shot.Position) < shot.Radius + prey.Def.Size * 0.35f)
+            {
+                prey.TakeHit(shot.Damage, shot.Position - shot.Velocity * Tuning.TickSeconds, Enemy.CreatureBase + shot.HunterId);
+                struck = true;
             }
 
             foreach (var player in _players.Values)

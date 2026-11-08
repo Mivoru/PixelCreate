@@ -35,10 +35,11 @@ public sealed record EnemyDef(
 /// <summary>
 /// A camp: a place enemies live, return to and respawn at. A rare camp holds only rare enemies.
 /// With a route it is a patrol: the group walks from point to point and back, resting at each.
+/// A camp that hunts goes after deer and boar now and then.
 /// </summary>
 public readonly record struct EnemySpawn(
     Vector3 Center, float Radius, int Count, int MinLevel = 1, int MaxLevel = 3, int RespawnTicks = 240, bool Rare = false,
-    string[]? Types = null, Vector3[]? Route = null);
+    string[]? Types = null, Vector3[]? Route = null, bool Hunts = false);
 
 public enum EnemyAction : byte
 {
@@ -151,8 +152,17 @@ public sealed partial class Enemy
     public byte HitFlash;
     public float Facing;
 
-    /// <summary>The player this enemy is after, or -1.</summary>
+    /// <summary>
+    /// The player this enemy is after, or -1. From <see cref="CreatureBase"/> up it is another creature:
+    /// prey for a hunter, or the hunter a boar turns on.
+    /// </summary>
     public int TargetId = -1;
+
+    /// <summary>Target ids from here up name an enemy or animal: the id minus this.</summary>
+    public const int CreatureBase = 1_000_000;
+
+    /// <summary>Out hunting with its camp; animals run from it while this lasts.</summary>
+    public bool Hunting;
 
     /// <summary>The first player to hit this enemy gets the experience for it.</summary>
     public int TaggedBy = -1;
@@ -513,6 +523,12 @@ public sealed partial class Enemy
         var nearest = Def.AggroRange;
         foreach (var target in targets)
         {
+            // Only players are noticed; prey and hunters are given as targets on purpose.
+            if (target.Id >= CreatureBase)
+            {
+                continue;
+            }
+
             var distance = Vector3.Distance(target.Position, Position);
             if (distance < nearest)
             {

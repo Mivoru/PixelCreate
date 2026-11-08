@@ -118,7 +118,8 @@ public sealed partial class Enemy
             return;
         }
 
-        if (TargetId < 0)
+        // A hunter still looks out for players: one who comes close matters more than the prey.
+        if (TargetId < 0 || TargetId >= CreatureBase)
         {
             Notice(targets, events);
         }

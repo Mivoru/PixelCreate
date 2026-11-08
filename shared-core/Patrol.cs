@@ -43,7 +43,7 @@ public sealed class Patrol
             dead.Home = _spawn;
         }
 
-        if (living.Count == 0 || living.Any(m => m.TargetId >= 0 || m.Returning))
+        if (living.Count == 0 || living.Any(m => m.TargetId >= 0 || m.Returning || m.Hunting))
         {
             return;
         }

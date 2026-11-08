@@ -62,6 +62,11 @@ Rules:
   and back, resting at each, and small wild camps sit in Westwood, the Southern Wilds and south of East Watch. The
   zone audit keeps every patrol point reachable and every hostile camp or point over 50 m from the village. Put camps
   on flat ground: a slope check before placing saves a rebuild.
+- Camps and patrols marked `hunts` go after deer and wild boar now and then (`Hunt.cs`): up to three hunters, a
+  deer only if one can shoot or throw, the prey's position as their home while the chase lasts, then a meal where
+  it fell. Creature targets are ids from `Enemy.CreatureBase` up; `GameServer.CreatureTargets` adds hunters and
+  hunted to the target list (animals run from hunters, a boar fights back) and `Notice` ignores them, so a player
+  near always wins. `net-tests/HuntTests.cs`.
   Orcs fight by weapon: longswords swing flat (light) and send an `airSlash` crescent about 5 m (heavy); spears stab
   and throw (`spearThrow`, the spear is back in her hand at once); axes swing flat and split the ground in a small V
   (`earthCrack`, a `FireWallHazard` of kind `EarthCrack` drawn by `EarthCrackNode`, hurting only while it runs).
