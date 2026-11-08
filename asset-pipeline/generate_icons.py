@@ -685,28 +685,101 @@ def rgba(hex_color):
     return tuple(int(hex_color[i:i + 2], 16) for i in (0, 2, 4)) + (255,)
 
 
-def paint(shape, ramp):
+def paint_flat(shape, ramp, size=16):
+    """The shape in its colours, without an outline."""
     rows = [row for row in SHAPES[shape].strip("\n").split("\n")]
-    image = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
-    for y, row in enumerate(rows[:16]):
-        for x, char in enumerate(row[:16]):
+    image = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    for y, row in enumerate(rows[:size]):
+        for x, char in enumerate(row[:size]):
             if char in "1234":
                 image.putpixel((x, y), rgba(RAMPS[ramp][int(char) - 1]))
             elif char in ACCENTS:
                 image.putpixel((x, y), rgba(ACCENTS[char]))
+    return image
 
-    # One pixel of outline around the silhouette, with the four neighbours only, so corners stay soft.
+
+def outline(image):
+    """One pixel of the palette's darkest colour around the silhouette, with the four neighbours only, so corners stay soft."""
+    size = image.width
     outlined = image.copy()
-    for y in range(16):
-        for x in range(16):
+    for y in range(size):
+        for x in range(size):
             if image.getpixel((x, y))[3]:
                 continue
             for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
                 nx, ny = x + dx, y + dy
-                if 0 <= nx < 16 and 0 <= ny < 16 and image.getpixel((nx, ny))[3]:
+                if 0 <= nx < size and 0 <= ny < size and image.getpixel((nx, ny))[3]:
                     outlined.putpixel((x, y), rgba(OUTLINE))
                     break
     return outlined
+
+
+def scale2x(image):
+    """Scale2x (EPX): doubles pixel art and rounds its diagonals instead of leaving 2x2 blocks."""
+    w, h = image.size
+    out = Image.new("RGBA", (w * 2, h * 2), (0, 0, 0, 0))
+    px = image.load()
+
+    def get(x, y):
+        return px[x, y] if 0 <= x < w and 0 <= y < h else (0, 0, 0, 0)
+
+    for y in range(h):
+        for x in range(w):
+            p = px[x, y]
+            a, b, c, d = get(x, y - 1), get(x + 1, y), get(x - 1, y), get(x, y + 1)
+            e0 = e1 = e2 = e3 = p
+            if c == a and c != d and a != b:
+                e0 = a
+            if a == b and a != c and b != d:
+                e1 = b
+            if d == c and d != b and c != a:
+                e2 = c
+            if b == d and b != a and d != c:
+                e3 = d
+            out.putpixel((2 * x, 2 * y), e0)
+            out.putpixel((2 * x + 1, 2 * y), e1)
+            out.putpixel((2 * x, 2 * y + 1), e2)
+            out.putpixel((2 * x + 1, 2 * y + 1), e3)
+    return out
+
+
+def relight(image):
+    """
+    Light from the top left: a pixel on the silhouette's upper left edge steps one shade up its
+    ramp, one on the lower right edge one shade down. Colours outside every ramp stay as they are.
+    """
+    steps = {}
+    for ramp in RAMPS.values():
+        colors = [rgba(c) for c in ramp]
+        for i, color in enumerate(colors):
+            steps.setdefault(color, (colors[max(i - 1, 0)], colors[min(i + 1, len(colors) - 1)]))
+    size = image.width
+    px = image.load()
+    lit = image.copy()
+
+    def empty(nx, ny):
+        return not (0 <= nx < size and 0 <= ny < size) or not px[nx, ny][3]
+
+    for y in range(size):
+        for x in range(size):
+            color = px[x, y]
+            if not color[3] or color not in steps:
+                continue
+            if empty(x - 1, y) or empty(x, y - 1):
+                lit.putpixel((x, y), steps[color][1])
+            elif empty(x + 1, y) or empty(x, y + 1):
+                lit.putpixel((x, y), steps[color][0])
+    return lit
+
+
+def paint32(shape, ramp):
+    """A 32x32 icon from a 16x16 shape: doubled with Scale2x, edge-lit from the top left, outlined."""
+    return outline(relight(scale2x(paint_flat(shape, ramp))))
+
+
+def paint(shape, ramp):
+    """The 16x16 icon of a shape, outlined."""
+    return outline(paint_flat(shape, ramp))
 
 
 def main():
@@ -719,7 +792,7 @@ def main():
             image = weapon_icons.paint(item["icon"])
         else:
             shape, ramp = ICONS[item["icon"]]
-            image = paint(shape, ramp)
+            image = paint32(shape, ramp)
         image.save(OUT / f"{item['icon']}.png")
         painted.append((item["icon"], image))
 
