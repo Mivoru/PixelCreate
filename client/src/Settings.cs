@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Godot;
 
 namespace PixelCreate;
@@ -20,6 +21,18 @@ public static class Settings
     /// <summary>Mouse speed while a bow is drawn, as a share of the usual mouse speed.</summary>
     public static float AimSensitivity { get; set; } = 0.6f;
 
+    /// <summary>The places this player has found; the minimap names only these.</summary>
+    public static HashSet<string> Discovered { get; } = new();
+
+    /// <summary>Marks a place as found, and keeps it for next time.</summary>
+    public static void Discover(string place)
+    {
+        if (place.Length > 0 && Discovered.Add(place))
+        {
+            Save();
+        }
+    }
+
     public const float MinSensitivity = 0.2f;
     public const float MaxSensitivity = 3f;
 
@@ -32,6 +45,10 @@ public static class Settings
             MusicVolume = (float)file.GetValue("audio", "music", MusicVolume).AsDouble();
             Sensitivity = (float)file.GetValue("mouse", "sensitivity", Sensitivity).AsDouble();
             AimSensitivity = (float)file.GetValue("mouse", "aim", AimSensitivity).AsDouble();
+            foreach (var place in file.GetValue("map", "discovered", "").AsString().Split('|', System.StringSplitOptions.RemoveEmptyEntries))
+            {
+                Discovered.Add(place);
+            }
         }
 
         Apply();
@@ -44,6 +61,7 @@ public static class Settings
         file.SetValue("audio", "music", MusicVolume);
         file.SetValue("mouse", "sensitivity", Sensitivity);
         file.SetValue("mouse", "aim", AimSensitivity);
+        file.SetValue("map", "discovered", string.Join("|", Discovered));
         file.Save(Path);
         Apply();
     }

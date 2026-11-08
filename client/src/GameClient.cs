@@ -88,6 +88,7 @@ public partial class GameClient : Node
     private Snapshot? _lastSnapshot;
     private readonly Dictionary<int, IGroundHazard> _walls = new();
     private Zone _zone = null!;
+    private Minimap _minimap = null!;
     private string _region = "";
     private PixelStage _stage = null!;
     private UdpTransport _transport = null!;
@@ -152,6 +153,8 @@ public partial class GameClient : Node
 
         _hud = new Hud { Camera = _stage.Camera };
         AddChild(_hud);
+        _minimap = new Minimap(zone);
+        _hud.AddChild(_minimap);
         foreach (var npc in _world.Npcs)
         {
             if (NpcLooks.For(npc.Role) is { } look)
@@ -591,7 +594,13 @@ public partial class GameClient : Node
         if (region != _region && region.Length > 0)
         {
             _hud.ShowPlace(region);
+            Settings.Discover(region);
         }
+
+        _minimap.Size = new Vector2(Hud.MinimapSize, Hud.MinimapSize);
+        _minimap.Position = new Vector2(_hud.Size.X - Hud.MinimapSize - 28f, 28f);
+        _minimap.Player = new Vector2(shown.X, shown.Z);
+        _minimap.Yaw = _yaw;
 
         _region = region.Length > 0 ? region : _region;
     }

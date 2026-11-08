@@ -111,6 +111,9 @@ Rules:
 - Blender: `D:\Program\Blender Foundation\Blender 5.2\blender.exe -b --factory-startup -P <script>`.
 - Play: `powershell -ExecutionPolicy Bypass -File scripts/play.ps1` starts a local server and the client. Add `-Test` for test mode (gear kit). `PIXEL_FRAIL=1` gives the Guild examiner one hit point (the full check sets it).
 - Live check: add `-Capture <folder>` to that command. A bot plays, saves frames and prints a `STATS` line.
+- Minimap (`Minimap.cs`, top right, north = -Z up): the studio's `map` job renders `client/assets/ui/minimap.png`;
+  run it again after changing terrain, roads or buildings. Buildings are marked by model (`Minimap.Landmarks`), and
+  places appear once found (`Settings.Discovered`, saved in `user://settings.cfg`).
 - Esc opens the menu (`HudMenu.cs`): Resume, Settings (sound effects, music, mouse and bow aim sensitivity, saved by `Settings.cs` to `user://settings.cfg`) and Quit Game. Sounds play on the `SFX` bus; music belongs on `Music`. `PIXEL_BOT=menu` shows both pages.
 - `PIXEL_BOT` picks the bot: `hunt` kills animals near the spawn, loots, eats and opens the bag; `guild` plays the Guild story through the real interface and prints `BOT` stages,
   with `PIXEL_FRAIL=1` making the examiner frail. The examiner is a level 5 `duelist`:

@@ -247,6 +247,10 @@ public partial class Hud : Control
 
     public string Prompt { get; set; } = "";
 
+    /// <summary>The minimap's size, and the line under it where the right column of the HUD begins.</summary>
+    public const float MinimapSize = 210f;
+    public const float MinimapBottom = 28f + MinimapSize;
+
     /// <summary>Signs over things a player can use: where they float and what they say.</summary>
     public List<(Vector3 At, string Text)> Signs { get; } = new();
 
@@ -793,7 +797,8 @@ public partial class Hud : Control
     {
         var gold = (Snapshot?.Gold ?? 0).ToString();
         var goldWidth = Width(gold, 20, _bold);
-        var coin = new Rect2(Size.X - 74 - goldWidth, 34, 46 + goldWidth, 40);
+        // The minimap holds the top right corner; the gold and the objective sit under it.
+        var coin = new Rect2(Size.X - 74 - goldWidth, MinimapBottom + 10, 46 + goldWidth, 40);
         Card(coin, 20);
         DrawCircle(coin.Position + new Vector2(22, 20), 10, Accent);
         DrawCircle(coin.Position + new Vector2(22, 20), 6, new Color("d9a032"));
@@ -802,7 +807,7 @@ public partial class Hud : Control
         if (Objective.Length > 0)
         {
             var width = Mathf.Max(Width(Objective, 19), 180f) + 44f;
-            var rect = new Rect2(Size.X - 28 - width, 88, width, 72);
+            var rect = new Rect2(Size.X - 28 - width, MinimapBottom + 62, width, 72);
             Card(rect);
             Pill(new Rect2(rect.Position + new Vector2(10, 16), 4, 40), Accent);
             Label("OBJECTIVE", rect.Position + new Vector2(24, 28), 13, Accent, _bold);
@@ -828,7 +833,7 @@ public partial class Hud : Control
     /// <summary>Picked up items slide in on the right under the objective, then fade.</summary>
     private void DrawLootFeed()
     {
-        var y = 180f;
+        var y = MinimapBottom + 146f;
         foreach (var line in _lootFeed.AsEnumerable().Reverse())
         {
             var slide = 1f - Mathf.Clamp(line.Age * 5f, 0f, 1f);

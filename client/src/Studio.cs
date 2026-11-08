@@ -669,6 +669,9 @@ public partial class Studio : Node
         camera.LookAtFromPosition(new Vector3(0, 200, 0.01f), Vector3.Zero, Vector3.Forward);
         await Wait(4);
         Save("map_plain");
+
+        // The same picture is the game's minimap, north (-Z) up.
+        _stage.View.GetTexture().GetImage().SavePng(ProjectSettings.GlobalizePath("res://assets/ui/minimap.png"));
         _set.AddChild(Wire(zone.World.Boxes, new Color("ff2fd0")));
         foreach (var camp in zone.World.EnemySpawns)
         {

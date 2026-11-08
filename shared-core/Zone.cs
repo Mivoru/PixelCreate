@@ -301,6 +301,9 @@ public sealed class Zone
     /// <summary>True in a river or a lake.</summary>
     public bool IsWater(float x, float z) => Rivers.Any(r => PolylineDistance(r.Points, x, z) < r.Width * 1.45f) || InLake(x, z, 1f);
 
+    /// <summary>Every named place: its name, middle and radius, in metres.</summary>
+    public IEnumerable<(string Name, float X, float Z, float Radius)> Places => _regions.Select(r => (r.Name, r.X, r.Z, r.Radius));
+
     /// <summary>The name of the place at a point, or an empty string in the wilds between places.</summary>
     public string RegionAt(float x, float z)
     {
