@@ -20,6 +20,24 @@ public enum WeaponMove
     StaffPlant,
     ClawRaise,
     ClawRake,
+
+    /// <summary>A heavy blade drawn back over the right shoulder, before a flat swing.</summary>
+    SwingBack,
+
+    /// <summary>The blade swept flat across the front from right to left.</summary>
+    SwingAcross,
+
+    /// <summary>Both hands drive an axe down into the ground in front of the feet.</summary>
+    GroundChop,
+
+    /// <summary>A spear driven straight out in front at chest height.</summary>
+    SpearThrust,
+
+    /// <summary>A spear raised over the shoulder, point forward, the body leaning back to throw.</summary>
+    ThrowBack,
+
+    /// <summary>The throwing arm whipped forward and down; the spear has left the hand.</summary>
+    Throw,
 }
 
 /// <summary>What a character is doing this frame. The rig turns it into a pose.</summary>
@@ -1245,6 +1263,100 @@ public sealed class PlayerRig
                 _target[ThighL] = -0.7f;
                 _target[ThighR] = 0.5f;
                 _target[ShinR] = 0.5f;
+                break;
+            case WeaponMove.SwingBack:
+                _target[Twist] = 0.85f;
+                _target[Lean] = -0.1f;
+                _target[ArmR] = 1.9f;
+                _target[ArmRSide] = 1.0f;
+                _target[ForearmR] = -1.6f;
+                _target[SwordTilt] = 0.4f;
+                _target[SwordYaw] = -0.3f;
+                _target[ArmL] = 0.9f;
+                _target[ArmLSide] = -0.2f;
+                _target[ForearmL] = -0.9f;
+                _target[ThighL] = -0.2f;
+                _target[ThighR] = 0.25f;
+                _target[ShinR] = 0.2f;
+                break;
+            case WeaponMove.SwingAcross:
+                _target[Twist] = -0.95f;
+                _target[Lean] = 0.3f;
+                _target[ArmR] = 1.45f;
+                _target[ArmRSide] = -0.55f;
+                _target[ForearmR] = -0.15f;
+                _target[SwordTilt] = alongArm + 0.25f;
+                _target[SwordYaw] = 0.5f;
+                _target[ArmL] = 0.3f;
+                _target[ArmLSide] = 0.4f;
+                _target[ForearmL] = -0.9f;
+                _target[ThighL] = -0.55f;
+                _target[ThighR] = 0.45f;
+                _target[ShinR] = 0.35f;
+                _target[Bob] = -0.08f;
+                break;
+            case WeaponMove.GroundChop:
+                // Bent over a wide stance, both hands low, the axe head struck into the ground ahead.
+                _target[ArmR] = 1.0f;
+                _target[ArmL] = 1.0f;
+                _target[ArmRSide] = 0f;
+                _target[ForearmR] = -0.1f;
+                _target[ForearmL] = -0.15f;
+                _target[SwordTilt] = -0.5f;
+                _target[SwordYaw] = 0f;
+                _target[Lean] = 0.7f;
+                _target[Bob] = -0.18f;
+                _target[ThighL] = -0.6f;
+                _target[ThighR] = 0.5f;
+                _target[ShinL] = 0.5f;
+                _target[ShinR] = 0.4f;
+                break;
+            case WeaponMove.SpearThrust:
+                _target[ArmR] = 1.8f;
+                _target[ArmRSide] = 0f;
+                _target[ForearmR] = -0.05f;
+                _target[SwordTilt] = alongArm;
+                _target[SwordYaw] = 0f;
+                _target[ArmL] = 1.2f;
+                _target[ForearmL] = -0.6f;
+                _target[Twist] = -0.4f;
+                _target[Lean] = 0.25f;
+                _target[ThighL] = -0.6f;
+                _target[ThighR] = 0.5f;
+                _target[ShinR] = 0.4f;
+                break;
+            case WeaponMove.ThrowBack:
+                // The throwing arm drawn back level with the shoulder, the forearm up, the spear
+                // lying over the shoulder with its point forward; the free arm points at the target.
+                _target[ArmR] = 0.2f;
+                _target[ArmRSide] = 1.45f;
+                _target[ForearmR] = -1.7f;
+                _target[SwordTilt] = 0f;
+                _target[SwordYaw] = 0f;
+                _target[ArmL] = 1.5f;
+                _target[ArmLSide] = 0.1f;
+                _target[ForearmL] = -0.2f;
+                _target[Twist] = 0.75f;
+                _target[Lean] = -0.25f;
+                _target[ThighL] = -0.45f;
+                _target[ThighR] = 0.3f;
+                _target[ShinR] = 0.3f;
+                break;
+            case WeaponMove.Throw:
+                _target[ArmR] = 1.3f;
+                _target[ArmRSide] = -0.2f;
+                _target[ForearmR] = -0.1f;
+                _target[SwordTilt] = alongArm;
+                _target[SwordYaw] = 0f;
+                _target[ArmL] = -0.4f;
+                _target[ArmLSide] = 0.2f;
+                _target[ForearmL] = -0.5f;
+                _target[Twist] = -0.7f;
+                _target[Lean] = 0.45f;
+                _target[Bob] = -0.06f;
+                _target[ThighL] = -0.65f;
+                _target[ThighR] = 0.5f;
+                _target[ShinR] = 0.4f;
                 break;
             case WeaponMove.StaffPlant:
                 // Both hands drive the staff straight down into the ground.

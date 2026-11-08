@@ -630,6 +630,63 @@ public sealed class EnemyTests
         Assert.Equal(hits, server.Stats.PlayerHits);
     }
 
+    /// <summary>An orc of the given type stands this far in front of the player and uses one ability at once, then falls.</summary>
+    private static (GameServer Server, ClientPrediction Client, SimNetwork Network, long Hits) OrcFires(string id, string effect, float distance, float turn = 0f)
+    {
+        var (server, client, network) = StartGoblin(id, 12f);
+        Play(server, client, network, 30);
+        var orc = server.Enemies[0];
+        var player = server.GetPlayer(1)!.Value.Position;
+        orc.Position = player + new Vector3(0, 0, distance);
+        var at = orc.Position + Vector3.Transform(player - orc.Position, Matrix4x4.CreateRotationY(turn));
+        orc.LeapTarget = at;
+        orc.Facing = MathF.Atan2(-(at - orc.Position).X, -(at - orc.Position).Z);
+        var hits = server.Stats.PlayerHits;
+        ((IEnemyEvents)server).Fire(orc, orc.Def.Abilities!.Single(a => a.Effect == effect), new Target(1, at, Vector3.Zero));
+        orc.TakeHit(short.MaxValue, Vector3.Zero);
+        return (server, client, network, hits);
+    }
+
+    [Theory]
+    [InlineData("orc_warrior", 4f, 1)]
+    [InlineData("orc_huntress", 5.5f, 1)]
+    [InlineData("orc_warrior", 9f, 0)]
+    public void AirSlash_FliesOnlyAFewMetres(string id, float distance, int expected)
+    {
+        var (server, client, network, hits) = OrcFires(id, "airSlash", distance);
+        Play(server, client, network, 120);
+        Assert.Equal(hits + expected, server.Stats.PlayerHits);
+        Assert.Equal(0, server.ProjectileCount);
+    }
+
+    [Fact]
+    public void SpearThrow_HitsAPlayerFarAway()
+    {
+        var (server, client, network, hits) = OrcFires("orc_spearwoman", "spearThrow", 11f);
+        Play(server, client, network, 120);
+        Assert.Equal(hits + 1, server.Stats.PlayerHits);
+    }
+
+    [Fact]
+    public void EarthCrack_HitsInsideTheSmallVOnce()
+    {
+        var (server, client, network, hits) = OrcFires("orc_berserker", "earthCrack", 4f);
+        Assert.Equal(1, server.FireWallCount);
+        Play(server, client, network, 120);
+        Assert.Equal(hits + 1, server.Stats.PlayerHits);
+        Assert.Equal(0, server.FireWallCount);
+    }
+
+    [Theory]
+    [InlineData(4f, 0.9f)]
+    [InlineData(9f, 0f)]
+    public void EarthCrack_MissesOutsideTheV(float distance, float turn)
+    {
+        var (server, client, network, hits) = OrcFires("orc_berserker", "earthCrack", distance, turn);
+        Play(server, client, network, 120);
+        Assert.Equal(hits, server.Stats.PlayerHits);
+    }
+
     [Fact]
     public void Kills_DropCrystalsThatThePlayerLoots()
     {

@@ -51,6 +51,28 @@ public enum ProjectileKind : byte
     Fireball = 3,
     PlayerArrow = 4,
     PlayerFireball = 5,
+
+    /// <summary>An orc longsword's heavy blow: a standing crescent of air that flies a few metres.</summary>
+    AirSlash = 6,
+
+    /// <summary>An orc spearwoman's thrown spear. It flies flat and fast; she always has it back in hand.</summary>
+    ThrownSpear = 7,
+}
+
+/// <summary>What a ground hazard is: the shaman's burning V or a player's strip of fire, or an orc's crack in the earth.</summary>
+public enum HazardKind : byte
+{
+    Fire = 0,
+    EarthCrack = 1,
+}
+
+/// <summary>An orc battle axe's heavy blow splits the ground in a small V ahead of it. It hurts only while the crack runs.</summary>
+public static class EarthCrack
+{
+    public const float Length = 6.5f;
+    public const float HalfAngle = 0.33f;
+    public const int GrowTicks = 14;
+    public const int LingerTicks = 54;
 }
 
 /// <summary>A burning V on the ground. See <see cref="GameServer"/>.</summary>
@@ -66,6 +88,10 @@ public sealed class FireWallHazard
     /// of players, and is shorter and quicker; 0 means the shaman's V.
     /// </summary>
     public float HalfWidth;
+    public HazardKind Kind;
+
+    /// <summary>Half the opening of the V, in radians.</summary>
+    public float Angle = HalfAngle;
     public int Owner = -1;
     public float Span = MaxLength;
     public int Grow = GrowTicks;
@@ -106,6 +132,9 @@ public sealed class GameServer : IEnemyEvents
     private const float HitRadius = 0.9f;
     private const float SpitSplashRadius = 1.8f;
     private const int ProjectileLifeTicks = 170;
+    private const float AirSlashSpeed = 13f;
+    private const float AirSlashReach = 5f;
+    private const float SpearSpeed = 24f;
     private const float SpitLead = 0.6f;
     private const float VolleySpread = 0.2f;
     private const float SplashPush = 4f;
@@ -1096,6 +1125,26 @@ public sealed class GameServer : IEnemyEvents
             case "firewall":
                 FireWall(enemy, direction, ability.Damage);
                 break;
+            case "airSlash":
+                // The crescent leaves the blade at chest height and dies after a few metres.
+                var slash = Shoot(ProjectileKind.AirSlash, chest + Facing(enemy) * 0.8f, direction * AirSlashSpeed, ability.Damage);
+                slash.Life = (int)(AirSlashReach / AirSlashSpeed * Tuning.TickRate);
+                break;
+            case "spearThrow":
+                var spear = Shoot(ProjectileKind.ThrownSpear, chest + Vector3.UnitY * 0.3f, direction * SpearSpeed, ability.Damage);
+                spear.Gravity = Tuning.Gravity * 0.2f;
+                spear.Velocity.Y += spear.Gravity * 0.5f * (Vector3.Distance(aimPoint, chest) / SpearSpeed);
+                break;
+            case "earthCrack":
+                var ahead = direction with { Y = 0 };
+                ahead = ahead == Vector3.Zero ? Facing(enemy) : Vector3.Normalize(ahead);
+                _walls.Add(new FireWallHazard
+                {
+                    Id = _nextId++, Origin = enemy.Position + ahead * 0.8f, Direction = ahead, Damage = ability.Damage,
+                    Kind = HazardKind.EarthCrack, Angle = EarthCrack.HalfAngle, Span = EarthCrack.Length,
+                    Grow = EarthCrack.GrowTicks, Burn = EarthCrack.LingerTicks,
+                });
+                break;
         }
     }
 
@@ -1146,6 +1195,12 @@ public sealed class GameServer : IEnemyEvents
             if (wall.Owner >= 0)
             {
                 BurnEnemies(wall, length);
+                continue;
+            }
+
+            // A crack hurts only while it runs; the split ground left behind is harmless.
+            if (wall.Kind == HazardKind.EarthCrack && wall.Age > wall.Grow + 2)
+            {
                 continue;
             }
 
@@ -1209,7 +1264,7 @@ public sealed class GameServer : IEnemyEvents
             return false;
         }
 
-        return distance < FireWallHazard.Reach || Vector3.Dot(offset / distance, wall.Direction) >= MathF.Cos(FireWallHazard.HalfAngle);
+        return distance < FireWallHazard.Reach || Vector3.Dot(offset / distance, wall.Direction) >= MathF.Cos(wall.Angle);
     }
 
     /// <summary>
@@ -1460,7 +1515,7 @@ public sealed class GameServer : IEnemyEvents
                 Bag = BagSlice(player),
                 Gear = GearSlice(player),
                 FireWalls = _walls.Where(w => Vector3.Distance(w.Origin, origin) < InterestRange).Take(2)
-                    .Select(w => new FireWallView(w.Id, w.Origin, MathF.Atan2(-w.Direction.X, -w.Direction.Z), w.Length, w.HalfWidth)).ToArray(),
+                    .Select(w => new FireWallView(w.Id, w.Origin, MathF.Atan2(-w.Direction.X, -w.Direction.Z), w.Length, w.HalfWidth, w.Kind)).ToArray(),
             };
             _transport.Send(player.Id, Protocol.EncodeSnapshot(snapshot));
         }

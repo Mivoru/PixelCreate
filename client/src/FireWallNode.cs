@@ -8,7 +8,7 @@ namespace PixelCreate;
 /// A filled V of real-looking flame, or for a player's staff a straight strip of it. The front of
 /// the fire follows the length from the server.
 /// </summary>
-public sealed class FireWallNode
+public sealed class FireWallNode : IGroundHazard
 {
     private const float Spacing = 1.25f;
     private const float FlameSize = 1.9f;
@@ -93,4 +93,12 @@ public sealed class FireWallNode
         Size = Vector2.One,
         CenterOffset = new Vector3(0, 0.5f, 0),
     };
+}
+
+/// <summary>Something drawn on the ground for a hazard from the server, whose front follows the length it sends.</summary>
+public interface IGroundHazard
+{
+    Node3D Root { get; }
+
+    void Update(float length, float delta);
 }

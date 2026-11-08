@@ -206,15 +206,24 @@ public partial class Studio : Node
             IEnemyView view = def.Kind == "slime" ? new SlimeView() : new GoblinView(def);
             _set.AddChild(view.Root);
             var height = def.Size * 1.1f;
-            foreach (var (pose, yaw, distance, action) in new[]
+            var poses = new List<(string Pose, float Yaw, float Distance, EnemyAction Action, byte Ability)>
             {
-                ("front", 0f, 3.6f, EnemyAction.Idle), ("three", 0.7f, 4.2f, EnemyAction.Idle), ("windup", 0.5f, 4.2f, EnemyAction.Windup),
-                ("side", 1.57f, 4.2f, EnemyAction.Idle),
-            })
+                ("front", 0f, 3.6f, EnemyAction.Idle, 0), ("three", 0.7f, 4.2f, EnemyAction.Idle, 0), ("windup", 0.5f, 4.2f, EnemyAction.Windup, 0),
+                ("side", 1.57f, 4.2f, EnemyAction.Idle, 0),
+            };
+
+            // Orcs also show each ability: the wind-up and the blow, from three quarters.
+            for (var a = 0; def.Kind == "orc" && a < (def.Abilities?.Length ?? 0); a++)
+            {
+                poses.Add(($"{def.Abilities![a].Effect}_cast", 1.0f, 4.6f, EnemyAction.Cast, (byte)a));
+                poses.Add(($"{def.Abilities![a].Effect}_strike", 1.0f, 4.6f, EnemyAction.Strike, (byte)a));
+            }
+
+            foreach (var (pose, yaw, distance, action, ability) in poses)
             {
                 for (var frame = 0; frame < 50; frame++)
                 {
-                    var state = new EnemyView(1, (byte)index, 3, default, yaw, 10, 10, action, 0, new System.Numerics.Vector3(0, 0, -2), true);
+                    var state = new EnemyView(1, (byte)index, 3, default, yaw, 10, 10, action, 0, new System.Numerics.Vector3(0, 0, -2), true, ability);
                     view.Update(state, Vector3.Zero, Step, sfx);
                     await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
                 }

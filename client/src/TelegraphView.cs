@@ -18,6 +18,7 @@ public sealed class TelegraphView
     private Vector3 _lastEnd;
     private float _lastRadius;
     private float _lastYaw;
+    private float _lastAngle;
 
     public TelegraphView(World world, Fx fx, Node parent, Color? color = null)
     {
@@ -56,21 +57,22 @@ public sealed class TelegraphView
     }
 
     /// <summary>Shows the filled V of a fire wall, up to the given length.</summary>
-    public void ShowWedge(Vector3 origin, float yaw, float length, float strength)
+    public void ShowWedge(Vector3 origin, float yaw, float length, float strength, float halfAngle = FireWallHazard.HalfAngle)
     {
         _node.Visible = true;
         _fill.SetShaderParameter("strength", strength);
         if (Mathf.Abs(length - _lastRadius) > 0.05f || origin.DistanceSquaredTo(_lastCenter) > 0.01f ||
-            Mathf.Abs(Mathf.AngleDifference(yaw, _lastYaw)) > 0.01f)
+            Mathf.Abs(Mathf.AngleDifference(yaw, _lastYaw)) > 0.01f || !Mathf.IsEqualApprox(halfAngle, _lastAngle))
         {
             _lastCenter = origin;
             _lastRadius = length;
             _lastYaw = yaw;
-            BuildWedge(origin, yaw, length);
+            _lastAngle = halfAngle;
+            BuildWedge(origin, yaw, length, halfAngle);
         }
     }
 
-    private void BuildWedge(Vector3 origin, float yaw, float length)
+    private void BuildWedge(Vector3 origin, float yaw, float length, float halfAngle)
     {
         var surface = new SurfaceTool();
         surface.Begin(Mesh.PrimitiveType.Triangles);
@@ -82,8 +84,8 @@ public sealed class TelegraphView
             var far = length * (row + 1) / rows;
             for (var column = 0; column < columns; column++)
             {
-                var a = Mathf.Lerp(-FireWallHazard.HalfAngle, FireWallHazard.HalfAngle, column / (float)columns) + yaw;
-                var b = Mathf.Lerp(-FireWallHazard.HalfAngle, FireWallHazard.HalfAngle, (column + 1) / (float)columns) + yaw;
+                var a = Mathf.Lerp(-halfAngle, halfAngle, column / (float)columns) + yaw;
+                var b = Mathf.Lerp(-halfAngle, halfAngle, (column + 1) / (float)columns) + yaw;
                 var p0 = Spoke(origin, a, near);
                 var p1 = Spoke(origin, b, near);
                 var p2 = Spoke(origin, a, far);

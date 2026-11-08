@@ -53,6 +53,10 @@ Rules:
   photographs every weapon up close. Dagger attacks and the bow place the hands with keys and reach (`PlayerRig.Reach`).
 - Test a far area: set `PIXEL_SPAWN=x,z` before starting the server.
 - Enemy abilities and crystal drops are data in `world/enemies.json`; new effects go in `GameServer.Fire`.
+  Orcs fight by weapon: longswords swing flat (light) and send an `airSlash` crescent about 5 m (heavy); spears stab
+  and throw (`spearThrow`, the spear is back in her hand at once); axes swing flat and split the ground in a small V
+  (`earthCrack`, a `FireWallHazard` of kind `EarthCrack` drawn by `EarthCrackNode`, hurting only while it runs).
+  The studio's monsters job films each orc ability's wind-up and blow.
 - Interiors live outside the map on platforms (the guild at x 420, the trial ground at x 480). Doors are portals.
 - Character models come from Blender (`anime_*`) and use `toon.gdshader`, which also bends hair and cloth.
 - Sound effects come from ElevenLabs: `python asset-pipeline/generate_sounds.py` (cached, keys stay outside the repo).

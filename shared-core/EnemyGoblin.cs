@@ -2,7 +2,8 @@ using System.Numerics;
 
 namespace PixelCreate.Core;
 
-/// <summary>One thing an enemy can do. Effects: melee, dashStrike, slam, spin, arrow, volley, powershot, fireball, firewall.</summary>
+/// <summary>One thing an enemy can do. Effects: melee, dashStrike, slam, spin, arrow, volley, powershot, fireball, firewall,
+/// airSlash (a flying crescent), spearThrow (a thrown spear) and earthCrack (a small V of split ground).</summary>
 public sealed record Ability(
     string Effect, float Range, int WindupTicks, int RecoverTicks, int CooldownTicks, short Damage,
     float Radius = 0f, float MinRange = 0f, string Telegraph = "none");

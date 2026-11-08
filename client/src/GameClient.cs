@@ -86,7 +86,7 @@ public partial class GameClient : Node
     private readonly Dictionary<int, Node3D> _crystals = new();
     private readonly int[] _lastCrystals = new int[Crystals.Tiers];
     private Snapshot? _lastSnapshot;
-    private readonly Dictionary<int, FireWallNode> _walls = new();
+    private readonly Dictionary<int, IGroundHazard> _walls = new();
     private Zone _zone = null!;
     private string _region = "";
     private PixelStage _stage = null!;
@@ -1199,10 +1199,16 @@ public partial class GameClient : Node
             alive.Add(wall.Id);
             if (!_walls.TryGetValue(wall.Id, out var node))
             {
-                node = new FireWallNode(_world, _fx, ToGodot(wall.Origin), wall.Yaw, wall.HalfWidth);
+                var crack = wall.Kind == HazardKind.EarthCrack;
+                node = crack
+                    ? new EarthCrackNode(_world, _fx, ToGodot(wall.Origin), wall.Yaw)
+                    : new FireWallNode(_world, _fx, ToGodot(wall.Origin), wall.Yaw, wall.HalfWidth);
                 _walls.Add(wall.Id, node);
                 _stage.View.AddChild(node.Root);
-                _sfx.Play("fire_wall", ToGodot(wall.Origin));
+                if (!crack)
+                {
+                    _sfx.Play("fire_wall", ToGodot(wall.Origin));
+                }
             }
 
             node.Update(wall.Length, delta);
@@ -1248,7 +1254,9 @@ public partial class GameClient : Node
         else if (ability.Telegraph == "wedge")
         {
             var flat = new Vector2(target.X - position.X, target.Z - position.Z);
-            telegraph.ShowWedge(position, Mathf.Atan2(-flat.X, -flat.Y), FireWallHazard.MaxLength, 0.42f);
+            var crack = ability.Effect == "earthCrack";
+            telegraph.ShowWedge(position, Mathf.Atan2(-flat.X, -flat.Y), crack ? EarthCrack.Length + 0.8f : FireWallHazard.MaxLength, 0.42f,
+                crack ? EarthCrack.HalfAngle : FireWallHazard.HalfAngle);
         }
         else if (ability.Telegraph == "circle")
         {
@@ -1377,7 +1385,8 @@ public partial class GameClient : Node
                 _spits.Add(spit.Id, ball);
                 _spitKinds.Add(spit.Id, spit.Kind);
                 _stage.View.AddChild(ball);
-                if (spit.Kind != ProjectileKind.PlayerArrow)
+                // The orcs' slash and spear already sounded with the swing that sent them.
+                if (spit.Kind is not (ProjectileKind.PlayerArrow or ProjectileKind.AirSlash or ProjectileKind.ThrownSpear))
                 {
                     _sfx.Play(spit.Kind switch
                     {
@@ -1391,7 +1400,8 @@ public partial class GameClient : Node
 
             var motion = target - ball.Position;
             ball.Position = ball.Position.Lerp(target, spit.Kind == ProjectileKind.PowerArrow ? 1f : blend);
-            if (spit.Kind is ProjectileKind.Arrow or ProjectileKind.PowerArrow or ProjectileKind.PlayerArrow && motion.LengthSquared() > 0.0001f)
+            if (spit.Kind is ProjectileKind.Arrow or ProjectileKind.PowerArrow or ProjectileKind.PlayerArrow or ProjectileKind.AirSlash or ProjectileKind.ThrownSpear
+                && motion.LengthSquared() > 0.0001f)
             {
                 ball.LookAt(ball.GlobalPosition + motion, Vector3.Up);
             }
@@ -1430,6 +1440,15 @@ public partial class GameClient : Node
                 _fx.Burst(last, new Color("fee761"), 18, 5f, 0.45f, 0.09f, -3f, 90f);
                 _fx.Puddle(ground, new Color("3e2731"), 1.8f, 1.2f);
                 break;
+            case ProjectileKind.AirSlash:
+                // The crescent frays into a puff of pale wind where it dies.
+                _fx.Burst(last, new Color("c0cbdc"), 16, 5f, 0.35f, 0.07f, 0f, 120f);
+                _fx.Burst(last, new Color("ffffff"), 8, 3f, 0.25f, 0.05f, 0f, 120f);
+                break;
+            case ProjectileKind.ThrownSpear:
+                _sfx.Play("arrow_hit", last);
+                _fx.Burst(last, new Color("b86f50"), 10, 4f, 0.35f, 0.07f);
+                break;
             default:
                 _sfx.Play("arrow_hit", last, -5f);
                 _fx.Burst(last, new Color("b8a58a"), 5, 3f, 0.25f, 0.05f);
@@ -1455,6 +1474,16 @@ public partial class GameClient : Node
             };
             shaft.AddChild(Trail(new Color("ffffff"), 14, 0.18f, 0.04f));
             return shaft;
+        }
+
+        if (kind == ProjectileKind.AirSlash)
+        {
+            return BuildAirSlash(position);
+        }
+
+        if (kind == ProjectileKind.ThrownSpear)
+        {
+            return BuildThrownSpear(position);
         }
 
         if (kind is ProjectileKind.Arrow or ProjectileKind.PowerArrow)
@@ -1484,6 +1513,82 @@ public partial class GameClient : Node
         ball.AddChild(Trail(new Color("f77622"), 30, 0.5f, 0.15f, 4f));
         ball.AddChild(Trail(new Color("e43b44"), 14, 0.65f, 0.1f, 5f));
         return ball;
+    }
+
+    /// <summary>
+    /// A standing crescent of cut air, as tall as a man, bulging forward along its flight (-Z) with
+    /// thin tips; a white core inside a pale blue edge, shedding wisps behind it.
+    /// </summary>
+    private MeshInstance3D BuildAirSlash(Vector3 position)
+    {
+        static ArrayMesh Crescent(float radius, float thickness)
+        {
+            var surface = new SurfaceTool();
+            surface.Begin(Mesh.PrimitiveType.Triangles);
+            const int steps = 14;
+            const float sweep = 1.25f;
+            for (var i = 0; i < steps; i++)
+            {
+                Vector3 Outer(float t) => new(0, Mathf.Sin(t) * radius, -Mathf.Cos(t) * radius + radius * 0.6f);
+                Vector3 Inner(float t)
+                {
+                    var r = radius - thickness * Mathf.Cos(t / sweep * Mathf.Pi / 2f);
+                    return new Vector3(0, Mathf.Sin(t) * r, -Mathf.Cos(t) * r + radius * 0.6f);
+                }
+
+                var a = Mathf.Lerp(-sweep, sweep, i / (float)steps);
+                var b = Mathf.Lerp(-sweep, sweep, (i + 1) / (float)steps);
+                // Both faces, so the crescent shows from either side.
+                foreach (var flip in new[] { false, true })
+                {
+                    var quad = new[] { Outer(a), Inner(a), Outer(b), Inner(b) };
+                    var order = flip ? new[] { 0, 2, 1, 1, 2, 3 } : new[] { 0, 1, 2, 1, 3, 2 };
+                    foreach (var index in order)
+                    {
+                        surface.AddVertex(quad[index]);
+                    }
+                }
+            }
+
+            var mesh = new ArrayMesh();
+            surface.Commit(mesh);
+            return mesh;
+        }
+
+        var slash = new MeshInstance3D
+        {
+            Mesh = Crescent(0.95f, 0.3f),
+            MaterialOverride = _fx.Stipple(new Color("8b9bb4"), 0.9f),
+            Position = position,
+        };
+        slash.AddChild(new MeshInstance3D
+        {
+            Mesh = Crescent(0.9f, 0.14f),
+            MaterialOverride = _fx.Stipple(new Color("ffffff"), 1f),
+            Position = new Vector3(0, 0, -0.04f),
+        });
+        slash.AddChild(Trail(new Color("c0cbdc"), 24, 0.3f, 0.07f));
+        return slash;
+    }
+
+    /// <summary>The spearwoman's spear in flight: a long dark shaft with an iron head, point first.</summary>
+    private MeshInstance3D BuildThrownSpear(Vector3 position)
+    {
+        var shaft = new MeshInstance3D
+        {
+            Mesh = new BoxMesh { Size = new Vector3(0.06f, 0.06f, 2.1f) },
+            MaterialOverride = _fx.Stipple(new Color("733e39"), 1f),
+            Position = position,
+        };
+        shaft.AddChild(new MeshInstance3D
+        {
+            Mesh = new PrismMesh { Size = new Vector3(0.14f, 0.34f, 0.04f) },
+            MaterialOverride = _fx.Stipple(new Color("c0cbdc"), 1f),
+            Position = new Vector3(0, 0, -1.2f),
+            Rotation = new Vector3(-Mathf.Pi / 2f, 0, 0),
+        });
+        shaft.AddChild(Trail(new Color("ead4aa"), 10, 0.18f, 0.04f));
+        return shaft;
     }
 
     private CpuParticles3D Trail(Color color, int amount, float life, float size, float rise = 0f) => new()

@@ -96,7 +96,7 @@
     "aggroRange": 13, "preferredRange": 2.4, "tagHeight": 2.6,
     "abilities": [
       { "effect": "melee", "range": 2.8, "windupTicks": 22, "recoverTicks": 18, "cooldownTicks": 40, "damage": 18, "radius": 1.6 },
-      { "effect": "slam", "range": 3.0, "windupTicks": 44, "recoverTicks": 30, "cooldownTicks": 220, "damage": 32, "radius": 1.8, "telegraph": "circle" }
+      { "effect": "airSlash", "range": 6, "windupTicks": 40, "recoverTicks": 26, "cooldownTicks": 200, "damage": 28, "telegraph": "line" }
     ],
     "drops": [{ "rarity": 0, "chance": 1 }, { "rarity": 1, "chance": 0.12 }, { "rarity": 2, "chance": 0.02 }],
     "gear": { "chance": 0.07, "rarity": [50, 32, 14, 4], "items": ["iron_helm", "chain_leggings", "hide_vest"] },
@@ -108,7 +108,7 @@
     "aggroRange": 15, "preferredRange": 2.4, "tagHeight": 2.7,
     "abilities": [
       { "effect": "melee", "range": 2.8, "windupTicks": 20, "recoverTicks": 16, "cooldownTicks": 36, "damage": 20, "radius": 1.7 },
-      { "effect": "spin", "range": 3.6, "windupTicks": 50, "recoverTicks": 36, "cooldownTicks": 260, "damage": 26, "radius": 3.8, "telegraph": "circle" }
+      { "effect": "earthCrack", "range": 6, "windupTicks": 44, "recoverTicks": 32, "cooldownTicks": 240, "damage": 30, "telegraph": "wedge" }
     ],
     "drops": [{ "rarity": 0, "chance": 1 }, { "rarity": 1, "chance": 0.14 }, { "rarity": 2, "chance": 0.03 }],
     "gear": { "chance": 0.07, "rarity": [50, 32, 14, 4], "items": ["hide_vest", "boar_boots", "iron_helm"] },
@@ -120,7 +120,7 @@
     "aggroRange": 14, "preferredRange": 3.0, "tagHeight": 2.4,
     "abilities": [
       { "effect": "melee", "range": 3.4, "windupTicks": 18, "recoverTicks": 16, "cooldownTicks": 34, "damage": 16, "radius": 1.4 },
-      { "effect": "dashStrike", "range": 9, "minRange": 3.5, "windupTicks": 26, "recoverTicks": 22, "cooldownTicks": 220, "damage": 26, "radius": 1.6, "telegraph": "line" }
+      { "effect": "spearThrow", "range": 14, "minRange": 4, "windupTicks": 34, "recoverTicks": 26, "cooldownTicks": 200, "damage": 24, "telegraph": "line" }
     ],
     "drops": [{ "rarity": 0, "chance": 1 }, { "rarity": 1, "chance": 0.12 }, { "rarity": 2, "chance": 0.02 }],
     "gear": { "chance": 0.07, "rarity": [50, 32, 14, 4], "items": ["leather_jerkin", "chain_leggings", "archer_hood"] },
@@ -132,7 +132,7 @@
     "aggroRange": 16, "preferredRange": 2.4, "tagHeight": 2.4,
     "abilities": [
       { "effect": "melee", "range": 2.8, "windupTicks": 16, "recoverTicks": 14, "cooldownTicks": 30, "damage": 16, "radius": 1.5 },
-      { "effect": "dashStrike", "range": 8, "minRange": 3, "windupTicks": 24, "recoverTicks": 20, "cooldownTicks": 200, "damage": 24, "radius": 1.7, "telegraph": "line" }
+      { "effect": "airSlash", "range": 6, "windupTicks": 34, "recoverTicks": 22, "cooldownTicks": 190, "damage": 24, "telegraph": "line" }
     ],
     "drops": [{ "rarity": 0, "chance": 1 }, { "rarity": 1, "chance": 0.14 }, { "rarity": 2, "chance": 0.03 }],
     "gear": { "chance": 0.07, "rarity": [50, 32, 14, 4], "items": ["leather_jerkin", "patched_trousers", "boar_boots"] },

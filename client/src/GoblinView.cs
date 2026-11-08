@@ -87,6 +87,9 @@ public sealed class GoblinView : IEnemyView
         Root.Rotation = new Vector3(0, enemy.Facing + _spin, 0);
         Root.Visible = enemy.Action != EnemyAction.Dead;
         _rig.Flash = enemy.HitFlash > 0;
+
+        // A thrown spear leaves the hand and is back in it once she recovers; she never fetches it.
+        _rig.SwordVisible = !(enemy.Action == EnemyAction.Strike && ability?.Effect == "spearThrow");
         _rig.Animate(new MotionState(speed > 20f ? 0f : speed, true, 0f, false, AttackKind.None, 0, MoveFor(enemy.Action, ability)), delta);
     }
 
@@ -103,10 +106,15 @@ public sealed class GoblinView : IEnemyView
             return winding ? WeaponMove.ClawRaise : WeaponMove.ClawRake;
         }
 
-        if (_def.Weapon is "longsword" or "axe" && ability.Effect is "melee" or "slam")
+        if (_def.Weapon is "longsword" or "axe" && ability.Effect is "melee" or "dashStrike")
         {
-            // Heavy blades come down from overhead.
-            return winding ? WeaponMove.ClubRaise : WeaponMove.ClubSmash;
+            // An orc's plain blow with a heavy blade is a flat swing from the right.
+            return winding ? WeaponMove.SwingBack : WeaponMove.SwingAcross;
+        }
+
+        if (_def.Weapon == "spear" && ability.Effect == "melee")
+        {
+            return winding ? WeaponMove.StabWindup : WeaponMove.SpearThrust;
         }
 
         return ability.Effect switch
@@ -117,6 +125,9 @@ public sealed class GoblinView : IEnemyView
             "spin" => winding ? WeaponMove.ClubRaise : WeaponMove.ClubSpin,
             "fireball" => winding ? WeaponMove.StaffRaise : WeaponMove.StaffThrust,
             "firewall" => WeaponMove.StaffPlant,
+            "airSlash" => winding ? WeaponMove.ClubRaise : WeaponMove.ClubSmash,
+            "earthCrack" => winding ? WeaponMove.ClubRaise : WeaponMove.GroundChop,
+            "spearThrow" => winding ? WeaponMove.ThrowBack : WeaponMove.Throw,
             _ => WeaponMove.None,
         };
     }
@@ -144,6 +155,9 @@ public sealed class GoblinView : IEnemyView
                 {
                     "slam" => "club_slam",
                     "spin" => "club_spin",
+                    "airSlash" => "air_slash",
+                    "spearThrow" => "spear_throw",
+                    "earthCrack" => "earth_crack",
                     "melee" or "dashStrike" => _def.Kind == "werewolf" ? "werewolf_swipe" : _def.Kind == "orc" ? "orc_swing" : "goblin_swing",
                     _ => null,
                 };
