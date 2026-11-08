@@ -43,11 +43,14 @@ Rules:
   runtimes in shared code, such as casting a negative float to an unsigned integer. A live run with
   many corrections and no hits means client and server simulate differently.
 - All game text is English. Enemy types live in `world/enemies.json`. Items live in `world/items.json`
-  (crystals first, then materials, food and equipment); each enemy's `loot` table names them. The
+  (crystals first, then materials, food, potions and equipment); each enemy's `loot` table names them. The
   server owns the bag and sends it in slices; the client only decides which slot shows what. Gear pieces are server-owned instances (`Gear.cs`): base item,
   rarity, level and affixes from `world/affixes.json`; worn gear feeds `GearStats` into every blow and hit. Each enemy's
   `gear` table in `enemies.json` sets its drop chance, rarity weights and base items; `GearTests` prints pieces per hour.
   Gear commands start at `GearCommands.ToggleBase`. The worn weapon sets `PlayerState.Weapon`, which picks the attacks in `Movement.Step` (daggers: a two-stab flurry and a predicted leap; bow: hold to draw, release to loose a server arrow exactly along the fine aim in `InputCmd.AimYaw`/`AimPitch`, with no aim assist, a minimum draw and a range set in `Tuning`; the client aims over the shoulder and takes the aim from the point under the crosshair). Clubs swing in a wide arc (light) and spin once round (heavy); staves cast a fireball through the crosshair (light) and a straight strip of fire ahead (heavy, a player-owned `FireWallHazard`). `PIXEL_BOT=bow`, `club` or `staff` with `PIXEL_TEST=1` fights with that weapon. `PIXEL_BOT=gear` with `PIXEL_TEST=1` checks the bag and tooltips. Food is eaten with the command range from `ItemCommands.EatBase`.
+  Potions (`kind: potion`) drink the same way with a shared 3 s cooldown; three potion slots sit beside the hotbar
+  (Z, X, C, client-side shortcuts). Shops sell items whose `shop` names the keeper's role (`ItemDef.Wares`,
+  `ShopCommands.BuyBase`); Wren the alchemist has her stall by the Guild road.
 - Item icons: `python asset-pipeline/generate_icons.py --sheet` paints every icon at 32x32: text shapes at 16x16 doubled with Scale2x and edge-lit
   and writes a preview to `export/previews/icons.png`. A test fails if an item has no icon. Weapons get
   32x32 icons painted from their profile in `asset-pipeline/weapon_icons.py`. The HUD scales icons by whole
