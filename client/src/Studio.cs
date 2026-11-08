@@ -319,6 +319,8 @@ public partial class Studio : Node
         {
             ("sword", new[] { AttackKind.Light, AttackKind.Heavy }),
             ("dagger", new[] { AttackKind.DaggerFlurry, AttackKind.DaggerLeap }),
+            ("club", new[] { AttackKind.ClubSwing, AttackKind.ClubSpin }),
+            ("staff", new[] { AttackKind.StaffBolt, AttackKind.StaffWall }),
         })
         {
             foreach (var kind in kinds)

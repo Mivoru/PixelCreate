@@ -50,6 +50,7 @@ public enum ProjectileKind : byte
     PowerArrow = 2,
     Fireball = 3,
     PlayerArrow = 4,
+    PlayerFireball = 5,
 }
 
 /// <summary>A burning V on the ground. See <see cref="GameServer"/>.</summary>
@@ -59,6 +60,16 @@ public sealed class FireWallHazard
     public const float MaxLength = 15f;
     public const int GrowTicks = 48;
     public const int BurnTicks = 80;
+
+    /// <summary>
+    /// A player's wall is a straight strip of this half width instead of a V, burns enemies instead
+    /// of players, and is shorter and quicker; 0 means the shaman's V.
+    /// </summary>
+    public float HalfWidth;
+    public int Owner = -1;
+    public float Span = MaxLength;
+    public int Grow = GrowTicks;
+    public int Burn = BurnTicks;
 
     /// <summary>How far past the edge of the flames a player still gets burnt, in metres.</summary>
     public const float Reach = 0.5f;
@@ -70,7 +81,7 @@ public sealed class FireWallHazard
     public int Age;
     public readonly HashSet<int> Struck = new();
 
-    public float Length => MaxLength * MathF.Min(1f, Age / (float)GrowTicks);
+    public float Length => Span * MathF.Min(1f, Age / (float)Grow);
 }
 
 /// <summary>The authoritative game. It owns every player and enemy, and knows nothing about rendering.</summary>
@@ -177,6 +188,9 @@ public sealed class GameServer : IEnemyEvents
 
         /// <summary>For a player's arrow: who loosed it and how far the bow was drawn, as a share of a full draw.</summary>
         public int Shooter = -1;
+
+        /// <summary>For a player's shot, the attack whose damage it carries.</summary>
+        public AttackKind Blow = AttackKind.BowShot;
         public float Draw = 1f;
         public Vector3 Position;
         public Vector3 Velocity;
@@ -344,9 +358,9 @@ public sealed class GameServer : IEnemyEvents
             {
                 enemy.Step(_world, _random, targets, this);
             }
-
-            StepWalls();
         }
+
+        StepWalls();
 
         StepProjectiles();
 
@@ -398,7 +412,7 @@ public sealed class GameServer : IEnemyEvents
             if (_options.TestMode)
             {
                 // Test runs start with one piece of each rarity, so gear can be checked at once.
-                var kit = new[] { "twin_daggers", "iron_helm", "leather_jerkin", "chain_leggings", "hunters_longbow" };
+                var kit = new[] { "twin_daggers", "iron_helm", "leather_jerkin", "chain_leggings", "hunters_longbow", "spiked_club", "bone_staff" };
                 for (var i = 0; i < kit.Length; i++)
                 {
                     player.Gear[i + 1] = GearPiece.Roll(ItemDef.Index(kit[i]), (Rarity)(i % 4), 5, _random);
@@ -445,8 +459,10 @@ public sealed class GameServer : IEnemyEvents
         player.NextTick++;
         var drawing = player.State.DrawTicks > 0;
         var landed = Movement.Step(ref player.State, command, _world);
-        if (drawing && player.State.DrawTicks == 0)
+        if ((drawing && player.State.DrawTicks == 0) ||
+            (player.State.Attack is AttackKind.StaffBolt or AttackKind.StaffWall && player.State.AttackTick == 0))
         {
+            // A spell is aimed where the player pointed when it began.
             player.ShotYaw = command.AimYaw;
             player.ShotPitch = command.AimPitch;
         }
@@ -454,6 +470,14 @@ public sealed class GameServer : IEnemyEvents
         if (landed == AttackKind.BowShot)
         {
             Loose(player);
+        }
+        else if (landed == AttackKind.StaffBolt)
+        {
+            CastFireball(player);
+        }
+        else if (landed == AttackKind.StaffWall)
+        {
+            CastWall(player);
         }
         else if (landed != AttackKind.None)
         {
@@ -1111,8 +1135,20 @@ public sealed class GameServer : IEnemyEvents
     {
         foreach (var wall in _walls)
         {
+            // Frozen enemies (in tests) hold their own fire still; a player's still burns.
+            if (EnemiesFrozen && wall.Owner < 0)
+            {
+                continue;
+            }
+
             wall.Age++;
             var length = wall.Length;
+            if (wall.Owner >= 0)
+            {
+                BurnEnemies(wall, length);
+                continue;
+            }
+
             foreach (var player in _players.Values)
             {
                 if (!wall.Struck.Contains(player.Id) && InWedge(wall, player.State.Position, length))
@@ -1123,7 +1159,45 @@ public sealed class GameServer : IEnemyEvents
             }
         }
 
-        _walls.RemoveAll(w => w.Age > FireWallHazard.GrowTicks + FireWallHazard.BurnTicks);
+        _walls.RemoveAll(w => w.Age > w.Grow + w.Burn || (w.Owner >= 0 && !_players.ContainsKey(w.Owner)));
+    }
+
+    /// <summary>A player's line of fire: every enemy inside the strip takes the staff's blow, once.</summary>
+    private void BurnEnemies(FireWallHazard wall, float length)
+    {
+        var caster = _players[wall.Owner];
+        foreach (var enemy in _enemies.ToList())
+        {
+            if (!enemy.Alive || wall.Struck.Contains(enemy.Id) || !InStrip(wall, enemy.Position, length, enemy.Def.Size * 0.4f))
+            {
+                continue;
+            }
+
+            wall.Struck.Add(enemy.Id);
+            Smite(caster, enemy, AttackKind.StaffWall, 1f, wall.Origin);
+        }
+    }
+
+    private static bool InStrip(FireWallHazard wall, Vector3 position, float length, float margin)
+    {
+        var offset = (position - wall.Origin) with { Y = 0 };
+        var along = Vector3.Dot(offset, wall.Direction);
+        var across = MathF.Abs(offset.X * wall.Direction.Z - offset.Z * wall.Direction.X);
+        return along >= -margin && along <= length + margin && across <= wall.HalfWidth + margin;
+    }
+
+    /// <summary>One blow of a player's attack on an enemy, scaled by share, with all that follows from it.</summary>
+    private void Smite(Player player, Enemy enemy, AttackKind kind, float share, Vector3 from)
+    {
+        var damage = (short)Math.Max(1, MathF.Round(BlowDamage(player, kind, enemy) * share));
+        var killed = enemy.TakeHit(damage, from, player.Id);
+        AfterBlow(player, enemy, damage);
+        Stats.EnemyHits++;
+        CallForHelp(enemy, player.Id);
+        if (killed)
+        {
+            OnKilled(enemy, player);
+        }
     }
 
     private static bool InWedge(FireWallHazard wall, Vector3 position, float length)
@@ -1161,6 +1235,51 @@ public sealed class GameServer : IEnemyEvents
             Shooter = player.Id,
             Draw = Tuning.DrawShare(player.State.ShotDraw),
             Life = (int)MathF.Ceiling(Tuning.ArrowRange(drawn) / speed * Tuning.TickRate),
+        });
+    }
+
+    /// <summary>The aim a player last fixed for a shot or a spell, as a direction, and flat.</summary>
+    private static (Vector3 Aim, Vector3 Flat) ShotDirection(Player player)
+    {
+        var yaw = player.ShotYaw / 65536f * MathF.Tau;
+        var pitch = Math.Clamp(player.ShotPitch / 65536f * MathF.Tau, -Tuning.MaxShotPitch, Tuning.MaxShotPitch);
+        var flat = new Vector3(-MathF.Sin(yaw), 0, -MathF.Cos(yaw));
+        return (flat * MathF.Cos(pitch) + Vector3.UnitY * MathF.Sin(pitch), flat);
+    }
+
+    /// <summary>A fireball from the staff, straight along the aim; it bursts on what it meets.</summary>
+    private void CastFireball(Player player)
+    {
+        var (aim, flat) = ShotDirection(player);
+        _projectiles.Add(new Projectile
+        {
+            Id = _nextId++,
+            Kind = ProjectileKind.PlayerFireball,
+            Damage = 0,
+            Position = ArrowOrigin(player.State.Position, flat) + flat * 0.4f,
+            Velocity = aim * Tuning.StaffBoltSpeed,
+            Shooter = player.Id,
+            Blow = AttackKind.StaffBolt,
+            SplashRadius = Tuning.StaffBoltSplash,
+            Life = (int)MathF.Ceiling(Tuning.StaffBoltRange / Tuning.StaffBoltSpeed * Tuning.TickRate),
+        });
+    }
+
+    /// <summary>A straight strip of fire from the player's feet along the aim, burning each enemy once.</summary>
+    private void CastWall(Player player)
+    {
+        var (_, flat) = ShotDirection(player);
+        _walls.Add(new FireWallHazard
+        {
+            Id = _nextId++,
+            Origin = player.State.Position + flat * 0.6f,
+            Direction = flat,
+            Damage = 0,
+            Owner = player.Id,
+            HalfWidth = Tuning.StaffWallHalfWidth,
+            Span = Tuning.StaffWallLength,
+            Grow = Tuning.StaffWallGrowTicks,
+            Burn = Tuning.StaffWallBurnTicks,
         });
     }
 
@@ -1215,7 +1334,15 @@ public sealed class GameServer : IEnemyEvents
             var struck = !shot.Pierces && _world.IsBlocked(shot.Position);
             if (shot.Shooter >= 0)
             {
-                if (struck || StrikeWithArrow(shot))
+                if (shot.Kind == ProjectileKind.PlayerFireball)
+                {
+                    if (struck || shot.Life <= 0 || TouchesEnemy(shot))
+                    {
+                        BurstOnEnemies(shot);
+                        shot.Life = 0;
+                    }
+                }
+                else if (struck || StrikeWithArrow(shot))
                 {
                     shot.Life = 0;
                 }
@@ -1254,6 +1381,28 @@ public sealed class GameServer : IEnemyEvents
         }
 
         _projectiles.RemoveAll(s => s.Life <= 0);
+    }
+
+    private bool TouchesEnemy(Projectile shot) => _enemies.Any(e => e.Alive &&
+        Vector3.Distance(e.Position + new Vector3(0, e.Def.Size * 0.6f, 0), shot.Position) < HitRadius + e.Def.Size * 0.35f);
+
+    /// <summary>A player's fireball bursts: everything inside the splash takes the blow, more at the centre.</summary>
+    private void BurstOnEnemies(Projectile shot)
+    {
+        if (!_players.TryGetValue(shot.Shooter, out var caster))
+        {
+            return;
+        }
+
+        foreach (var enemy in _enemies.ToList())
+        {
+            var chest = enemy.Position + new Vector3(0, enemy.Def.Size * 0.6f, 0);
+            var distance = Vector3.Distance(chest, shot.Position) - enemy.Def.Size * 0.35f;
+            if (enemy.Alive && distance < shot.SplashRadius)
+            {
+                Smite(caster, enemy, shot.Blow, distance < HitRadius ? 1f : 0.6f, shot.Position - shot.Velocity);
+            }
+        }
     }
 
     /// <summary>A bursting shot, so a near miss on the ground still catches the player.</summary>
@@ -1311,7 +1460,7 @@ public sealed class GameServer : IEnemyEvents
                 Bag = BagSlice(player),
                 Gear = GearSlice(player),
                 FireWalls = _walls.Where(w => Vector3.Distance(w.Origin, origin) < InterestRange).Take(2)
-                    .Select(w => new FireWallView(w.Id, w.Origin, MathF.Atan2(-w.Direction.X, -w.Direction.Z), w.Length)).ToArray(),
+                    .Select(w => new FireWallView(w.Id, w.Origin, MathF.Atan2(-w.Direction.X, -w.Direction.Z), w.Length, w.HalfWidth)).ToArray(),
             };
             _transport.Send(player.Id, Protocol.EncodeSnapshot(snapshot));
         }

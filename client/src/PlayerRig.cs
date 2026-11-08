@@ -668,6 +668,16 @@ public sealed class PlayerRig
             DaggerPose(state.Attack, state.AttackTick);
             blend = state.Attack == AttackKind.DaggerFlurry ? 40f : 26f;
         }
+        else if (state.Attack is AttackKind.ClubSwing or AttackKind.ClubSpin)
+        {
+            ClubPose(state.Attack, state.AttackTick);
+            blend = 30f;
+        }
+        else if (state.Attack is AttackKind.StaffBolt or AttackKind.StaffWall)
+        {
+            StaffPose(state.Attack, state.AttackTick);
+            blend = 24f;
+        }
         else if (state.Attack is not (AttackKind.None or AttackKind.BowShot))
         {
             AttackPose(state.Attack, state.AttackTick);
@@ -689,6 +699,7 @@ public sealed class PlayerRig
         }
 
         Apply();
+        UpdateSpin(state);
         UpdateBow(state, delta);
         UpdateDaggers(state, delta);
         if (!_look.Goblin)
@@ -1328,26 +1339,57 @@ public sealed class PlayerRig
     };
 
     /// <summary>
-    /// A player's dagger attacks place both hands exactly, from keys in the rig's own space eased
-    /// one into the next, and turn each blade to point where its key says. The body follows the
-    /// joint pose of DaggerPose underneath.
+    /// The staff, keyed like the daggers: the right hand holds it and its skull points where the key
+    /// says; the left hand takes hold further up. A fireball: drawn back, then thrust skull first at
+    /// the target. A wall: raised high in both hands, then driven butt first into the ground ahead.
+    /// </summary>
+    private static readonly DaggerKey[] StaffBoltKeys =
+    {
+        new(0, new(0.24f, 1.12f, -0.22f), new(-0.05f, 1.3f, -0.3f), new(0, 1f, -0.35f), Vector3.Zero),
+        new(8, new(0.28f, 1.42f, 0.08f), new(0.02f, 1.62f, 0.02f), new(0, 1f, 0.3f), Vector3.Zero),
+        new(12, new(0.14f, 1.36f, -0.5f), new(0.0f, 1.42f, -0.78f), new(0, 0.3f, -1f), Vector3.Zero),
+        new(20, new(0.15f, 1.34f, -0.48f), new(0.0f, 1.4f, -0.76f), new(0, 0.32f, -1f), Vector3.Zero),
+        new(30, new(0.24f, 1.12f, -0.22f), new(-0.05f, 1.3f, -0.3f), new(0, 1f, -0.35f), Vector3.Zero),
+    };
+
+    private static readonly DaggerKey[] StaffWallKeys =
+    {
+        new(0, new(0.24f, 1.12f, -0.22f), new(-0.05f, 1.3f, -0.3f), new(0, 1f, -0.35f), Vector3.Zero),
+        new(14, new(0.12f, 1.95f, -0.12f), new(-0.02f, 2.15f, -0.18f), new(0, 1f, -0.15f), Vector3.Zero),
+        new(18, new(0.12f, 2.0f, -0.08f), new(-0.02f, 2.2f, -0.14f), new(0, 1f, -0.05f), Vector3.Zero),
+        new(22, new(0.1f, 0.78f, -0.6f), new(-0.02f, 1.08f, -0.64f), new(0, 1f, -0.12f), Vector3.Zero),
+        new(36, new(0.1f, 0.8f, -0.6f), new(-0.02f, 1.1f, -0.64f), new(0, 1f, -0.12f), Vector3.Zero),
+        new(50, new(0.24f, 1.12f, -0.22f), new(-0.05f, 1.3f, -0.3f), new(0, 1f, -0.35f), Vector3.Zero),
+    };
+
+    /// <summary>
+    /// A player's dagger and staff attacks place the hands exactly, from keys in the rig's own space
+    /// eased one into the next, and turn each weapon to point where its key says. The body follows
+    /// the joint pose underneath.
     /// </summary>
     private void UpdateDaggers(in MotionState state, float delta)
     {
-        if (_look.Goblin || _look.Weapon != "dagger")
+        if (_look.Goblin || _look.Weapon is not ("dagger" or "staff"))
         {
             _daggerReach = 0f;
             return;
         }
 
-        var attacking = state.Attack is AttackKind.DaggerFlurry or AttackKind.DaggerLeap;
+        var attacking = state.Attack is AttackKind.DaggerFlurry or AttackKind.DaggerLeap or AttackKind.StaffBolt or AttackKind.StaffWall;
         _daggerReach = Mathf.MoveToward(_daggerReach, attacking ? 1f : 0f, delta * (attacking ? 14f : 5f));
         if (_daggerReach <= 0f)
         {
             return;
         }
 
-        var keys = state.Attack == AttackKind.DaggerLeap ? LeapKeys : FlurryKeys;
+        var keys = state.Attack switch
+        {
+            AttackKind.DaggerLeap => LeapKeys,
+            AttackKind.StaffBolt => StaffBoltKeys,
+            AttackKind.StaffWall => StaffWallKeys,
+            _ when _look.Weapon == "staff" => StaffBoltKeys,
+            _ => FlurryKeys,
+        };
         var tick = attacking ? state.AttackTick : keys[^1].Tick;
         var next = 1;
         while (next < keys.Length - 1 && keys[next].Tick <= tick)
@@ -1365,7 +1407,10 @@ public sealed class PlayerRig
         Reach(_armR, _forearmR, Root.ToGlobal(from.Right.Lerp(to.Right, t)), basis * new Vector3(1f, -1f, 0.4f), reach, w);
         Reach(_armL, _forearmL, Root.ToGlobal(from.Left.Lerp(to.Left, t)), basis * new Vector3(-1f, -1f, 0.4f), reach, w);
         Point(_sword, basis * from.BladeR.Lerp(to.BladeR, t), basis * Vector3.Right, w);
-        Point(_offhand, basis * from.BladeL.Lerp(to.BladeL, t), basis * Vector3.Left, w);
+        if (_look.Weapon == "dagger")
+        {
+            Point(_offhand, basis * from.BladeL.Lerp(to.BladeL, t), basis * Vector3.Left, w);
+        }
     }
 
     /// <summary>Turns a blade so its point (-Z) runs along a direction, its edge as near the hint as it can.</summary>
@@ -1377,6 +1422,111 @@ public sealed class PlayerRig
         var aimed = new Basis(x, z.Cross(x), z);
         var held = blade.GlobalTransform;
         blade.GlobalTransform = new Transform3D(Blend(held.Basis, aimed, weight).Scaled(Vector3.One * Root.Scale.X), held.Origin);
+    }
+
+    /// <summary>
+    /// The club. A swing: the club drawn back over the right shoulder, then swept flat across the
+    /// front from right to left with the whole body turning into it. A spin: both hands on the club,
+    /// arms out level, a wind-up to the right and one full turn on the spot, then a stagger.
+    /// </summary>
+    private void ClubPose(AttackKind kind, int tick)
+    {
+        const float alongArm = -1.5708f;
+        var attack = Tuning.Attack(kind);
+        var hit = attack.HitAt;
+        if (kind == AttackKind.ClubSwing)
+        {
+            var swung = tick >= hit - 3;
+            var recover = Mathf.Clamp((tick - hit) / (float)(attack.Total - hit), 0f, 1f);
+            _target[Twist] = swung ? -0.95f + recover * 0.6f : 0.85f;
+            _target[Lean] = swung ? 0.3f - recover * 0.2f : -0.1f;
+            _target[ArmR] = swung ? 1.45f - recover * 0.5f : 1.9f;
+            _target[ArmRSide] = swung ? -0.55f : 1.0f;
+            _target[ForearmR] = swung ? -0.15f : -1.6f;
+            _target[SwordTilt] = swung ? alongArm + 0.25f : 0.4f;
+            _target[SwordYaw] = swung ? 0.5f : -0.3f;
+            _target[ArmL] = swung ? 0.3f : 0.9f;
+            _target[ArmLSide] = swung ? 0.4f : -0.2f;
+            _target[ForearmL] = -0.9f;
+            _target[ThighL] = swung ? -0.55f : -0.2f;
+            _target[ThighR] = swung ? 0.45f : 0.25f;
+            _target[ShinR] = swung ? 0.35f : 0.2f;
+            _target[Bob] = swung ? -0.08f : -0.02f;
+            if (tick >= hit && _lastAttackTick < hit)
+            {
+                _sparks.Amount = 30;
+                _sparks.Restart();
+                _sparks.Emitting = true;
+            }
+
+            return;
+        }
+
+        // The spin: held out level in both hands.
+        _target[ArmR] = 1.45f;
+        _target[ArmRSide] = 1.25f;
+        _target[ForearmR] = -0.1f;
+        _target[ArmL] = 1.35f;
+        _target[ArmLSide] = -0.55f;
+        _target[ForearmL] = -0.6f;
+        _target[SwordTilt] = alongArm;
+        _target[SwordYaw] = 0f;
+        _target[Lean] = tick < 12 ? 0.05f : 0.2f;
+        _target[Twist] = tick < 12 ? 0.9f : -0.2f;
+        _target[ThighL] = -0.45f;
+        _target[ThighR] = 0.45f;
+        _target[ShinL] = 0.4f;
+        _target[ShinR] = 0.4f;
+        _target[Bob] = -0.14f;
+        if (tick >= hit && _lastAttackTick < hit)
+        {
+            _sparks.Amount = 46;
+            _sparks.Restart();
+            _sparks.Emitting = true;
+        }
+    }
+
+    /// <summary>The spin turns the whole body once round: wind-up, a fast turn through the hit, and a settle.</summary>
+    private void UpdateSpin(in MotionState state)
+    {
+        if (state.Attack != AttackKind.ClubSpin)
+        {
+            if (_bow is null)
+            {
+                _hips.Rotation = Vector3.Zero;
+            }
+
+            return;
+        }
+
+        const int start = 12, end = 36;
+        var t = Mathf.Clamp((state.AttackTick - start) / (float)(end - start), 0f, 1f);
+        var eased = t * t * (3f - 2f * t);
+        _hips.Rotation = new Vector3(0, -Mathf.Tau * eased + (state.AttackTick < start ? 0.5f * state.AttackTick / start : 0.5f * (1f - eased)), 0);
+    }
+
+    /// <summary>
+    /// The staff. A fireball: the staff raised and thrust forward as the fire leaves its skull. A
+    /// wall of fire: lifted high in both hands and driven down into the ground in front.
+    /// </summary>
+    private void StaffPose(AttackKind kind, int tick)
+    {
+        var hit = Tuning.Attack(kind).HitAt;
+        if (kind == AttackKind.StaffBolt)
+        {
+            WeaponPose(tick < hit - 2 ? WeaponMove.StaffRaise : WeaponMove.StaffThrust);
+        }
+        else
+        {
+            WeaponPose(tick < hit - 4 ? WeaponMove.StaffRaise : WeaponMove.StaffPlant);
+        }
+
+        if (tick >= hit && _lastAttackTick < hit)
+        {
+            _sparks.Amount = kind == AttackKind.StaffWall ? 40 : 20;
+            _sparks.Restart();
+            _sparks.Emitting = true;
+        }
     }
 
     private void AttackPose(AttackKind kind, int tick)

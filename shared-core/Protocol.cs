@@ -17,7 +17,8 @@ public readonly record struct EnemyView(
 
 public readonly record struct ProjectileView(int Id, ProjectileKind Kind, Vector3 Position);
 
-public readonly record struct FireWallView(int Id, Vector3 Origin, float Yaw, float Length);
+/// <param name="HalfWidth">Half the width of a player's straight line of fire; 0 for the shaman's V.</param>
+public readonly record struct FireWallView(int Id, Vector3 Origin, float Yaw, float Length, float HalfWidth = 0f);
 
 /// <summary>
 /// Something lying on the ground for one player: a crystal or another item from items.json. Gear
@@ -246,6 +247,7 @@ public static class Protocol
             WriteVector(writer, wall.Origin);
             writer.Write(wall.Yaw);
             writer.Write(wall.Length);
+            writer.Write(wall.HalfWidth);
         }
 
         writer.Flush();
@@ -349,7 +351,7 @@ public static class Protocol
         snapshot.FireWalls = new FireWallView[reader.ReadByte()];
         for (var i = 0; i < snapshot.FireWalls.Length; i++)
         {
-            snapshot.FireWalls[i] = new FireWallView(reader.ReadInt32(), ReadVector(reader), reader.ReadSingle(), reader.ReadSingle());
+            snapshot.FireWalls[i] = new FireWallView(reader.ReadInt32(), ReadVector(reader), reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
         }
 
         return true;

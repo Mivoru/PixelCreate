@@ -278,7 +278,8 @@ public partial class GameClient : Node
         _fx.Update(d);
         UpdateAim(d);
         PlaceCamera(shown, d);
-        _hud.Aiming = _aimBlend;
+        // A staff shows the crosshair all the time, as its fireballs fly to whatever lies under it.
+        _hud.Aiming = Mathf.Max(_aimBlend, _client.State.Weapon == Weapons.Staff ? 0.7f : 0f);
         _hud.WorldScale = _stage.PixelScale;
         _hud.Player = _client.State;
         _hud.Snapshot = _client.Latest;
@@ -549,7 +550,7 @@ public partial class GameClient : Node
     /// </summary>
     private (byte Aim, ushort Yaw, short Pitch) ShotAim()
     {
-        if (_client.State.Weapon != Weapons.Bow)
+        if (_client.State.Weapon is not (Weapons.Bow or Weapons.Staff))
         {
             var aim = AimByte();
             return (aim, (ushort)(aim << 8), 0);
@@ -651,6 +652,11 @@ public partial class GameClient : Node
         if (mode == "bow")
         {
             return BowBot();
+        }
+
+        if (mode is "club" or "staff")
+        {
+            return MeleeBot(mode);
         }
 
         if (mode is "talk" or "trial" && _client.Tick == 60)
@@ -850,6 +856,45 @@ public partial class GameClient : Node
         }
 
         return (0, 0, cycle < drawFor ? Buttons.Light : Buttons.None);
+    }
+
+    /// <summary>
+    /// Checks the club or the staff (start the server with PIXEL_TEST=1): takes the weapon up, turns
+    /// to the nearest enemy and walks up to it, then uses the light attack and the heavy one in turn.
+    /// </summary>
+    private (sbyte X, sbyte Z, Buttons Buttons) MeleeBot(string weapon)
+    {
+        var tick = _client.Tick;
+        var item = weapon == "club" ? "spiked_club" : "bone_staff";
+        if (tick == 100 && _hud.Items.Bag.FirstOrDefault(i => i?.Gear?.Def.Id == item) is { } piece)
+        {
+            BotStage($"take up the {weapon}");
+            _pendingCommand = GearCommands.Toggle(piece.Place);
+        }
+
+        if (tick < 150 || _client.Latest is not { } snapshot)
+        {
+            return (0, 0, Buttons.None);
+        }
+
+        BotStage("fight");
+        var me = _client.State.Position;
+        if (snapshot.Enemies.Where(e => e.Action != EnemyAction.Dead).OrderBy(e => (e.Position - me).Length()).FirstOrDefault() is not { Id: > 0 } target)
+        {
+            return (0, 0, Buttons.None);
+        }
+
+        var to = target.Position - me;
+        _yaw = Mathf.Atan2(-to.X, -to.Z);
+        var reach = weapon == "club" ? 2.2f : 7f;
+        _botShot = weapon == "staff" ? BotAim(me, target.Position + new System.Numerics.Vector3(0, EnemyDef.All[target.Type].Size * 0.6f, 0), Tuning.FullDraw) : null;
+        if (new Vector2(to.X, to.Z).Length() > reach)
+        {
+            return ToMove(0f, 1f, Buttons.None);
+        }
+
+        var cycle = (int)(tick % 120);
+        return (0, 0, cycle == 0 ? (tick / 120 % 2 == 0 ? Buttons.Light : Buttons.Heavy) : Buttons.None);
     }
 
     /// <summary>The fine aim from the bow at a point, lifted by the drop, as an archer would aim.</summary>
@@ -1115,7 +1160,7 @@ public partial class GameClient : Node
             alive.Add(wall.Id);
             if (!_walls.TryGetValue(wall.Id, out var node))
             {
-                node = new FireWallNode(_world, _fx, ToGodot(wall.Origin), wall.Yaw);
+                node = new FireWallNode(_world, _fx, ToGodot(wall.Origin), wall.Yaw, wall.HalfWidth);
                 _walls.Add(wall.Id, node);
                 _stage.View.AddChild(node.Root);
                 _sfx.Play("fire_wall", ToGodot(wall.Origin));
@@ -1340,7 +1385,7 @@ public partial class GameClient : Node
                 _fx.Burst(last, new Color("b55088"), 14, 4f, 0.5f, 0.08f);
                 _fx.Puddle(ground, new Color("b55088"), 1.6f, 1.6f);
                 break;
-            case ProjectileKind.Fireball:
+            case ProjectileKind.Fireball or ProjectileKind.PlayerFireball:
                 _sfx.Play("explosion", last);
                 _fx.Burst(last, new Color("f77622"), 34, 9f, 0.6f, 0.13f, -5f, 90f);
                 _fx.Burst(last, new Color("fee761"), 18, 5f, 0.45f, 0.09f, -3f, 90f);

@@ -45,6 +45,10 @@ public static class Tuning
         AttackKind.DaggerFlurry => DaggerFlurry,
         AttackKind.DaggerLeap => DaggerLeap,
         AttackKind.BowShot => BowShot,
+        AttackKind.ClubSwing => ClubSwing,
+        AttackKind.ClubSpin => ClubSpin,
+        AttackKind.StaffBolt => StaffBolt,
+        AttackKind.StaffWall => StaffWall,
         _ => LightAttack,
     };
 
@@ -97,6 +101,29 @@ public static class Tuning
     /// </summary>
     private static readonly AttackDef DaggerLeap = new(50, LeapHitAt, 32, 2.4f, -1f, 28f, 0.1f);
 
+    /// <summary>A club's swing: slower than a sword's, but it sweeps a wide arc in front.</summary>
+    private static readonly AttackDef ClubSwing = new(34, 15, 22, 3.2f, -0.15f, 12f, 0.45f);
+
+    /// <summary>The club whirled round once at arm's length: the blow lands on everything around.</summary>
+    private static readonly AttackDef ClubSpin = new(56, 26, 36, 3.4f, -1f, 28f, 0.35f);
+
+    /// <summary>A fireball from the staff, loosed at the hit tick along the aim. Range and arc are the projectile's.</summary>
+    private static readonly AttackDef StaffBolt = new(30, 12, 18, 0f, 1f, 10f, 0.5f);
+
+    /// <summary>The staff driven into the ground, raising a straight line of fire ahead.</summary>
+    private static readonly AttackDef StaffWall = new(50, 22, 26, 0f, 1f, 30f, 0.2f);
+
+    /// <summary>How fast a staff's fireball flies, how far, and how wide it bursts.</summary>
+    public const float StaffBoltSpeed = 20f;
+    public const float StaffBoltRange = 30f;
+    public const float StaffBoltSplash = 1.6f;
+
+    /// <summary>The staff's line of fire: its length, half its width, and how long it grows and burns.</summary>
+    public const float StaffWallLength = 9f;
+    public const float StaffWallHalfWidth = 0.9f;
+    public const int StaffWallGrowTicks = 24;
+    public const int StaffWallBurnTicks = 90;
+
     /// <summary>The leap flies for this many ticks, at this speed along the aim, after this lift.</summary>
     public const int LeapHitAt = 30;
     public const float LeapSpeed = 10f;
@@ -139,6 +166,10 @@ public enum AttackKind : byte
     DaggerFlurry = 3,
     DaggerLeap = 4,
     BowShot = 5,
+    ClubSwing = 6,
+    ClubSpin = 7,
+    StaffBolt = 8,
+    StaffWall = 9,
 }
 
 /// <param name="Total">Length of the attack in ticks.</param>
@@ -501,9 +532,16 @@ public static class Movement
 
         var wanted = input.Buttons.HasFlag(Buttons.Heavy) ? AttackKind.Heavy
             : input.Buttons.HasFlag(Buttons.Light) ? AttackKind.Light : AttackKind.None;
-        if (state.Weapon == Weapons.Dagger && wanted != AttackKind.None)
+        if (wanted != AttackKind.None)
         {
-            wanted = wanted == AttackKind.Heavy ? AttackKind.DaggerLeap : AttackKind.DaggerFlurry;
+            var heavy = wanted == AttackKind.Heavy;
+            wanted = state.Weapon switch
+            {
+                Weapons.Dagger => heavy ? AttackKind.DaggerLeap : AttackKind.DaggerFlurry,
+                Weapons.Club => heavy ? AttackKind.ClubSpin : AttackKind.ClubSwing,
+                Weapons.Staff => heavy ? AttackKind.StaffWall : AttackKind.StaffBolt,
+                _ => wanted,
+            };
         }
         if (wanted == AttackKind.None || !CanStartAttack(state))
         {

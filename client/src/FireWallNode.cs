@@ -4,7 +4,10 @@ using PixelCreate.Core;
 
 namespace PixelCreate;
 
-/// <summary>A filled V of real-looking flame. The front of the fire follows the length from the server.</summary>
+/// <summary>
+/// A filled V of real-looking flame, or for a player's staff a straight strip of it. The front of
+/// the fire follows the length from the server.
+/// </summary>
 public sealed class FireWallNode
 {
     private const float Spacing = 1.25f;
@@ -16,14 +19,19 @@ public sealed class FireWallNode
     private readonly Vector3 _origin;
     private readonly Vector3 _forward;
     private readonly float _yaw;
+    private readonly float _halfWidth;
     private float _time;
 
     public Node3D Root { get; } = new();
 
-    public FireWallNode(World world, Fx fx, Vector3 origin, float yaw)
+    public FireWallNode(World world, Fx fx, Vector3 origin, float yaw, float halfWidth = 0f)
     {
         _origin = origin;
         _yaw = yaw;
+        _halfWidth = halfWidth;
+        var strip = halfWidth > 0f;
+        var spacing = strip ? Spacing * 0.6f : Spacing;
+        var length = strip ? Tuning.StaffWallLength : FireWallHazard.MaxLength;
         _forward = new Vector3(-Mathf.Sin(yaw), 0, -Mathf.Cos(yaw));
         _flames = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/flame.gdshader") };
 
@@ -35,11 +43,11 @@ public sealed class FireWallNode
         };
         var spots = new System.Collections.Generic.List<(Vector3 Position, float Distance)>();
         var random = new Random((int)(origin.X * 31f + origin.Z * 17f));
-        for (var distance = 0.8f; distance <= FireWallHazard.MaxLength; distance += Spacing)
+        for (var distance = strip ? 0.3f : 0.8f; distance <= length; distance += spacing)
         {
-            var half = distance * Mathf.Tan(FireWallHazard.HalfAngle);
+            var half = strip ? halfWidth * 0.8f : distance * Mathf.Tan(FireWallHazard.HalfAngle);
             var side = new Vector3(-_forward.Z, 0, _forward.X);
-            for (var across = -half; across <= half; across += Spacing)
+            for (var across = -half; across <= half + 0.01f; across += spacing)
             {
                 var jitter = new Vector3((float)random.NextDouble() - 0.5f, 0, (float)random.NextDouble() - 0.5f) * 0.5f;
                 var spot = origin + _forward * distance + side * across + jitter;
@@ -51,7 +59,7 @@ public sealed class FireWallNode
         multi.InstanceCount = spots.Count;
         for (var i = 0; i < spots.Count; i++)
         {
-            var scale = FlameSize * (0.75f + (float)random.NextDouble() * 0.6f);
+            var scale = FlameSize * (strip ? 0.6f : 1f) * (0.75f + (float)random.NextDouble() * 0.6f);
             multi.SetInstanceTransform(i, new Transform3D(Basis.Identity.Scaled(Vector3.One * scale), spots[i].Position));
             multi.SetInstanceCustomData(i, new Color(spots[i].Distance, (float)random.NextDouble(), 0f, 0f));
         }
@@ -66,7 +74,15 @@ public sealed class FireWallNode
     {
         _time += delta;
         _flames.SetShaderParameter("reach", length);
-        _burn.ShowWedge(_origin, _yaw, length, 0.85f);
+        if (_halfWidth > 0f)
+        {
+            _burn.ShowLine(_origin, _origin + _forward * length, _halfWidth * 2f, 0.85f);
+        }
+        else
+        {
+            _burn.ShowWedge(_origin, _yaw, length, 0.85f);
+        }
+
         _light.Position = _origin + _forward * (length * 0.6f) + Vector3.Up * 2f;
         _light.LightEnergy = 2.6f + Mathf.Sin(_time * 17f) * 0.5f + Mathf.Sin(_time * 29f) * 0.3f;
     }

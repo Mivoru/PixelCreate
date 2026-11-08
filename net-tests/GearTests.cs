@@ -436,4 +436,111 @@ public sealed class GearTests
         Assert.Equal(Weapons.Bow, server.GetPlayer(1)!.Value.Weapon);
         Assert.Equal(Weapons.Bow, client.State.Weapon);
     }
+    /// <summary>A player holding the item, with frozen enemies standing at the given spots relative to the player.</summary>
+    private static (GameServer Server, ClientPrediction Client, SimNetwork Network) StartWith(string item, params Vector3[] enemies)
+    {
+        var network = new SimNetwork(1, 0, 0, 0);
+        var camps = enemies.Select(e => new EnemySpawn(e, 0.1f, 1, Types: new[] { "goblin_brute" })).ToArray();
+        var world = new World(Array.Empty<Aabb>(), null, Vector3.Zero, camps);
+        var server = new GameServer(network.Connect(0), world, new ServerOptions { Seed = 3 });
+        var client = new ClientPrediction(network.Connect(1), world);
+        Run(server, client, network, 10);
+        server.EnemiesFrozen = true;
+        var feet = server.GetPlayer(1)!.Value.Position;
+        for (var i = 0; i < enemies.Length; i++)
+        {
+            server.Enemies[i].Position = feet + enemies[i];
+        }
+
+        var place = server.GiveGear(1, new GearPiece(Item(item), Rarity.Common, 1, Array.Empty<AffixRoll>()));
+        Run(server, client, network, 12, GearCommands.Toggle(place));
+        return (server, client, network);
+    }
+
+    /// <summary>Presses a button once, aimed at a point (or straight ahead), and waits; returns each enemy's loss of health.</summary>
+    private static int[] Attack(GameServer server, ClientPrediction client, SimNetwork network, Buttons button, Vector3? at = null)
+    {
+        var before = server.Enemies.Select(e => (int)e.Health).ToArray();
+        var (yaw, pitch) = at is { } target ? AimAt(client.State.Position, client.State.Position + target, Tuning.FullDraw) : ((ushort)0, (short)0);
+        for (var tick = 0; tick < 150; tick++)
+        {
+            network.Advance(1000.0 / Tuning.TickRate);
+            server.Step();
+            client.Step(0, 0, tick == 0 ? button : Buttons.None, (byte)(yaw >> 8), Command.None, yaw, pitch);
+        }
+
+        return server.Enemies.Select((e, i) => before[i] - e.Health).ToArray();
+    }
+
+    [Fact]
+    public void Club_SwingsInFrontAndSpinsAllAround()
+    {
+        var front = new Vector3(0, 0, -2f);
+        var behind = new Vector3(0, 0, 2.2f);
+        var (server, client, network) = StartWith("spiked_club", front, behind);
+        Assert.Equal(Weapons.Club, client.State.Weapon);
+        var swing = Attack(server, client, network, Buttons.Light);
+        Assert.True(swing[0] > 0 && swing[1] == 0, $"the swing hits in front only ({swing[0]}, {swing[1]})");
+
+        var (spinServer, spinClient, spinNetwork) = StartWith("spiked_club", front, behind);
+        var spin = Attack(spinServer, spinClient, spinNetwork, Buttons.Heavy);
+        Assert.True(spin[0] > 0 && spin[1] > 0, $"the spin hits all around ({spin[0]}, {spin[1]})");
+    }
+
+    [Fact]
+    public void StaffFireball_FliesWhereAimedAndBursts()
+    {
+        var target = new Vector3(2f, 0, -16f);
+        var (server, client, network) = StartWith("bone_staff", target);
+        Assert.Equal(Weapons.Staff, client.State.Weapon);
+        Assert.True(Attack(server, client, network, Buttons.Light, Chest(target))[0] > 0, "the fireball hits where it was aimed");
+
+        var (wide, wideClient, wideNetwork) = StartWith("bone_staff", new Vector3(6f, 0, -16f));
+        Assert.Equal(0, Attack(wide, wideClient, wideNetwork, Buttons.Light, Chest(new Vector3(0, 0, -16f)))[0]);
+
+        var (far, farClient, farNetwork) = StartWith("bone_staff", new Vector3(0, 0, -(Tuning.StaffBoltRange + 6f)));
+        Assert.Equal(0, Attack(far, farClient, farNetwork, Buttons.Light, Chest(new Vector3(0, 0, -(Tuning.StaffBoltRange + 6f))))[0]);
+    }
+
+    [Fact]
+    public void StaffWall_BurnsAStraightStripAheadOnce()
+    {
+        var inLine = new Vector3(0.3f, 0, -6f);
+        var beside = new Vector3(3.2f, 0, -6f);
+        var beyond = new Vector3(0, 0, -(Tuning.StaffWallLength + 3f));
+        var (server, client, network) = StartWith("bone_staff", inLine, beside, beyond);
+        var burnt = Attack(server, client, network, Buttons.Heavy);
+        Assert.True(burnt[0] > 0, "the enemy in the line burns");
+        Assert.Equal(0, burnt[1]);
+        Assert.Equal(0, burnt[2]);
+        Assert.Equal(burnt[0], Attack(server, client, network, Buttons.None)[0] + burnt[0]);
+    }
+
+    [Theory]
+    [InlineData("spiked_club")]
+    [InlineData("bone_staff")]
+    public void ClubAndStaff_ArePredictedWithoutCorrections(string item)
+    {
+        var network = new SimNetwork(80, 8, 2, 7);
+        var world = new World(Array.Empty<Aabb>());
+        var server = new GameServer(network.Connect(0), world, new ServerOptions { Seed = 3, EnemyCount = 0 });
+        var client = new ClientPrediction(network.Connect(1), world);
+        for (var tick = 0; tick < 30; tick++)
+        {
+            network.Advance(1000.0 / Tuning.TickRate);
+            server.Step();
+            client.Step(0, 0, Buttons.None);
+        }
+
+        var place = server.GiveGear(1, GearPiece.Roll(Item(item), Rarity.Common, 1, new Random(1)));
+        for (var tick = 0; tick < Tuning.TickRate * 8; tick++)
+        {
+            network.Advance(1000.0 / Tuning.TickRate);
+            server.Step();
+            var buttons = tick > 60 && tick % 80 == 0 ? Buttons.Heavy : tick % 37 == 0 ? Buttons.Light : Buttons.None;
+            client.Step(40, 90, buttons, (byte)(tick / 40), tick == 0 ? GearCommands.Toggle(place) : Command.None);
+        }
+
+        Assert.True(client.Stats.Corrections <= 2, $"{client.Stats.Corrections} corrections with the {item}");
+    }
 }
