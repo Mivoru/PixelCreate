@@ -1349,12 +1349,12 @@ public sealed class PlayerRig
                 _target[ShinR] = 0.4f;
                 break;
             case WeaponMove.Crouch:
-                _target[ThighL] = -1.1f;
-                _target[ThighR] = -1.1f;
-                _target[ShinL] = 1.5f;
-                _target[ShinR] = 1.5f;
-                _target[Bob] = -0.32f;
-                _target[Lean] = 0.55f;
+                _target[ThighL] = -0.8f;
+                _target[ThighR] = -0.8f;
+                _target[ShinL] = 1.2f;
+                _target[ShinR] = 1.2f;
+                _target[Bob] = -0.27f;
+                _target[Lean] = 0.3f;
                 _target[ArmR] = -0.9f;
                 _target[ArmL] = -0.9f;
                 _target[ArmRSide] = 0.3f;

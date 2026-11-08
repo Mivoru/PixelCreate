@@ -119,9 +119,10 @@ public sealed class GoblinView : IEnemyView
 
         // A werewolf's leap: it tips forward into an arrow in flight, and after a miss it rolls once
         // head over heels round its middle. Thighs swell while it gathers itself for the great leap.
+        // Tipping forward is a negative turn about X; a forward roll turns the same way.
         var great = ability?.Effect == "superJump";
         var leaping = enemy.Action == EnemyAction.Leap && ability?.Effect is "pounce" or "superJump";
-        var pitch = leaping ? (great ? -1.25f : -0.5f) : 0f;
+        var pitch = leaping ? (great ? -1.15f : -0.45f) : 0f;
         _pitch = Mathf.Lerp(_pitch, pitch, 1f - Mathf.Exp(-14f * delta));
         var roll = enemy.Action == EnemyAction.Roll ? -Mathf.Tau * Mathf.Clamp(_actionTime / (Enemy.RollTicks * Tuning.TickSeconds), 0f, 1f) : 0f;
         var tilt = _pitch + roll;

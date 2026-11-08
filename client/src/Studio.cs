@@ -344,6 +344,64 @@ public partial class Studio : Node
         }
     }
 
+    /// <summary>
+    /// Moonleaper's great leap played as the game plays it: the crouch, the flight along the real arc
+    /// and the landing, once striking the player and once rolling out of a miss, a frame every few ticks.
+    /// </summary>
+    private async Task GreatLeaps()
+    {
+        var index = EnemyDef.All.ToList().FindIndex(d => d.Id == "werewolf_moonleaper");
+        var def = EnemyDef.All[index];
+        var ability = (byte)def.Abilities!.ToList().FindIndex(a => a.Effect == "superJump");
+        var sfx = new Sfx(this) { Muted = true };
+        foreach (var ending in new[] { EnemyAction.Strike, EnemyAction.Roll })
+        {
+            var view = new GoblinView(def);
+            _set.AddChild(view.Root);
+            const float distance = 14f;
+            var air = Enemy.SuperJumpAirTicks;
+            var script = new List<(EnemyAction Action, int Ticks)> { (EnemyAction.Idle, 20), (EnemyAction.Cast, def.Abilities![ability].WindupTicks), (EnemyAction.Leap, air), (ending, ending == EnemyAction.Roll ? Enemy.RollTicks : 40), (EnemyAction.Idle, 12) };
+            _stage.Camera.Fov = 40;
+            _stage.Camera.LookAtFromPosition(new Vector3(30f, 3f, -distance / 2f), new Vector3(0, 1.8f, -distance / 2f));
+            _stage.Camera.Fov = 24;
+            var frame = 0;
+            var tick = 0;
+            var landed = Vector3.Zero;
+            foreach (var (action, ticks) in script)
+            {
+                for (var t = 0; t < ticks; t++, tick++)
+                {
+                    var position = action switch
+                    {
+                        EnemyAction.Leap => new Vector3(0, Tuning.Gravity * (t * Tuning.TickSeconds) * ((air - t) * Tuning.TickSeconds) / 2f, -distance * t / air),
+                        EnemyAction.Roll => landed + new Vector3(0, 0, -(t < Enemy.RollTicks / 2 ? 5f * t : 5f * Enemy.RollTicks / 2f + 1.5f * (t - Enemy.RollTicks / 2)) * Tuning.TickSeconds),
+                        _ when tick > 20 + def.Abilities![ability].WindupTicks => landed,
+                        _ => Vector3.Zero,
+                    };
+                    if (action == EnemyAction.Leap)
+                    {
+                        landed = new Vector3(0, 0, -distance * (t + 1) / air);
+                    }
+
+                    var state = new EnemyView(1, (byte)index, 15, new System.Numerics.Vector3(position.X, position.Y, position.Z), 0f, 10, 10, action, 0,
+                        new System.Numerics.Vector3(0, 0, -distance), true, ability);
+                    view.Update(state, position, Step, sfx);
+
+                    // The camera keeps alongside the wolf, so its body reads at every moment of the leap.
+                    _stage.Camera.Fov = 34;
+                    _stage.Camera.LookAtFromPosition(position + new Vector3(9f, 1.4f, 0f), position + new Vector3(0, 1.4f, 0));
+                    await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+                    if (tick % 6 == 0)
+                    {
+                        Save($"attack_moonleaper_{(ending == EnemyAction.Roll ? "miss" : "hit")}_{frame++:00}");
+                    }
+                }
+            }
+
+            view.Root.QueueFree();
+        }
+    }
+
     /// <summary>Each weapon's attacks from the side, a frame every few ticks, for checking the poses.</summary>
     private async Task Attacks()
     {
@@ -381,6 +439,8 @@ public partial class Studio : Node
                 Dismiss(rig);
             }
         }
+
+        await GreatLeaps();
 
         // The bow: drawing to a full draw, loosing and nocking the next arrow, from the side and over the shoulder.
         foreach (var (view, eye, look, pitch) in new[]
