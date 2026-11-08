@@ -200,7 +200,7 @@ public partial class Studio : Node
     {
         Floor();
         var sfx = new Sfx(this) { Muted = true };
-        var monsters = EnemyDef.All.Select((def, index) => (def, index)).Where(p => p.def.Kind is "slime" or "goblin").ToList();
+        var monsters = EnemyDef.All.Select((def, index) => (def, index)).Where(p => p.def.Kind is "slime" or "goblin" or "orc").ToList();
         foreach (var (def, index) in monsters)
         {
             IEnemyView view = def.Kind == "slime" ? new SlimeView() : new GoblinView(def);

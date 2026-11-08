@@ -32,7 +32,13 @@ public sealed record RigLook(string Kind, Color Skin, float Scale, string Weapon
 {
     public static readonly RigLook Player = new("player", new Color("e8b796"), 1f, "sword");
 
-    public bool Goblin => Kind is "skirmisher" or "brute" or "archer" or "sharpshooter" or "shaman";
+    /// <summary>Goblins and orcs share the brute rig: thick limbs, clawed hands, heads and torsos from Blender.</summary>
+    public bool Goblin => Kind is "skirmisher" or "brute" or "archer" or "sharpshooter" or "shaman" || Orc;
+
+    /// <summary>An orc: a goblin's rig at a man's height. Kind is orc_ and the head: warrior, berserker, spearwoman or huntress.</summary>
+    public bool Orc => Kind.StartsWith("orc_");
+
+    public bool Female => Feminine || Kind is "orc_spearwoman" or "orc_huntress";
 
     /// <summary>Colours that replace the hero's, by Blender material name.</summary>
     public System.Collections.Generic.Dictionary<string, Color> Palette { get; init; } = new();
@@ -171,14 +177,18 @@ public sealed class PlayerRig
         var skin = look.Skin;
         Root.Scale = Vector3.One * look.Scale;
         _look = look;
-        _hipHeight = look.Goblin ? 0.6f : 0.98f;
+        _hipHeight = look.Orc ? 0.98f : look.Goblin ? 0.6f : 0.98f;
         Root.AddChild(_hips);
         _hips.Position = new Vector3(0, _hipHeight, 0);
         _hips.AddChild(_torso);
         _torso.Position = new Vector3(0, 0.1f, 0);
         _torso.AddChild(_head);
-        _head.Position = new Vector3(0, look.Goblin ? 0.5f : 0.3f, look.Goblin ? -0.06f : 0f);
-        if (look.Goblin)
+        _head.Position = look.Orc ? new Vector3(0, 0.47f, 0.01f) : new Vector3(0, look.Goblin ? 0.5f : 0.3f, look.Goblin ? -0.06f : 0f);
+        if (look.Orc)
+        {
+            BuildOrc(skin);
+        }
+        else if (look.Goblin)
         {
             BuildGoblin(tunic, skin);
         }
@@ -561,6 +571,26 @@ public sealed class PlayerRig
         BuildArm(_armR, _forearmR, width + 0.05f, skin, skin, leather);
     }
 
+    /// <summary>
+    /// An orc: a man's height and broader, a muscled torso under fur and leather (or a corset for a
+    /// woman), heavy boots, the head of its kind, and the goblin's clawed hands at the end of thick arms.
+    /// </summary>
+    private void BuildOrc(Color skin)
+    {
+        var leather = new Color("5a3a2c");
+        var dark = new Color("3a2420");
+        var female = _look.Female;
+        _hips.AddChild(Part(new BoxMesh { Size = new Vector3(female ? 0.36f : 0.42f, 0.18f, 0.28f) }, dark, Vector3.Zero));
+        _torso.AddChild(Model(female ? "orc_torso_f" : "orc_torso_m"));
+        _head.AddChild(Model($"orc_head_{_look.Kind[4..]}"));
+        var width = female ? 0.2f : 0.25f;
+        // Legs long enough to reach the ground from a man's hip height.
+        BuildLeg(_thighL, _shinL, -0.12f, dark, leather, 1.2f, true);
+        BuildLeg(_thighR, _shinR, 0.12f, dark, leather, 1.2f, true);
+        BuildArm(_armL, _forearmL, -width - 0.06f, skin, skin, leather);
+        BuildArm(_armR, _forearmR, width + 0.06f, skin, skin, leather);
+    }
+
     /// <summary>A goblin head from Blender: big nose, scowling brow, grin and long ears, with the gear of its kind.</summary>
     private void BuildGoblinHead(Color skin, Color cloth, Color dark, Color bone)
     {
@@ -574,6 +604,9 @@ public sealed class PlayerRig
         "bow" => _look.Goblin ? "goblin_shortbow" : "hunters_longbow",
         "club" => "spiked_club",
         "staff" => "bone_staff",
+        "longsword" => "orc_longsword",
+        "spear" => "orc_spear",
+        "axe" => "orc_battle_axe",
         _ => "wooden_sword",
     };
 
@@ -785,6 +818,30 @@ public sealed class PlayerRig
                 _target[ForearmR] = -1f;
                 _target[SwordTilt] = 0f;
                 _target[SwordYaw] = 0f;
+                break;
+            case "spear":
+                // Upright in the right hand, butt by the foot, point well over the head.
+                _target[ArmR] = 0.25f;
+                _target[ArmRSide] = 0.25f;
+                _target[ForearmR] = -1.35f;
+                _target[SwordTilt] = 0.1f;
+                _target[SwordYaw] = 0f;
+                break;
+            case "axe":
+                // Over the shoulder, the head behind it.
+                _target[ArmR] = 0.75f;
+                _target[ArmRSide] = 0.35f;
+                _target[ForearmR] = -2.1f;
+                _target[SwordTilt] = 0f;
+                _target[SwordYaw] = -0.2f;
+                break;
+            case "longsword":
+                // Held low and forward, point down and out, ready to come up.
+                _target[ArmR] = 0.35f;
+                _target[ArmRSide] = 0.3f;
+                _target[ForearmR] = -0.7f;
+                _target[SwordTilt] = -1.6f;
+                _target[SwordYaw] = -0.25f;
                 break;
             case "dagger" when !_look.Goblin:
                 // Two blades held low and forward, point first, ready to strike with either.
@@ -1588,7 +1645,7 @@ public sealed class PlayerRig
         _hips.Position = new Vector3(shake, _hipHeight + _pose[Bob], 0);
 
         // Goblins stoop, with the head craned forward.
-        var hunch = _look.Goblin ? 0.32f : 0f;
+        var hunch = _look.Orc ? 0.12f : _look.Goblin ? 0.32f : 0f;
         _torso.Rotation = new Vector3(-_pose[Lean] - hunch, _pose[Twist], 0);
         _head.Rotation = new Vector3(-_pose[Head] + hunch * 0.8f, -_pose[Twist] * 0.6f, 0);
         _thighL.Rotation = new Vector3(_pose[ThighL], 0, 0);
@@ -1633,7 +1690,7 @@ public sealed class PlayerRig
             return;
         }
 
-        var clawed = Model("gob_foot");
+        var clawed = Model(_look.Orc ? "orc_boot" : "gob_foot");
         clawed.Position = new Vector3(0, foot + 0.045f, 0);
         shin.AddChild(clawed);
     }
@@ -1642,8 +1699,8 @@ public sealed class PlayerRig
     {
         var goblin = _look.Goblin;
         _torso.AddChild(arm);
-        arm.Position = new Vector3(x, goblin ? 0.36f : 0.45f, 0);
-        var top = goblin ? 0.09f : 0.058f;
+        arm.Position = new Vector3(x, _look.Orc ? 0.43f : goblin ? 0.36f : 0.45f, 0);
+        var top = _look.Orc ? (_look.Female ? 0.068f : 0.082f) : goblin ? 0.09f : 0.058f;
         arm.AddChild(Part(new CylinderMesh { TopRadius = top, BottomRadius = top * 0.78f, Height = 0.32f, RadialSegments = 12 }, cloth, new Vector3(0, -0.16f, 0)));
         arm.AddChild(forearm);
         if (!goblin)

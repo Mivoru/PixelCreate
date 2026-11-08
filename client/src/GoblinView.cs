@@ -32,6 +32,10 @@ public sealed class GoblinView : IEnemyView
         _def = def;
         var (kind, cloth) = def.Id switch
         {
+            "orc_warrior" => ("orc_warrior", "5a3a2c"),
+            "orc_berserker" => ("orc_berserker", "5a3a2c"),
+            "orc_spearwoman" => ("orc_spearwoman", "6a3a2a"),
+            "orc_huntress" => ("orc_huntress", "4a5a3a"),
             "goblin_brute" => ("brute", "5a4a3a"),
             "goblin_rapid_archer" => ("archer", "3a5a7a"),
             "goblin_sharpshooter" => ("sharpshooter", "5a3a5a"),
@@ -41,6 +45,10 @@ public sealed class GoblinView : IEnemyView
         // Each kind has its own shade of skin, so a camp reads as a crowd and not as copies.
         var skin = new Color(def.Id switch
         {
+            "orc_warrior" => "6e8a3e",
+            "orc_berserker" => "5e7a34",
+            "orc_spearwoman" => "7a9448",
+            "orc_huntress" => "6a8a50",
             "goblin_brute" => "6a9a3a",
             "goblin_sharpshooter" => "6aa07a",
             "goblin_shaman" => "8a9a6a",
@@ -78,7 +86,7 @@ public sealed class GoblinView : IEnemyView
         _rig.Animate(new MotionState(speed > 20f ? 0f : speed, true, 0f, false, AttackKind.None, 0, MoveFor(enemy.Action, ability)), delta);
     }
 
-    private static WeaponMove MoveFor(EnemyAction action, Ability? ability)
+    private WeaponMove MoveFor(EnemyAction action, Ability? ability)
     {
         if (ability is null || action is not (EnemyAction.Cast or EnemyAction.Strike or EnemyAction.Leap))
         {
@@ -86,6 +94,12 @@ public sealed class GoblinView : IEnemyView
         }
 
         var winding = action == EnemyAction.Cast;
+        if (_def.Weapon is "longsword" or "axe" && ability.Effect is "melee" or "slam")
+        {
+            // Heavy blades come down from overhead.
+            return winding ? WeaponMove.ClubRaise : WeaponMove.ClubSmash;
+        }
+
         return ability.Effect switch
         {
             "arrow" or "volley" or "powershot" => winding ? WeaponMove.BowDraw : WeaponMove.BowRelease,
@@ -106,12 +120,13 @@ public sealed class GoblinView : IEnemyView
             if (enemy.Health < _lastHealth)
             {
                 DamageTaken = _lastHealth - enemy.Health;
-                sfx.Play(enemy.Action == EnemyAction.Dead ? "goblin_die" : "goblin_hit", position + Vector3.Up);
+                var voice = _def.Kind == "orc" ? (_def.Id is "orc_spearwoman" or "orc_huntress" ? "orc_f" : "orc") : "goblin";
+                sfx.Play(enemy.Action == EnemyAction.Dead ? $"{voice}_die" : $"{voice}_hit", position + Vector3.Up);
             }
 
             if (enemy.Fighting && !_lastFighting)
             {
-                sfx.Play("goblin_alert", position + Vector3.Up);
+                sfx.Play(_def.Kind == "orc" ? (_def.Id is "orc_spearwoman" or "orc_huntress" ? "orc_f_alert" : "orc_alert") : "goblin_alert", position + Vector3.Up);
             }
 
             if (enemy.Action != _lastAction && enemy.Action == EnemyAction.Strike && _def.Abilities is { } list)
@@ -120,7 +135,7 @@ public sealed class GoblinView : IEnemyView
                 {
                     "slam" => "club_slam",
                     "spin" => "club_spin",
-                    "melee" or "dashStrike" => "goblin_swing",
+                    "melee" or "dashStrike" => _def.Kind == "orc" ? "orc_swing" : "goblin_swing",
                     _ => null,
                 };
                 if (sound is not null)

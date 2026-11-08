@@ -91,6 +91,54 @@
     "loot": [{"item": "ember_shard", "chance": 1, "min": 1, "max": 2}, {"item": "shaman_totem", "chance": 0.25, "min": 1, "max": 1}]
   },
   {
+    "id": "orc_warrior", "name": "Orc Warrior", "kind": "orc", "weapon": "longsword", "defense": 10,
+    "minLevel": 9, "maxLevel": 11, "health": 240, "healthPerLevel": 34, "speed": 4.2, "size": 1.2,
+    "aggroRange": 13, "preferredRange": 2.4, "tagHeight": 2.6,
+    "abilities": [
+      { "effect": "melee", "range": 2.8, "windupTicks": 22, "recoverTicks": 18, "cooldownTicks": 40, "damage": 18, "radius": 1.6 },
+      { "effect": "slam", "range": 3.0, "windupTicks": 44, "recoverTicks": 30, "cooldownTicks": 220, "damage": 32, "radius": 1.8, "telegraph": "circle" }
+    ],
+    "drops": [{ "rarity": 0, "chance": 1 }, { "rarity": 1, "chance": 0.12 }, { "rarity": 2, "chance": 0.02 }],
+    "gear": { "chance": 0.07, "rarity": [50, 32, 14, 4], "items": ["iron_helm", "chain_leggings", "hide_vest"] },
+    "loot": [{"item": "orc_tusk", "chance": 0.5, "min": 1, "max": 1}, {"item": "iron_scrap", "chance": 0.7, "min": 1, "max": 3}]
+  },
+  {
+    "id": "orc_berserker", "name": "Orc Berserker", "kind": "orc", "weapon": "axe", "defense": 6,
+    "minLevel": 10, "maxLevel": 12, "health": 260, "healthPerLevel": 36, "speed": 4.8, "size": 1.25,
+    "aggroRange": 15, "preferredRange": 2.4, "tagHeight": 2.7,
+    "abilities": [
+      { "effect": "melee", "range": 2.8, "windupTicks": 20, "recoverTicks": 16, "cooldownTicks": 36, "damage": 20, "radius": 1.7 },
+      { "effect": "spin", "range": 3.6, "windupTicks": 50, "recoverTicks": 36, "cooldownTicks": 260, "damage": 26, "radius": 3.8, "telegraph": "circle" }
+    ],
+    "drops": [{ "rarity": 0, "chance": 1 }, { "rarity": 1, "chance": 0.14 }, { "rarity": 2, "chance": 0.03 }],
+    "gear": { "chance": 0.07, "rarity": [50, 32, 14, 4], "items": ["hide_vest", "boar_boots", "iron_helm"] },
+    "loot": [{"item": "orc_tusk", "chance": 0.6, "min": 1, "max": 2}, {"item": "leather_scrap", "chance": 0.5, "min": 1, "max": 2}]
+  },
+  {
+    "id": "orc_spearwoman", "name": "Orc Spearwoman", "kind": "orc", "weapon": "spear", "defense": 7,
+    "minLevel": 9, "maxLevel": 11, "health": 200, "healthPerLevel": 30, "speed": 5.0, "size": 1.1,
+    "aggroRange": 14, "preferredRange": 3.0, "tagHeight": 2.4,
+    "abilities": [
+      { "effect": "melee", "range": 3.4, "windupTicks": 18, "recoverTicks": 16, "cooldownTicks": 34, "damage": 16, "radius": 1.4 },
+      { "effect": "dashStrike", "range": 9, "minRange": 3.5, "windupTicks": 26, "recoverTicks": 22, "cooldownTicks": 220, "damage": 26, "radius": 1.6, "telegraph": "line" }
+    ],
+    "drops": [{ "rarity": 0, "chance": 1 }, { "rarity": 1, "chance": 0.12 }, { "rarity": 2, "chance": 0.02 }],
+    "gear": { "chance": 0.07, "rarity": [50, 32, 14, 4], "items": ["leather_jerkin", "chain_leggings", "archer_hood"] },
+    "loot": [{"item": "orc_tusk", "chance": 0.4, "min": 1, "max": 1}, {"item": "leather_scrap", "chance": 0.6, "min": 1, "max": 2}]
+  },
+  {
+    "id": "orc_huntress", "name": "Orc Huntress", "kind": "orc", "weapon": "longsword", "defense": 7,
+    "minLevel": 10, "maxLevel": 12, "health": 210, "healthPerLevel": 30, "speed": 5.2, "size": 1.1,
+    "aggroRange": 16, "preferredRange": 2.4, "tagHeight": 2.4,
+    "abilities": [
+      { "effect": "melee", "range": 2.8, "windupTicks": 16, "recoverTicks": 14, "cooldownTicks": 30, "damage": 16, "radius": 1.5 },
+      { "effect": "dashStrike", "range": 8, "minRange": 3, "windupTicks": 24, "recoverTicks": 20, "cooldownTicks": 200, "damage": 24, "radius": 1.7, "telegraph": "line" }
+    ],
+    "drops": [{ "rarity": 0, "chance": 1 }, { "rarity": 1, "chance": 0.14 }, { "rarity": 2, "chance": 0.03 }],
+    "gear": { "chance": 0.07, "rarity": [50, 32, 14, 4], "items": ["leather_jerkin", "patched_trousers", "boar_boots"] },
+    "loot": [{"item": "orc_tusk", "chance": 0.4, "min": 1, "max": 1}, {"item": "wolf_pelt", "chance": 0.3, "min": 1, "max": 1}]
+  },
+  {
     "id": "wolf", "name": "Wolf", "kind": "wolf",
     "minLevel": 5, "maxLevel": 7, "health": 70, "healthPerLevel": 14, "speed": 6.4, "size": 1.0,
     "aggroRange": 14, "preferredRange": 1.8, "tagHeight": 1.5,

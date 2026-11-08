@@ -219,7 +219,68 @@ def bone_staff(k):
         k.box(hang + mathutils.Vector((0.012 * side, -0.2, 0)), (0.03, 0.1, 0.006), colour, tilt=0.2 * side)
 
 
+def orc_longsword(k):
+    """An orc longsword: a long, heavy, slightly widening blade with a clipped point, a crossguard of
+    plain iron bars, a long grip for two hands wound in leather, and a spiked pommel."""
+    width = lambda s: 0.034 + 0.012 * s if s < 0.86 else (0.046 * (1 - (s - 0.86) / 0.14) + 0.004)
+    k.blade(0.1, 0.98, width, width, lambda s: 0.009 * (1 - 0.4 * s), "wpn_steel_dark", "wpn_steel", ridge=0.3)
+    # Dark pitting along the flat, and a notch knocked out of one edge.
+    for y in (0.35, 0.62):
+        k.round((0.005, y, 0.0), (0.012, 0.03, 0.01), "wpn_steel_deep", subdivisions=1)
+    k.box((0, 0.085, 0), (0.24, 0.035, 0.045), "wpn_iron")
+    for x in (-0.12, 0.12):
+        k.box((x, 0.1, 0), (0.035, 0.06, 0.05), "wpn_iron")
+    k.wrap(-0.16, 0.065, 0.019, "wpn_leather", "wpn_leather_dark", 10)
+    k.round((0, -0.18, 0), (0.03, 0.03, 0.03), "wpn_iron")
+    k.cone((0, -0.2, 0), (0, -0.26, 0), 0.016, "wpn_iron")
+
+
+def orc_spear(k):
+    """An orc spear: a long ash shaft bound with leather and hung with feathers and a bone charm,
+    a broad leaf head of dark iron with a bright edge, and an iron butt spike."""
+    k.tube([(0, -0.95, 0), (0, 1.25, 0)], [0.022, 0.02], [0.022, 0.02], "wpn_wood", sides=8)
+    leaf = lambda s: 0.045 * math.sin(math.pi * min(1.0, s * 1.25)) * (1 - s ** 4) + 0.006
+    k.blade(1.3, 0.36, leaf, leaf, lambda s: 0.008, "wpn_steel_deep", "wpn_steel", ridge=0.6)
+    k.tube([(0, 1.22, 0), (0, 1.31, 0)], [0.026, 0.02], [0.026, 0.02], "wpn_steel_deep", sides=8)
+    for y in (1.12, -0.05, 0.12):
+        k.wrap(y - 0.05, y + 0.05, 0.022, "wpn_leather", "wpn_leather_dark", 3)
+    for side, colour in ((-1, "wpn_red"), (1, "wpn_feather")):
+        k.tube([(0, 1.08, 0), (side * 0.02, 0.98, 0.01)], [0.003, 0.003], [0.003, 0.003], "wpn_wrap", sides=4)
+        k.box((side * 0.025, 0.9, 0.01), (0.02, 0.12, 0.004), colour, tilt=0.3 * side)
+    k.round((0.02, 0.97, 0.0), (0.014, 0.014, 0.014), "wpn_bone", subdivisions=1)
+    k.cone((0, -0.95, 0), (0, -1.08, 0), 0.02, "wpn_iron")
+
+
+def orc_battle_axe(k):
+    """An orc battle axe: a thick haft wound with rags, a heavy crescent blade with a hooked beard on
+    one side and a spike on the other, held on with iron bands."""
+    k.tube([(0, -0.25, 0), (0, 1.05, 0)], [0.03, 0.026], [0.03, 0.026], "wpn_wood_dark", sides=8)
+    k.wrap(-0.22, 0.25, 0.031, "wpn_rag", "wpn_wood_dark", 7)
+    # The crescent blade: a fan of tapering facets from the haft out to a curved edge.
+    head_y = 0.9
+    for i in range(9):
+        t = i / 8
+        a0, a1 = -1.0 + t * 2.0, -1.0 + (t + 0.125) * 2.0
+        r0, r1 = 0.36 + 0.08 * math.cos(a0 * 1.4), 0.36 + 0.08 * math.cos(a1 * 1.4)
+        inner = (0.02, head_y + 0.08 * math.sin(a0), 0)
+        e0 = (0.02 + r0 * math.cos(a0 * 0.75), head_y + r0 * math.sin(a0 * 0.75), 0)
+        e1 = (0.02 + r1 * math.cos(a1 * 0.75), head_y + r1 * math.sin(a1 * 0.75), 0)
+        k.faceted([inner, e0, e1, (inner[0], inner[1], 0.022), (e0[0], e0[1], 0.005), (e1[0], e1[1], 0.005)],
+                  [(0, 1, 2), (3, 5, 4), (0, 3, 4, 1), (1, 4, 5, 2), (2, 5, 3, 0)], "wpn_steel_dark")
+        k.faceted([inner, e0, e1, (inner[0], inner[1], -0.022), (e0[0], e0[1], -0.005), (e1[0], e1[1], -0.005)],
+                  [(0, 2, 1), (3, 4, 5), (0, 1, 4, 3), (1, 2, 5, 4), (2, 0, 3, 5)], "wpn_steel_dark")
+        k.box((e0[0], e0[1], 0), (0.02, 0.05, 0.012), "wpn_steel")
+    # The bright edge along the curve.
+    k.cone((0.02, head_y, 0), (-0.26, head_y + 0.03, 0), 0.035, "wpn_iron")
+    for y in (head_y - 0.09, head_y + 0.09):
+        k.tube([(0, y - 0.015, 0), (0, y + 0.015, 0)], [0.04, 0.04], [0.04, 0.04], "wpn_iron", sides=8)
+    k.cone((0, 1.05, 0), (0, 1.16, 0), 0.026, "wpn_iron")
+
+
 BUILDERS = {
+    "orc_longsword": orc_longsword,
+    "orc_spear": orc_spear,
+    "orc_battle_axe": orc_battle_axe,
     "twin_daggers": twin_daggers,
     "rusty_dagger": rusty_dagger,
     "wooden_sword": wooden_sword,
