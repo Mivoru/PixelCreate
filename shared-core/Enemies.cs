@@ -68,6 +68,9 @@ public enum EnemyAction : byte
 
     /// <summary>An orc spinning round and round with its axe, drifting towards the player.</summary>
     Tornado = 14,
+
+    /// <summary>A duelist dashing aside, beyond harm for the moment.</summary>
+    Dodge = 15,
 }
 
 /// <summary>The nametag colour rule: how an enemy compares with the player.</summary>
@@ -85,7 +88,8 @@ public static class ThreatRules
 }
 
 /// <summary>A player as an enemy sees it.</summary>
-public readonly record struct Target(int Id, Vector3 Position, Vector3 Velocity);
+/// <param name="Attacking">The player is in the middle of an attack, which a duelist may dodge.</param>
+public readonly record struct Target(int Id, Vector3 Position, Vector3 Velocity, bool Attacking = false);
 
 /// <summary>What an enemy asks the game to do.</summary>
 public interface IEnemyEvents
@@ -377,7 +381,7 @@ public sealed partial class Enemy
     /// <summary>Takes damage from a player. Returns true when this hit kills the enemy.</summary>
     public bool TakeHit(short damage, Vector3 from, int attackerId = -1)
     {
-        if (InShadow)
+        if (InShadow || Dodging)
         {
             return false;
         }

@@ -976,6 +976,48 @@ public sealed class GuildTests
     }
 
     [Fact]
+    public void Examiner_IsLevelFiveAtFullHealth()
+    {
+        var (server, client, network, _) = Start();
+        Run(server, client, network, 12, Command.BeginTrial);
+        var examiner = server.Enemies.Single(e => e.TrialOf == 1);
+        Assert.Equal(5, examiner.Level);
+        Assert.Equal(examiner.MaxHealth, examiner.Health);
+        Assert.Equal("duelist", examiner.Role);
+    }
+
+    [Fact]
+    public void Examiner_DashesAsideFromSwings()
+    {
+        var (server, client, network, _) = Start();
+        Run(server, client, network, 12, Command.BeginTrial);
+        var examiner = server.Enemies.Single(e => e.TrialOf == 1);
+        var dodges = 0;
+        var last = examiner.Action;
+        for (var i = 0; i < 60 * 15; i++)
+        {
+            // Keep the examiner in reach and keep swinging at it.
+            if (Vector3.Distance(examiner.Position, server.GetPlayer(1)!.Value.Position) > 3f)
+            {
+                examiner.Position = server.GetPlayer(1)!.Value.Position + new Vector3(0, 0, -2.2f);
+            }
+
+            Run(server, client, network, 1, Command.None, Buttons.Light);
+            if (examiner.Action == EnemyAction.Dodge && last != EnemyAction.Dodge)
+            {
+                dodges++;
+                var health = examiner.Health;
+                Assert.False(examiner.TakeHit(40, Vector3.Zero, 1));
+                Assert.Equal(health, examiner.Health);
+            }
+
+            last = examiner.Action;
+        }
+
+        Assert.True(dodges >= 2, $"The examiner must dash aside from swings; it did {dodges} times.");
+    }
+
+    [Fact]
     public void LosingTheTrial_ResetsTheRank()
     {
         var (server, client, network, _) = Start();

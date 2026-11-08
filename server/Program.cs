@@ -11,6 +11,7 @@ var server = new GameServer(transport, zone.World, new ServerOptions
 {
     SpawnOverride = spawn is null ? null : new System.Numerics.Vector3(spawn[0], 0, spawn[1]),
     TestMode = Environment.GetEnvironmentVariable("PIXEL_TEST") == "1",
+    FrailExaminer = Environment.GetEnvironmentVariable("PIXEL_FRAIL") == "1",
 });
 Console.WriteLine($"Zone {zone.Name}. Listening on UDP {port} at {Tuning.TickRate} Hz.");
 

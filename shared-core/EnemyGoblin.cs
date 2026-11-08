@@ -32,6 +32,11 @@ public sealed partial class Enemy
 
         StepTurn(events, Action == EnemyAction.Strike && _lastGoblinAction != EnemyAction.Strike);
         _lastGoblinAction = Action;
+        if (DodgeIfAttacked(random, targets))
+        {
+            Fall(world, random, events);
+            return;
+        }
 
         switch (Action)
         {
@@ -67,7 +72,7 @@ public sealed partial class Enemy
             case EnemyAction.Strike:
                 Velocity.X = 0;
                 Velocity.Z = 0;
-                if (ActionTicks <= 0 && !NextComboBlow())
+                if (ActionTicks <= 0 && !NextComboBlow() && !(FindTarget(targets) is { } foe && SpringBack(random, foe)))
                 {
                     Action = EnemyAction.Idle;
                     ActionTicks = random.Next(4, 14);
@@ -82,6 +87,9 @@ public sealed partial class Enemy
                 break;
             case EnemyAction.Tornado:
                 StepTornado(targets, events);
+                break;
+            case EnemyAction.Dodge:
+                StepDodge();
                 break;
         }
 

@@ -18,6 +18,9 @@ public sealed class ServerOptions
 
     /// <summary>For scripted live checks: a frail examiner, and crystals in the pocket.</summary>
     public bool TestMode { get; init; }
+
+    /// <summary>The Guild examiner starts with one hit point, for the bot that plays the Guild story.</summary>
+    public bool FrailExaminer { get; init; }
 }
 
 public sealed class ServerStats
@@ -441,7 +444,7 @@ public sealed class GameServer : IEnemyEvents
         if (!EnemiesFrozen)
         {
             var targets = _players.Values.OrderBy(p => p.Id)
-                .Select(p => new Target(p.Id, p.State.Position, p.State.Velocity)).Concat(CreatureTargets()).ToArray();
+                .Select(p => new Target(p.Id, p.State.Position, p.State.Velocity, p.State.Attack != AttackKind.None)).Concat(CreatureTargets()).ToArray();
             foreach (var enemy in _enemies)
             {
                 enemy.Crowd = _enemies;
@@ -763,7 +766,7 @@ public sealed class GameServer : IEnemyEvents
         };
         examiner.Reset(_random, _world);
         examiner.TargetId = player.Id;
-        if (_options.TestMode)
+        if (_options.FrailExaminer)
         {
             examiner.Health = 1;
             player.Crystals[0] += 3;

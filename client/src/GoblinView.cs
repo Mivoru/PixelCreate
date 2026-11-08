@@ -113,7 +113,9 @@ public sealed class GoblinView : IEnemyView
 
         // A thrown spear leaves the hand and is back in it once she recovers; she never fetches it.
         _rig.SwordVisible = !(enemy.Action == EnemyAction.Strike && ability?.Effect == "spearThrow");
-        _rig.Animate(new MotionState(speed > 20f ? 0f : speed, true, 0f, false, AttackKind.None, 0, MoveFor(enemy.Action, ability)), delta);
+        // A duelist's dash uses the hero's own dash pose.
+        var dodging = enemy.Action == EnemyAction.Dodge;
+        _rig.Animate(new MotionState(speed > 20f ? 0f : speed, true, 0f, dodging, AttackKind.None, 0, dodging ? WeaponMove.None : MoveFor(enemy.Action, ability)), delta);
     }
 
     /// <summary>Five turns in the server's tornado time, in radians a second.</summary>
@@ -189,6 +191,11 @@ public sealed class GoblinView : IEnemyView
         if (!_first && enemy.Action == EnemyAction.Tornado && _lastAction != EnemyAction.Tornado)
         {
             sfx.Play("tornado", position + Vector3.Up);
+        }
+
+        if (!_first && enemy.Action == EnemyAction.Dodge && _lastAction != EnemyAction.Dodge)
+        {
+            sfx.Play("dash", position + Vector3.Up);
         }
 
         DamageTaken = 0;

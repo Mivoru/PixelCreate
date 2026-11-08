@@ -33,7 +33,7 @@ public sealed partial class Enemy
     private int _retreat;
     private float _orbitSide = 1f;
 
-    /// <summary>The fighting role: brute, flanker, skirmisher, ranged, support or pack.</summary>
+    /// <summary>The fighting role: brute, flanker, skirmisher, ranged, support, pack or duelist.</summary>
     public string Role => Def.Behavior ?? (Def.PreferredRange >= 6f ? "ranged" : "brute");
 
     /// <summary>A blow that needs the fighter next to the player, and so a turn. Shots and summons do not.</summary>
@@ -156,6 +156,21 @@ public sealed partial class Enemy
         if (role is "ranged" or "support")
         {
             KeepRange(world, random, target, distance, role == "support");
+            return;
+        }
+
+        if (role == "duelist")
+        {
+            // A blow ready: step in to strike. Otherwise wait on the ring for the next opening.
+            if (distance > DuelRing + 2.5f || ReadyToStrike())
+            {
+                Walk(world, toward, 1f);
+            }
+            else
+            {
+                Circle(world, random, target, distance);
+            }
+
             return;
         }
 

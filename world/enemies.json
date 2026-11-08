@@ -68,13 +68,14 @@
     "loot": [{"item": "goblin_tooth", "chance": 0.5, "min": 1, "max": 1}, {"item": "hawk_feather", "chance": 0.6, "min": 1, "max": 2}, {"item": "leather_scrap", "chance": 0.4, "min": 1, "max": 1}]
   },
   {
-    "id": "guild_examiner", "name": "Examiner Rhea", "kind": "human", "weapon": "sword",
-    "minLevel": 2, "maxLevel": 2, "health": 170, "healthPerLevel": 0, "speed": 5, "size": 1.0,
+    "id": "guild_examiner", "name": "Examiner Rhea", "kind": "human", "weapon": "sword", "behavior": "duelist", "defense": 4,
+    "minLevel": 5, "maxLevel": 5, "health": 340, "healthPerLevel": 0, "speed": 5.4, "size": 1.0,
     "aggroRange": 40, "preferredRange": 2,
     "abilities": [
-      { "effect": "melee", "range": 2.4, "windupTicks": 22, "recoverTicks": 26, "cooldownTicks": 60, "damage": 8, "radius": 1.6 },
-      { "effect": "dashStrike", "range": 9, "minRange": 3.5, "windupTicks": 34, "recoverTicks": 30, "cooldownTicks": 260, "damage": 12, "radius": 1.8, "telegraph": "line" },
-      { "effect": "slam", "range": 3.4, "windupTicks": 50, "recoverTicks": 36, "cooldownTicks": 300, "damage": 16, "radius": 2, "telegraph": "circle" }
+      { "effect": "melee", "range": 2.4, "windupTicks": 18, "recoverTicks": 20, "cooldownTicks": 50, "damage": 11, "radius": 1.6 },
+      { "effect": "combo", "range": 2.6, "windupTicks": 16, "recoverTicks": 30, "cooldownTicks": 300, "damage": 9, "radius": 1.7, "telegraph": "circle" },
+      { "effect": "dashStrike", "range": 9, "minRange": 3.5, "windupTicks": 28, "recoverTicks": 26, "cooldownTicks": 220, "damage": 15, "radius": 1.8, "telegraph": "line" },
+      { "effect": "slam", "range": 3.4, "windupTicks": 44, "recoverTicks": 34, "cooldownTicks": 300, "damage": 20, "radius": 2, "telegraph": "circle" }
     ],
     "drops": []
   },
