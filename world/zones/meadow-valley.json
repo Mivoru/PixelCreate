@@ -208,6 +208,9 @@
     { "x": 215.4, "z": -139.2, "radius": 4, "count": 2, "respawnTicks": 3000, "types": ["orc_berserker"] },
     { "x": 202.0, "z": -126.0, "radius": 5, "count": 2, "respawnTicks": 2400, "types": ["orc_huntress", "orc_warrior"] },
     { "x": 174.0, "z": -50.0, "radius": 4, "count": 3, "respawnTicks": 2400, "types": ["orc_warrior", "orc_spearwoman"] },
+    { "x": 214.0, "z": -142.0, "radius": 2, "count": 1, "respawnTicks": 9000, "types": ["orc_swordmaster"] },
+    { "x": 225.0, "z": -126.0, "radius": 2, "count": 1, "respawnTicks": 9000, "types": ["orc_spearcaller"] },
+    { "x": 200.0, "z": -136.0, "radius": 2, "count": 1, "respawnTicks": 9000, "types": ["orc_stormaxe"] },
     { "x": -192, "z": 204, "radius": 7, "count": 2, "respawnTicks": 3000, "types": ["werewolf"] },
     { "x": -208, "z": 214, "radius": 6, "count": 2, "respawnTicks": 3000, "types": ["werewolf"] },
     { "x": -226, "z": 196, "radius": 3, "count": 1, "respawnTicks": 6000, "types": ["werewolf_alpha"] }

@@ -649,14 +649,81 @@ public sealed class EnemyTests
 
     [Theory]
     [InlineData("orc_warrior", 4f, 1)]
-    [InlineData("orc_huntress", 5.5f, 1)]
-    [InlineData("orc_warrior", 9f, 0)]
+    [InlineData("orc_huntress", 8f, 1)]
+    [InlineData("orc_warrior", 12f, 0)]
     public void AirSlash_FliesOnlyAFewMetres(string id, float distance, int expected)
     {
         var (server, client, network, hits) = OrcFires(id, "airSlash", distance);
         Play(server, client, network, 120);
         Assert.Equal(hits + expected, server.Stats.PlayerHits);
         Assert.Equal(0, server.ProjectileCount);
+    }
+
+    [Theory]
+    [InlineData("orc_swordmaster", "airSlashWide", 1)]
+    [InlineData("orc_warrior", "airSlash", 0)]
+    public void WideSlash_ReachesFurtherToTheSide(string id, string effect, int expected)
+    {
+        // Aimed so the slash passes 1.8 m beside the player at 5 m.
+        var (server, client, network, hits) = OrcFires(id, effect, 5f, MathF.Atan2(1.8f, 5f));
+        Play(server, client, network, 120);
+        Assert.Equal(hits + expected, server.Stats.PlayerHits);
+    }
+
+    [Fact]
+    public void Spearcaller_LoosesThreeConjuredSpearsInTurn()
+    {
+        var (server, client, network, hits) = OrcFires("orc_spearcaller", "summonSpears", 10f);
+        Assert.Equal(3, server.ProjectileCount);
+        Play(server, client, network, 20);
+        Assert.Equal(hits, server.Stats.PlayerHits);
+        Play(server, client, network, 140);
+        Assert.Equal(hits + 3, server.Stats.PlayerHits);
+        Assert.Equal(0, server.ProjectileCount);
+    }
+
+    [Fact]
+    public void Swordmaster_StrikesThreeTimesInACombo()
+    {
+        var (server, client, network) = StartGoblin("orc_swordmaster", 2.5f);
+        var orc = server.Enemies[0];
+        var blows = 0;
+        var last = orc.Action;
+        for (var i = 0; i < 60 * 20 && blows < Enemy.ComboBlows; i++)
+        {
+            Play(server, client, network, 1);
+            if (orc.Action == EnemyAction.Strike && last != EnemyAction.Strike)
+            {
+                blows = orc.CurrentAbility?.Effect == "combo" ? blows + 1 : 0;
+            }
+
+            last = orc.Action;
+        }
+
+        Assert.Equal(Enemy.ComboBlows, blows);
+    }
+
+    [Fact]
+    public void Stormaxe_TornadoHurtsAgainAndAgainWhileItDrifts()
+    {
+        var (server, client, network) = StartGoblin("orc_stormaxe", 3f);
+        var orc = server.Enemies[0];
+        for (var i = 0; i < 60 * 30 && orc.Action != EnemyAction.Tornado; i++)
+        {
+            Play(server, client, network, 1);
+        }
+
+        Assert.Equal(EnemyAction.Tornado, orc.Action);
+        var hits = server.Stats.PlayerHits;
+        var ticks = 0;
+        while (orc.Action == EnemyAction.Tornado && ticks < 400)
+        {
+            Play(server, client, network, 1);
+            ticks++;
+        }
+
+        Assert.InRange(ticks, Enemy.TornadoTicks - 2, Enemy.TornadoTicks + 2);
+        Assert.True(server.Stats.PlayerHits - hits >= 5, $"A tornado must keep hurting a player who stays; it hit {server.Stats.PlayerHits - hits} times.");
     }
 
     [Fact]

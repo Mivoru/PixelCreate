@@ -57,6 +57,12 @@ public enum ProjectileKind : byte
 
     /// <summary>An orc spearwoman's thrown spear. It flies flat and fast; she always has it back in hand.</summary>
     ThrownSpear = 7,
+
+    /// <summary>The swordmaster's flat crescent: as wide as a man is tall, lying level as it flies.</summary>
+    AirSlashWide = 8,
+
+    /// <summary>A spear the spearcaller conjures over her head; it hangs there, then shoots at the player.</summary>
+    SummonedSpear = 9,
 }
 
 /// <summary>What a ground hazard is: the shaman's burning V or a player's strip of fire, or an orc's crack in the earth.</summary>
@@ -132,8 +138,14 @@ public sealed class GameServer : IEnemyEvents
     private const float HitRadius = 0.9f;
     private const float SpitSplashRadius = 1.8f;
     private const int ProjectileLifeTicks = 170;
-    private const float AirSlashSpeed = 13f;
-    private const float AirSlashReach = 5f;
+    private const float AirSlashSpeed = 15f;
+    private const float AirSlashReach = 8f;
+    private const float AirSlashRadius = 1.4f;
+    private const float WideSlashRadius = 2.1f;
+    private const float ConjuredSpearSpeed = 26f;
+
+    /// <summary>When each conjured spear shoots, in ticks after they appear.</summary>
+    private static readonly int[] SpearDelays = { 30, 46, 62 };
     private const float SpearSpeed = 24f;
     private const float SpitLead = 0.6f;
     private const float VolleySpread = 0.2f;
@@ -224,6 +236,13 @@ public sealed class GameServer : IEnemyEvents
         public Vector3 Position;
         public Vector3 Velocity;
         public int Life = ProjectileLifeTicks;
+
+        /// <summary>How close to a player's chest the shot must pass to hit.</summary>
+        public float Radius = HitRadius;
+
+        /// <summary>For a conjured spear: ticks it still hangs in the air, and the player it then shoots at.</summary>
+        public int Delay;
+        public int TargetId = -1;
     }
 
     /// <summary>A crystal or item on the ground. Only the player who earned it sees it and can pick it up.</summary>
@@ -1155,8 +1174,31 @@ public sealed class GameServer : IEnemyEvents
                 break;
             case "airSlash":
                 // The crescent leaves the blade at chest height and dies after a few metres.
-                var slash = Shoot(ProjectileKind.AirSlash, chest + Facing(enemy) * 0.8f, direction * AirSlashSpeed, ability.Damage);
+            case "airSlashWide":
+                var wide = ability.Effect == "airSlashWide";
+                var slash = Shoot(wide ? ProjectileKind.AirSlashWide : ProjectileKind.AirSlash, chest + Facing(enemy) * 0.8f,
+                    direction * AirSlashSpeed, ability.Damage);
                 slash.Life = (int)(AirSlashReach / AirSlashSpeed * Tuning.TickRate);
+                slash.Radius = wide ? WideSlashRadius : AirSlashRadius;
+                break;
+            case "combo":
+                Area(enemy.Position + Facing(enemy) * 1.1f, ability.Radius, ability.Damage, enemy);
+                break;
+            case "tornado":
+                Area(enemy.Position, ability.Radius, ability.Damage, enemy);
+                break;
+            case "summonSpears":
+                var side = new Vector3(MathF.Cos(enemy.Facing), 0, -MathF.Sin(enemy.Facing));
+                for (var i = 0; i < SpearDelays.Length; i++)
+                {
+                    var hover = enemy.Position + Vector3.UnitY * (enemy.Def.Size * 2.3f) + side * ((i - 1) * 0.9f);
+                    var conjured = Shoot(ProjectileKind.SummonedSpear, hover, Vector3.Zero, ability.Damage);
+                    conjured.Delay = SpearDelays[i];
+                    conjured.TargetId = target?.Id ?? enemy.TargetId;
+                    conjured.Pierces = true;
+                    conjured.Life = SpearDelays[i] + ProjectileLifeTicks;
+                }
+
                 break;
             case "spearThrow":
                 var spear = Shoot(ProjectileKind.ThrownSpear, chest + Vector3.UnitY * 0.3f, direction * SpearSpeed, ability.Damage);
@@ -1443,6 +1485,21 @@ public sealed class GameServer : IEnemyEvents
                 continue;
             }
 
+            if (shot.Delay > 0)
+            {
+                // A conjured spear hangs still, then shoots straight at its player's chest.
+                shot.Life--;
+                if (--shot.Delay == 0)
+                {
+                    var aim = _players.TryGetValue(shot.TargetId, out var mark) ? mark.State.Position + Vector3.UnitY : shot.Position + Vector3.UnitZ;
+                    var line = aim - shot.Position;
+                    shot.Velocity = line == Vector3.Zero ? Vector3.UnitZ : Vector3.Normalize(line) * ConjuredSpearSpeed;
+                    shot.Pierces = false;
+                }
+
+                continue;
+            }
+
             shot.Velocity.Y -= shot.Gravity * Tuning.TickSeconds;
             shot.Position += shot.Velocity * Tuning.TickSeconds;
             shot.Life--;
@@ -1468,7 +1525,7 @@ public sealed class GameServer : IEnemyEvents
             foreach (var player in _players.Values)
             {
                 var chest = player.State.Position + Vector3.UnitY;
-                if (Vector3.Distance(chest, shot.Position) >= HitRadius)
+                if (Vector3.Distance(chest, shot.Position) >= shot.Radius)
                 {
                     continue;
                 }

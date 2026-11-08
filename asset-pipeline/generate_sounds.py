@@ -84,6 +84,8 @@ SOUNDS = {
     "shadow_sink": ("a dark creature melting into the ground, deep whooshing hiss of black smoke sinking away, eerie", 1.0, 0.8, -6),
     "shadow_rise": ("a shadow beast bursting out of the ground, sudden dark whoosh of smoke with a low snarl", 0.9, 0.7, -6),
     "clone_summon": ("a spectral wolf howl with a cold shimmering magical chime, ghostly echo, short", 1.6, 1.3, -7),
+    "spear_summon": ("magical spears forming out of thin air with a sharp metallic shimmer and a fiery hum, short", 0.8, 0.6, -7),
+    "tornado": ("a huge battle axe whirled round and round, a roaring whirlwind of steel spinning for several turns", 3.0, 2.7, -6),
     "werewolf_roar": ("a huge werewolf roaring, deep monstrous snarling roar, terrifying, short", 1.5, 1.3, -5),
     "werewolf_hit": ("a monstrous beast snarling in pain, deep wolf growl, one short burst", 0.6, 0.5, -6),
     "werewolf_die": ("a giant werewolf dying, a howl that breaks into a whimper, deep", 2.0, 1.8, -6),

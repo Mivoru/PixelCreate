@@ -4,7 +4,9 @@ namespace PixelCreate.Core;
 
 /// <summary>One thing an enemy can do. Effects: melee, dashStrike, slam, spin, arrow, volley, powershot, fireball, firewall,
 /// airSlash (a flying crescent), spearThrow (a thrown spear), earthCrack (a small V of split ground),
-/// pounce (a leap onto the player), shadowRun (a zigzag under the ground) and shadowClone (two short-lived copies).</summary>
+/// pounce (a leap onto the player), shadowRun (a zigzag under the ground), shadowClone (two short-lived copies),
+/// combo (three blows in a row), airSlashWide (a flat crescent), summonSpears (three spears loosed one by one
+/// from above the head) and tornado (a long spin that drifts after the player).</summary>
 public sealed record Ability(
     string Effect, float Range, int WindupTicks, int RecoverTicks, int CooldownTicks, short Damage,
     float Radius = 0f, float MinRange = 0f, string Telegraph = "none");
@@ -41,7 +43,7 @@ public sealed partial class Enemy
             case EnemyAction.Cast:
                 Velocity.X = 0;
                 Velocity.Z = 0;
-                TrackTarget(world, targets, CurrentAbility!.Effect != "spin");
+                TrackTarget(world, targets, CurrentAbility!.Effect is not ("spin" or "tornado"));
                 if (ActionTicks <= 0)
                 {
                     Release(events, targets);
@@ -62,7 +64,7 @@ public sealed partial class Enemy
             case EnemyAction.Strike:
                 Velocity.X = 0;
                 Velocity.Z = 0;
-                if (ActionTicks <= 0)
+                if (ActionTicks <= 0 && !NextComboBlow())
                 {
                     Action = EnemyAction.Idle;
                     ActionTicks = random.Next(4, 14);
@@ -74,6 +76,9 @@ public sealed partial class Enemy
                 break;
             case EnemyAction.Surface:
                 StepSurface(targets);
+                break;
+            case EnemyAction.Tornado:
+                StepTornado(targets, events);
                 break;
         }
 
@@ -205,7 +210,8 @@ public sealed partial class Enemy
         Action = EnemyAction.Cast;
         ActionTicks = ability.WindupTicks;
         _cooldowns[index] = ability.CooldownTicks + random.Next(30);
-        LeapTarget = ability.Effect is "spin" or "shadowClone" ? Position : target.Position;
+        LeapTarget = ability.Effect is "spin" or "shadowClone" or "tornado" ? Position : target.Position;
+        ComboLeft = 0;
         LeapTarget.Y = world.GroundHeight(LeapTarget.X, LeapTarget.Z);
     }
 
@@ -215,6 +221,19 @@ public sealed partial class Enemy
         if (ability.Effect == "pounce")
         {
             PounceAt(LeapTarget);
+            return;
+        }
+
+        if (ability.Effect == "combo")
+        {
+            ComboBlow(events, targets, ability);
+            return;
+        }
+
+        if (ability.Effect == "tornado")
+        {
+            Action = EnemyAction.Tornado;
+            ActionTicks = TornadoTicks;
             return;
         }
 

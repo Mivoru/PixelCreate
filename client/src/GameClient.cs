@@ -1260,12 +1260,13 @@ public partial class GameClient : Node
         }
         else if (ability.Telegraph == "circle")
         {
-            telegraph.ShowCircle(ability.Effect == "spin" ? position : target, ability.Radius, 0.5f);
+            telegraph.ShowCircle(ability.Effect is "spin" or "tornado" ? position : target, ability.Radius, 0.5f);
         }
         else
         {
             var along = (target - position).Normalized();
-            telegraph.ShowLine(position, position + along * ability.Range, ability.Effect == "powershot" ? 0.5f : 0.9f, 0f);
+            var width = ability.Effect switch { "powershot" => 0.5f, "airSlash" => 2.8f, "airSlashWide" => 4.2f, _ => 0.9f };
+            telegraph.ShowLine(position, position + along * ability.Range, width, 0f);
         }
     }
 
@@ -1386,7 +1387,11 @@ public partial class GameClient : Node
                 _spitKinds.Add(spit.Id, spit.Kind);
                 _stage.View.AddChild(ball);
                 // The orcs' slash and spear already sounded with the swing that sent them.
-                if (spit.Kind is not (ProjectileKind.PlayerArrow or ProjectileKind.AirSlash or ProjectileKind.ThrownSpear))
+                if (spit.Kind == ProjectileKind.SummonedSpear)
+                {
+                    _sfx.Play("spear_summon", ball.Position, -8f);
+                }
+                else if (spit.Kind is not (ProjectileKind.PlayerArrow or ProjectileKind.AirSlash or ProjectileKind.AirSlashWide or ProjectileKind.ThrownSpear))
                 {
                     _sfx.Play(spit.Kind switch
                     {
@@ -1400,10 +1405,16 @@ public partial class GameClient : Node
 
             var motion = target - ball.Position;
             ball.Position = ball.Position.Lerp(target, spit.Kind == ProjectileKind.PowerArrow ? 1f : blend);
-            if (spit.Kind is ProjectileKind.Arrow or ProjectileKind.PowerArrow or ProjectileKind.PlayerArrow or ProjectileKind.AirSlash or ProjectileKind.ThrownSpear
+            if (spit.Kind is ProjectileKind.Arrow or ProjectileKind.PowerArrow or ProjectileKind.PlayerArrow or ProjectileKind.AirSlash
+                    or ProjectileKind.AirSlashWide or ProjectileKind.ThrownSpear or ProjectileKind.SummonedSpear
                 && motion.LengthSquared() > 0.0001f)
             {
                 ball.LookAt(ball.GlobalPosition + motion, Vector3.Up);
+            }
+            else if (spit.Kind == ProjectileKind.SummonedSpear && ball.GlobalPosition.DistanceSquaredTo(_shownNow) > 0.01f)
+            {
+                // A conjured spear hangs over the orc's head with its point already on the player.
+                ball.LookAt(_shownNow + Vector3.Up, Vector3.Up);
             }
             else if (spit.Kind == ProjectileKind.Spit)
             {
@@ -1440,12 +1451,12 @@ public partial class GameClient : Node
                 _fx.Burst(last, new Color("fee761"), 18, 5f, 0.45f, 0.09f, -3f, 90f);
                 _fx.Puddle(ground, new Color("3e2731"), 1.8f, 1.2f);
                 break;
-            case ProjectileKind.AirSlash:
+            case ProjectileKind.AirSlash or ProjectileKind.AirSlashWide:
                 // The crescent frays into a puff of pale wind where it dies.
                 _fx.Burst(last, new Color("c0cbdc"), 16, 5f, 0.35f, 0.07f, 0f, 120f);
                 _fx.Burst(last, new Color("ffffff"), 8, 3f, 0.25f, 0.05f, 0f, 120f);
                 break;
-            case ProjectileKind.ThrownSpear:
+            case ProjectileKind.ThrownSpear or ProjectileKind.SummonedSpear:
                 _sfx.Play("arrow_hit", last);
                 _fx.Burst(last, new Color("b86f50"), 10, 4f, 0.35f, 0.07f);
                 break;
@@ -1476,14 +1487,14 @@ public partial class GameClient : Node
             return shaft;
         }
 
-        if (kind == ProjectileKind.AirSlash)
+        if (kind is ProjectileKind.AirSlash or ProjectileKind.AirSlashWide)
         {
-            return BuildAirSlash(position);
+            return BuildAirSlash(position, kind == ProjectileKind.AirSlashWide);
         }
 
-        if (kind == ProjectileKind.ThrownSpear)
+        if (kind is ProjectileKind.ThrownSpear or ProjectileKind.SummonedSpear)
         {
-            return BuildThrownSpear(position);
+            return BuildThrownSpear(position, kind == ProjectileKind.SummonedSpear);
         }
 
         if (kind is ProjectileKind.Arrow or ProjectileKind.PowerArrow)
@@ -1516,10 +1527,11 @@ public partial class GameClient : Node
     }
 
     /// <summary>
-    /// A standing crescent of cut air, as tall as a man, bulging forward along its flight (-Z) with
-    /// thin tips; a white core inside a pale blue edge, shedding wisps behind it.
+    /// A crescent of cut air bulging forward along its flight (-Z) with thin tips; a white core inside
+    /// a pale blue edge, shedding wisps behind it. It stands taller than a man, or for the
+    /// swordmaster's wide slash lies level and wider still.
     /// </summary>
-    private MeshInstance3D BuildAirSlash(Vector3 position)
+    private MeshInstance3D BuildAirSlash(Vector3 position, bool wide)
     {
         static ArrayMesh Crescent(float radius, float thickness)
         {
@@ -1555,24 +1567,31 @@ public partial class GameClient : Node
             return mesh;
         }
 
-        var slash = new MeshInstance3D
+        // The root only follows the flight; the crescent inside it is turned level for a wide slash.
+        var slash = new MeshInstance3D { Position = position };
+        var size = wide ? 2.1f : 1.45f;
+        var blade = new Node3D { Rotation = new Vector3(0, 0, wide ? Mathf.Pi / 2f : 0f), Scale = Vector3.One * size };
+        slash.AddChild(blade);
+        blade.AddChild(new MeshInstance3D
         {
             Mesh = Crescent(0.95f, 0.3f),
             MaterialOverride = _fx.Stipple(new Color("8b9bb4"), 0.9f),
-            Position = position,
-        };
-        slash.AddChild(new MeshInstance3D
+        });
+        blade.AddChild(new MeshInstance3D
         {
             Mesh = Crescent(0.9f, 0.14f),
             MaterialOverride = _fx.Stipple(new Color("ffffff"), 1f),
             Position = new Vector3(0, 0, -0.04f),
         });
-        slash.AddChild(Trail(new Color("c0cbdc"), 24, 0.3f, 0.07f));
+        slash.AddChild(Trail(new Color("c0cbdc"), wide ? 40 : 30, 0.3f, 0.08f));
         return slash;
     }
 
-    /// <summary>The spearwoman's spear in flight: a long dark shaft with an iron head, point first.</summary>
-    private MeshInstance3D BuildThrownSpear(Vector3 position)
+    /// <summary>
+    /// The spearwoman's spear in flight: a long dark shaft with an iron head, point first. A conjured
+    /// spear glows: its head burns orange and it sheds embers.
+    /// </summary>
+    private MeshInstance3D BuildThrownSpear(Vector3 position, bool conjured)
     {
         var shaft = new MeshInstance3D
         {
@@ -1583,11 +1602,11 @@ public partial class GameClient : Node
         shaft.AddChild(new MeshInstance3D
         {
             Mesh = new PrismMesh { Size = new Vector3(0.14f, 0.34f, 0.04f) },
-            MaterialOverride = _fx.Stipple(new Color("c0cbdc"), 1f),
+            MaterialOverride = _fx.Stipple(new Color(conjured ? "feae34" : "c0cbdc"), 1f),
             Position = new Vector3(0, 0, -1.2f),
             Rotation = new Vector3(-Mathf.Pi / 2f, 0, 0),
         });
-        shaft.AddChild(Trail(new Color("ead4aa"), 10, 0.18f, 0.04f));
+        shaft.AddChild(conjured ? Trail(new Color("f77622"), 26, 0.35f, 0.06f, 1.5f) : Trail(new Color("ead4aa"), 10, 0.18f, 0.04f));
         return shaft;
     }
 

@@ -60,6 +60,9 @@ public enum EnemyAction : byte
 
     /// <summary>A shadow wolf risen between two slides, where it can be hit.</summary>
     Surface = 13,
+
+    /// <summary>An orc spinning round and round with its axe, drifting towards the player.</summary>
+    Tornado = 14,
 }
 
 /// <summary>The nametag colour rule: how an enemy compares with the player.</summary>

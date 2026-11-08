@@ -57,6 +57,9 @@ Rules:
   and throw (`spearThrow`, the spear is back in her hand at once); axes swing flat and split the ground in a small V
   (`earthCrack`, a `FireWallHazard` of kind `EarthCrack` drawn by `EarthCrackNode`, hurting only while it runs).
   The studio's monsters job films each orc ability's wind-up and blow.
+  Rare orcs in the Ironjaw camp: the Swordmaster (`combo`, three blows; `airSlashWide`, a level crescent), the
+  Spearcaller (`summonSpears`: three spears hang over her head and shoot one by one) and the Stormaxe (`tornado`,
+  `EnemyAction.Tornado`: five turns of the axe, hurting every pulse while it drifts at the player).
   Wolves bite (light) and `pounce`, a real leap (heavy). Two rare wolves live in Greyfang: Mirrorfang calls two
   `shadow_clone`s (weak, no loot, gone after 14 s or with their wolf; summons join `_enemies` after the step loop),
   and Shadowstalker's `shadowRun` sinks into the ground (`EnemyAction.Shadow`, cannot be hit), slides out to

@@ -96,7 +96,7 @@
     "aggroRange": 13, "preferredRange": 2.4, "tagHeight": 2.6,
     "abilities": [
       { "effect": "melee", "range": 2.8, "windupTicks": 22, "recoverTicks": 18, "cooldownTicks": 40, "damage": 18, "radius": 1.6 },
-      { "effect": "airSlash", "range": 6, "windupTicks": 40, "recoverTicks": 26, "cooldownTicks": 200, "damage": 28, "telegraph": "line" }
+      { "effect": "airSlash", "range": 9, "windupTicks": 40, "recoverTicks": 26, "cooldownTicks": 200, "damage": 28, "telegraph": "line" }
     ],
     "drops": [{ "rarity": 0, "chance": 1 }, { "rarity": 1, "chance": 0.12 }, { "rarity": 2, "chance": 0.02 }],
     "gear": { "chance": 0.07, "rarity": [50, 32, 14, 4], "items": ["iron_helm", "chain_leggings", "hide_vest"] },
@@ -132,11 +132,50 @@
     "aggroRange": 16, "preferredRange": 2.4, "tagHeight": 2.4,
     "abilities": [
       { "effect": "melee", "range": 2.8, "windupTicks": 16, "recoverTicks": 14, "cooldownTicks": 30, "damage": 16, "radius": 1.5 },
-      { "effect": "airSlash", "range": 6, "windupTicks": 34, "recoverTicks": 22, "cooldownTicks": 190, "damage": 24, "telegraph": "line" }
+      { "effect": "airSlash", "range": 9, "windupTicks": 34, "recoverTicks": 22, "cooldownTicks": 190, "damage": 24, "telegraph": "line" }
     ],
     "drops": [{ "rarity": 0, "chance": 1 }, { "rarity": 1, "chance": 0.14 }, { "rarity": 2, "chance": 0.03 }],
     "gear": { "chance": 0.07, "rarity": [50, 32, 14, 4], "items": ["leather_jerkin", "patched_trousers", "boar_boots"] },
     "loot": [{"item": "orc_tusk", "chance": 0.4, "min": 1, "max": 1}, {"item": "wolf_pelt", "chance": 0.3, "min": 1, "max": 1}]
+  },
+  {
+    "id": "orc_swordmaster", "name": "Ironjaw Swordmaster", "kind": "orc", "weapon": "longsword", "rare": true, "defense": 12,
+    "minLevel": 12, "maxLevel": 13, "health": 520, "healthPerLevel": 50, "speed": 4.8, "size": 1.3,
+    "aggroRange": 15, "preferredRange": 2.4, "tagHeight": 2.8,
+    "abilities": [
+      { "effect": "melee", "range": 2.9, "windupTicks": 16, "recoverTicks": 14, "cooldownTicks": 30, "damage": 20, "radius": 1.7 },
+      { "effect": "combo", "range": 3.0, "windupTicks": 18, "recoverTicks": 30, "cooldownTicks": 260, "damage": 16, "radius": 1.9, "telegraph": "circle" },
+      { "effect": "airSlashWide", "range": 9, "windupTicks": 34, "recoverTicks": 24, "cooldownTicks": 300, "damage": 30, "telegraph": "line" }
+    ],
+    "drops": [{ "rarity": 0, "chance": 1 }, { "rarity": 1, "chance": 0.6 }, { "rarity": 2, "chance": 0.15 }, { "rarity": 3, "chance": 0.02 }],
+    "gear": { "chance": 0.35, "rarity": [25, 40, 25, 10], "items": ["iron_helm", "chain_leggings", "hide_vest", "boar_boots"] },
+    "loot": [{"item": "orc_tusk", "chance": 1, "min": 1, "max": 2}, {"item": "iron_scrap", "chance": 1, "min": 2, "max": 4}]
+  },
+  {
+    "id": "orc_spearcaller", "name": "Ironjaw Spearcaller", "kind": "orc", "weapon": "spear", "rare": true, "defense": 9,
+    "minLevel": 12, "maxLevel": 13, "health": 440, "healthPerLevel": 44, "speed": 5.2, "size": 1.25,
+    "aggroRange": 17, "preferredRange": 3.2, "tagHeight": 2.6,
+    "abilities": [
+      { "effect": "melee", "range": 3.4, "windupTicks": 16, "recoverTicks": 14, "cooldownTicks": 30, "damage": 18, "radius": 1.5 },
+      { "effect": "spearThrow", "range": 14, "minRange": 4, "windupTicks": 30, "recoverTicks": 22, "cooldownTicks": 180, "damage": 26, "telegraph": "line" },
+      { "effect": "summonSpears", "range": 16, "minRange": 3, "windupTicks": 40, "recoverTicks": 50, "cooldownTicks": 420, "damage": 22 }
+    ],
+    "drops": [{ "rarity": 0, "chance": 1 }, { "rarity": 1, "chance": 0.6 }, { "rarity": 2, "chance": 0.15 }, { "rarity": 3, "chance": 0.02 }],
+    "gear": { "chance": 0.35, "rarity": [25, 40, 25, 10], "items": ["iron_helm", "chain_leggings", "hide_vest", "boar_boots"] },
+    "loot": [{"item": "orc_tusk", "chance": 1, "min": 1, "max": 2}, {"item": "iron_scrap", "chance": 1, "min": 2, "max": 4}]
+  },
+  {
+    "id": "orc_stormaxe", "name": "Ironjaw Stormaxe", "kind": "orc", "weapon": "axe", "rare": true, "defense": 8,
+    "minLevel": 12, "maxLevel": 13, "health": 560, "healthPerLevel": 52, "speed": 5.0, "size": 1.35,
+    "aggroRange": 15, "preferredRange": 2.4, "tagHeight": 2.9,
+    "abilities": [
+      { "effect": "melee", "range": 2.9, "windupTicks": 18, "recoverTicks": 16, "cooldownTicks": 34, "damage": 22, "radius": 1.8 },
+      { "effect": "earthCrack", "range": 6, "windupTicks": 40, "recoverTicks": 28, "cooldownTicks": 220, "damage": 30, "telegraph": "wedge" },
+      { "effect": "tornado", "range": 5, "windupTicks": 40, "recoverTicks": 60, "cooldownTicks": 600, "damage": 9, "radius": 2.8, "telegraph": "circle" }
+    ],
+    "drops": [{ "rarity": 0, "chance": 1 }, { "rarity": 1, "chance": 0.6 }, { "rarity": 2, "chance": 0.15 }, { "rarity": 3, "chance": 0.02 }],
+    "gear": { "chance": 0.35, "rarity": [25, 40, 25, 10], "items": ["iron_helm", "chain_leggings", "hide_vest", "boar_boots"] },
+    "loot": [{"item": "orc_tusk", "chance": 1, "min": 1, "max": 2}, {"item": "iron_scrap", "chance": 1, "min": 2, "max": 4}]
   },
   {
     "id": "werewolf", "name": "Werewolf", "kind": "werewolf", "weapon": "claws", "defense": 8,

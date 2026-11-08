@@ -22,6 +22,9 @@ public sealed class GoblinView : IEnemyView
     private bool _first = true;
     private float _actionTime;
     private float _spin;
+
+    /// <summary>Which blow of a combo is under way: the strikes counted since the orc began it.</summary>
+    private int _comboStep;
     private Vector3 _lastPosition;
 
     public Node3D Root => _rig.Root;
@@ -38,6 +41,10 @@ public sealed class GoblinView : IEnemyView
             "orc_berserker" => ("orc_berserker", "5a3a2c"),
             "orc_spearwoman" => ("orc_spearwoman", "6a3a2a"),
             "orc_huntress" => ("orc_huntress", "4a5a3a"),
+            // The rare orcs wear their camp's war red over a darker hide.
+            "orc_swordmaster" => ("orc_warrior", "8a2a2a"),
+            "orc_spearcaller" => ("orc_spearwoman", "7a2a3a"),
+            "orc_stormaxe" => ("orc_berserker", "6a1e1e"),
             "goblin_brute" => ("brute", "5a4a3a"),
             "goblin_rapid_archer" => ("archer", "3a5a7a"),
             "goblin_sharpshooter" => ("sharpshooter", "5a3a5a"),
@@ -53,6 +60,9 @@ public sealed class GoblinView : IEnemyView
             "orc_berserker" => "5e7a34",
             "orc_spearwoman" => "7a9448",
             "orc_huntress" => "6a8a50",
+            "orc_swordmaster" => "4e6a3a",
+            "orc_spearcaller" => "587040",
+            "orc_stormaxe" => "46602e",
             "goblin_brute" => "6a9a3a",
             "goblin_sharpshooter" => "6aa07a",
             "goblin_shaman" => "8a9a6a",
@@ -82,7 +92,20 @@ public sealed class GoblinView : IEnemyView
 
         var ability = _def.Abilities is { } list && enemy.Ability < list.Length ? list[enemy.Ability] : null;
         var spinning = enemy.Action == EnemyAction.Strike && ability?.Effect == "spin" && _actionTime < 0.5f;
-        _spin = spinning ? _spin + delta * 20f : 0f;
+        // A tornado turns the orc five times round over its whole length.
+        var whirling = enemy.Action == EnemyAction.Tornado;
+        _spin = whirling ? _spin + delta * TornadoTurnSpeed : spinning ? _spin + delta * 20f : 0f;
+        if (enemy.Action == EnemyAction.Strike && _lastStrikeAction != EnemyAction.Strike)
+        {
+            _comboStep++;
+        }
+
+        if (enemy.Action is not (EnemyAction.Cast or EnemyAction.Strike))
+        {
+            _comboStep = 0;
+        }
+
+        _lastStrikeAction = enemy.Action;
         Root.Position = position;
         Root.Rotation = new Vector3(0, enemy.Facing + _spin, 0);
         Root.Visible = enemy.Action != EnemyAction.Dead;
@@ -93,14 +116,38 @@ public sealed class GoblinView : IEnemyView
         _rig.Animate(new MotionState(speed > 20f ? 0f : speed, true, 0f, false, AttackKind.None, 0, MoveFor(enemy.Action, ability)), delta);
     }
 
+    /// <summary>Five turns in the server's tornado time, in radians a second.</summary>
+    private const float TornadoTurnSpeed = 5f * Mathf.Tau / (Enemy.TornadoTicks * Tuning.TickSeconds);
+
+    private EnemyAction _lastStrikeAction;
+
     private WeaponMove MoveFor(EnemyAction action, Ability? ability)
     {
+        if (action == EnemyAction.Tornado)
+        {
+            return WeaponMove.ClubSpin;
+        }
+
         if (ability is null || action is not (EnemyAction.Cast or EnemyAction.Strike or EnemyAction.Leap))
         {
             return WeaponMove.None;
         }
 
         var winding = action == EnemyAction.Cast;
+        if (ability.Effect == "combo")
+        {
+            // Right to left, back left to right, then down from overhead. A wind-up holds the last blow's end.
+            var blow = winding ? _comboStep : _comboStep - 1;
+            return (blow, winding) switch
+            {
+                (0, true) => WeaponMove.SwingBack,
+                (0, false) => WeaponMove.SwingAcross,
+                (1, true) => WeaponMove.SwingAcross,
+                (1, false) => WeaponMove.SwingBack,
+                (_, true) => WeaponMove.ClubRaise,
+                _ => WeaponMove.ClubSmash,
+            };
+        }
         if (_def.Kind == "werewolf" && ability.Effect is "melee" or "dashStrike" or "slam")
         {
             return winding ? WeaponMove.ClawRaise : WeaponMove.ClawRake;
@@ -128,25 +175,35 @@ public sealed class GoblinView : IEnemyView
             "airSlash" => winding ? WeaponMove.ClubRaise : WeaponMove.ClubSmash,
             "earthCrack" => winding ? WeaponMove.ClubRaise : WeaponMove.GroundChop,
             "spearThrow" => winding ? WeaponMove.ThrowBack : WeaponMove.Throw,
+            "airSlashWide" => winding ? WeaponMove.SwingBack : WeaponMove.SwingAcross,
+            "summonSpears" => winding ? WeaponMove.StaffRaise : WeaponMove.StaffThrust,
+            "tornado" => WeaponMove.SwingBack,
             _ => WeaponMove.None,
         };
     }
 
+    private bool Female => _def.Id is "orc_spearwoman" or "orc_huntress" or "orc_spearcaller";
+
     private void PlaySounds(in EnemyView enemy, Vector3 position, Sfx sfx)
     {
+        if (!_first && enemy.Action == EnemyAction.Tornado && _lastAction != EnemyAction.Tornado)
+        {
+            sfx.Play("tornado", position + Vector3.Up);
+        }
+
         DamageTaken = 0;
         if (!_first)
         {
             if (enemy.Health < _lastHealth)
             {
                 DamageTaken = _lastHealth - enemy.Health;
-                var voice = _def.Kind == "werewolf" ? "werewolf" : _def.Kind == "orc" ? (_def.Id is "orc_spearwoman" or "orc_huntress" ? "orc_f" : "orc") : "goblin";
+                var voice = _def.Kind == "werewolf" ? "werewolf" : _def.Kind == "orc" ? (Female ? "orc_f" : "orc") : "goblin";
                 sfx.Play(enemy.Action == EnemyAction.Dead ? $"{voice}_die" : $"{voice}_hit", position + Vector3.Up);
             }
 
             if (enemy.Fighting && !_lastFighting)
             {
-                sfx.Play(_def.Kind == "werewolf" ? "werewolf_roar" : _def.Kind == "orc" ? (_def.Id is "orc_spearwoman" or "orc_huntress" ? "orc_f_alert" : "orc_alert") : "goblin_alert", position + Vector3.Up);
+                sfx.Play(_def.Kind == "werewolf" ? "werewolf_roar" : _def.Kind == "orc" ? (Female ? "orc_f_alert" : "orc_alert") : "goblin_alert", position + Vector3.Up);
             }
 
             if (enemy.Action != _lastAction && enemy.Action == EnemyAction.Strike && _def.Abilities is { } list)
@@ -158,6 +215,9 @@ public sealed class GoblinView : IEnemyView
                     "airSlash" => "air_slash",
                     "spearThrow" => "spear_throw",
                     "earthCrack" => "earth_crack",
+                    "combo" => "orc_swing",
+                    "airSlashWide" => "air_slash",
+                    "summonSpears" => "spear_summon",
                     "melee" or "dashStrike" => _def.Kind == "werewolf" ? "werewolf_swipe" : _def.Kind == "orc" ? "orc_swing" : "goblin_swing",
                     _ => null,
                 };
