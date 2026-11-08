@@ -312,10 +312,10 @@ public sealed class PlayerRig
         _cloth.Add(cap);
         var free = _look.Hair switch
         {
-            "mira" => ("anime_hair_long", new ClothShape(0.58f, 0.14f, 0.13f, 0.17f, 2.4f, 9.8f, 0.006f, 0.15f, 0.11f), 0.08f),
-            "rhea" => ("anime_ponytail", new ClothShape(0.5f, 0.05f, 0.17f, 0.2f, 2.6f, 9.8f, 0.004f, 0.13f, 0.13f), 0.13f),
-            "tess" => ("anime_braids", new ClothShape(0.44f, 0.16f, 0.02f, 0.04f, 2f, 9.8f, 0.01f, 0.13f, 0.09f), -0.02f),
-            "sora" => ("anime_hair_wavy", new ClothShape(0.62f, 0.15f, 0.13f, 0.17f, 2.3f, 9.8f, 0.006f, 0.15f, 0.11f), 0.08f),
+            "mira" => ("anime_hair_long", new ClothShape(0.58f, 0.14f, 0.13f, 0.17f, 1.6f, 9.8f, 0.03f, 0.15f, 0.11f), 0.08f),
+            "rhea" => ("anime_ponytail", new ClothShape(0.5f, 0.05f, 0.17f, 0.2f, 1.8f, 9.8f, 0.025f, 0.13f, 0.13f), 0.13f),
+            "tess" => ("anime_braids", new ClothShape(0.44f, 0.16f, 0.02f, 0.04f, 1.6f, 9.8f, 0.03f, 0.13f, 0.09f), -0.02f),
+            "sora" => ("anime_hair_wavy", new ClothShape(0.62f, 0.15f, 0.13f, 0.17f, 1.6f, 9.8f, 0.03f, 0.15f, 0.11f), 0.08f),
             "elda" => ("anime_bun", new ClothShape(0.12f, 0.05f, 0.12f, 0.13f, 3f, 9.8f, 0.08f, 0.12f, 0.12f), 0.2f),
             _ => default,
         };
@@ -446,7 +446,9 @@ public sealed class PlayerRig
             {
                 if (mesh.Mesh.SurfaceGetMaterial(surface) is StandardMaterial3D original)
                 {
-                    var color = _look.Palette.GetValueOrDefault(original.ResourceName, original.AlbedoColor);
+                    // The still cap of the hair takes the hair's colour, but never sways with the strands.
+                    var cap = original.ResourceName == "anime_hair_cap";
+                    var color = _look.Palette.GetValueOrDefault(cap ? "anime_hair" : original.ResourceName, original.AlbedoColor);
                     var skin = original.ResourceName == "anime_skin";
                     var material = Toon(skin ? _look.Skin : color);
                     if (skin)
@@ -457,7 +459,7 @@ public sealed class PlayerRig
                         material.SetShaderParameter("rim_strength", 0.08f);
                     }
 
-                    if (original.ResourceName == "anime_hair")
+                    if (original.ResourceName == "anime_hair" || cap)
                     {
                         material.SetShaderParameter("shine", 1f);
                     }
@@ -465,7 +467,10 @@ public sealed class PlayerRig
                     material.SetShaderParameter("sway_top", top);
                     material.SetShaderParameter("sway_length", length);
                     mesh.SetSurfaceOverrideMaterial(surface, material);
-                    cloth?.Add(material);
+                    if (!cap)
+                    {
+                        cloth?.Add(material);
+                    }
                 }
             }
         }

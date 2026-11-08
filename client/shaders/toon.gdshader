@@ -47,9 +47,10 @@ void fragment() {
 		vec3 up = normalize((VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz);
 		float lift = dot(NORMAL, up);
 		vec3 world = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz;
-		float teeth = sin(world.x * 140.0 + world.z * 90.0) * 0.05;
-		float ring = smoothstep(0.34, 0.4, lift + teeth) * (1.0 - smoothstep(0.62, 0.68, lift - teeth)) * step(0.15, NORMAL.z);
-		EMISSION = mix(EMISSION, mix(b, vec3(1.0), 0.45), ring * 0.85);
+		// A thin, soft band: a hint of gloss, not a stripe.
+		float teeth = sin(world.x * 140.0 + world.z * 90.0) * 0.015;
+		float ring = smoothstep(0.42, 0.47, lift + teeth) * (1.0 - smoothstep(0.55, 0.6, lift - teeth)) * step(0.15, NORMAL.z);
+		EMISSION = mix(EMISSION, mix(b, vec3(1.0), 0.25), ring * 0.4);
 	}
 	ROUGHNESS = 1.0;
 	SPECULAR = 0.0;

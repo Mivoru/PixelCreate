@@ -27,7 +27,7 @@ COLORS = {
     "stone": "9A9CA8", "stone_dark": "6A6C78", "window": "FEE761", "tunic": "0099DB", "shutter": "3E6A7A",
     "skin": "E0AC8C", "hat": "E4A672", "hair": "5A3A28", "gold": "D8A23C", "water": "2F6F9F",
     "flower": "E8506A", "flower_b": "F0C040", "hay": "D8B85A", "sack": "C8B48C", "cloth_red": "B84040",
-    "anime_skin": "F6D8C4", "anime_hair": "2B3044", "anime_shirt": "D8D0C2", "anime_dark": "23252E",
+    "anime_skin": "F6D8C4", "anime_hair": "2B3044", "anime_hair_cap": "2B3044", "anime_shirt": "D8D0C2", "anime_dark": "23252E",
     "anime_trousers": "2E3040", "anime_leather": "5A3A2C", "anime_cloak": "2F4A3C", "anime_gold": "D8A23C",
     "foliage_oak": "5F9A3C", "foliage_oak_b": "6FA63E", "foliage_birch": "A8C850", "foliage_blossom": "F4A8C0", "foliage_pine": "2F6A58",
     "foliage_willow": "8FB84A", "foliage_bush": "4F8E42", "foliage_jungle": "3F9048", "foliage_core": "1F4A3A",
@@ -494,11 +494,21 @@ def strand(bm, start, end, bend, width, sides=5, steps=6):
 
 
 def hair_cap(bm, back=-0.42):
-    """The solid part of the hair: a shell over the skull, open over the face."""
-    made = bmesh.ops.create_icosphere(bm, subdivisions=4, radius=1)["verts"]
-    bmesh.ops.delete(bm, geom=[v for v in made if v.co.z < (0.18 if v.co.y > 0.2 else back)], context="VERTS")
-    for vert in bm.verts:
-        vert.co = (vert.co.x * 0.139, vert.co.y * 0.146, vert.co.z * 0.164 + 0.008)
+    """
+    The solid part of the hair: a shell over the skull, open over the face. It is its own object with
+    its own material, anime_hair_cap, so the game keeps it still on the head while only the strands
+    sway; a swaying shell slid off the skull and showed a bald patch. bm is the strands' mesh, untouched.
+    """
+    cap = bmesh.new()
+    made = bmesh.ops.create_icosphere(cap, subdivisions=4, radius=1)["verts"]
+    bmesh.ops.delete(cap, geom=[v for v in made if v.co.z < (0.18 if v.co.y > 0.2 else back)], context="VERTS")
+    for vert in cap.verts:
+        vert.co = (vert.co.x * 0.141, vert.co.y * 0.148, vert.co.z * 0.166 + 0.008)
+    mesh = bpy.data.meshes.new("hair_cap")
+    cap.to_mesh(mesh)
+    cap.free()
+    smooth(mesh)
+    add_object("hair_cap", mesh, "anime_hair_cap")
 
 
 def finish_hair(bm, name="hair"):
@@ -618,17 +628,23 @@ def anime_hair_spiky():
 
 
 def anime_hair_short():
-    """Short, tidy hair parted at one side."""
+    """Short, tidy hair parted at one side: a fringe that lies on the brow, short sides and a full back."""
     bm = bmesh.new()
-    hair_cap(bm, -0.5)
+    hair_cap(bm, -0.55)
     rng = random.Random(93)
-    for index in range(10):
-        x = -0.12 + index * 0.025
-        strand(bm, (x - 0.02, 0.12, 0.12), (x + 0.03, 0.142, 0.06 - rng.uniform(0, 0.02)), (0.01, 0.014, 0), 0.026)
-    for index in range(18):
+    for index in range(14):
+        # The fringe falls on the forehead and is swept away from the parting, close to the skin.
+        x = -0.12 + index * 0.0185
+        strand(bm, (x - 0.015, 0.118, 0.125), (x + 0.025, 0.138, 0.035 - rng.uniform(0, 0.025)), (0.008, 0.009, 0), 0.022)
+    for side in (-1, 1):
+        for index in range(4):
+            # Short sides over the temples, down to the top of the ear.
+            y = 0.07 - index * 0.03
+            strand(bm, (side * 0.13, y, 0.08), (side * 0.142, y - 0.005, -0.03 - rng.uniform(0, 0.02)), (side * 0.008, 0, 0), 0.026)
+    for index in range(20):
         angle = rng.uniform(0.1, math.pi - 0.1)
         x, y = math.cos(angle) * 0.13, -math.sin(angle) * 0.13
-        strand(bm, (x, y, 0.05), (x * 1.12, y * 1.12, -0.06 - rng.uniform(0, 0.03)), (x * 0.1, y * 0.1, 0), 0.03)
+        strand(bm, (x, y, 0.06), (x * 1.1, y * 1.1, -0.08 - rng.uniform(0, 0.03)), (x * 0.08, y * 0.08, 0), 0.03)
     finish_hair(bm)
 
 

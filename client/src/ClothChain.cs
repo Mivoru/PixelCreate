@@ -153,7 +153,7 @@ public sealed class ClothChain
         {
             if (i % Rows != 0)
             {
-                _now[i] = Collide(_now[i], frame, inverse);
+                _now[i] = Collide(_now[i], frame, inverse, i % Rows);
             }
         }
     }
@@ -173,10 +173,15 @@ public sealed class ClothChain
         _now[b] -= error * (1f - share);
     }
 
-    /// <summary>Keeps a point outside the body, which is an upright ellipse around the anchor, and above the ground.</summary>
-    private Vector3 Collide(Vector3 point, Transform3D frame, Transform3D inverse)
+    /// <summary>
+    /// Keeps a point outside the body, which is an upright ellipse around the anchor, and above the
+    /// ground; and keeps it hanging: a point may swing out, but never rise above 45 % of its
+    /// drop below the anchor, so hair cannot fly up over the head when the body lands.
+    /// </summary>
+    private Vector3 Collide(Vector3 point, Transform3D frame, Transform3D inverse, int row)
     {
         var local = inverse * point;
+        local.Y = Mathf.Min(local.Y, -_shape.Length * row / (Rows - 1) * 0.55f);
         var reach = new Vector2(local.X / _shape.BodyWidth, local.Z / _shape.BodyDepth).Length();
         if (reach < 1f)
         {
