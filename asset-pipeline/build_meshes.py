@@ -1844,7 +1844,7 @@ MODELS.update(goblins.camp_models(box, timber, blob, cylinder, loft, tube))
 MODELS.update(weapons.models(add_object, smooth))
 MODELS.update(orcs.models(add_object, smooth))
 MODELS.update(lands.models(types.SimpleNamespace(box=box, timber=timber, blob=blob, cylinder=cylinder, loft=loft, tube=tube,
-                                                  add_object=add_object, smooth=smooth)))
+                                                  add_object=add_object, smooth=smooth, mesh_from=mesh_from, bpy=bpy)))
 for beast in beasts.NAMES:
     MODELS["beast_" + beast] = (lambda kind: lambda: beasts.build(kind, add_object, smooth))(beast)
 

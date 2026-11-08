@@ -51,5 +51,10 @@
   { "name": "greyfang_road", "eye": [150, 4, 196], "at": [190, 3, 192] },
   { "name": "greyfang_den", "eye": [229, 3.2, 219], "at": [238, 2, 233] },
   { "name": "greyfang_camp", "eye": [211, 2.5, 184], "at": [204, 1.2, 189] },
-  { "name": "pass_north", "eye": [100, 8, 130], "at": [124, 6, 180] }
+  { "name": "pass_north", "eye": [100, 8, 130], "at": [124, 6, 180] },
+  { "name": "warcamp_road", "eye": [192, 4, -84], "at": [205, 3, -118] },
+  { "name": "warcamp_gate", "eye": [200, 3, -104], "at": [210, 2.5, -128] },
+  { "name": "warcamp_hall", "eye": [210, 4, -126], "at": [218, 3, -146] },
+  { "name": "warcamp_tents", "eye": [222, 5, -120], "at": [205, 2, -140] },
+  { "name": "warcamp_outpost", "eye": [184, 3, -40], "at": [174, 1.5, -50] }
 ]
