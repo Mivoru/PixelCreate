@@ -9,7 +9,7 @@ namespace PixelCreate;
 /// </summary>
 public sealed class Fx
 {
-    private sealed record Fading(MeshInstance3D Mesh, ShaderMaterial Material, float Life, float Strength)
+    private sealed record Fading(MeshInstance3D Mesh, ShaderMaterial Material, float Life, float Strength, float Grow = 0f)
     {
         public float Age { get; set; }
     }
@@ -62,6 +62,21 @@ public sealed class Fx
         _fading.Add(new Fading(instance, material, life, strength));
     }
 
+    /// <summary>A flat ring that races outward along the ground to a radius and fades as it goes.</summary>
+    public void Ring(Vector3 position, Color color, float radius, float life)
+    {
+        var material = Stipple(color, 0.9f);
+        var instance = new MeshInstance3D
+        {
+            Mesh = new TorusMesh { InnerRadius = radius - 0.35f, OuterRadius = radius, Rings = 32, RingSegments = 6 },
+            Position = position + Vector3.Up * 0.15f,
+            Scale = new Vector3(0.15f, 1f, 0.15f),
+            MaterialOverride = material,
+        };
+        _parent.AddChild(instance);
+        _fading.Add(new Fading(instance, material, life, 0.9f, 1f));
+    }
+
     /// <summary>A flat splash of slime that shrinks into the ground.</summary>
     public void Puddle(Vector3 position, Color color, float radius, float life)
     {
@@ -84,6 +99,11 @@ public sealed class Fx
             item.Age += delta;
             var left = 1f - item.Age / item.Life;
             item.Material.SetShaderParameter("strength", item.Strength * left);
+            if (item.Grow > 0f)
+            {
+                var size = Mathf.Lerp(0.15f, item.Grow, Mathf.Sqrt(Mathf.Clamp(1f - left, 0f, 1f)));
+                item.Mesh.Scale = new Vector3(size, 1f, size);
+            }
             if (left <= 0f)
             {
                 item.Mesh.QueueFree();

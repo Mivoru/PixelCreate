@@ -76,6 +76,9 @@ public enum ProjectileKind : byte
 
     /// <summary>One of Redclaw's three slanted red crescents, torn from the air by a swipe of the paw.</summary>
     FangSlash = 10,
+
+    /// <summary>Staff mastery Chain Lightning: a bolt that leaps from one enemy to the next.</summary>
+    ChainBolt = 11,
 }
 
 /// <summary>What a ground hazard is: the shaman's burning V or a player's strip of fire, or an orc's crack in the earth.</summary>
@@ -289,6 +292,12 @@ public sealed class GameServer : IEnemyEvents
         public float Gravity;
         public float SplashRadius;
         public bool Pierces;
+
+        /// <summary>Bow mastery Piercing Arrow: the arrow flies on through every enemy it hits.</summary>
+        public bool PiercesEnemies;
+
+        /// <summary>For a chain bolt: leaps still to make after this one.</summary>
+        public int Jumps;
 
         /// <summary>For a player's arrow: who loosed it and how far the bow was drawn, as a share of a full draw.</summary>
         public int Shooter = -1;
@@ -598,7 +607,21 @@ public sealed class GameServer : IEnemyEvents
                 }
 
                 AddItem(player, SkillDef.All[0].Book, 1);
-                player.MasteryLevels[Mastery.WeaponIndex("sword")] = 3;
+                // Every built mastery move is taken, with three points left to spend per weapon.
+                foreach (var end in Mastery.Nodes.Where(n => n.Unlock is not null && n.Ready))
+                {
+                    foreach (var node in Mastery.Nodes.Where(n => n.Weapon == end.Weapon && n.Branch == end.Branch))
+                    {
+                        player.MasteryTaken |= 1ul << node.Index;
+                    }
+                }
+
+                foreach (var weapon in Mastery.Weapons)
+                {
+                    player.MasteryLevels[Mastery.WeaponIndex(weapon)] = (byte)(Mastery.Spent(weapon, player.MasteryTaken) + 3);
+                }
+
+                RecomputeStats(player);
 
                 // Test runs start with one piece of each rarity, so gear can be checked at once.
                 var kit = new[] { "twin_daggers", "iron_helm", "leather_jerkin", "chain_leggings", "hunters_longbow", "spiked_club", "bone_staff" };
@@ -1213,7 +1236,87 @@ public sealed class GameServer : IEnemyEvents
             {
                 OnKilled(enemy, player);
             }
+            else if (kind == AttackKind.ClubSpin && Mastery.Has(player.Stats.Weapon, player.MasteryTaken, "stunning_bash"))
+            {
+                // Club mastery Stunning Bash: the spin leaves everyone it hit reeling.
+                enemy.Stagger(Tuning.StunTicks);
+            }
         }
+
+        if (kind == AttackKind.ClubSpin && Mastery.Has(player.Stats.Weapon, player.MasteryTaken, "shockwave"))
+        {
+            Shockwave(player, attack.Range);
+        }
+    }
+
+    /// <summary>Club mastery Shockwave: the spin sends a ring of force out past its own reach.</summary>
+    private void Shockwave(Player player, float spinReach)
+    {
+        foreach (var enemy in _enemies.ToList())
+        {
+            var offset = enemy.Position - player.State.Position;
+            var height = MathF.Abs(offset.Y);
+            var distance = (offset with { Y = 0 }).Length() - enemy.Def.Size * 0.5f;
+            if (enemy.Alive && distance > spinReach && distance <= Tuning.ShockwaveRadius && height < 2.5f)
+            {
+                Smite(player, enemy, AttackKind.ClubSpin, Tuning.ShockwaveShare, player.State.Position);
+            }
+        }
+    }
+
+    /// <summary>Staff mastery Chain Lightning: a bolt leaves an enemy for the nearest one not yet struck.</summary>
+    private void Chain(Player caster, Vector3 from, HashSet<int> struck, int jumps)
+    {
+        var next = _enemies.Where(e => e.Alive && !struck.Contains(e.Id) && Vector3.Distance(e.Position, from) < Tuning.ChainReach)
+            .OrderBy(e => Vector3.Distance(e.Position, from)).FirstOrDefault();
+        if (jumps <= 0 || next is null)
+        {
+            return;
+        }
+
+        var bolt = new Projectile
+        {
+            Id = _nextId++,
+            Kind = ProjectileKind.ChainBolt,
+            Damage = 0,
+            Position = from,
+            Shooter = caster.Id,
+            Blow = AttackKind.StaffBolt,
+            TargetId = next.Id,
+            Jumps = jumps - 1,
+            Pierces = true,
+            Life = Tuning.TickRate,
+        };
+        bolt.Struck.UnionWith(struck);
+        _projectiles.Add(bolt);
+    }
+
+    /// <summary>A chain bolt flies at its enemy; on reaching it, it strikes and leaps on.</summary>
+    private void StepChainBolt(Projectile bolt)
+    {
+        var target = _enemies.FirstOrDefault(e => e.Id == bolt.TargetId && e.Alive);
+        if (target is null || !_players.TryGetValue(bolt.Shooter, out var caster))
+        {
+            bolt.Life = 0;
+            return;
+        }
+
+        var chest = target.Position + new Vector3(0, target.Def.Size * 0.6f, 0);
+        var line = chest - bolt.Position;
+        var step = Tuning.ChainSpeed * Tuning.TickSeconds;
+        bolt.Life--;
+        if (line.Length() > step)
+        {
+            bolt.Velocity = Vector3.Normalize(line) * Tuning.ChainSpeed;
+            bolt.Position += bolt.Velocity * Tuning.TickSeconds;
+            return;
+        }
+
+        bolt.Position = chest;
+        bolt.Life = 0;
+        bolt.Struck.Add(target.Id);
+        Smite(caster, target, AttackKind.StaffBolt, Tuning.ChainShare, chest);
+        Chain(caster, chest, bolt.Struck, bolt.Jumps);
     }
 
     /// <summary>
@@ -2122,6 +2225,7 @@ public sealed class GameServer : IEnemyEvents
         var drawn = Tuning.Drawn(player.State.ShotDraw);
         var speed = Tuning.ArrowSpeed(drawn);
         var origin = ArrowOrigin(player.State.Position, flat);
+        var piercing = Mastery.Has(player.Stats.Weapon, player.MasteryTaken, "piercing_arrow");
         var share = Tuning.DrawShare(player.State.ShotDraw);
         var life = (int)MathF.Ceiling(Tuning.ArrowRange(drawn) / speed * Tuning.TickRate);
         AddArrow(aim, share);
@@ -2144,6 +2248,7 @@ public sealed class GameServer : IEnemyEvents
             Shooter = player.Id,
             Draw = draw,
             Life = life,
+            PiercesEnemies = piercing,
         });
     }
 
@@ -2206,7 +2311,7 @@ public sealed class GameServer : IEnemyEvents
         foreach (var enemy in _enemies)
         {
             var chest = enemy.Position + new Vector3(0, enemy.Def.Size * 0.6f, 0);
-            if (!enemy.Alive || Vector3.Distance(chest, shot.Position) >= HitRadius + enemy.Def.Size * 0.35f)
+            if (!enemy.Alive || shot.Struck.Contains(enemy.Id) || Vector3.Distance(chest, shot.Position) >= HitRadius + enemy.Def.Size * 0.35f)
             {
                 continue;
             }
@@ -2221,7 +2326,12 @@ public sealed class GameServer : IEnemyEvents
                 OnKilled(enemy, shooter);
             }
 
-            return true;
+            if (!shot.PiercesEnemies)
+            {
+                return true;
+            }
+
+            shot.Struck.Add(enemy.Id);
         }
 
         return false;
@@ -2267,6 +2377,12 @@ public sealed class GameServer : IEnemyEvents
                     shot.Pierces = false;
                 }
 
+                continue;
+            }
+
+            if (shot.Kind == ProjectileKind.ChainBolt)
+            {
+                StepChainBolt(shot);
                 continue;
             }
 
@@ -2353,12 +2469,23 @@ public sealed class GameServer : IEnemyEvents
             return;
         }
 
+        // Staff mastery Chain Lightning: the plain fireball's nearest victim sends a bolt leaping on.
+        var chain = shot.Skill < 0 && Mastery.Has(caster.Stats.Weapon, caster.MasteryTaken, "chain_lightning");
+        var struck = new HashSet<int>();
+        Enemy? first = null;
+        var firstDistance = float.MaxValue;
         foreach (var enemy in _enemies.ToList())
         {
             var chest = enemy.Position + new Vector3(0, enemy.Def.Size * 0.6f, 0);
             var distance = Vector3.Distance(chest, shot.Position) - enemy.Def.Size * 0.35f;
             if (enemy.Alive && distance < shot.SplashRadius)
             {
+                struck.Add(enemy.Id);
+                if (distance < firstDistance)
+                {
+                    (first, firstDistance) = (enemy, distance);
+                }
+
                 if (shot.Skill >= 0)
                 {
                     SkillBlow(caster, enemy, shot.Skill, distance < HitRadius ? 1f : 0.6f, shot.Position - shot.Velocity);
@@ -2368,6 +2495,11 @@ public sealed class GameServer : IEnemyEvents
                     Smite(caster, enemy, shot.Blow, distance < HitRadius ? 1f : 0.6f, shot.Position - shot.Velocity);
                 }
             }
+        }
+
+        if (chain && first is not null)
+        {
+            Chain(caster, first.Position + new Vector3(0, first.Def.Size * 0.6f, 0), struck, Tuning.ChainJumps);
         }
     }
 

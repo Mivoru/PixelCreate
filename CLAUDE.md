@@ -52,7 +52,11 @@ Rules:
   `MasteryNode.BuiltUnlocks`, and shows as coming soon until then. At most 64 nodes (one mask in the snapshot).
   `PIXEL_BOT=mastery` opens the window. `Mastery.Has` asks for a move with its weapon in hand; `GrantMastery` takes a
   branch in tests. Built moves: Riposte (sword: a parry within `Tuning.RiposteReach` lands a heavy blow at once,
-  `Snapshot.Ripostes`) and Triple Shot (bow: two weaker arrows either side of every shot).
+  `Snapshot.Ripostes`), Triple Shot (bow: two weaker arrows either side of every shot), Piercing Arrow (bow: arrows fly
+  through every enemy, `Projectile.Struck`), Stunning Bash (club: the heavy spin staggers whatever it hits), Shockwave
+  (club: the spin also strikes out to `Tuning.ShockwaveRadius`, client ring `Fx.Ring`) and Chain Lightning (staff: the
+  fireball's nearest victim sends a `ProjectileKind.ChainBolt` leaping on, `Tuning.ChainJumps` times). Test mode takes
+  every built move. `net-tests/MasteryMoveTests.cs` checks each with and without it.
 - Slide: Ctrl while running on the ground (`Buttons.Slide`, `PlayerState.SlideTicks`/`SlideDirection`, in `Movement.Step`):
   a burst from 17 to 7 m/s over half a second, steerable a little, for stamina; a jump out of it keeps the speed in the
   air, and an attack or a dash ends it. `net-tests/SlideTests.cs`.
@@ -136,7 +140,7 @@ Rules:
 - `PIXEL_BOT` picks the bot: `hunt` kills animals near the spawn, loots, eats and opens the bag; `guild` plays the Guild story through the real interface and prints `BOT` stages,
   with `PIXEL_FRAIL=1` making the examiner frail. The examiner is a level 5 `duelist`:
   she circles just out of reach, steps in when a blow is ready, dashes aside from swings (`EnemyAction.Dodge`,
-  beyond harm like a player's dash) and sometimes springs back after her own blow (`EnemyDuelist.cs`). Also `idle`, `talk`, `trial`, `keys`. `PIXEL_YAW` turns the camera.
+  beyond harm like a player's dash) and sometimes springs back after her own blow (`EnemyDuelist.cs`). Also `idle`, `talk`, `trial`, `keys`. `PIXEL_YAW` turns the camera. `PIXEL_CAPTURE_EVERY=6` captures a frame every 6 ticks (default 45) to catch short effects.
 - The 3D view renders at the window resolution (`PIXEL_LINES=540` for the old chunky pixels); outlines are thin and fade
   with distance. F3 shows the player position, for reporting a problem spot.
 - `STATS` reports draws, objects and `frameMs` away from capture stalls. Earlier runs measured the open

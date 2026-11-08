@@ -50,6 +50,19 @@ public static class Tuning
     /// <summary>Bow mastery Triple Shot: two more arrows this far either side (radians), each with this share of the damage.</summary>
     public const float TripleShotSpread = 0.11f;
     public const float TripleShotShare = 0.6f;
+
+    /// <summary>Club mastery Stunning Bash: every foe the heavy spin hits reels this long.</summary>
+    public const int StunTicks = 40;
+
+    /// <summary>Club mastery Shockwave: the heavy spin also strikes foes out to this radius, with this share of its damage.</summary>
+    public const float ShockwaveRadius = 6.5f;
+    public const float ShockwaveShare = 0.5f;
+
+    /// <summary>Staff mastery Chain Lightning: from a fireball's victim the bolt leaps this far, this many times, with this share.</summary>
+    public const float ChainReach = 7f;
+    public const int ChainJumps = 3;
+    public const float ChainShare = 0.6f;
+    public const float ChainSpeed = 45f;
     public const float StaggerDamageScale = 1.5f;
     public const float GroundAcceleration = 60f;
     public const float AirAcceleration = 20f;

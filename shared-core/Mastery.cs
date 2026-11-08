@@ -15,7 +15,7 @@ public sealed record MasteryNode(string Name, string Text, Dictionary<string, in
     public int Index { get; init; }
 
     /// <summary>Unlocks for moves that exist in the game; others cannot be taken yet.</summary>
-    public static readonly HashSet<string> BuiltUnlocks = new() { "riposte", "triple_shot" };
+    public static readonly HashSet<string> BuiltUnlocks = new() { "riposte", "triple_shot", "piercing_arrow", "stunning_bash", "shockwave", "chain_lightning" };
 
     public bool Ready => Unlock is null || BuiltUnlocks.Contains(Unlock);
 }

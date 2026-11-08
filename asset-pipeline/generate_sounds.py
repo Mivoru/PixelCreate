@@ -90,6 +90,8 @@ SOUNDS = {
     "super_jump": ("a huge beast leaping off the ground so hard the earth cracks, explosive thud and rock burst", 1.0, 0.8, -5),
     "block": ("a heavy blow caught on a raised sword, dull metallic clank and thud, short", 0.5, 0.4, -6),
     "parry": ("a perfect sword parry, bright ringing steel clang with a sharp shimmer, short", 0.8, 0.6, -5),
+    "lightning_zap": ("a sharp crackling zap of magic lightning leaping between targets, electric snap, short", 0.6, 0.5, -8),
+    "shockwave": ("a heavy whoomp of a ring of force bursting outward along the ground, deep thud and rush of air", 0.9, 0.8, -6),
     "slide": ("a person sliding fast across dirt and grass on their side, short scraping skid", 0.6, 0.5, -8),
     "werewolf_roar": ("a huge werewolf roaring, deep monstrous snarling roar, terrifying, short", 1.5, 1.3, -5),
     "werewolf_hit": ("a monstrous beast snarling in pain, deep wolf growl, one short burst", 0.6, 0.5, -6),

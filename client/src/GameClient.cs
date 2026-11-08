@@ -75,7 +75,8 @@ public partial class GameClient : Node
     private const float AimRayLength = 90f;
     private const float MouseSensitivity = 0.0035f;
     private const float RemoteSmoothing = 18f;
-    private const int CaptureEveryTicks = 45;
+    /// <summary>Ticks between captured frames; PIXEL_CAPTURE_EVERY changes it to catch a short effect.</summary>
+    private static readonly int CaptureEveryTicks = int.TryParse(OS.GetEnvironment("PIXEL_CAPTURE_EVERY"), out var every) && every > 0 ? every : 45;
 
     private readonly Dictionary<int, PlayerRig> _remotes = new();
     private readonly Dictionary<int, IEnemyView> _enemies = new();
@@ -107,6 +108,10 @@ public partial class GameClient : Node
     private byte _lastBlocks;
     private byte _lastParries;
     private byte _lastRipostes;
+
+    /// <summary>True when the player has taken a mastery move and holds a weapon of its kind.</summary>
+    private bool HasMove(string unlock) =>
+        _hud.Snapshot is { } snapshot && Mastery.Has(Weapons.Name(_client.State.Weapon), snapshot.MasteryTaken, unlock);
     private int _lastXp;
     private bool _rareSeen;
     private float _ghostClock;
@@ -494,6 +499,14 @@ public partial class GameClient : Node
         if (now.Attack == AttackKind.DaggerFlurry && now.AttackTick >= attack.SecondHitAt - 3 && _last.AttackTick < attack.SecondHitAt - 3)
         {
             _sfx.Play("swing_light", chest, -2f);
+        }
+
+        if (now.Attack == AttackKind.ClubSpin && now.AttackTick >= attack.HitAt && _last.AttackTick < attack.HitAt && HasMove("shockwave"))
+        {
+            // Club mastery Shockwave: a ring of force races out from the spin.
+            _sfx.Play("shockwave", shown);
+            _fx.Ring(shown, new Color("ead4aa"), Tuning.ShockwaveRadius, 0.45f);
+            _fx.Burst(shown + Vector3.Up * 0.1f, new Color("b8a58a"), 30, 7f, 0.4f, 0.09f, -6f, 88f);
         }
 
         if (now.Attack == AttackKind.DaggerLeap && now.AttackTick >= attack.HitAt && _last.AttackTick < attack.HitAt)
@@ -1535,6 +1548,7 @@ public partial class GameClient : Node
                         ProjectileKind.Spit => "slime_spit",
                         ProjectileKind.Arrow => "bow_shot",
                         ProjectileKind.PowerArrow => "bow_power",
+                        ProjectileKind.ChainBolt => "lightning_zap",
                         _ => "fireball",
                     }, ball.Position);
                 }
@@ -1597,6 +1611,10 @@ public partial class GameClient : Node
             case ProjectileKind.FangSlash:
                 _fx.Burst(last, new Color("e43b44"), 12, 4f, 0.3f, 0.07f, 0f, 120f);
                 break;
+            case ProjectileKind.ChainBolt:
+                _fx.Burst(last, new Color("2ce8f5"), 18, 6f, 0.3f, 0.06f, 0f, 180f);
+                _fx.Burst(last, new Color("ffffff"), 8, 4f, 0.2f, 0.05f, 0f, 180f);
+                break;
             case ProjectileKind.AirSlash or ProjectileKind.AirSlashWide:
                 // The crescent frays into a puff of pale wind where it dies.
                 _fx.Burst(last, new Color("c0cbdc"), 16, 5f, 0.35f, 0.07f, 0f, 120f);
@@ -1618,6 +1636,19 @@ public partial class GameClient : Node
         if (kind == ProjectileKind.Spit)
         {
             return BuildSpit(position);
+        }
+
+        if (kind == ProjectileKind.ChainBolt)
+        {
+            // Chain Lightning: a white-hot spark trailing crackling blue.
+            var spark = new MeshInstance3D
+            {
+                Mesh = new BoxMesh { Size = new Vector3(0.14f, 0.14f, 0.14f) },
+                MaterialOverride = _fx.Stipple(new Color("ffffff"), 1f),
+                Position = position,
+            };
+            spark.AddChild(Trail(new Color("2ce8f5"), 10, 0.22f, 0.07f));
+            return spark;
         }
 
         if (kind == ProjectileKind.PlayerArrow)
