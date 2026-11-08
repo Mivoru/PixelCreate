@@ -6,7 +6,8 @@ namespace PixelCreate.Core;
 /// airSlash (a flying crescent), spearThrow (a thrown spear), earthCrack (a small V of split ground),
 /// pounce (a leap onto the player), shadowRun (a zigzag under the ground), shadowClone (two short-lived copies),
 /// combo (three blows in a row), airSlashWide (a flat crescent), summonSpears (three spears loosed one by one
-/// from above the head) and tornado (a long spin that drifts after the player).</summary>
+/// from above the head), tornado (a long spin that drifts after the player), fangSlash (three slanted red
+/// crescents side by side) and superJump (a charged leap from far off that rolls on a miss).</summary>
 public sealed record Ability(
     string Effect, float Range, int WindupTicks, int RecoverTicks, int CooldownTicks, short Damage,
     float Radius = 0f, float MinRange = 0f, string Telegraph = "none");
@@ -61,13 +62,24 @@ public sealed partial class Enemy
             case EnemyAction.Leap:
                 if (ActionTicks <= 0)
                 {
+                    Landed = false;
                     events.Fire(this, CurrentAbility!, null);
                     Action = EnemyAction.Strike;
                     ActionTicks = CurrentAbility!.RecoverTicks;
                     Velocity.X = 0;
                     Velocity.Z = 0;
+
+                    // A great leap that finds nobody ends in a forward roll instead of a strike.
+                    if (CurrentAbility.Effect == "superJump" && !Landed)
+                    {
+                        Action = EnemyAction.Roll;
+                        ActionTicks = RollTicks;
+                    }
                 }
 
+                break;
+            case EnemyAction.Roll:
+                StepRoll();
                 break;
             case EnemyAction.Strike:
                 Velocity.X = 0;
@@ -241,6 +253,12 @@ public sealed partial class Enemy
         if (ability.Effect == "pounce")
         {
             PounceAt(LeapTarget);
+            return;
+        }
+
+        if (ability.Effect == "superJump")
+        {
+            PounceAt(LeapTarget, SuperJumpAirTicks);
             return;
         }
 

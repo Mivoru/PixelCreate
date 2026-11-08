@@ -71,6 +71,9 @@ public enum EnemyAction : byte
 
     /// <summary>A duelist dashing aside, beyond harm for the moment.</summary>
     Dodge = 15,
+
+    /// <summary>A werewolf that missed its great leap, rolling forward out of the landing.</summary>
+    Roll = 16,
 }
 
 /// <summary>The nametag colour rule: how an enemy compares with the player.</summary>

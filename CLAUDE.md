@@ -79,6 +79,10 @@ Rules:
   and Shadowstalker's `shadowRun` sinks into the ground (`EnemyAction.Shadow`, cannot be hit), slides out to
   alternate sides, rises (`Surface`) and bursts out at the player from close by. `net-tests/WolfTests.cs`.
   Clones use `ghost.gdshader`. The forest camera can end up inside pine branches near these dens.
+  Werewolves claw (light) and pounce (heavy). Two rare ones live in Moonfell: Redclaw's `fangSlash` sends three
+  slanted red crescents side by side, and Moonleaper's `superJump` crouches with swelling thighs, cracks the ground
+  at take-off, flies as an arrow and lands as a strike (`Enemy.Landed`) or, on a miss, rolls (`EnemyAction.Roll`).
+  `net-tests/WerewolfTests.cs`.
 - Interiors live outside the map on platforms (the guild at x 420, the trial ground at x 480). Doors are portals.
 - Character models come from Blender (`anime_*`) and use `toon.gdshader`, which also bends hair and cloth.
 - Sound effects come from ElevenLabs: `python asset-pipeline/generate_sounds.py` (cached, keys stay outside the repo).
@@ -106,8 +110,10 @@ Rules:
   trusting either number. On 2026-11-08 an idle bot measured 7 to 10 ms everywhere: village 9.6, Greyfang 8.8,
   the Ironjaw Warcamp 8.6 (2351 draws, the most), Moonfell 7.0. Spawn a measuring bot outside enemy aggro range:
   inside a camp it dies at once and the rest of the run measures the village. `PIXEL_OFF=fog,ssao,glow,shadow,batches,grass` switches features off.
-- Full check after a change: `powershell -ExecutionPolicy Bypass -File scripts/check.ps1`. It lists script
-  exceptions from the live run: one exception a frame freezes the HUD and the player without crashing.
+- Check after a change: `powershell -ExecutionPolicy Bypass -File scripts/check.ps1` runs the tests and the Guild
+  story live, and lists script exceptions from the live run: one exception a frame freezes the HUD and the player
+  without crashing. Add `-Jobs monsters,world` (studio jobs whose looks changed) for pictures; a server or AI
+  change needs none. `-Jobs all` photographs everything and takes about ten minutes, so use it only when asked.
 - Photo studio: `scripts/studio.ps1 -Jobs people,animals,monsters,motion,attacks,models,world,hitboxes,map` needs no server and writes
   labelled contact sheets to `export/previews/studio/sheets`. Read them after every visual change. World shots
   live in `client/studio/shots.json`; add one for each new place. `PIXEL_SHOTS=guild,arena` films only shots

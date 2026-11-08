@@ -228,7 +228,9 @@
     { "x": 146, "z": -198, "radius": 4, "count": 2, "respawnTicks": 3000, "hunts": true, "types": ["orc_warrior", "orc_huntress"] },
     { "x": -192, "z": 204, "radius": 7, "count": 2, "respawnTicks": 3000, "types": ["werewolf"] },
     { "x": -208, "z": 214, "radius": 6, "count": 2, "respawnTicks": 3000, "types": ["werewolf"] },
-    { "x": -226, "z": 196, "radius": 3, "count": 1, "respawnTicks": 6000, "types": ["werewolf_alpha"] }
+    { "x": -226, "z": 196, "radius": 3, "count": 1, "respawnTicks": 6000, "types": ["werewolf_alpha"] },
+    { "x": -199, "z": 200, "radius": 2, "count": 1, "respawnTicks": 9000, "types": ["werewolf_redclaw"] },
+    { "x": -165, "z": 220, "radius": 2, "count": 1, "respawnTicks": 9000, "types": ["werewolf_moonleaper"] }
   ],
   "props": [
     { "model": "palisade", "x": 97.2, "z": -74.6, "yaw": -0.7 },

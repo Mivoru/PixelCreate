@@ -39,9 +39,9 @@ public sealed partial class Enemy
     /// <summary>A blow that needs the fighter next to the player, and so a turn. Shots and summons do not.</summary>
     public static bool IsClose(Ability ability) => ability.Effect switch
     {
-        "pounce" or "dashStrike" or "shadowRun" or "tornado" or "combo" => true,
+        "pounce" or "dashStrike" or "shadowRun" or "tornado" or "combo" or "superJump" => true,
         "arrow" or "volley" or "powershot" or "fireball" or "firewall" or "airSlash" or "airSlashWide"
-            or "spearThrow" or "summonSpears" or "shadowClone" or "earthCrack" => false,
+            or "spearThrow" or "summonSpears" or "shadowClone" or "earthCrack" or "fangSlash" => false,
         _ => ability.Range <= 4.5f,
     };
 

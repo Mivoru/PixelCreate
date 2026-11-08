@@ -184,7 +184,7 @@
     "aggroRange": 16, "preferredRange": 2.4, "tagHeight": 3.0,
     "abilities": [
       { "effect": "melee", "range": 2.8, "windupTicks": 18, "recoverTicks": 16, "cooldownTicks": 34, "damage": 22, "radius": 1.8 },
-      { "effect": "dashStrike", "range": 11, "minRange": 4, "windupTicks": 30, "recoverTicks": 24, "cooldownTicks": 220, "damage": 34, "radius": 2.0, "telegraph": "line" }
+      { "effect": "pounce", "range": 11, "minRange": 4, "windupTicks": 28, "recoverTicks": 24, "cooldownTicks": 220, "damage": 34, "radius": 2.0, "telegraph": "circle" }
     ],
     "drops": [{ "rarity": 0, "chance": 1 }, { "rarity": 1, "chance": 0.2 }, { "rarity": 2, "chance": 0.04 }],
     "loot": [{"item": "wolf_pelt", "chance": 0.8, "min": 1, "max": 2}, {"item": "wolf_fang", "chance": 0.6, "min": 1, "max": 2}]
@@ -196,9 +196,33 @@
     "abilities": [
       { "effect": "melee", "range": 3.2, "windupTicks": 18, "recoverTicks": 16, "cooldownTicks": 30, "damage": 32, "radius": 2.1 },
       { "effect": "slam", "range": 3.4, "windupTicks": 40, "recoverTicks": 30, "cooldownTicks": 200, "damage": 44, "radius": 3.0, "telegraph": "circle" },
-      { "effect": "dashStrike", "range": 13, "minRange": 4, "windupTicks": 30, "recoverTicks": 24, "cooldownTicks": 260, "damage": 46, "radius": 2.2, "telegraph": "line" }
+      { "effect": "pounce", "range": 13, "minRange": 4, "windupTicks": 28, "recoverTicks": 24, "cooldownTicks": 260, "damage": 46, "radius": 2.2, "telegraph": "circle" }
     ],
     "drops": [{ "rarity": 1, "chance": 1 }, { "rarity": 2, "chance": 0.3 }, { "rarity": 3, "chance": 0.05 }],
+    "loot": [{"item": "wolf_pelt", "chance": 1, "min": 2, "max": 3}, {"item": "wolf_fang", "chance": 1, "min": 2, "max": 3}]
+  },
+  {
+    "id": "werewolf_redclaw", "behavior": "flanker", "name": "Redclaw", "kind": "werewolf", "weapon": "claws", "rare": true, "defense": 10,
+    "minLevel": 14, "maxLevel": 15, "health": 640, "healthPerLevel": 50, "speed": 5.9, "size": 1.4,
+    "aggroRange": 17, "preferredRange": 2.6, "tagHeight": 3.2,
+    "abilities": [
+      { "effect": "melee", "range": 2.9, "windupTicks": 17, "recoverTicks": 15, "cooldownTicks": 32, "damage": 26, "radius": 1.9 },
+      { "effect": "pounce", "range": 11, "minRange": 4, "windupTicks": 28, "recoverTicks": 24, "cooldownTicks": 220, "damage": 36, "radius": 2.0, "telegraph": "circle" },
+      { "effect": "fangSlash", "range": 9, "minRange": 2.5, "windupTicks": 30, "recoverTicks": 24, "cooldownTicks": 260, "damage": 18, "telegraph": "line" }
+    ],
+    "drops": [{ "rarity": 0, "chance": 1 }, { "rarity": 1, "chance": 0.6 }, { "rarity": 2, "chance": 0.15 }, { "rarity": 3, "chance": 0.03 }],
+    "loot": [{"item": "wolf_pelt", "chance": 1, "min": 2, "max": 3}, {"item": "wolf_fang", "chance": 1, "min": 2, "max": 3}]
+  },
+  {
+    "id": "werewolf_moonleaper", "behavior": "brute", "name": "Moonleaper", "kind": "werewolf", "weapon": "claws", "rare": true, "defense": 9,
+    "minLevel": 14, "maxLevel": 15, "health": 600, "healthPerLevel": 48, "speed": 6.2, "size": 1.4,
+    "aggroRange": 22, "preferredRange": 2.6, "tagHeight": 3.2,
+    "abilities": [
+      { "effect": "melee", "range": 2.9, "windupTicks": 17, "recoverTicks": 15, "cooldownTicks": 32, "damage": 26, "radius": 1.9 },
+      { "effect": "pounce", "range": 11, "minRange": 4, "windupTicks": 28, "recoverTicks": 24, "cooldownTicks": 220, "damage": 36, "radius": 2.0, "telegraph": "circle" },
+      { "effect": "superJump", "range": 22, "minRange": 8, "windupTicks": 54, "recoverTicks": 40, "cooldownTicks": 360, "damage": 48, "radius": 2.4, "telegraph": "circle" }
+    ],
+    "drops": [{ "rarity": 0, "chance": 1 }, { "rarity": 1, "chance": 0.6 }, { "rarity": 2, "chance": 0.15 }, { "rarity": 3, "chance": 0.03 }],
     "loot": [{"item": "wolf_pelt", "chance": 1, "min": 2, "max": 3}, {"item": "wolf_fang", "chance": 1, "min": 2, "max": 3}]
   },
   {

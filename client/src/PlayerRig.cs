@@ -33,6 +33,18 @@ public enum WeaponMove
     /// <summary>A spear driven straight out in front at chest height.</summary>
     SpearThrust,
 
+    /// <summary>Squatting deep to spring, arms swept back.</summary>
+    Crouch,
+
+    /// <summary>Stretched out like an arrow in flight: arms reaching forward, legs straight back.</summary>
+    Dive,
+
+    /// <summary>Landed on the prey: bent over it with both claws driven down into it.</summary>
+    Impale,
+
+    /// <summary>Curled up tight for a forward roll.</summary>
+    Tuck,
+
     /// <summary>A spear raised over the shoulder, point forward, the body leaning back to throw.</summary>
     ThrowBack,
 
@@ -183,6 +195,17 @@ public sealed class PlayerRig
         (weapon == "bow" ? _forearmL : _forearmR).AddChild(_sword);
         _sword.Position = new Vector3(0, -0.3f, -0.04f);
         BuildWeapon(weapon);
+    }
+
+    /// <summary>How much thicker than usual the thighs are, for a werewolf gathering itself to spring.</summary>
+    public float LegBulk
+    {
+        set
+        {
+            var scale = new Vector3(value, 1f, value);
+            _thighL.Scale = scale;
+            _thighR.Scale = scale;
+        }
     }
 
     public bool SwordVisible
@@ -1324,6 +1347,60 @@ public sealed class PlayerRig
                 _target[ThighL] = -0.6f;
                 _target[ThighR] = 0.5f;
                 _target[ShinR] = 0.4f;
+                break;
+            case WeaponMove.Crouch:
+                _target[ThighL] = -1.1f;
+                _target[ThighR] = -1.1f;
+                _target[ShinL] = 1.5f;
+                _target[ShinR] = 1.5f;
+                _target[Bob] = -0.32f;
+                _target[Lean] = 0.55f;
+                _target[ArmR] = -0.9f;
+                _target[ArmL] = -0.9f;
+                _target[ArmRSide] = 0.3f;
+                _target[ArmLSide] = 0.3f;
+                _target[ForearmR] = -0.4f;
+                _target[ForearmL] = -0.4f;
+                _target[Head] = 0.3f;
+                break;
+            case WeaponMove.Dive:
+                _target[ArmR] = 3.0f;
+                _target[ArmL] = 3.0f;
+                _target[ArmRSide] = 0.15f;
+                _target[ArmLSide] = 0.15f;
+                _target[ForearmR] = -0.1f;
+                _target[ForearmL] = -0.1f;
+                _target[ThighL] = 0.35f;
+                _target[ThighR] = 0.25f;
+                _target[ShinL] = 0.15f;
+                _target[ShinR] = 0.1f;
+                _target[Head] = 0.4f;
+                break;
+            case WeaponMove.Impale:
+                _target[ArmR] = 0.7f;
+                _target[ArmL] = 0.7f;
+                _target[ArmRSide] = -0.2f;
+                _target[ArmLSide] = -0.2f;
+                _target[ForearmR] = -0.15f;
+                _target[ForearmL] = -0.15f;
+                _target[Lean] = 0.95f;
+                _target[Bob] = -0.3f;
+                _target[ThighL] = -0.9f;
+                _target[ThighR] = 0.5f;
+                _target[ShinL] = 1.1f;
+                _target[ShinR] = 0.7f;
+                break;
+            case WeaponMove.Tuck:
+                _target[ThighL] = -1.9f;
+                _target[ThighR] = -1.9f;
+                _target[ShinL] = 2.2f;
+                _target[ShinR] = 2.2f;
+                _target[ArmR] = 1.2f;
+                _target[ArmL] = 1.2f;
+                _target[ForearmR] = -1.8f;
+                _target[ForearmL] = -1.8f;
+                _target[Lean] = 0.9f;
+                _target[Head] = 0.5f;
                 break;
             case WeaponMove.ThrowBack:
                 // The throwing arm drawn back level with the shoulder, the forearm up, the spear

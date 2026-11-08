@@ -66,6 +66,9 @@ public enum ProjectileKind : byte
 
     /// <summary>A spear the spearcaller conjures over her head; it hangs there, then shoots at the player.</summary>
     SummonedSpear = 9,
+
+    /// <summary>One of Redclaw's three slanted red crescents, torn from the air by a swipe of the paw.</summary>
+    FangSlash = 10,
 }
 
 /// <summary>What a ground hazard is: the shaman's burning V or a player's strip of fire, or an orc's crack in the earth.</summary>
@@ -146,6 +149,9 @@ public sealed class GameServer : IEnemyEvents
     private const float AirSlashRadius = 1.4f;
     private const float WideSlashRadius = 2.1f;
     private const float ConjuredSpearSpeed = 26f;
+    private const float FangSlashSpeed = 16f;
+    private const float FangSlashReach = 9f;
+    private const float FangSlashSpacing = 0.75f;
 
     /// <summary>When each conjured spear shoots, in ticks after they appear.</summary>
     private static readonly int[] SpearDelays = { 30, 46, 62 };
@@ -1267,7 +1273,20 @@ public sealed class GameServer : IEnemyEvents
                 break;
             case "pounce":
             case "shadowRun":
+            case "superJump":
                 Area(enemy.Position + Facing(enemy) * 0.5f, ability.Radius, ability.Damage, enemy);
+                break;
+            case "fangSlash":
+                // Three crescents side by side, like the marks of three claws, all flying the same way.
+                var across = new Vector3(-direction.Z, 0, direction.X);
+                across = across == Vector3.Zero ? Vector3.UnitX : Vector3.Normalize(across);
+                for (var claw = -1; claw <= 1; claw++)
+                {
+                    var fang = Shoot(ProjectileKind.FangSlash, chest + Facing(enemy) * 0.8f + across * (claw * FangSlashSpacing),
+                        direction * FangSlashSpeed, ability.Damage);
+                    fang.Life = (int)(FangSlashReach / FangSlashSpeed * Tuning.TickRate);
+                }
+
                 break;
             case "shadowClone":
                 Summon(enemy, target);
@@ -1360,15 +1379,16 @@ public sealed class GameServer : IEnemyEvents
     {
         foreach (var player in _players.Values.ToList())
         {
-            if (Vector3.Distance(player.State.Position, center) <= radius + 0.4f)
+            if (Vector3.Distance(player.State.Position, center) <= radius + 0.4f && Hurt(player, damage, 0, attacker))
             {
-                Hurt(player, damage, 0, attacker);
+                attacker.Landed = true;
             }
         }
 
         if (Creature(attacker.TargetId) is { } victim && Vector3.Distance(victim.Position, center) <= radius + victim.Def.Size * 0.4f + 0.4f)
         {
             victim.TakeHit(damage, attacker.Position, Enemy.CreatureBase + attacker.Id);
+            attacker.Landed = true;
         }
     }
 

@@ -38,11 +38,18 @@ public sealed partial class Enemy
     /// <summary>A shadow is under the ground and cannot be hit.</summary>
     public bool InShadow => Action == EnemyAction.Shadow;
 
+    /// <summary>The great leap's air time, and how long the roll after a miss lasts.</summary>
+    public const int SuperJumpAirTicks = 62;
+    public const int RollTicks = 36;
+
+    /// <summary>Set by the server when a blow lands on someone, so a leap knows whether it hit.</summary>
+    public bool Landed;
+
     /// <summary>Leaps from where the enemy stands to the spot, landing after the air time.</summary>
-    private void PounceAt(Vector3 spot)
+    private void PounceAt(Vector3 spot, int airTicks = PounceAirTicks)
     {
         Face(spot);
-        var air = PounceAirTicks * Tuning.TickSeconds;
+        var air = airTicks * Tuning.TickSeconds;
         var flat = Flat(spot - Position);
         // It lands just short of the spot, on the player rather than through them.
         if (flat.Length() > 0.8f)
@@ -53,7 +60,23 @@ public sealed partial class Enemy
         Velocity = flat / air;
         Velocity.Y = Tuning.Gravity * air / 2f;
         Action = EnemyAction.Leap;
-        ActionTicks = PounceAirTicks;
+        ActionTicks = airTicks;
+    }
+
+    /// <summary>After a missed great leap: tumble forward a little way, then get up.</summary>
+    private void StepRoll()
+    {
+        var heading = new Vector3(-MathF.Sin(Facing), 0, -MathF.Cos(Facing));
+        var push = ActionTicks > RollTicks / 2 ? 5f : 1.5f;
+        Velocity.X = heading.X * push;
+        Velocity.Z = heading.Z * push;
+        if (ActionTicks <= 0)
+        {
+            Velocity.X = 0;
+            Velocity.Z = 0;
+            Action = EnemyAction.Idle;
+            ActionTicks = 6;
+        }
     }
 
     /// <summary>Sinks into the ground and picks the end of the next slide, off to one side of the player.</summary>

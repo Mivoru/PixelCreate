@@ -23,6 +23,12 @@ public sealed class GoblinView : IEnemyView
     private float _actionTime;
     private float _spin;
 
+    private float _pitch;
+    private EnemyAction _lastLeapAction;
+
+    /// <summary>Where a great leap just left the ground, once; the game cracks the earth there.</summary>
+    public Vector3? Launch { get; set; }
+
     /// <summary>Which blow of a combo is under way: the strikes counted since the orc began it.</summary>
     private int _comboStep;
     private Vector3 _lastPosition;
@@ -37,6 +43,8 @@ public sealed class GoblinView : IEnemyView
         {
             "werewolf" => ("werewolf", "4a4e5a"),
             "werewolf_alpha" => ("werewolf_alpha", "2e3038"),
+            "werewolf_redclaw" => ("werewolf", "2a1416"),
+            "werewolf_moonleaper" => ("werewolf", "3a4466"),
             "orc_warrior" => ("orc_warrior", "5a3a2c"),
             "orc_berserker" => ("orc_berserker", "5a3a2c"),
             "orc_spearwoman" => ("orc_spearwoman", "6a3a2a"),
@@ -56,6 +64,8 @@ public sealed class GoblinView : IEnemyView
         {
             "werewolf" => "5e5248",
             "werewolf_alpha" => "26242c",
+            "werewolf_redclaw" => "5a2226",
+            "werewolf_moonleaper" => "8a94a8",
             "orc_warrior" => "6e8a3e",
             "orc_berserker" => "5e7a34",
             "orc_spearwoman" => "7a9448",
@@ -106,8 +116,28 @@ public sealed class GoblinView : IEnemyView
         }
 
         _lastStrikeAction = enemy.Action;
-        Root.Position = position;
-        Root.Rotation = new Vector3(0, enemy.Facing + _spin, 0);
+
+        // A werewolf's leap: it tips forward into an arrow in flight, and after a miss it rolls once
+        // head over heels round its middle. Thighs swell while it gathers itself for the great leap.
+        var great = ability?.Effect == "superJump";
+        var leaping = enemy.Action == EnemyAction.Leap && ability?.Effect is "pounce" or "superJump";
+        var pitch = leaping ? (great ? -1.25f : -0.5f) : 0f;
+        _pitch = Mathf.Lerp(_pitch, pitch, 1f - Mathf.Exp(-14f * delta));
+        var roll = enemy.Action == EnemyAction.Roll ? -Mathf.Tau * Mathf.Clamp(_actionTime / (Enemy.RollTicks * Tuning.TickSeconds), 0f, 1f) : 0f;
+        var tilt = _pitch + roll;
+        var bulk = enemy.Action == EnemyAction.Cast && great ? 1f + 0.4f * Mathf.Clamp(_actionTime / (ability!.WindupTicks * Tuning.TickSeconds), 0f, 1f) : 1f;
+        _rig.LegBulk = bulk;
+        if (enemy.Action == EnemyAction.Leap && _lastLeapAction != EnemyAction.Leap && great)
+        {
+            Launch = position;
+        }
+
+        _lastLeapAction = enemy.Action;
+        var middle = new Vector3(0, _def.Size * 0.9f, 0);
+        var turn = new Basis(Vector3.Up, enemy.Facing + _spin);
+        var pivot = turn * (middle - new Basis(Vector3.Right, tilt) * middle);
+        Root.Position = position + pivot;
+        Root.Rotation = new Vector3(tilt, enemy.Facing + _spin, 0);
         Root.Visible = enemy.Action != EnemyAction.Dead;
         _rig.Flash = enemy.HitFlash > 0;
 
@@ -130,6 +160,11 @@ public sealed class GoblinView : IEnemyView
             return WeaponMove.ClubSpin;
         }
 
+        if (action == EnemyAction.Roll)
+        {
+            return WeaponMove.Tuck;
+        }
+
         if (ability is null || action is not (EnemyAction.Cast or EnemyAction.Strike or EnemyAction.Leap))
         {
             return WeaponMove.None;
@@ -150,9 +185,22 @@ public sealed class GoblinView : IEnemyView
                 _ => WeaponMove.ClubSmash,
             };
         }
-        if (_def.Kind == "werewolf" && ability.Effect is "melee" or "dashStrike" or "slam")
+        if (_def.Kind == "werewolf")
         {
-            return winding ? WeaponMove.ClawRaise : WeaponMove.ClawRake;
+            switch (ability.Effect)
+            {
+                case "pounce" or "superJump":
+                    return action switch
+                    {
+                        EnemyAction.Cast => WeaponMove.Crouch,
+                        EnemyAction.Leap => WeaponMove.Dive,
+                        _ => ability.Effect == "superJump" ? WeaponMove.Impale : WeaponMove.ClawRake,
+                    };
+                case "fangSlash":
+                    return winding ? WeaponMove.ClawRaise : WeaponMove.ClawRake;
+                case "melee" or "dashStrike" or "slam":
+                    return winding ? WeaponMove.ClawRaise : WeaponMove.ClawRake;
+            }
         }
 
         if (_def.Weapon is "longsword" or "axe" && ability.Effect is "melee" or "dashStrike")
@@ -225,6 +273,9 @@ public sealed class GoblinView : IEnemyView
                     "combo" => "orc_swing",
                     "airSlashWide" => "air_slash",
                     "summonSpears" => "spear_summon",
+                    "fangSlash" => "fang_slash",
+                    "pounce" => "werewolf_swipe",
+                    "superJump" => "earth_crack",
                     "melee" or "dashStrike" => _def.Kind == "werewolf" ? "werewolf_swipe" : _def.Kind == "orc" ? "orc_swing" : "goblin_swing",
                     _ => null,
                 };

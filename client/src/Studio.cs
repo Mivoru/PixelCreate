@@ -213,10 +213,20 @@ public partial class Studio : Node
             };
 
             // Orcs also show each ability: the wind-up and the blow, from three quarters.
-            for (var a = 0; def.Kind == "orc" && a < (def.Abilities?.Length ?? 0); a++)
+            for (var a = 0; def.Kind is "orc" or "werewolf" && a < (def.Abilities?.Length ?? 0); a++)
             {
-                poses.Add(($"{def.Abilities![a].Effect}_cast", 1.0f, 4.6f, EnemyAction.Cast, (byte)a));
-                poses.Add(($"{def.Abilities![a].Effect}_strike", 1.0f, 4.6f, EnemyAction.Strike, (byte)a));
+                var effect = def.Abilities![a].Effect;
+                poses.Add(($"{effect}_cast", 1.0f, 4.6f, EnemyAction.Cast, (byte)a));
+                if (effect is "pounce" or "superJump")
+                {
+                    poses.Add(($"{effect}_leap", 1.57f, 5.4f, EnemyAction.Leap, (byte)a));
+                }
+
+                poses.Add(($"{effect}_strike", 1.0f, 4.6f, EnemyAction.Strike, (byte)a));
+                if (effect == "superJump")
+                {
+                    poses.Add(($"{effect}_roll", 1.57f, 5.4f, EnemyAction.Roll, (byte)a));
+                }
             }
 
             foreach (var (pose, yaw, distance, action, ability) in poses)
