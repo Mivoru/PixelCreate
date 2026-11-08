@@ -75,7 +75,9 @@ Rules:
 - `STATS` reports draws, objects and `frameMs` away from capture stalls. Earlier runs measured the open
   world at about 18 ms a frame on the RTX 3050 laptop; later runs (hunt bot by the sheep, idle in the
   village) measured 7 to 9 ms, and the reason for the change was never pinned down. Measure before
-  trusting either number. `PIXEL_OFF=fog,ssao,glow,shadow,batches,grass` switches features off.
+  trusting either number. On 2026-11-08 an idle bot measured 7 to 10 ms everywhere: village 9.6, Greyfang 8.8,
+  the Ironjaw Warcamp 8.6 (2351 draws, the most), Moonfell 7.0. Spawn a measuring bot outside enemy aggro range:
+  inside a camp it dies at once and the rest of the run measures the village. `PIXEL_OFF=fog,ssao,glow,shadow,batches,grass` switches features off.
 - Full check after a change: `powershell -ExecutionPolicy Bypass -File scripts/check.ps1`. It lists script
   exceptions from the live run: one exception a frame freezes the HUD and the player without crashing.
 - Photo studio: `scripts/studio.ps1 -Jobs people,animals,monsters,motion,attacks,models,world,hitboxes,map` needs no server and writes
