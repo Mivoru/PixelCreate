@@ -303,9 +303,36 @@ def wolf_lower_teeth(b):
         b.tube([(side * 0.026, 1.05, 1.005), (side * 0.027, 1.055, 1.035)], [0.008, 0.001], [0.008, 0.001], "fang", 5)
 
 
-def wolf_spec(coat, dark, pale, size_note=""):
+def shadow_wisps(dark, mid):
+    """Ragged wisps of shadow that rise off the back and shoulders like black smoke."""
+    def build(b):
+        for i, y in enumerate((-0.5, -0.36, -0.2, -0.04, 0.12, 0.28, 0.42)):
+            for side in (-1, 0, 1):
+                if side and i % 2:
+                    continue
+                # Low, ragged tufts that lie back along the body; the smoke above them is drawn in the game.
+                top = 0.91 if y < 0.2 else 0.96
+                lean = 0.1 + 0.03 * ((i + side) % 3)
+                colour = mid if (i + side) % 3 == 0 else dark
+                b.tube([(side * 0.1, y, top - 0.05), (side * 0.15, y - lean, top + 0.02), (side * 0.13, y - lean * 1.9, top + 0.06)],
+                       [0.06, 0.035, 0.003], [0.03, 0.02, 0.003], colour, 5)
+    return build
+
+
+def rune_marks(colour):
+    """Thin glowing marks curling over each shoulder and haunch."""
+    def build(b):
+        for side in (-1, 1):
+            b.tube([(side * 0.17, 0.42, 0.9), (side * 0.2, 0.34, 0.82), (side * 0.19, 0.26, 0.86), (side * 0.18, 0.2, 0.78)],
+                   [0.012, 0.012, 0.012, 0.004], [0.012, 0.012, 0.012, 0.004], colour, 5)
+            b.tube([(side * 0.17, -0.3, 0.9), (side * 0.19, -0.38, 0.8), (side * 0.18, -0.46, 0.84)],
+                   [0.011, 0.011, 0.004], [0.011, 0.011, 0.004], colour, 5)
+    return build
+
+
+def wolf_spec(coat, dark, pale, size_note="", eye="wolf_eye", extras=()):
     return dict(
-        height=0.76, coat=coat, face=coat, nose="wolf_nose", hoof="wolf_paw", leg_radius=0.03, eye="wolf_eye",
+        height=0.76, coat=coat, face=coat, nose="wolf_nose", hoof="wolf_paw", leg_radius=0.03, eye=eye,
         ear_inner="wolf_ear", ear_coat=dark, shin_coat=pale,
         trunk=[(-0.58, 0.75, 0.09, 0.11), (-0.5, 0.77, 0.16, 0.18), (-0.3, 0.77, 0.16, 0.18), (-0.08, 0.75, 0.14, 0.16),
                (0.15, 0.77, 0.16, 0.22), (0.35, 0.79, 0.19, 0.26), (0.5, 0.81, 0.17, 0.24), (0.6, 0.85, 0.09, 0.13)],
@@ -318,7 +345,7 @@ def wolf_spec(coat, dark, pale, size_note=""):
         jaw=dict(pivot=(0, 0.84, 1.07), sections=[(0.84, 1.06, 0.085, 0.04), (0.97, 1.03, 0.058, 0.03), (1.08, 1.015, 0.035, 0.02)], extras=[wolf_lower_teeth]),
         ear=(0.065, 0.78, 1.25, 0.13, 0.06, 1.3), front=(0.11, 0.42, 0.74), back=(0.11, -0.46, 0.72),
         tail=(-0.58, 0.78, 0.46, pale), brush=([0.03, 0.05, 0.07, 0.065, 0.045, 0.02], 0.55),
-        body_extras=[hips([(0.11, -0.47, 0.86, 0.07)], coat), hips([(0.12, 0.44, 0.86, 0.07)], coat)],
+        body_extras=[hips([(0.11, -0.47, 0.86, 0.07)], coat), hips([(0.12, 0.44, 0.86, 0.07)], coat), *extras],
         patches=[((0, 0.12, 0.62), (0.11, 0.38, 0.07), pale)],
     )
 
@@ -402,6 +429,11 @@ SPECS["doe"] = dict(SPECS["deer"], head_extras=[], height=0.94)
 SPECS["wolf"] = wolf_spec("wolf_coat", "wolf_dark", "wolf_pale")
 # The pack leader: a darker, heavier wolf with a grizzled ruff.
 SPECS["alpha_wolf"] = wolf_spec("alpha_coat", "alpha_dark", "alpha_pale")
+# Mirrorfang: a dark grey wolf with amber marks over its shoulders; its clones copy this body.
+SPECS["mirror_wolf"] = wolf_spec("mirror_coat", "mirror_dark", "mirror_pale", extras=[rune_marks("mirror_rune")])
+# Shadowstalker: black as soot, with white eyes and shadow rising off its back like smoke.
+SPECS["shadow_wolf"] = wolf_spec("shadow_coat", "shadow_dark", "shadow_pale", eye="shadow_eye",
+                                 extras=[shadow_wisps("shadow_dark", "shadow_coat")])
 
 
 def chicken(b):
@@ -453,7 +485,9 @@ COLORS = {
     "wolf_coat": "7E8494", "wolf_dark": "3A4466", "wolf_pale": "D6D2C8", "wolf_nose": "181425", "wolf_paw": "8B8A94",
     "wolf_eye": "FEAE34", "wolf_ear": "5A4A50", "fang": "F4EEDC",
     "alpha_coat": "3E3A48", "alpha_dark": "1E1C26", "alpha_pale": "9A98A0",
+    "mirror_coat": "5A6170", "mirror_dark": "2E3240", "mirror_pale": "A8ACB8", "mirror_rune": "F77622",
+    "shadow_coat": "1C1A28", "shadow_dark": "0E0D14", "shadow_pale": "2E3048", "shadow_eye": "FFFFFF",
     "eye_black": "15161C", "eye_glint": "FFFFFF", "antler": "D8C8A8", "ear_pink": "D89A92", "deer_leg": "8A5A34", "deer_dark": "7A4A26", "boar_belly": "7A5A4C",
 }
 
-NAMES = ["cow", "goat", "deer", "doe", "sheep", "pig", "chicken", "wolf", "alpha_wolf"]
+NAMES = ["cow", "goat", "deer", "doe", "sheep", "pig", "chicken", "wolf", "alpha_wolf", "mirror_wolf", "shadow_wolf"]

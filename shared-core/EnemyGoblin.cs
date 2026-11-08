@@ -3,7 +3,8 @@ using System.Numerics;
 namespace PixelCreate.Core;
 
 /// <summary>One thing an enemy can do. Effects: melee, dashStrike, slam, spin, arrow, volley, powershot, fireball, firewall,
-/// airSlash (a flying crescent), spearThrow (a thrown spear) and earthCrack (a small V of split ground).</summary>
+/// airSlash (a flying crescent), spearThrow (a thrown spear), earthCrack (a small V of split ground),
+/// pounce (a leap onto the player), shadowRun (a zigzag under the ground) and shadowClone (two short-lived copies).</summary>
 public sealed record Ability(
     string Effect, float Range, int WindupTicks, int RecoverTicks, int CooldownTicks, short Damage,
     float Radius = 0f, float MinRange = 0f, string Telegraph = "none");
@@ -67,6 +68,12 @@ public sealed partial class Enemy
                     ActionTicks = random.Next(4, 14);
                 }
 
+                break;
+            case EnemyAction.Shadow:
+                StepShadow(targets);
+                break;
+            case EnemyAction.Surface:
+                StepSurface(targets);
                 break;
         }
 
@@ -198,13 +205,26 @@ public sealed partial class Enemy
         Action = EnemyAction.Cast;
         ActionTicks = ability.WindupTicks;
         _cooldowns[index] = ability.CooldownTicks + random.Next(30);
-        LeapTarget = ability.Effect == "spin" ? Position : target.Position;
+        LeapTarget = ability.Effect is "spin" or "shadowClone" ? Position : target.Position;
         LeapTarget.Y = world.GroundHeight(LeapTarget.X, LeapTarget.Z);
     }
 
     private void Release(IEnemyEvents events, IReadOnlyList<Target> targets)
     {
         var ability = CurrentAbility!;
+        if (ability.Effect == "pounce")
+        {
+            PounceAt(LeapTarget);
+            return;
+        }
+
+        if (ability.Effect == "shadowRun")
+        {
+            ShadowSlides = 0;
+            Submerge(targets);
+            return;
+        }
+
         if (ability.Effect == "dashStrike")
         {
             var flat = Flat(LeapTarget - Position);

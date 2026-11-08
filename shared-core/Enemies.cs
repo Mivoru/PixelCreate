@@ -54,6 +54,12 @@ public enum EnemyAction : byte
 
     /// <summary>An animal standing tall and watching something.</summary>
     Alert = 11,
+
+    /// <summary>A wolf sunk into the ground as a shadow: hidden, sliding, and beyond harm.</summary>
+    Shadow = 12,
+
+    /// <summary>A shadow wolf risen between two slides, where it can be hit.</summary>
+    Surface = 13,
 }
 
 /// <summary>The nametag colour rule: how an enemy compares with the player.</summary>
@@ -208,6 +214,14 @@ public sealed partial class Enemy
         if (SpitCooldown > 0) SpitCooldown--;
         ActionTicks--;
 
+        // A summoned clone fades away when its time runs out; the server then removes it.
+        if (SummonedBy >= 0 && Alive && --LifeTicks <= 0)
+        {
+            Action = EnemyAction.Dead;
+            Velocity = Vector3.Zero;
+            return;
+        }
+
         if (IsAnimal && Action != EnemyAction.Dead)
         {
             StepAnimal(world, random, targets, events);
@@ -340,6 +354,11 @@ public sealed partial class Enemy
     /// <summary>Takes damage from a player. Returns true when this hit kills the enemy.</summary>
     public bool TakeHit(short damage, Vector3 from, int attackerId = -1)
     {
+        if (InShadow)
+        {
+            return false;
+        }
+
         if (TaggedBy < 0)
         {
             TaggedBy = attackerId;

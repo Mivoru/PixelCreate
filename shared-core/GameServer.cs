@@ -249,6 +249,13 @@ public sealed class GameServer : IEnemyEvents
     private readonly List<Loot> _loot = new();
     private readonly List<FireWallHazard> _walls = new();
     private readonly List<Enemy> _finishedTrials = new();
+
+    /// <summary>Clones called up during this tick's enemy steps; they join the enemies after the loop.</summary>
+    private readonly List<Enemy> _summons = new();
+
+    /// <summary>How long a shadow clone lasts, and how far to each side of its wolf it appears.</summary>
+    private const int CloneLifeTicks = 60 * 14;
+    private const float CloneSpread = 2.4f;
     private int _nextEnemyId;
     private int _nextId;
 
@@ -387,6 +394,13 @@ public sealed class GameServer : IEnemyEvents
             {
                 enemy.Step(_world, _random, targets, this);
             }
+
+            _enemies.AddRange(_summons);
+            _summons.Clear();
+
+            // A clone is gone once it falls or fades, and with the wolf that called it.
+            var living = _enemies.Where(e => e.Alive && e.SummonedBy < 0).Select(e => e.Id).ToHashSet();
+            _enemies.RemoveAll(e => e.SummonedBy >= 0 && (!e.Alive || !living.Contains(e.SummonedBy)));
         }
 
         StepWalls();
@@ -886,6 +900,13 @@ public sealed class GameServer : IEnemyEvents
     private void OnKilled(Enemy enemy, Player killer)
     {
         Stats.EnemiesKilled++;
+
+        // A clone is only a shadow: it gives nothing.
+        if (enemy.SummonedBy >= 0)
+        {
+            return;
+        }
+
         if (enemy.TrialOf >= 0)
         {
             killer.Rank = GuildRank.Adventurer;
@@ -1125,6 +1146,13 @@ public sealed class GameServer : IEnemyEvents
             case "firewall":
                 FireWall(enemy, direction, ability.Damage);
                 break;
+            case "pounce":
+            case "shadowRun":
+                Area(enemy.Position + Facing(enemy) * 0.5f, ability.Radius, ability.Damage, enemy);
+                break;
+            case "shadowClone":
+                Summon(enemy, target);
+                break;
             case "airSlash":
                 // The crescent leaves the blade at chest height and dies after a few metres.
                 var slash = Shoot(ProjectileKind.AirSlash, chest + Facing(enemy) * 0.8f, direction * AirSlashSpeed, ability.Damage);
@@ -1145,6 +1173,38 @@ public sealed class GameServer : IEnemyEvents
                     Grow = EarthCrack.GrowTicks, Burn = EarthCrack.LingerTicks,
                 });
                 break;
+        }
+    }
+
+    /// <summary>Two shadow copies of the wolf rise at its sides and join the hunt.</summary>
+    private void Summon(Enemy wolf, Target? target)
+    {
+        var type = (byte)EnemyDef.All.ToList().FindIndex(d => d.Id == "shadow_clone");
+        var side = new Vector3(MathF.Cos(wolf.Facing), 0, -MathF.Sin(wolf.Facing));
+        foreach (var sign in new[] { -1f, 1f })
+        {
+            var clone = new Enemy
+            {
+                Id = _nextEnemyId++,
+                Type = type,
+                Home = wolf.Home with { Types = new[] { "shadow_clone" }, RespawnTicks = int.MaxValue },
+                SummonedBy = wolf.Id,
+                LifeTicks = CloneLifeTicks,
+            };
+            clone.Reset(_random, _world);
+            var spot = wolf.Position + side * sign * CloneSpread;
+            if (_world.IsBlocked(spot with { Y = _world.GroundHeight(spot.X, spot.Z) + 0.6f }))
+            {
+                spot = wolf.Position;
+            }
+
+            clone.Position = spot with { Y = _world.GroundHeight(spot.X, spot.Z) };
+            clone.Level = wolf.Level;
+            clone.Health = (short)clone.MaxHealth;
+            clone.Facing = wolf.Facing;
+            clone.TargetId = target?.Id ?? wolf.TargetId;
+            clone.ActionTicks = 12;
+            _summons.Add(clone);
         }
     }
 

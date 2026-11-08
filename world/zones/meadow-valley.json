@@ -201,6 +201,8 @@
     { "x": 176, "z": 172, "radius": 6, "count": 3, "respawnTicks": 1800, "types": ["wolf"] },
     { "x": 233, "z": 223, "radius": 4, "count": 1, "respawnTicks": 3600, "types": ["alpha_wolf"], "minLevel": 8, "maxLevel": 9 },
     { "x": 240, "z": 222, "radius": 5, "count": 2, "respawnTicks": 1800, "types": ["wolf"] },
+    { "x": 188, "z": 212, "radius": 4, "count": 1, "respawnTicks": 7200, "types": ["mirror_wolf"] },
+    { "x": 224, "z": 174, "radius": 4, "count": 1, "respawnTicks": 7200, "types": ["shadow_wolf"] },
     { "x": 203.5, "z": -113.9, "radius": 5, "count": 3, "respawnTicks": 2400, "types": ["orc_warrior"] },
     { "x": 218.0, "z": -136.0, "radius": 6, "count": 3, "respawnTicks": 2400, "types": ["orc_spearwoman", "orc_huntress"] },
     { "x": 215.4, "z": -139.2, "radius": 4, "count": 2, "respawnTicks": 3000, "types": ["orc_berserker"] },

@@ -274,7 +274,13 @@ public partial class Studio : Node
             if (def.Kind == "wolf")
             {
                 // A hunter's own moves: the snarl before a strike, and the lunge.
-                poses = poses.Append(("snarl", 0f, 1.2f, EnemyAction.Windup)).Append(("lunge", 9f, 1.57f, EnemyAction.Strike)).ToArray();
+                poses = poses.Append(("snarl", 0f, 1.2f, EnemyAction.Windup)).Append(("lunge", 9f, 1.57f, EnemyAction.Strike))
+                    .Append(("pounce", 7f, 1.57f, EnemyAction.Leap)).ToArray();
+            }
+
+            if (def.Abilities?.Any(a => a.Effect == "shadowRun") == true)
+            {
+                poses = poses.Append(("shadow", 6f, 1.2f, EnemyAction.Shadow)).ToArray();
             }
 
             foreach (var (pose, speed, yaw, action) in poses)

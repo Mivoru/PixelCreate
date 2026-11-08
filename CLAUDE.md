@@ -57,6 +57,11 @@ Rules:
   and throw (`spearThrow`, the spear is back in her hand at once); axes swing flat and split the ground in a small V
   (`earthCrack`, a `FireWallHazard` of kind `EarthCrack` drawn by `EarthCrackNode`, hurting only while it runs).
   The studio's monsters job films each orc ability's wind-up and blow.
+  Wolves bite (light) and `pounce`, a real leap (heavy). Two rare wolves live in Greyfang: Mirrorfang calls two
+  `shadow_clone`s (weak, no loot, gone after 14 s or with their wolf; summons join `_enemies` after the step loop),
+  and Shadowstalker's `shadowRun` sinks into the ground (`EnemyAction.Shadow`, cannot be hit), slides out to
+  alternate sides, rises (`Surface`) and bursts out at the player from close by. `net-tests/WolfTests.cs`.
+  Clones use `ghost.gdshader`. The forest camera can end up inside pine branches near these dens.
 - Interiors live outside the map on platforms (the guild at x 420, the trial ground at x 480). Doors are portals.
 - Character models come from Blender (`anime_*`) and use `toon.gdshader`, which also bends hair and cloth.
 - Sound effects come from ElevenLabs: `python asset-pipeline/generate_sounds.py` (cached, keys stay outside the repo).
