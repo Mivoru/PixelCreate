@@ -9,6 +9,7 @@ Hlavní dokument designu. Podrobnosti jsou v dalších souborech:
 | `design/characters.md` | hráč, vesnice, Skyfallen, protivníci, jejich tajemství a možné konce |
 | `design/plot.md` | prolog, akty I až III, příběhové hodiny, konce, tabulka následků |
 | `design/systems.md` | tutoriál, Guilda, questy a dialogy z dat, vyšetřování, stav světa, růst vesnice, monstra, bossové, dungeony, technický plán |
+| `design/status.md` | co ve hře běží a co je jen návrh, otevřená rozhodnutí, první hratelný příběhový úsek |
 
 Jména ve hře jsou anglicky (pravidlo projektu), popis česky.
 
@@ -34,6 +35,19 @@ ovládá, ovládá válku, obchod i korunu. A hráč je jejím produktem.
 
 **Tón:** začíná teple (vesnice, slimáci, Eldin chleba), každou kapitolou tmavne. Smrt je trvalá
 pro všechny kromě Skyfallen, a to je hlavní kontrast. Humor zůstává v postavách, ne ve světě.
+
+### Pilíře hry
+1. **Rychlý, čitelný akční souboj.** Červené značky, uhýbání, blok a parry, mastery pohyby.
+2. **Svět si pamatuje.** Volby mění lidi, místa a frakce, často se zpožděním.
+3. **Šedí lidé, skutečná cena.** Žádná frakce není čistě dobrá, nic není zadarmo.
+4. **Vidět růst.** Úrovně, mastery a gear u hráče, zachránění lidé ve vesnici.
+
+### Herní smyčka
+- **Souboj (sekundy):** přečíst útok, uhnout, blokovat nebo odrazit, potrestat.
+- **Job (minuty):** vzít úkol, vyrazit, lovit a sbírat, vrátit se do Guildy, prodat, zlepšit gear,
+  mastery a skilly.
+- **Kapitola (hodiny):** zjistit, co se děje, rozhodnout, vidět, jak se svět změnil, otevřít
+  novou oblast.
 
 ---
 
