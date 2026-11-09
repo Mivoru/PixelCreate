@@ -491,7 +491,8 @@ public static class Protocol
         writer.Write(state.Moves);
         writer.Write(state.MoveCooldown);
         writer.Write(state.BoltCooldown);
-        writer.Write(state.WallCooldown);
+        writer.Write(state.HeavyCooldown);
+        writer.Write(state.HeavyHeld);
     }
 
     private static PlayerState ReadState(BinaryReader reader) => new()
@@ -521,6 +522,7 @@ public static class Protocol
         Moves = reader.ReadByte(),
         MoveCooldown = reader.ReadByte(),
         BoltCooldown = reader.ReadByte(),
-        WallCooldown = reader.ReadByte(),
+        HeavyCooldown = reader.ReadByte(),
+        HeavyHeld = reader.ReadBoolean(),
     };
 }

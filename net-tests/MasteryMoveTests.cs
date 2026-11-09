@@ -319,6 +319,43 @@ public class MasteryMoveTests
         Assert.InRange(casts, 1, ticks / cooldown + 1);
     }
 
+    [Fact]
+    public void ClubSpin_HeldDown_SpinsOnce()
+    {
+        var state = PlayerState.Spawn(Vector3.Zero);
+        state.Weapon = Weapons.Club;
+        var spins = 0;
+        for (var i = 0; i < Tuning.TickRate * 10; i++)
+        {
+            state.Stamina = 100f;
+            if (Tick(ref state, Buttons.Heavy) == AttackKind.ClubSpin)
+            {
+                spins++;
+            }
+        }
+
+        Assert.Equal(1, spins);
+    }
+
+    [Fact]
+    public void ClubSpin_Tapped_WaitsForItsCooldown()
+    {
+        var state = PlayerState.Spawn(Vector3.Zero);
+        state.Weapon = Weapons.Club;
+        var spins = 0;
+        const int ticks = Tuning.TickRate * 10;
+        for (var i = 0; i < ticks; i++)
+        {
+            state.Stamina = 100f;
+            if (Tick(ref state, i % 2 == 0 ? Buttons.Heavy : Buttons.None) == AttackKind.ClubSpin)
+            {
+                spins++;
+            }
+        }
+
+        Assert.InRange(spins, 2, ticks / Tuning.ClubSpinCooldownTicks + 1);
+    }
+
     private static void JumpAndStep(GameServer server, ClientPrediction client, SimNetwork network)
     {
         Run(server, client, network, 1, Buttons.Jump);

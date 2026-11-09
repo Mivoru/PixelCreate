@@ -258,6 +258,12 @@ public static class Tuning
     public const byte StaffBoltCooldownTicks = 90;
     public const byte StaffWallCooldownTicks = 240;
 
+    /// <summary>
+    /// Ticks from one club spin to the next. The spin also wants a fresh press of the heavy button:
+    /// held down, it once spun and staggered round and round until the stamina ran out.
+    /// </summary>
+    public const byte ClubSpinCooldownTicks = 150;
+
     public const float StaffBoltSpeed = 20f;
     public const float StaffBoltRange = 30f;
     public const float StaffBoltSplash = 1.6f;
@@ -431,9 +437,12 @@ public struct PlayerState
     /// <summary>Ticks before the next mastery move may start.</summary>
     public byte MoveCooldown;
 
-    /// <summary>Ticks before the staff may cast the next fireball, and the next wall of fire.</summary>
+    /// <summary>Ticks before the staff may cast the next fireball, and before the next heavy (wall of fire or club spin).</summary>
     public byte BoltCooldown;
-    public byte WallCooldown;
+    public byte HeavyCooldown;
+
+    /// <summary>Whether the heavy button was down last tick, so a club spin needs a fresh press.</summary>
+    public bool HeavyHeld;
 
     public static PlayerState Spawn(Vector3 position, short health = Tuning.PlayerHealth) => new()
     {
@@ -652,7 +661,7 @@ public static class Movement
         if (state.SlowTicks > 0) state.SlowTicks--;
         if (state.MoveCooldown > 0) state.MoveCooldown--;
         if (state.BoltCooldown > 0) state.BoltCooldown--;
-        if (state.WallCooldown > 0) state.WallCooldown--;
+        if (state.HeavyCooldown > 0) state.HeavyCooldown--;
         if (state.StaminaDelay > 0) state.StaminaDelay--;
 
         var high = state.Position.Y - world.GroundHeight(state.Position.X, state.Position.Z) >= Tuning.AirMoveHeight;
@@ -815,6 +824,8 @@ public static class Movement
 
     private static AttackKind StepAttack(ref PlayerState state, in InputCmd input, bool high)
     {
+        var freshHeavy = !state.HeavyHeld;
+        state.HeavyHeld = input.Buttons.HasFlag(Buttons.Heavy);
         var landed = AttackKind.None;
         if (state.Attack != AttackKind.None)
         {
@@ -850,7 +861,9 @@ public static class Movement
                 _ => wanted,
             };
             wanted = Variant(state, wanted, high);
-            if ((wanted == AttackKind.StaffBolt && state.BoltCooldown > 0) || (wanted == AttackKind.StaffWall && state.WallCooldown > 0))
+            if ((wanted == AttackKind.StaffBolt && state.BoltCooldown > 0)
+                || (wanted is AttackKind.StaffWall or AttackKind.ClubSpin && state.HeavyCooldown > 0)
+                || (wanted is AttackKind.ClubSpin or AttackKind.GroundPound && !freshHeavy))
             {
                 wanted = AttackKind.None;
             }
@@ -883,7 +896,11 @@ public static class Movement
             }
             else if (wanted == AttackKind.StaffWall)
             {
-                state.WallCooldown = Tuning.StaffWallCooldownTicks;
+                state.HeavyCooldown = Tuning.StaffWallCooldownTicks;
+            }
+            else if (wanted == AttackKind.ClubSpin)
+            {
+                state.HeavyCooldown = Tuning.ClubSpinCooldownTicks;
             }
         }
 

@@ -1121,6 +1121,9 @@ public partial class Hud : Control
 
         if (Notice.Length > 0)
         {
+            // A card behind it, so the notice reads over any scene.
+            var width = Width(Notice, 26, _bold) + 60f;
+            Card(new Rect2((Size.X - width) / 2f, Size.Y / 2f - 38, width, 56), 18);
             Centered(Notice, Size.Y / 2f, 26, Text, _bold);
         }
     }
@@ -1556,7 +1559,11 @@ public partial class Hud : Control
         if (Player.Weapon == Weapons.Staff)
         {
             StaffArc(centre, Mathf.Pi * 0.55f, Mathf.Pi * 0.95f, 1f - Player.BoltCooldown / (float)Tuning.StaffBoltCooldownTicks, shadow);
-            StaffArc(centre, Mathf.Pi * 0.45f, Mathf.Pi * 0.05f, 1f - Player.WallCooldown / (float)Tuning.StaffWallCooldownTicks, shadow);
+            StaffArc(centre, Mathf.Pi * 0.45f, Mathf.Pi * 0.05f, 1f - Player.HeavyCooldown / (float)Tuning.StaffWallCooldownTicks, shadow);
+        }
+        else if (Player.Weapon == Weapons.Club)
+        {
+            StaffArc(centre, Mathf.Pi * 0.45f, Mathf.Pi * 0.05f, 1f - Player.HeavyCooldown / (float)Tuning.ClubSpinCooldownTicks, shadow);
         }
 
         // Bow mastery Rain of Arrows: held past a full draw, a blue ring fills round the crosshair.

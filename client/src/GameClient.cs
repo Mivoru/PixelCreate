@@ -281,6 +281,11 @@ public partial class GameClient : Node
         }
     }
 
+    /// <summary>Snapshots seen so far, when the last one came, and how long a silence means the server is gone.</summary>
+    private long _seenSnapshots;
+    private ulong _lastSnapshotMs;
+    private const ulong SilenceMs = 4000;
+
     public override void _Process(double delta)
     {
         // Frame times are measured away from the frames that save a picture, which stall on purpose.
@@ -305,7 +310,15 @@ public partial class GameClient : Node
             return;
         }
 
-        _hud.Notice = "";
+        // A server that dies without a goodbye stays "connected" until the timeout; silence says it sooner.
+        if (_client.Stats.Snapshots != _seenSnapshots)
+        {
+            _seenSnapshots = _client.Stats.Snapshots;
+            _lastSnapshotMs = Time.GetTicksMsec();
+        }
+
+        var silent = _seenSnapshots > 0 && Time.GetTicksMsec() - _lastSnapshotMs > SilenceMs;
+        _hud.Notice = silent ? "Connection lost: the server stopped answering. Restart the game to rejoin." : "";
         // A long frame, such as the first one while shaders compile, must not turn into a burst of
         // simulated ticks: the time beyond a few ticks is simply dropped.
         _clock = Math.Min(_clock + delta, Tuning.TickSeconds * MaxTicksPerFrame);
