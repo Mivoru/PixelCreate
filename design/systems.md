@@ -1,0 +1,257 @@
+# Herní systémy pro příběh
+
+Tutoriál, Guilda, questy, vyšetřování, stav světa, růst vesnice, postup hrou, lokace, monstra,
+bossové, dungeony a technický plán. Děj je v `design/plot.md`.
+
+---
+
+## 1. Tutoriál (prolog „Fallen")
+
+Cíl: za 25 až 35 minut naučit všechno podstatné. Každá mechanika má příběhový důvod. Rozhraní se
+„probouzí" postupně: na začátku jen zdraví, po prvním monstru Mark (úroveň, zkušenosti), u Guildy
+batoh, u Rhey stamina a blok.
+
+| Krok | Místo | Učí | Jak |
+|---|---|---|---|
+| 0 | video | — | přechod, náklaďák, jméno |
+| 1 | Mirror Lake | kamera, plavání ven | pád do jezera; pak síť a tma (scéna, žádný boj) |
+| 2 | vůz lovců | rozhlížení, interakce | klec, Nell a Haruto mluví; hráč ohmatá zámek |
+| 3 | les u cesty | lehký útok, pohyb v boji | goblini přepadnou vůz, hráč vezme Rusty Dagger, dva goblini |
+| 4 | cesta | sbírání kořisti | mrtví lovci: chléb, lektvar, klíč od Nell |
+| 5 | Slime Fields | těžký útok, červené značky, uhýbání, dash | slimáci na cestě; Nell radí („they jump where the ground glows") |
+| 6 | Slime Fields | Mark, úroveň, krystal | první zabití rozsvítí rozhraní; Nell couvne |
+| 7 | Harrow Farm | chůze kolem zvířat, sprint | Pip s vidlemi, stádo se plaší z běhu |
+| 8 | pekárna | jídlo léčí | Elda nakrmí hráče, dá steak na cestu |
+| 9 | Bram | dialog, volby odpovědí | první volba tónu (soucitný, pragmatický, tvrdý) |
+| 10 | Guilda | registrace | Mira, Anchor Stone, rank F |
+| 11 | aréna | blok, parry | Rhea, kolo 1: „hold the wheel, take my blows" |
+| 12 | aréna | dash přes těžký úder, stamina | Rhea, kolo 2 |
+| 13 | aréna | skutečný souboj, smrt a návrat | Rhea, kolo 3. Prohra = probuzení u Anchor Stone (učí smrt) |
+| 14 | Guilda | tabule, odkupník, truhla, obchod | úvodní joby, Hollis, Wren |
+| 15 | jih | skupinová AI, střelci, blok šípů | Goblin Bounty, pak rank E a odznak |
+
+Bot `PIXEL_BOT=prologue` projde celý prolog přes skutečné rozhraní (rozšíření bota `guild`).
+
+**Varianty, které jsem zvažoval:** začít rovnou ve vesnici (rychlejší, ale slabý háček a chybí
+téma otroctví a lovců), začít v kleci bez pádu (chybí obraz „spadl z nebe", který vesnice
+komentuje). **Doporučení:** pád, klec, útěk. Silný začátek a hned ukáže, o čem svět je.
+
+---
+
+## 2. Guilda
+
+- **Ranky F, E, D, C, B, A, S.** Body ze jobů a zkouška. Akt I končí na C, akt II na A, S až po
+  příběhu.
+- **Zkoušky ranků:** E: Goblin Bounty. D: eskorta karavany Liny do East Watch (přepadení).
+  C: noc v Greyfangu do rozbřesku. B: duel s Rheou bez omezení. A: dungeon na čas.
+- **Tabule v2:** joby z dat, mění se podle stavu světa. Druhy: lov, sběr, doručení, eskorta, průzkum
+  (najdi a vrať se), obrana (vlna na farmu), **výkup** (zaplať dlužnickou smlouvu a přiveď
+  člověka zpět), **odměna na hlavu** (bandita, uprchlý lovec, později i Skyfallen zločinec).
+  Joby s morální vahou: „Return escaped bondsman to Factor Holt, 40 gold." Hráč ho může přijmout,
+  najít uprchlíka a nechat ho jít (job selže, karavany si to pamatují).
+- **Memorial Wall:** deska se jmény padlých. NPC dobrodruzi umírají během příběhu (Brightwater Four,
+  pojmenovaní dobrodruzi z jobů). Hráč u desky čte jména. Pro domorodce jedna chyba = konec.
+- **Tituly:** Slime Slayer, Wolfbane, Oathbreaker, Friend of the Vel… Jen pro repliky NPC.
+- **Pověst Guildy** je zvlášť od rank. Klesá při selhaných nebo odmítnutých jobech, roste při
+  záchranách.
+
+---
+
+## 3. Questy a dialogy z dat
+
+### Questy (`world/quests.json`)
+- Quest má kroky. Krok má cíl, podmínky a výsledky.
+- **Cíle:** zabij (id nebo prefix), přines předmět, mluv s NPC, dojdi na místo, vyber volbu
+  v dialogu, přežij do času (obrana), doprovoď NPC.
+- **Podmínky:** flag, rank, kapitola, beat, pověst, předmět, atribut, NPC naživu.
+- **Výsledky:** nastav flag, změň pověst, posuň beat, dej nebo vezmi předmět a zlato, změň osud
+  NPC (živý, mrtvý, odešel, přesunul se), spusť událost.
+- **Termíny:** krok může mít `deadlineBeat` a `onExpire` (výsledky, když hráč nestihne).
+- Současné joby z `Guild.Quests` se převedou do nového formátu. Příkazy `AcceptSlimeQuest` a
+  `AcceptGoblinQuest` zmizí ve prospěch `QuestCommands`.
+
+### Dialogy (`world/dialogue/*.json`)
+- Uzel: mluvčí, text, možnosti. Možnost: text, tón (soucitný, pragmatický, tvrdý, neutrální),
+  podmínky (viz výše, plus atribut, například `Intelligence >= 6`), výsledky.
+- Kontrola atributu se ukáže v textu možnosti: „[Intelligence] The ink on this page is fresh."
+- Jeden NPC má víc „vstupů" seřazených podle priority podmínek. Bere se první platný.
+  Tak se replika změní podle stavu světa bez kódu.
+- `Dialogues.cs` zůstane jen jako vykreslování a obchody. Texty a větvení se přesunou do dat.
+
+---
+
+## 4. Vyšetřování
+
+Hollisova vražda (kapitola 1) a smrt krále (akt II) používají stejný systém.
+
+- **Stopy** jsou předměty nebo fakta v deníku: „Poison bought from Wren", „Soldier's boot prints",
+  „Garrick took coin".
+- Stopy se dají najít (prozkoumat místo, kliknout na objekt), vyptat (dialog, někdy s kontrolou
+  atributu), koupit (informátor), nebo vynutit (Strength, s následky).
+- **Obvinění:** dialog s rozhodcem (Corwin, později královský soud). Hráč vybere viníka a předloží
+  stopy. Málo stop = rozhodce nevěří a rozhodne dav. Špatný viník = trest pro nevinného.
+- Vyšetřování má termín (do večera, do pohřbu). Svět nečeká.
+
+---
+
+## 5. Stav světa (WorldState)
+
+- V `shared-core`, testovatelný v `dotnet test`:
+  - **flagy** (`ch1.ledger.margravine`, `npc.hollis.dead`),
+  - **pověsti** (Crown, Seraphine, Caius, Isolde, Company, Caravans, Church, Guild, Ironjaw,
+    Moonfell, Hearthmere),
+  - **beat** (příběhové hodiny) a **kapitola**,
+  - **osudy NPC** (živý, mrtvý, odešel, jinde),
+  - **růst vesnice** (kdo se přistěhoval).
+- Zóna JSON dostane u táborů, NPC, rekvizit a budov `requires` / `forbids` (podmínky jako v questech).
+  Server zónu skládá podle stavu světa. Klient dostane jen výsledek.
+- Server posílá stav světa klientovi zvlášť spolehlivou zprávou při změně, ne v každém snapshotu
+  (snapshot se musí vejít do jednoho UDP paketu).
+- **Uložení:** server ukládá hráče a stav světa do souboru (`user saves/<slot>.json`). Automaticky
+  při každém beatu a při odchodu. Ruční ukládání ne: volby mají být závazné. Jeden slot na postavu,
+  plus automatická záloha z předchozího beatu (pro pády a chyby, ne pro „zkusit to znovu").
+
+**Varianty:** volné ukládání kdykoli (pohodlné, ale hráči by zkoušeli všechny volby a ztratilo by
+se napětí), žádné ukládání mimo beaty (čisté, ale bolí při pádu hry). **Doporučení:** auto-save
+na beatech a při odchodu, jedna záloha.
+
+---
+
+## 6. Růst Hearthmere
+
+- Lidé, které hráč zachrání nebo vykoupí, se mohou usadit v Hearthmere: Nell, vykoupení dlužníci,
+  uprchlí beastkin od karavan, Moonfell (pokud se neobnoví zvlášť), orčí kovář.
+- Každý příchozí přidá něco viditelného: dům, stánek, službu (kovář s orčími zbraněmi, léčitel,
+  lovec, krejčí). Stejně tak odchody a smrti něco uberou (zavřený obchod Liny, prázdná kovárna).
+- V aktu III síla obrany Hearthmere = kdo tam žije. Odměna za soucit, která je vidět a hratelná.
+- Inspirace: Suikoden (sbírání lidí do hradu), Fallout (osady), ale bez stavění: vesnice roste podle
+  příběhu, ne podle hráčova stavitelství.
+
+---
+
+## 7. Společníci (později, po aktu I)
+
+- Sora, Kai, Lisbet (léčba Moonfellu), Vashra (mír s orky), Nell (jen jako pomocnice ve vesnici,
+  ne do boje), Corran (karavany).
+- Jeden společník s hráčem. AI na serveru jako nepřítel naruby (stejné AI role: ranged, support,
+  brute), schopnosti z dat.
+- **Doporučení:** až po dokončení aktu I. Je to velká funkce (AI, animace, dialogy po cestě) a
+  příběh aktu I bez ní funguje.
+
+---
+
+## 8. Postup hrou
+
+| Část | Úroveň | Oblasti | Rank |
+|---|---|---|---|
+| Prolog | 1–3 | Mirror Lake, Slime Fields, Hearthmere, aréna | F |
+| Kapitola 1 | 3–8 | Goblin Hollow, Goblin Warren, Westwood, East Watch | E |
+| Kapitola 2 | 7–11 | Harrow Farm, Greyfang, Stone Circle | D |
+| Kapitola 3 | 10–14 | Moonfell, krypta | D |
+| Kapitola 4 | 13–17 | Ironjaw, Southern Wilds, East Watch | C |
+| Finále aktu I | 16–18 | Silver Falls, Sunken Archive | C |
+| Akt II | 18–30 | Varn's Crossing, Marshes of Ell, Saltmere, Saltdeeps, Highcrest | B–A |
+| Akt III | 30–40 | Marche v Blightu, Kareth, Blightmarch, Heart Lantern | A |
+
+Úrovně jsou zatím odhad. Obtížnost a balanc se neladí (pravidlo projektu), měří se až později.
+
+---
+
+## 9. Lokace
+
+### Akt I (Meadow Valley, existuje, potřebuje úpravy)
+- **Hearthmere**: přejmenovat Meadow Village. Přidat hřbitov, Memorial Wall v Guildě, sklad Guildy
+  (místo vraždy), hospodu (rvačka Kaie), místa pro budoucí domy.
+- **Mirror Lake**: tábor lovců s klecemi a vozem.
+- **Goblin Warren**: malý dungeon pod Goblin Hollow (interiér na platformě mimo mapu, jako Guilda).
+- **East Watch**: pevnost, sklad společnosti, šibenice, cela.
+- **Moonfell**: kaple, krypta (dungeon), domy.
+- **Greyfang Den**: místo pro bosse.
+- **Sunken Archive**: dungeon pod Silver Falls.
+
+### Akt II a III
+Varn's Crossing, Marshes of Ell, Saltmere, Saltdeeps, Highcrest, Undercanals, Blightmarch.
+Vyžadují víc zón na jednom serveru a cestování mezi nimi (technicky velký krok).
+
+---
+
+## 10. Monstra
+
+| Monstrum | Kde | Nápad |
+|---|---|---|
+| Blighted slime | Greyfang, sever | šedý, po smrti se rozdělí na dva menší |
+| Blight wolf | Greyfang | stínový, mizí a objevuje se za hráčem |
+| Husk | Blightmarch, Archive | chodící zbytek duše, pomalý, v hejnech |
+| Auren construct | Archive, Old Ruins | golem z kamene a světla, štít z jedné strany |
+| Lantern wisp | Archive | světélko, krade staminu, léčí konstrukty |
+| Mimic | dungeony | truhla, která kousne; předtím se nepatrně hýbe |
+| Bandit, sellsword | silnice, akt I a II | lidé, utíkají, když prohrávají, vzdávají se |
+| Finder (lovec) | Mirror Lake, akt I | síť (znehybní), obušek; chce chytit, ne zabít |
+| Inquisitor | Moonfell, akt II | stříbro, světelné kopí, štít víry |
+| Giant spider | Westwood | sítě, jed, pavouci ze stropu v jeskyních |
+| Harpy | Ridges | útok shora, krade předměty |
+| Bridge troll | cesta k Varn's Crossing | chce mýtné, dá se zaplatit, nebo bojovat |
+| Lizardfolk | Marshes of Ell | oštěpy z vody, ve skupinách |
+| Crypt dead | Moonfell krypta | mrtví vesničané, které Blight zvedl |
+| Hollowed | akt III | Skyfallen bez paměti, používají skilly hráče |
+
+---
+
+## 11. Regionální bossové
+
+| Oblast | Boss | Fáze |
+|---|---|---|
+| Goblin Warren | **Warlord Grub** | 1: na kanci, nájezdy přes arénu. 2: kanec padne, Grub s ukovanou helmou a štítem, volá goblinské střelce. |
+| Greyfang Den | **Old Greymaw** | 1: obří vlk, skoky a kousnutí. 2: rozpadne se na tři stíny, skutečný je ten, který vrhá stín. 3: zuřivost, Blight na zemi. |
+| Moonfell krypta | **Moon-Eaten Lord** | 1: baron jako člověk mluví (dialog, prosba). 2: proměna, drápy, skok. 3: volá vlkodlaky, kteří váhají, pokud hráč nese Mirin šátek. |
+| Ironjaw | **Warchief Gor Ashka** (jen válka) | 1: dvouruční sekera, otřesy. 2: volá klany, ostatní šampioni (pokud žijí). |
+| Sunken Archive | **Archive Warden** | 1: golem s paprsky, kryje se za štítem. 2: hádanka se zrcadly, světlo na jeho jádro. 3: zuřivost. |
+| Blightmarch | **The Rootmother** | akt III, několik fází, hlasy známých mrtvých |
+
+Bossové jsou data jako ostatní nepřátelé (`enemies.json`), schopnosti v `GameServer.Fire`, plus
+**fáze** (nový údaj: při jakém zdraví se mění sada schopností). Po zabití se nastaví flag.
+
+---
+
+## 12. Dungeony
+
+Pravidla:
+- Interiér na platformě mimo mapu (jako Guilda a aréna), vstup portálem.
+- 15 až 30 minut, jedna smyčka se zkratkou zpět ke vchodu (otevřou se dveře zevnitř).
+- Jeden nový nápad na dungeon: Warren = pasti a kotce, krypta = tma a světlo pochodně,
+  Archive = světelné hádanky se zrcadly.
+- Mini-boss v půlce, boss na konci, mimic truhly, jedna tajná místnost s lore (deník Skyfallen
+  nebo auréjský nápis).
+
+---
+
+## 13. Technický plán
+
+### Co je jisté (rozhodnuto)
+Hra pro jednoho hráče, lokální server a klient zůstávají, co-op možná později.
+
+### Fáze
+Každá fáze končí hratelnou a otestovanou verzí. **Akt I je celá hra sama o sobě**: má začátek,
+konec, volby a bossy. Akty II a III jsou skica, dokud akt I není hotový a zábavný.
+
+1. **Základy** (bez nového obsahu):
+   uložení hry, `WorldState`, questy z dat, dialogy z dat, deník (klávesa L), podmínky v zónách.
+   Testy v `net-tests` (quest projde, flag změní zónu, uložení a načtení vrátí stejný stav).
+2. **Prolog:** úvodní video (jednoduché, 2D obrázky v pixel artu stačí), pád, klec, útěk, nová
+   Hearthmere (přejmenování), zkouška ve třech kolech, bot `prologue`.
+3. **Kapitola 1:** vyšetřování, Goblin Warren, Grub, kniha a tři cesty, Nell, nové postavy (Vosk,
+   Holt, Corwin, Nell, Tam, Brightwater Four), East Watch se šibenicí.
+4. **Kapitola 2 a 3:** příběhové hodiny s termíny, obrana farmy, Greymaw, Moonfell a krypta, inkvizice.
+5. **Kapitola 4:** bitva (vlny), mír a souboj s Urzogem, orčí osada jako podmíněný obsah.
+6. **Finále aktu I:** Sunken Archive, Warden, Bramova smrt, epilog.
+7. **Akt II** (víc zón na serveru, cestování, město, společníci).
+8. **Akt III.**
+
+### Rizika
+- **Množství textu.** Akt I má odhadem 40 až 60 tisíc slov dialogů. Psát po kapitolách, hned do dat,
+  a hned testovat botem.
+- **Kombinatorika voleb.** Každá velká volba zdvojnásobí obsah. Proto tři velké volby za kapitolu,
+  ne víc, a následky přes flagy, které mění malé věci (repliky, NPC, tábory), ne celé zóny.
+- **Nové modely.** Klec, vůz, šibenice, hřbitov, nové postavy, beastkin (uši a ocas na anime rig).
+  Seznam na začátku každé fáze.
+- **Velikost snapshotu** se nezmění, stav světa jde zvlášť.

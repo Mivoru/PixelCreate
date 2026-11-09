@@ -16,7 +16,7 @@ Workspace for pixel art and experiments around it.
 A fast 3D action RPG with a pixel art look, built code-first: a single-player story game (an isekai:
 the player is hit by a truck saving a child and falls into the world). The MMORPG goal is dropped
 (decided 2026-11-09); co-op for 2 to 4 players may come later. Story, world, factions, the tutorial
-and the roadmap live in `design/story.md`: read it before story, quest, dialogue or zone work.
+and the roadmap live in `design/` (start with `design/story.md`): read it before story, quest, dialogue or zone work.
 Work now on the world, story, mechanics, movement, abilities and enemies. Do not tune difficulty or
 balance yet. Godot 4.7 with C#; the server does not use Godot.
 
