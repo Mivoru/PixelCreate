@@ -50,7 +50,6 @@ Hra už je hratelný prototyp akční části. Zdroj pravdy je kód a `CLAUDE.md
 | # | Rozhodnutí | Blokuje | Můj návrh |
 |---|---|---|---|
 | 1 | Název hry (pracovně PixelCreate) | úvod, menu | rozhodnout před etapou 3 |
-| 2 | Vzhled gearu na postavě (helma, zbroj podle nošených předmětů) | nic teď | až po aktu I |
 
 ## 3a. Rozhodnuto
 
@@ -63,6 +62,8 @@ Hra už je hratelný prototyp akční části. Zdroj pravdy je kód a `CLAUDE.md
 
 - 2026-11-09 (podle návrhu): scény jednoduchým skriptovaným systémem (kamera, repliky, pohyb NPC,
   bez střihu); beastkin až v aktu II; smrt hráče stojí 10 % neprodaných krystalů a zapíše ozvěnu.
+- 2026-11-09: nošený gear (helma, zbroj, boty) se na postavě **zatím neukazuje**. Vrátit se k tomu
+  nejdřív po aktu I.
 - 2026-11-09: čas běží plynule při hraní (1 herní hodina = 26 s), spánek přeskočí noc
   (úprava oproti „čas jen akcí", viz `design/stage-1.md`). Dialog má živý portrét mluvčího.
 
