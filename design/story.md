@@ -18,7 +18,7 @@ Hlavní dokument designu. Jména ve hře anglicky (pravidlo projektu), popis če
 
 Rozhodnuto: hra pro jednoho hráče s příběhem, lokální server a klient zůstávají (co-op možná
 později). Hráč: vlastní jméno, volby odpovědí, minulost jen úvodní video (zachrání dítě, srazí ho
-náklaďák). Hráč není vyvolený: je součástí světa, který jde vlastní cestou (2026-11-09).
+náklaďák). Hráč není vyvolený: je součástí světa, který jde vlastní cestou. Hráč je vždy muž, vzhled si upraví. Vesnice Hearthmere, svět Velmora, akt I trvá 70 dní, ukládání automaticky každé ráno (2026-11-09).
 
 ---
 

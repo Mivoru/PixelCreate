@@ -45,23 +45,23 @@ Hra už je hratelný prototyp akční části. Zdroj pravdy je kód a `CLAUDE.md
 | Beastkin | `world.md` 4.2 | nová rasa pro anime rig |
 | Akt II a III | `plot.md` 4, 5 | jen skica, záměrně |
 
-## 3. Otevřená rozhodnutí (seřazeno podle toho, co blokuje dřív)
+## 3. Otevřená rozhodnutí
 
 | # | Rozhodnutí | Blokuje | Můj návrh |
 |---|---|---|---|
-| 1 | Jména vesnice a světa | texty, minimapa | Hearthmere, Velmora |
-| 2 | Pohlaví a vzhled hráčovy postavy | prolog, dialogy, romance | jednoduchá volba na začátku (dvě těla anime rigu, vlasy, barvy); romance otevřené pro obě |
-| 3 | Úvodní video: 2D obrázky nebo 3D scéna | prolog | 2D pixel art obrázky, levné a ve stylu |
-| 4 | Jak dělat scény (pád, klec, přepadení) | prolog | jednoduchý skriptovaný systém: kamera, repliky, pohyb NPC, bez střihu |
-| 5 | Kalendář: kolik dní má akt I a jak rychle běží čas | základy | 70 dní, čas jen spánkem, cestou a joby |
-| 6 | Ukládání: kdy a kolik slotů | základy | auto každé ráno a při odchodu, jedna záloha |
-| 7 | Beastkin v aktu I, nebo až v aktu II | modely | až v aktu II, v aktu I jen zmínky a kurýr na šibenici |
-| 8 | Smrt hráče: co stojí | balanc | malá ztráta krystalů nebo zlata, ozvěna se zapíše |
+| 1 | Jak dělat scény (pád, klec, přepadení) | prolog | jednoduchý skriptovaný systém: kamera, repliky, pohyb NPC, bez střihu |
+| 2 | Beastkin v aktu I, nebo až v aktu II | modely | až v aktu II, v aktu I jen zmínky a kurýr na šibenici |
+| 3 | Smrt hráče: co stojí | balanc | malá ztráta krystalů nebo zlata, ozvěna se zapíše |
 
-Rozhodnuto: hra pro jednoho hráče (lokální server zůstává), hráčova postava s volbami odpovědí,
-hráč není vyvolený, žádná ideální linie, cesty přes frakce, sólo i nicnedělání jsou platné, romance
-volitelné a vypínatelné (2026-11-09).
+## 3a. Rozhodnuto
+
+- 2026-11-09: hra pro jednoho hráče (lokální server zůstává), hráčova postava s volbami odpovědí,
+  hráč není vyvolený, žádná ideální linie, cesty přes frakce, sólo i nicnedělání jsou platné, romance
+  volitelné a vypínatelné.
+- 2026-11-09: jména **Hearthmere** (vesnice) a **Velmora** (svět). Hráč je **vždy muž**, vzhled si
+  upraví; postava, mimika a vlasy se zlepší (etapa 2) a poslouží i NPC. Úvodní video jako **2D pixel
+  art obrázky**. Akt I trvá **70 dní**. Ukládání **automaticky každé ráno** a při odchodu, jedna záloha.
 
 ## 4. Další krok
 
-Etapa 0 podle `design/stages.md`: rozhodnout body 1 až 6 a napsat detailní návrh etap 1 a 2.
+Etapa 0 podle `design/stages.md`: napsat detailní návrh etap 1 až 3.

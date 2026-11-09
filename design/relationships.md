@@ -81,8 +81,8 @@ Hráč může projít celou hru bez přátel, bez společníků a bez frakcí. J
   2. v dialogu: první náznak romance má vždy odpověď „I'm not looking for that". Postava to vezme
      a dál je jen přítel. Hra se k tomu už nevrací.
 - **Jen dospělé postavy.** Nikdy Nell, Tam ani jiné děti.
-- **Nezávislé na pohlaví hráče.** Každý kandidát je otevřený hráči jakéhokoli pohlaví (pokud bude
-  volba pohlaví postavy; viz otevřená rozhodnutí).
+- **Hráč je vždy muž** (rozhodnuto 2026-11-09). Kandidáti jsou ženy i muži; romance s muži
+  (Corran, Edwin, Kai) jsou stejně plnohodnotné a stejně volitelné.
 - **Romance je příběh, ne odměna.** Má cenu, rizika a může skončit špatně. Žádné „sbírání".
 - **Bez explicitních scén.** Polibek, noc u ohně, ráno. Zbytek mimo obraz.
 - Jen jedna romance najednou. Nevěra je možná a má následky (ta druhá postava se to dozví).

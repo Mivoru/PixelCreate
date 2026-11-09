@@ -13,7 +13,7 @@ batoh, u Rhey stamina a blok.
 
 | Krok | Místo | Učí | Jak |
 |---|---|---|---|
-| 0 | video | — | přechod, náklaďák, jméno |
+| 0 | video | úprava vzhledu | 2D pixel art obrázky: přechod, náklaďák; pak jméno a úprava vzhledu |
 | 1 | Mirror Lake | kamera, plavání ven | pád do jezera; pak síť a tma (scéna, žádný boj) |
 | 2 | vůz lovců | rozhlížení, interakce | klec, Nell a Haruto mluví; hráč ohmatá zámek |
 | 3 | les u cesty | lehký útok, pohyb v boji | goblini přepadnou vůz, hráč vezme Rusty Dagger, dva goblini |
