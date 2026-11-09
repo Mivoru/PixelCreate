@@ -31,7 +31,10 @@ if ($ServerHost -eq "127.0.0.1") {
 try {
     $arguments = @("--path", (Join-Path $root "client"), "--", $ServerHost, "7777")
     if ($Capture) { $arguments += @($Capture, $CaptureFrames) }
-    & $godot @arguments
+    # The client's output also goes to a file, so a crash leaves its last lines behind. Its
+    # warnings come on stderr, which must not stop the script.
+    $ErrorActionPreference = "Continue"
+    & $godot @arguments 2>&1 | ForEach-Object { "$_" } | Tee-Object -FilePath (Join-Path $root "export\previews\client.log")
 }
 finally {
     if ($server) { Stop-Process -Id $server.Id -Force -ErrorAction SilentlyContinue }

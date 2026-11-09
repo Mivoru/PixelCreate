@@ -213,7 +213,7 @@ public partial class GameClient : Node
 
     public override void _Input(InputEvent @event)
     {
-        if (@event is InputEventMouseMotion motion && !_hud.InventoryOpen && !_hud.DialogOpen && !_hud.MenuOpen)
+        if (@event is InputEventMouseMotion motion && !_hud.WindowOpen && !_hud.DialogOpen && !_hud.MenuOpen)
         {
             // A drawn bow turns at its own speed, for fine aim.
             var speed = MouseSensitivity * Settings.Sensitivity * Mathf.Lerp(1f, Settings.AimSensitivity, _aimBlend);
@@ -230,9 +230,9 @@ public partial class GameClient : Node
                     return;
                 }
 
-                if (_hud.InventoryOpen && !_hud.MenuOpen)
+                if (_hud.WindowOpen && !_hud.MenuOpen)
                 {
-                    _hud.ToggleInventory();
+                    _hud.CloseWindows();
                     return;
                 }
 
@@ -778,7 +778,7 @@ public partial class GameClient : Node
 
     private (sbyte X, sbyte Z, Buttons Buttons) ReadInput()
     {
-        if (_hud.InventoryOpen || _hud.DialogOpen || _hud.MenuOpen)
+        if (_hud.WindowOpen || _hud.DialogOpen || _hud.MenuOpen)
         {
             return (0, 0, Buttons.None);
         }
@@ -1640,7 +1640,8 @@ public partial class GameClient : Node
             else if (spit.Kind == ProjectileKind.SummonedSpear && ball.GlobalPosition.DistanceSquaredTo(_shownNow) > 0.01f)
             {
                 // A conjured spear hangs over the orc's head with its point already on the player.
-                ball.LookAt(_shownNow + Vector3.Up, Vector3.Up);
+                var aim = (_shownNow + Vector3.Up - ball.GlobalPosition).Normalized();
+                ball.LookAt(_shownNow + Vector3.Up, Mathf.Abs(aim.Dot(Vector3.Up)) > 0.98f ? Vector3.Forward : Vector3.Up);
             }
             else if (spit.Kind == ProjectileKind.Spit)
             {

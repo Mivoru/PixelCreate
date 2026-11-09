@@ -289,9 +289,33 @@ public partial class Hud : Control
 
     public void ToggleMastery()
     {
-        MasteryOpen = !MasteryOpen;
+        var open = !MasteryOpen;
+        CloseWindows();
+        MasteryOpen = open;
         _masteryTab = MasteryOpen ? Mathf.Max(0, Mastery.WeaponIndex(Weapons.Name(Player.Weapon))) : _masteryTab;
-        Input.MouseMode = MasteryOpen || CharacterOpen || InventoryOpen || DialogOpen ? Input.MouseModeEnum.Visible : Input.MouseModeEnum.Captured;
+        UpdateMouse();
+    }
+
+    /// <summary>Whether the bag, the character or the mastery window is open. Only one is at a time.</summary>
+    public bool WindowOpen => InventoryOpen || CharacterOpen || MasteryOpen;
+
+    /// <summary>Closes the bag, the character and the mastery window, so opening one never lays it over another.</summary>
+    public void CloseWindows()
+    {
+        if (InventoryOpen)
+        {
+            CloseInventory();
+        }
+
+        CharacterOpen = false;
+        MasteryOpen = false;
+        UpdateMouse();
+    }
+
+    /// <summary>The pointer shows while a window or a talk is open, and is held for the camera otherwise.</summary>
+    private void UpdateMouse()
+    {
+        Input.MouseMode = WindowOpen || DialogOpen ? Input.MouseModeEnum.Visible : Input.MouseModeEnum.Captured;
     }
 
     /// <summary>
@@ -364,8 +388,10 @@ public partial class Hud : Control
 
     public void ToggleCharacter()
     {
-        CharacterOpen = !CharacterOpen;
-        Input.MouseMode = CharacterOpen || InventoryOpen || DialogOpen ? Input.MouseModeEnum.Visible : Input.MouseModeEnum.Captured;
+        var open = !CharacterOpen;
+        CloseWindows();
+        CharacterOpen = open;
+        UpdateMouse();
     }
 
     private readonly List<(Rect2 Rect, PlayerAttribute Attribute)> _raiseButtons = new();
@@ -447,9 +473,26 @@ public partial class Hud : Control
 
     public void ToggleInventory()
     {
-        InventoryOpen = !InventoryOpen;
-        ChestOpen &= InventoryOpen;
-        if (!InventoryOpen && Items.Held is { } held)
+        if (InventoryOpen)
+        {
+            CloseInventory();
+        }
+        else
+        {
+            var chest = ChestOpen;
+            CloseWindows();
+            ChestOpen = chest;
+            InventoryOpen = true;
+        }
+
+        UpdateMouse();
+    }
+
+    private void CloseInventory()
+    {
+        InventoryOpen = false;
+        ChestOpen = false;
+        if (Items.Held is { } held)
         {
             // Whatever is still in hand goes back to the first free place.
             var free = Array.IndexOf(Items.Bag, null);
@@ -460,8 +503,6 @@ public partial class Hud : Control
 
             Items.Held = null;
         }
-
-        Input.MouseMode = InventoryOpen || DialogOpen ? Input.MouseModeEnum.Visible : Input.MouseModeEnum.Captured;
     }
 
     public override void _Process(double delta)
