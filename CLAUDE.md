@@ -178,6 +178,18 @@ Rules:
   registering costs a tenth of the unsold crystals and is written down for the act III echoes.
 - Interiors live outside the map on platforms (the guild at x 420, the trial ground at x 480). Doors are portals.
 - Character models come from Blender (`anime_*`) and use `toon.gdshader`, which also bends hair and cloth.
+- Faces (`FaceRig.cs`): eyes, lids, lashes, brows, nose, mouth shapes, blush, tear and sweat are small flat discs
+  on the head, eased towards an expression from `world/faces.json` (`Faces.cs`). Brows sit in front of the fringe
+  and the lashes slant with them, so anger and sorrow read where the hair hides the brows. A dialogue node's
+  `face` sets the speaker's expression; the mouth moves while the words appear, and a second camera renders the
+  speaker into the dialogue box (`GameClient.UpdateSpeaker`; the portrait viewport needs `View.FindWorld3D()` and a
+  current camera, or it renders grey). NPCs rest in `RigLook.Mood`; the player winces when hit, strains on heavy
+  blows and tires on low stamina. Studio job `faces` photographs every expression.
+- Appearance (`Appearance.cs`, `world/appearance.json`, `PlayerLook.cs`): the player is always a man and picks
+  face, nose, skin, eyes, eye shape, brows, hair, hair colour, beard, scar and height. `Command.SetAppearance`
+  (high byte field, low byte choice), kept in the save and sent in `Snapshot.Appearance`; the client rebuilds the
+  rig when it changes. A new game opens the creator (`Hud.OpenCreator`, `PIXEL_BOT=creator`); test runs and
+  `PIXEL_LOOK=default` start with the default look. Studio job `creator` photographs every choice.
 - Sound effects come from ElevenLabs: `python asset-pipeline/generate_sounds.py` (cached, keys stay outside the repo).
 - A snapshot must fit one UDP packet, so the server sends each player only nearby enemies. `GameServer.Fit` trims
   the farthest shots, drops and enemies until it is under `MaxSnapshotBytes` (a rain of arrows over a camp in test

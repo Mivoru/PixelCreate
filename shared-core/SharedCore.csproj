@@ -19,6 +19,7 @@
     <EmbeddedResource Include="..\world\rumors.json" LogicalName="rumors" />
     <EmbeddedResource Include="..\world\journal.json" LogicalName="journal" />
     <EmbeddedResource Include="..\world\faces.json" LogicalName="faces" />
+    <EmbeddedResource Include="..\world\appearance.json" LogicalName="appearance" />
     <EmbeddedResource Include="..\world\dialogue\*.json" LogicalName="dialogue.%(Filename)" />
   </ItemGroup>
 </Project>

@@ -1,0 +1,36 @@
+{
+  "hair": [
+    { "id": "hero", "name": "Wild" },
+    { "id": "short", "name": "Tidy" },
+    { "id": "spiky", "name": "Spiky" },
+    { "id": "pip", "name": "Messy" },
+    { "id": "undercut", "name": "Undercut" },
+    { "id": "swept", "name": "Swept back" },
+    { "id": "topknot", "name": "Topknot" },
+    { "id": "rhea", "name": "Tied back" },
+    { "id": "bram", "name": "Balding" },
+    { "id": "shaved", "name": "Shaved" }
+  ],
+  "hairColors": ["2b3044", "1c1a24", "4a3020", "9a4a2a", "c8703a", "e0c060", "a8362e", "8a8a90", "d8d8e0", "b8a0d8"],
+  "skin": ["f6d8c4", "f0c8b0", "e8c0a4", "e0b494", "c08a64", "8a5a3c"],
+  "eyes": ["2f8f62", "3f6fa8", "6a4a30", "3e8948", "b8552a", "7a4aa8", "5a4a3a", "8aa0b8"],
+  "beards": [
+    { "id": "none", "name": "None" },
+    { "id": "stubble", "name": "Stubble" },
+    { "id": "beard_short", "name": "Short beard" },
+    { "id": "goatee", "name": "Goatee" },
+    { "id": "mustache", "name": "Moustache" },
+    { "id": "beard", "name": "Long beard" }
+  ],
+  "scars": [
+    { "id": "none", "name": "None" },
+    { "id": "cheek", "name": "Cheek" },
+    { "id": "eye", "name": "Over the eye" },
+    { "id": "nose", "name": "Across the nose" }
+  ],
+  "faces": ["Narrow", "Even", "Broad"],
+  "noses": ["Small", "Straight", "Hooked"],
+  "eyeShapes": ["Sharp", "Round"],
+  "brows": ["Thin", "Even", "Thick"],
+  "heights": [0.95, 0.975, 1.0, 1.025, 1.05]
+}

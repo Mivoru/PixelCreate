@@ -733,6 +733,100 @@ def anime_beard():
     finish_hair(bm, "beard")
 
 
+def anime_hair_undercut():
+    """Short sides close to the skull and a long top swept over to one side."""
+    bm = bmesh.new()
+    hair_cap(bm, -0.6)
+    rng = random.Random(201)
+    for index in range(18):
+        # The long top grows from the crown and falls over the brow to the right.
+        x = -0.1 + index * 0.012
+        y = rng.uniform(-0.04, 0.09)
+        strand(bm, (x, y, 0.155), (x + 0.06, min(0.128, y + 0.07), 0.09 - rng.uniform(0, 0.025)), (0.015, 0.005, 0.018), 0.03)
+    for index in range(8):
+        angle = rng.uniform(0.2, math.pi - 0.2)
+        x, y = math.cos(angle) * 0.08, -math.sin(angle) * 0.08
+        strand(bm, (x, y, 0.15), (x * 1.6, y * 1.6, 0.11), (0, 0, 0.02), 0.03)
+    finish_hair(bm)
+
+
+def anime_hair_topknot():
+    """Hair pulled up from every side into a knot on the crown."""
+    bm = bmesh.new()
+    hair_cap(bm, -0.55)
+    made = bmesh.ops.create_uvsphere(bm, u_segments=12, v_segments=8, radius=0.046)["verts"]
+    for vert in made:
+        vert.co = (vert.co.x, vert.co.y - 0.02, vert.co.z * 0.85 + 0.2)
+    rng = random.Random(203)
+    for index in range(10):
+        angle = index / 10 * math.tau
+        x, y = math.cos(angle) * 0.12, math.sin(angle) * 0.12
+        strand(bm, (x, y, 0.06), (x * 0.25, y * 0.25 - 0.02, 0.17), (x * 0.25, y * 0.25, 0.03), 0.026)
+    for side in (-1, 1):
+        strand(bm, (side * 0.1, 0.1, 0.1), (side * 0.13, 0.12, 0.0 - rng.uniform(0, 0.02)), (side * 0.01, 0.01, 0), 0.018)
+    finish_hair(bm)
+    loft("knot_band", [(0.155, 0.03, 0.03, 0, -0.02), (0.175, 0.03, 0.03, 0, -0.02)], "anime_accent", 8)
+
+
+def anime_hair_swept():
+    """Hair combed straight back from the brow, lifting a little at the front."""
+    bm = bmesh.new()
+    hair_cap(bm, -0.55)
+    rng = random.Random(205)
+    for index in range(16):
+        x = -0.11 + index * 0.0147
+        strand(bm, (x, 0.118, 0.1), (x * 1.12, -0.09, 0.115 - rng.uniform(0, 0.03)), (0, 0.0, 0.032), 0.026)
+    for index in range(14):
+        angle = rng.uniform(0.25, math.pi - 0.25)
+        x, y = math.cos(angle) * 0.125, -math.sin(angle) * 0.125
+        strand(bm, (x, y, 0.08), (x * 1.2, y * 1.25, -0.07 - rng.uniform(0, 0.03)), (x * 0.1, y * 0.1, 0), 0.03)
+    finish_hair(bm)
+
+
+def anime_hair_shaved():
+    """Hair cut almost to the skin: only the shell of the cap, and a few short bristles at the back."""
+    bm = bmesh.new()
+    hair_cap(bm, -0.62)
+    for side in (-1, 1):
+        strand(bm, (side * 0.05, -0.13, 0.02), (side * 0.055, -0.14, -0.01), (0, -0.003, 0), 0.01, steps=2)
+    finish_hair(bm)
+
+
+def anime_beard_short():
+    """A short beard that follows the jaw from ear to ear."""
+    bm = bmesh.new()
+    rng = random.Random(207)
+    for index in range(18):
+        t = index / 17
+        angle = math.pi * (0.08 + 0.84 * t)
+        x, y = math.cos(angle) * 0.1, math.sin(angle) * 0.1
+        z = -0.06 - 0.05 * math.sin(angle)
+        strand(bm, (x, y + 0.01, z + 0.02), (x * 1.05, y * 1.12 + 0.012, z - 0.045 - rng.uniform(0, 0.015)), (0, 0.008, 0), 0.024, steps=3)
+    for side in (-1, 1):
+        strand(bm, (side * 0.012, 0.13, -0.075), (side * 0.055, 0.118, -0.1), (0, 0.006, -0.008), 0.014, steps=3)
+    finish_hair(bm, "beard")
+
+
+def anime_goatee():
+    """A small pointed beard on the chin, with a thin moustache."""
+    bm = bmesh.new()
+    rng = random.Random(209)
+    for index in range(7):
+        x = -0.024 + index * 0.008
+        strand(bm, (x, 0.118, -0.125), (x * 0.4, 0.13, -0.19 - rng.uniform(0, 0.015)), (0, 0.01, 0), 0.016, steps=4)
+    for side in (-1, 1):
+        strand(bm, (side * 0.01, 0.132, -0.077), (side * 0.045, 0.122, -0.098), (0, 0.006, -0.006), 0.011, steps=3)
+    finish_hair(bm, "beard")
+
+
+def anime_mustache():
+    """A full moustache over the lip."""
+    bm = bmesh.new()
+    for side in (-1, 1):
+        strand(bm, (side * 0.006, 0.134, -0.074), (side * 0.06, 0.118, -0.098), (0, 0.009, -0.006), 0.017, steps=4)
+    finish_hair(bm, "beard")
+
+
 def anime_hair_tess():
     """Straight bangs and a parting, with hair drawn back to the two braids."""
     bm = bmesh.new()
@@ -1773,6 +1867,13 @@ MODELS = {
     "anime_hair_bram": anime_hair_bram,
     "anime_hair_tess": anime_hair_tess,
     "anime_beard": anime_beard,
+    "anime_hair_undercut": anime_hair_undercut,
+    "anime_hair_topknot": anime_hair_topknot,
+    "anime_hair_swept": anime_hair_swept,
+    "anime_hair_shaved": anime_hair_shaved,
+    "anime_beard_short": anime_beard_short,
+    "anime_goatee": anime_goatee,
+    "anime_mustache": anime_mustache,
     "anime_hair_lina": anime_hair_lina,
     "anime_hair_spiky": anime_hair_spiky,
     "anime_hair_short": anime_hair_short,

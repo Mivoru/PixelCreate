@@ -17,13 +17,13 @@ public class SaveGameTests
         return (server, client, network);
     }
 
-    private static void Run(GameServer server, ClientPrediction client, SimNetwork network, int ticks, Command command = Command.None)
+    private static void Run(GameServer server, ClientPrediction client, SimNetwork network, int ticks, Command command = Command.None, ushort arg = 0)
     {
         for (var i = 0; i < ticks; i++)
         {
             network.Advance(1000.0 / Tuning.TickRate);
             server.Step();
-            client.Step(0, 0, Buttons.None, 0, i == 0 ? command : Command.None);
+            client.Step(0, 0, Buttons.None, 0, i == 0 ? command : Command.None, null, 0, i == 0 ? arg : (ushort)0);
         }
     }
 
@@ -64,6 +64,48 @@ public class SaveGameTests
 
         // Saving the loaded game gives the same file again.
         Assert.Equal(json, SaveFile.Serialize(loaded.Export()));
+    }
+
+    [Fact]
+    public void Appearance_IsSetByCommandsAndSaved()
+    {
+        var network = new SimNetwork(1, 0, 0, 0);
+        var world = new World(Array.Empty<Aabb>(), null, Vector3.Zero, Array.Empty<EnemySpawn>());
+        var server = new GameServer(network.Connect(0), world, new ServerOptions { Seed = 1, ChosenLook = false });
+        var client = new ClientPrediction(network.Connect(1), world);
+        Run(server, client, network, 20);
+
+        // A new game has no look yet: the client opens the creator.
+        Assert.False(Appearance.IsChosen(client.Latest!.Appearance));
+        Run(server, client, network, 12, Command.SetAppearance, Appearance.Arg(AppearanceField.Hair, 4));
+        Run(server, client, network, 12, Command.SetAppearance, Appearance.Arg(AppearanceField.Beard, 2));
+
+        // A choice out of range is refused.
+        Run(server, client, network, 12, Command.SetAppearance, Appearance.Arg(AppearanceField.Scar, 200));
+        Run(server, client, network, 12);
+        var look = client.Latest!.Appearance;
+        Assert.True(Appearance.IsChosen(look));
+        Assert.Equal(4, look[(int)AppearanceField.Hair]);
+        Assert.Equal(2, look[(int)AppearanceField.Beard]);
+        Assert.Equal(0, look[(int)AppearanceField.Scar]);
+
+        var save = SaveFile.Deserialize(SaveFile.Serialize(server.Export()))!;
+        Assert.Equal(look, save.Player!.Appearance);
+        var (loaded, loadedClient, loadedNetwork) = Start(save);
+        Run(loaded, loadedClient, loadedNetwork, 12);
+        Assert.Equal(look, loadedClient.Latest!.Appearance);
+    }
+
+    [Fact]
+    public void AppearanceOptions_AreComplete()
+    {
+        foreach (var field in Enum.GetValues<AppearanceField>())
+        {
+            Assert.True(Appearance.Choices(field) > 0, $"{field} has no choices");
+            Assert.True(Appearance.Valid(field, Appearance.Default[(int)field]), $"the default {field} is not a choice");
+        }
+
+        Assert.Equal(Appearance.FieldCount, Appearance.Default.Length);
     }
 
     [Fact]

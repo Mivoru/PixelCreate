@@ -60,6 +60,7 @@ public partial class Studio : Node
                 {
                     "people" => People(),
                     "faces" => FacesJob(),
+                    "creator" => CreatorJob(),
                     "animals" => Animals(),
                     "monsters" => Monsters(),
                     "motion" => Motion(),
@@ -85,7 +86,7 @@ public partial class Studio : Node
     /// <summary>Removes the old pictures of a job, so a renamed shot cannot linger and mislead.</summary>
     private void Forget(string job)
     {
-        var prefix = job switch { "animals" => "animal_", "monsters" => "monster_", "people" => "person_", "faces" => "face_", "motion" => "motion_", "attacks" => "attack_", "weapons" => "weapon_", "models" => "model_", "world" => "world_", "hitboxes" => "box_", _ => "map_" };
+        var prefix = job switch { "animals" => "animal_", "monsters" => "monster_", "people" => "person_", "faces" => "face_", "creator" => "look_", "motion" => "motion_", "attacks" => "attack_", "weapons" => "weapon_", "models" => "model_", "world" => "world_", "hitboxes" => "box_", _ => "map_" };
         foreach (var file in System.IO.Directory.GetFiles(_folder, prefix + "*.png"))
         {
             System.IO.File.Delete(file);
@@ -189,6 +190,71 @@ public partial class Studio : Node
             _stage.Camera.LookAtFromPosition(new Vector3(0, head + 0.05f, -4.2f), new Vector3(0, head, 0));
             await Wait(8);
             Save($"person_{name}_face");
+            Dismiss(rig);
+        }
+    }
+
+    /// <summary>
+    /// Every choice of the character creator on the hero: each hair style (in two colours), beard,
+    /// scar, nose, face shape, eye shape and brow. Read look_* after changing appearance options or models.
+    /// </summary>
+    private async Task CreatorJob()
+    {
+        Floor();
+        var shots = new List<(string Name, byte[] Look)>();
+        void Add(string name, AppearanceField field, int value, AppearanceField? also = null, int alsoValue = 0)
+        {
+            var look = Appearance.Default;
+            look[(int)field] = (byte)value;
+            if (also is { } other)
+            {
+                look[(int)other] = (byte)alsoValue;
+            }
+
+            shots.Add((name, look));
+        }
+
+        for (var i = 0; i < Appearance.Choices(AppearanceField.Hair); i++)
+        {
+            Add($"hair_{Appearance.Options.Hair[i].Id}", AppearanceField.Hair, i);
+            Add($"hair_{Appearance.Options.Hair[i].Id}_light", AppearanceField.Hair, i, AppearanceField.HairColor, 5);
+        }
+
+        for (var i = 0; i < Appearance.Choices(AppearanceField.Beard); i++)
+        {
+            Add($"beard_{Appearance.Options.Beards[i].Id}", AppearanceField.Beard, i, AppearanceField.HairColor, 3);
+        }
+
+        for (var i = 0; i < Appearance.Choices(AppearanceField.Scar); i++)
+        {
+            Add($"scar_{Appearance.Options.Scars[i].Id}", AppearanceField.Scar, i);
+        }
+
+        foreach (var (field, name) in new[] { (AppearanceField.Nose, "nose"), (AppearanceField.Face, "face"), (AppearanceField.EyeShape, "eyes"), (AppearanceField.Brows, "brows"), (AppearanceField.Skin, "skin") })
+        {
+            for (var i = 0; i < Appearance.Choices(field); i++)
+            {
+                Add($"{name}_{i}", field, i);
+            }
+        }
+
+        foreach (var (name, look) in shots)
+        {
+            var rigLook = PlayerLook.From(look);
+            var rig = Rig(rigLook, Vector3.Zero, 0f);
+            rig.Face!.Blinks = false;
+            await Wait(10);
+            _stage.Camera.Fov = 10;
+            var head = rigLook.Scale * 1.68f;
+            foreach (var (side, yaw) in new[] { ("front", 0f), ("three", 0.6f), ("back", Mathf.Pi) })
+            {
+                rig.Root.Rotation = new Vector3(0, yaw, 0);
+                rig.ResetCloth();
+                _stage.Camera.LookAtFromPosition(new Vector3(0, head + 0.02f, -4.4f), new Vector3(0, head - 0.04f, 0));
+                await Wait(6);
+                Save($"look_{name}_{side}");
+            }
+
             Dismiss(rig);
         }
     }

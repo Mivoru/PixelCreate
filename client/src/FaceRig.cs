@@ -10,6 +10,16 @@ namespace PixelCreate;
 /// from world/faces.json, blinks now and then, and moves the mouth while the character talks.
 /// The face looks along -Z of the head.
 /// </summary>
+/// <summary>The fixed details of a face, chosen in the character creator.</summary>
+/// <param name="Nose">0 small, 1 straight, 2 hooked.</param>
+/// <param name="EyeShape">0 sharp (narrower), 1 round (taller).</param>
+/// <param name="Brows">0 thin, 1 even, 2 thick.</param>
+/// <param name="Scar">none, cheek, eye or nose.</param>
+public sealed record FaceStyle(int Nose = 0, int EyeShape = 1, int Brows = 1, string Scar = "none", bool Stubble = false, Color? StubbleColor = null)
+{
+    public static readonly FaceStyle Plain = new();
+}
+
 public sealed class FaceRig
 {
     private const float EyeHalf = 0.031f;
@@ -50,6 +60,9 @@ public sealed class FaceRig
     /// <summary>Where the eyes look, from -1 to 1 on each axis: right and up are positive.</summary>
     public Vector2 Gaze { get; set; }
 
+    /// <summary>The expression the face goes back to after a conversation or a fight.</summary>
+    public string Resting { get; set; } = "neutral";
+
     /// <summary>Off for photographs, so no picture catches a blink.</summary>
     public bool Blinks { get; set; } = true;
 
@@ -74,9 +87,11 @@ public sealed class FaceRig
         _flashTime = seconds;
     }
 
-    public FaceRig(Node3D head, Color skin, Color eyes, Color brows, bool feminine)
+    public FaceRig(Node3D head, Color skin, Color eyes, Color brows, bool feminine, FaceStyle? style = null)
     {
+        style ??= FaceStyle.Plain;
         _feminine = feminine;
+        _eyeHeight = style.EyeShape == 0 ? 0.82f : 1f;
         var lash = new Color("1c1a24");
         foreach (var side in new[] { -1f, 1f })
         {
@@ -120,7 +135,8 @@ public sealed class FaceRig
 
             // Brows sit in front of the fringe, as anime draws them over the hair.
             var browBase = new Vector3(side * 0.06f, 0.056f, -0.158f);
-            var brow = Flat(new Vector3(0.03f, feminine ? 0.0035f : 0.0055f, 0.004f), brows, browBase);
+            var browHeight = (feminine ? 0.0035f : 0.0055f) * (style.Brows switch { 0 => 0.7f, 2 => 1.45f, _ => 1f });
+            var brow = Flat(new Vector3(0.03f, browHeight, 0.004f), brows, browBase);
             head.AddChild(brow);
             _eyes.Add(new Eye { Side = side, Root = root, Ball = ball, Iris = iris, Lash = lashNode, Happy = happy, Brow = brow, BrowBase = browBase });
 
@@ -130,7 +146,13 @@ public sealed class FaceRig
             _blush.Add(blush);
         }
 
-        head.AddChild(Flat(new Vector3(0.0065f, 0.004f, 0.005f), skin.Darkened(0.12f), new Vector3(0, -0.058f, -0.14f)));
+        BuildNose(head, skin, style.Nose);
+        BuildScar(head, skin, style.Scar);
+        if (style.Stubble)
+        {
+            BuildStubble(head, skin, style.StubbleColor ?? brows);
+        }
+
         BuildMouths(head);
         _tear = Flat(new Vector3(0.006f, 0.011f, 0.004f), new Color("8fd3ff"), new Vector3(0.062f, -0.06f, -0.112f));
         _tear.Visible = false;
@@ -139,6 +161,69 @@ public sealed class FaceRig
         _sweat.Visible = false;
         head.AddChild(_sweat);
         Apply();
+    }
+
+    private readonly float _eyeHeight;
+
+    private static void BuildNose(Node3D head, Color skin, int nose)
+    {
+        var shade = skin.Darkened(0.14f);
+        switch (nose)
+        {
+            case 0:
+                head.AddChild(Flat(new Vector3(0.0055f, 0.0035f, 0.005f), shade, new Vector3(0, -0.058f, -0.14f)));
+                break;
+            case 1:
+                // A straight nose: a short ridge shadow down to the tip.
+                var ridge = Flat(new Vector3(0.0028f, 0.012f, 0.004f), shade, new Vector3(0.006f, -0.048f, -0.141f));
+                head.AddChild(ridge);
+                head.AddChild(Flat(new Vector3(0.0075f, 0.0035f, 0.005f), shade, new Vector3(0, -0.06f, -0.14f)));
+                break;
+            default:
+                // A hooked nose: a longer ridge that bends at the tip.
+                head.AddChild(Flat(new Vector3(0.0032f, 0.016f, 0.004f), shade, new Vector3(0.007f, -0.046f, -0.142f)));
+                var tip = Flat(new Vector3(0.008f, 0.0045f, 0.005f), shade.Darkened(0.08f), new Vector3(0.002f, -0.062f, -0.141f));
+                tip.Rotation = new Vector3(0, 0, -0.3f);
+                head.AddChild(tip);
+                break;
+        }
+    }
+
+    private static void BuildScar(Node3D head, Color skin, string scar)
+    {
+        var line = skin.Darkened(0.42f).Lerp(new Color("8a3a3a"), 0.4f);
+        MeshInstance3D Mark(Vector3 radius, Vector3 at, float tilt, float turn = 0f)
+        {
+            var mark = Flat(radius, line, at);
+            mark.Rotation = new Vector3(0, turn, tilt);
+            head.AddChild(mark);
+            return mark;
+        }
+
+        switch (scar)
+        {
+            case "cheek":
+                Mark(new Vector3(0.02f, 0.0042f, 0.004f), new Vector3(-0.07f, -0.06f, -0.11f), 0.6f, 0.35f);
+                Mark(new Vector3(0.0035f, 0.008f, 0.004f), new Vector3(-0.07f, -0.06f, -0.111f), 0.6f, 0.35f);
+                break;
+            case "eye":
+                // Across the brow and down the cheek, crossing the eye.
+                Mark(new Vector3(0.003f, 0.012f, 0.004f), new Vector3(-0.062f, 0.032f, -0.123f), 0.25f, 0.32f);
+                Mark(new Vector3(0.004f, 0.016f, 0.004f), new Vector3(-0.066f, -0.058f, -0.113f), 0.25f, 0.35f);
+                break;
+            case "nose":
+                Mark(new Vector3(0.028f, 0.0042f, 0.004f), new Vector3(0, -0.046f, -0.143f), 0.4f);
+                break;
+        }
+    }
+
+    private static void BuildStubble(Node3D head, Color skin, Color hair)
+    {
+        // A shadow of beard over the lip and under it. The anime head has almost no chin
+        // below the mouth, so the shadow stays level with it.
+        var shade = skin.Lerp(hair, 0.22f).Darkened(0.08f);
+        head.AddChild(Flat(new Vector3(0.017f, 0.0042f, 0.004f), shade, new Vector3(0, -0.082f, -0.127f)));
+        head.AddChild(Flat(new Vector3(0.012f, 0.0045f, 0.004f), shade, new Vector3(0, -0.104f, -0.112f)));
     }
 
     private void BuildMouths(Node3D head)
@@ -244,7 +329,7 @@ public sealed class FaceRig
         {
             eye.Ball.Visible = !happy;
             eye.Happy.Visible = happy;
-            eye.Ball.Scale = new Vector3(1f + _wide * 0.08f, open / 2f, 1f);
+            eye.Ball.Scale = new Vector3(1f + _wide * 0.08f, open / 2f * _eyeHeight, 1f);
             eye.Ball.Position = new Vector3(0, (top + bottom) / 2f * EyeHalf, 0);
             eye.Iris.Position = new Vector3(Gaze.X * 0.008f, Gaze.Y * 0.006f, 0);
             eye.Lash.Visible = !happy;

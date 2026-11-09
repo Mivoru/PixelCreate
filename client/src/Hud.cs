@@ -298,6 +298,125 @@ public partial class Hud : Control
         }
     }
 
+    /// <summary>The character creator: the player's look, one row per part, changed with arrows.</summary>
+    public bool CreatorOpen { get; private set; }
+    private readonly List<(Rect2 Rect, AppearanceField Field, int Step)> _creatorArrows = new();
+    private Rect2 _creatorRandom;
+    private Rect2 _creatorDone;
+    private readonly System.Random _creatorRandomizer = new();
+
+    public void OpenCreator()
+    {
+        CloseWindows();
+        CreatorOpen = true;
+        UpdateMouse();
+    }
+
+    private byte[] CurrentLook => Snapshot is { } s && Appearance.IsChosen(s.Appearance) ? s.Appearance : Appearance.Default;
+
+    private void DrawCreator()
+    {
+        _creatorArrows.Clear();
+        var panel = new Rect2(60, (Size.Y - 760f) / 2f, 520, 760);
+        Card(panel, 22, GlassDeep, true);
+        Label("Remember yourself", panel.Position + new Vector2(34, 56), 24, Text, _bold);
+        Label("How did you look?", panel.Position + new Vector2(34, 84), 15, Muted);
+        var look = CurrentLook;
+        var fields = System.Enum.GetValues<AppearanceField>();
+        for (var i = 0; i < fields.Length; i++)
+        {
+            var field = fields[i];
+            var row = new Rect2(panel.Position + new Vector2(24, 108 + i * 50), panel.Size.X - 48, 42);
+            Rounded(row, 12, new Color(1, 1, 1, 0.04f), new Color(1, 1, 1, 0.07f), 1);
+            Label(FieldName(field), row.Position + new Vector2(16, 27), 17, Text, _bold);
+            var value = Mathf.Clamp(look[(int)field], 0, Appearance.Choices(field) - 1);
+            var text = Appearance.Describe(field, value);
+            var left = new Rect2(row.Position + new Vector2(210, 5), 32, 32);
+            var right = new Rect2(row.End.X - 42, row.Position.Y + 5, 32, 32);
+            foreach (var (arrow, step) in new[] { (left, -1), (right, 1) })
+            {
+                var hover = arrow.HasPoint(GetLocalMousePosition());
+                Rounded(arrow, 10, hover ? Accent : new Color(1, 1, 1, 0.08f), Colors.Transparent, 0);
+                Label(step < 0 ? "<" : ">", arrow.Position + new Vector2(11, 23), 17, hover ? Ink : Text, _bold);
+                _creatorArrows.Add((arrow, field, step));
+            }
+
+            var middle = (left.End.X + right.Position.X) / 2f;
+            if (field is AppearanceField.Skin or AppearanceField.Eyes or AppearanceField.HairColor)
+            {
+                var colors = field switch
+                {
+                    AppearanceField.Skin => Appearance.Options.Skin,
+                    AppearanceField.Eyes => Appearance.Options.Eyes,
+                    _ => Appearance.Options.HairColors,
+                };
+                Rounded(new Rect2(middle - 40, row.Position.Y + 9, 80, 24), 8, new Color(colors[value]), new Color(1, 1, 1, 0.4f), 1);
+            }
+            else
+            {
+                Label(text, new Vector2(middle - Width(text, 16, _font) / 2f, row.Position.Y + 27), 16, Text);
+            }
+        }
+
+        _creatorRandom = new Rect2(panel.Position + new Vector2(24, panel.Size.Y - 70), 150, 46);
+        _creatorDone = new Rect2(panel.End.X - 24 - 200, panel.End.Y - 70, 200, 46);
+        var mouse = GetLocalMousePosition();
+        Rounded(_creatorRandom, 12, _creatorRandom.HasPoint(mouse) ? new Color(1, 1, 1, 0.16f) : new Color(1, 1, 1, 0.08f), Colors.Transparent, 0);
+        Label("Random", _creatorRandom.Position + new Vector2(40, 30), 18, Text, _bold);
+        Rounded(_creatorDone, 12, _creatorDone.HasPoint(mouse) ? Accent : Accent with { A = 0.8f }, Colors.Transparent, 0);
+        Label("This is me", _creatorDone.Position + new Vector2(50, 30), 18, Ink, _bold);
+    }
+
+    /// <summary>Picks every part of the look at random, as the Random button does.</summary>
+    public void RandomLook()
+    {
+        foreach (var field in System.Enum.GetValues<AppearanceField>())
+        {
+            _commands.Enqueue((Command.SetAppearance, Appearance.Arg(field, _creatorRandomizer.Next(Appearance.Choices(field)))));
+        }
+    }
+
+    private static string FieldName(AppearanceField field) => field switch
+    {
+        AppearanceField.EyeShape => "Eye shape",
+        AppearanceField.HairColor => "Hair colour",
+        AppearanceField.Skin => "Skin",
+        _ => field.ToString(),
+    };
+
+    /// <summary>Handles a click in the creator; true when the click was on it.</summary>
+    private bool ClickCreator(Vector2 at)
+    {
+        var look = CurrentLook;
+        foreach (var (rect, field, step) in _creatorArrows)
+        {
+            if (rect.HasPoint(at))
+            {
+                var count = Appearance.Choices(field);
+                var value = ((look[(int)field] + step) % count + count) % count;
+                _commands.Enqueue((Command.SetAppearance, Appearance.Arg(field, value)));
+                return true;
+            }
+        }
+
+        if (_creatorRandom.HasPoint(at))
+        {
+            RandomLook();
+            return true;
+        }
+
+        if (_creatorDone.HasPoint(at))
+        {
+            // Confirming without a change still tells the server the look is chosen.
+            _commands.Enqueue((Command.SetAppearance, Appearance.Arg(AppearanceField.Face, look[(int)AppearanceField.Face])));
+            CreatorOpen = false;
+            UpdateMouse();
+            return true;
+        }
+
+        return false;
+    }
+
     /// <summary>The journal: tasks in progress and things learned, on L.</summary>
     public bool JournalOpen { get; private set; }
     private bool _journalNotes;
@@ -422,7 +541,7 @@ public partial class Hud : Control
     }
 
     /// <summary>Whether the bag, the character or the mastery window is open. Only one is at a time.</summary>
-    public bool WindowOpen => InventoryOpen || CharacterOpen || MasteryOpen || JournalOpen;
+    public bool WindowOpen => InventoryOpen || CharacterOpen || MasteryOpen || JournalOpen || CreatorOpen;
 
     /// <summary>Closes the bag, the character and the mastery window, so opening one never lays it over another.</summary>
     public void CloseWindows()
@@ -721,6 +840,11 @@ public partial class Hud : Control
             DrawJournal();
         }
 
+        if (CreatorOpen)
+        {
+            DrawCreator();
+        }
+
         if (Items.Held is { } held)
         {
             _iconDraws.Add((new Rect2(GetLocalMousePosition() - new Vector2(32, 32), 64, 64), held.Icon, 1f));
@@ -780,6 +904,11 @@ public partial class Hud : Control
                     return;
                 }
             }
+        }
+
+        if (CreatorOpen && click.ButtonIndex == MouseButton.Left && ClickCreator(click.Position))
+        {
+            return;
         }
 
         if (JournalOpen && click.ButtonIndex == MouseButton.Left)

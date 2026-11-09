@@ -413,6 +413,42 @@ public partial class GameClient : Node
         _hud.Snapshot = _client.Latest;
     }
 
+    private byte[] _lookShown = Appearance.NotChosen;
+    private bool _creatorOffered;
+
+    /// <summary>
+    /// Builds the player's figure again when the look in the snapshot changes, and opens the
+    /// character creator once for a new game whose look is not yet chosen.
+    /// </summary>
+    private void UpdateLook()
+    {
+        if (_client.Latest is not { } snapshot)
+        {
+            return;
+        }
+
+        if (!_creatorOffered && (!Appearance.IsChosen(snapshot.Appearance) || OS.GetEnvironment("PIXEL_BOT") == "creator"))
+        {
+            _creatorOffered = true;
+            _hud.OpenCreator();
+        }
+
+        var look = Appearance.IsChosen(snapshot.Appearance) ? snapshot.Appearance : Appearance.Default;
+        if (look.AsSpan().SequenceEqual(_lookShown))
+        {
+            return;
+        }
+
+        _lookShown = look.ToArray();
+        var rig = new PlayerRig(new Color("0099db"), PlayerLook.From(look));
+        rig.Root.Transform = _player.Root.Transform;
+        _player.Root.RemoveChild(_barrier);
+        rig.Root.AddChild(_barrier);
+        _stage.View.AddChild(rig.Root);
+        _player.Root.QueueFree();
+        _player = rig;
+    }
+
     private SubViewport _portrait = null!;
     private Camera3D _portraitCamera = null!;
     private PlayerRig? _speaking;
@@ -427,7 +463,7 @@ public partial class GameClient : Node
         if (_speaking is not null && _speaking != rig && _speaking.Face is { } old)
         {
             old.Talking = false;
-            old.Expression = "neutral";
+            old.Expression = old.Resting;
         }
 
         _speaking = rig;
@@ -437,7 +473,7 @@ public partial class GameClient : Node
             return;
         }
 
-        face.Expression = _hud.DialogFace ?? "neutral";
+        face.Expression = _hud.DialogFace ?? face.Resting;
         face.Talking = _hud.DialogTyping;
         var eye = head.ToGlobal(new Vector3(0.12f, 0.02f, -2.4f));
         _portraitCamera.LookAtFromPosition(eye, head.ToGlobal(new Vector3(0, -0.02f, 0)));
@@ -445,6 +481,7 @@ public partial class GameClient : Node
 
     private void UpdateNpcs(Vector3 shown, float delta)
     {
+        UpdateLook();
         UpdateSpeaker();
         Npc? nearest = null;
         var best = Guild.TalkRange;
@@ -613,7 +650,7 @@ public partial class GameClient : Node
         // The face shows how the fight goes: worn out with little stamina left, calm otherwise.
         if (_player.Face is { } face)
         {
-            face.Expression = now.Stamina < Attributes.MaxStamina(now) * 0.25f ? "tired" : "neutral";
+            face.Expression = now.Stamina < Attributes.MaxStamina(now) * 0.25f ? "tired" : face.Resting;
         }
 
         // The second stab of a flurry has its own swish; a leap ends in a thump and a ring of dust.
@@ -884,7 +921,7 @@ public partial class GameClient : Node
     {
         if (_hud.WindowOpen || _hud.DialogOpen || _hud.MenuOpen)
         {
-            return (0, 0, _hud.DialogOpen || _hud.MenuOpen ? Buttons.Reading : Buttons.None);
+            return (0, 0, _hud.DialogOpen || _hud.MenuOpen || _hud.CreatorOpen ? Buttons.Reading : Buttons.None);
         }
 
         var side = (Input.IsKeyPressed(Key.D) ? 1f : 0f) - (Input.IsKeyPressed(Key.A) ? 1f : 0f);
@@ -925,6 +962,17 @@ public partial class GameClient : Node
         if (mode is "club" or "staff")
         {
             return MeleeBot(mode);
+        }
+
+        if (mode == "creator")
+        {
+            // The creator opens by itself for this bot; halfway through, every part is picked at random.
+            if (_client.Tick == 150)
+            {
+                _hud.RandomLook();
+            }
+
+            return (0, 0, Buttons.None);
         }
 
         if (mode is "character" or "mastery" or "journal")
@@ -2060,6 +2108,17 @@ public partial class GameClient : Node
     /// </summary>
     private void PlaceCamera(Vector3 shown, float delta)
     {
+        if (_hud.CreatorOpen && _player.FaceAnchor is { } face)
+        {
+            // The creator looks the player in the face, a little from the right, with the panel on the left.
+            var facing = _player.Root.GlobalBasis.Z;
+            var side = _player.Root.GlobalBasis.X;
+            var head = face.GlobalPosition;
+            _stage.Camera.Fov = 20f;
+            _stage.Camera.LookAtFromPosition(head - facing * 2.6f + side * 0.75f + Vector3.Up * 0.02f, head - Vector3.Up * 0.32f + side * 0.42f);
+            return;
+        }
+
         var aim = _aimBlend * _aimBlend * (3f - 2f * _aimBlend);
         var right = new Vector3(Mathf.Cos(_yaw), 0, -Mathf.Sin(_yaw));
         var target = shown + new Vector3(0, 1.75f - 0.12f * aim, 0) + right * (AimShoulder * aim);

@@ -108,6 +108,15 @@ public sealed record RigLook(string Kind, Color Skin, float Scale, string Weapon
 
     /// <summary>A permanent stoop, for the old.</summary>
     public float Stoop { get; init; }
+
+    /// <summary>How wide the head is: below 1 narrow, above 1 broad.</summary>
+    public float FaceWidth { get; init; } = 1f;
+
+    /// <summary>The expression the face rests in, by name in world/faces.json.</summary>
+    public string Mood { get; init; } = "neutral";
+
+    /// <summary>The face's details: nose, eye shape, brows, scar and stubble.</summary>
+    public FaceStyle FaceStyle { get; init; } = FaceStyle.Plain;
 }
 
 /// <summary>
@@ -329,7 +338,7 @@ public sealed class PlayerRig
         _torso.AddChild(Model(_look.Feminine ? "anime_torso_f" : "anime_torso"));
         foreach (var extra in _look.Extras)
         {
-            var holder = extra is "beard" or "headband" ? _hairRoot : extra is "robe" or "apron" ? _hips : _torso;
+            var holder = extra is "beard" or "beard_short" or "goatee" or "mustache" or "headband" ? _hairRoot : extra is "robe" or "apron" ? _hips : _torso;
             var part = Model($"anime_{extra}");
             if (extra == "headband")
             {
@@ -345,8 +354,11 @@ public sealed class PlayerRig
         _head.AddChild(_hairRoot);
         _hairRoot.Position = head.Position;
         BuildHair();
-        Face = new FaceRig(head, _look.Skin, _look.Eyes, _look.Brows, _look.Feminine);
+        head.Scale = new Vector3(_look.FaceWidth, 1f, 1f);
+        Face = new FaceRig(head, _look.Skin, _look.Eyes, _look.Brows, _look.Feminine, _look.FaceStyle);
         FaceAnchor = head;
+        Face.Resting = _look.Mood;
+        Face.Expression = _look.Mood;
 
         if (_look.Cloak)
         {

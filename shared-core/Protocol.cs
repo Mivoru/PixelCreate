@@ -89,6 +89,9 @@ public sealed class Snapshot
     public ushort Day = 1;
     public ushort Minute;
 
+    /// <summary>The player's look, one byte per <see cref="AppearanceField"/>; <see cref="Core.Appearance.Unset"/> until chosen.</summary>
+    public byte[] Appearance = Core.Appearance.NotChosen;
+
     /// <summary>Magic crystals held, by rarity.</summary>
     public int[] Crystals = new int[Core.Crystals.Tiers];
     public RemotePlayer[] Others = Array.Empty<RemotePlayer>();
@@ -221,6 +224,7 @@ public static class Protocol
         writer.Write(snapshot.Gold);
         writer.Write(snapshot.Day);
         writer.Write(snapshot.Minute);
+        writer.Write(snapshot.Appearance, 0, Core.Appearance.FieldCount);
         foreach (var count in snapshot.Crystals)
         {
             writer.Write((ushort)count);
@@ -358,6 +362,7 @@ public static class Protocol
         snapshot.Gold = reader.ReadInt32();
         snapshot.Day = reader.ReadUInt16();
         snapshot.Minute = reader.ReadUInt16();
+        snapshot.Appearance = reader.ReadBytes(Core.Appearance.FieldCount);
         for (var i = 0; i < snapshot.Crystals.Length; i++)
         {
             snapshot.Crystals[i] = reader.ReadUInt16();

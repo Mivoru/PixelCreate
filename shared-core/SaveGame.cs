@@ -11,6 +11,7 @@ public sealed record SavedGear(string Item, byte Rarity, byte Level, short[] Aff
 public sealed class SavedPlayer
 {
     public string Name { get; set; } = "";
+    public byte[] Appearance { get; set; } = Array.Empty<byte>();
     public int Level { get; set; } = 1;
     public int Xp { get; set; }
     public int Gold { get; set; }

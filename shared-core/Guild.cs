@@ -49,6 +49,9 @@ public enum Command : byte
 
     /// <summary>The player leaves the game: the server saves at once.</summary>
     Quit = 212,
+
+    /// <summary>Changes one part of the player's look: the high byte names the <see cref="AppearanceField"/>, the low byte the choice.</summary>
+    SetAppearance = 213,
 }
 
 /// <summary>A newcomer must beat the guild examiner to become an adventurer.</summary>

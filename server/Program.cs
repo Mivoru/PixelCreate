@@ -18,6 +18,9 @@ var server = new GameServer(transport, zone.World, new ServerOptions
     TestMode = testMode,
     FrailExaminer = Environment.GetEnvironmentVariable("PIXEL_FRAIL") == "1",
     Save = save,
+
+    // A new game opens the character creator; test runs and PIXEL_LOOK=default skip it.
+    ChosenLook = testMode || Environment.GetEnvironmentVariable("PIXEL_LOOK") == "default",
 });
 // PIXEL_TIME=21 starts a new game at nine in the evening, to check night and dusk.
 if (save is null && int.TryParse(Environment.GetEnvironmentVariable("PIXEL_TIME"), out var hour))

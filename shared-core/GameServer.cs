@@ -24,6 +24,9 @@ public sealed class ServerOptions
 
     /// <summary>A saved game to continue: the world at once, the player when they join.</summary>
     public SaveData? Save { get; init; }
+
+    /// <summary>New players start with the default look instead of an unchosen one, so no creator screen opens (tests and tools).</summary>
+    public bool ChosenLook { get; init; } = true;
 }
 
 public sealed class ServerStats
@@ -279,6 +282,9 @@ public sealed class GameServer : IEnemyEvents
 
         /// <summary>Set while the player reads a dialogue or the menu.</summary>
         public bool Reading;
+
+        /// <summary>How the player looks, one choice per <see cref="AppearanceField"/>.</summary>
+        public byte[] Appearance = Core.Appearance.NotChosen;
 
         /// <summary>Every death after registering: where, when and with what.</summary>
         public readonly List<DeathRecord> Deaths = new();
@@ -665,6 +671,12 @@ public sealed class GameServer : IEnemyEvents
                 player.Gear[0] = new GearPiece(ItemDef.Index("wooden_sword"), Rarity.Common, 1, Array.Empty<AffixRoll>());
                 player.GearChanged.Add(0);
                 ToggleWorn(player, 0, player.Gear[0]!);
+            }
+
+            if (_options.TestMode || _options.Save?.Player is null && _options.ChosenLook)
+            {
+                // Test runs and tools start with the hero as drawn, so no creator screen stops a bot.
+                player.Appearance = Core.Appearance.Default;
             }
 
             if (_options.TestMode)
@@ -1145,6 +1157,19 @@ public sealed class GameServer : IEnemyEvents
             case Command.Quit:
                 Autosave?.Invoke(Export());
                 break;
+            case Command.SetAppearance:
+                var field = (AppearanceField)(arg >> 8);
+                if ((int)field < player.Appearance.Length && Core.Appearance.Valid(field, arg & 0xff))
+                {
+                    if (!Core.Appearance.IsChosen(player.Appearance))
+                    {
+                        player.Appearance = Core.Appearance.Default;
+                    }
+
+                    player.Appearance[(int)field] = (byte)(arg & 0xff);
+                }
+
+                break;
             case var eat when ItemCommands.TryEat(eat, out var food) && ItemDef.All[food].IsFood &&
                               player.Bag.GetValueOrDefault(food) > 0 && player.State.Health > 0:
                 AddItem(player, food, -1);
@@ -1187,6 +1212,7 @@ public sealed class GameServer : IEnemyEvents
         var at = player.State.Position;
         data.Player = new SavedPlayer
         {
+            Appearance = player.Appearance.ToArray(),
             Level = player.Level,
             Xp = player.Xp,
             Gold = player.Gold,
@@ -1226,6 +1252,11 @@ public sealed class GameServer : IEnemyEvents
             }
 
             return new GearPiece(item, (Rarity)piece.Rarity, piece.Level, affixes.ToArray());
+        }
+
+        if (saved.Appearance.Length == Core.Appearance.FieldCount)
+        {
+            player.Appearance = saved.Appearance.ToArray();
         }
 
         player.Level = (byte)Math.Clamp(saved.Level, 1, 255);
@@ -3173,6 +3204,7 @@ public sealed class GameServer : IEnemyEvents
                 Barrier = (short)player.Barrier,
                 Rank = player.Rank,
                 Gold = player.Gold,
+                Appearance = player.Appearance,
                 Day = (ushort)_calendar.Now.Day,
                 Minute = (ushort)_calendar.Now.Minute,
                 Story = StoryMirror.Slice(_story, player.StoryChanged, ref player.StoryCursor),

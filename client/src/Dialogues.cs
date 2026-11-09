@@ -12,6 +12,7 @@ public static class NpcLooks
 
     public static readonly RigLook Examiner = new("examiner", Skin, 1f, "sword")
     {
+        Mood = "neutral",
         Hair = "rhea",
         Feminine = true,
         Extras = new[] { "armor" },
@@ -28,6 +29,7 @@ public static class NpcLooks
 
     private static readonly RigLook Receptionist = new("receptionist", Skin, 0.95f, "none")
     {
+        Mood = "smile",
         Hair = "mira",
         Feminine = true,
         Skirt = true,
@@ -51,6 +53,7 @@ public static class NpcLooks
 
     private static readonly RigLook Villager = new("villager", new Color("e8c0a4"), 0.97f, "none")
     {
+        Mood = "neutral",
         Hair = "bram",
         Cloak = false,
         Stoop = 0.16f,
@@ -71,6 +74,7 @@ public static class NpcLooks
 
     private static readonly RigLook VillagerB = new("villager_b", Skin, 0.93f, "none")
     {
+        Mood = "neutral",
         Hair = "tess",
         Feminine = true,
         Skirt = true,
@@ -92,6 +96,7 @@ public static class NpcLooks
 
     private static readonly RigLook Merchant = new("merchant", Skin, 0.93f, "none")
     {
+        Mood = "smile",
         Hair = "lina",
         Feminine = true,
         Skirt = true,
@@ -114,6 +119,7 @@ public static class NpcLooks
 
     private static readonly RigLook Alchemist = new("alchemist", Skin, 0.95f, "none")
     {
+        Mood = "smirk",
         Hair = "lina",
         Feminine = true,
         Skirt = true,
@@ -136,6 +142,7 @@ public static class NpcLooks
 
     private static readonly RigLook Appraiser = new("appraiser", new Color("e0b494"), 1.02f, "none")
     {
+        Mood = "neutral",
         Hair = "short",
         Cloak = false,
         Stoop = 0.08f,
@@ -155,6 +162,7 @@ public static class NpcLooks
 
     private static readonly RigLook Guard = new("guard", new Color("e8c0a4"), 1.04f, "sword")
     {
+        Mood = "tired",
         Hair = "short",
         Cloak = true,
         Extras = new[] { "armor" },
@@ -171,6 +179,7 @@ public static class NpcLooks
 
     private static readonly RigLook Baker = new("baker", new Color("f0c8b0"), 0.94f, "none")
     {
+        Mood = "smile",
         Hair = "elda",
         Feminine = true,
         Skirt = true,
@@ -193,6 +202,7 @@ public static class NpcLooks
 
     private static readonly RigLook Farmer = new("farmer", new Color("e8b08a"), 0.92f, "none")
     {
+        Mood = "neutral",
         Hair = "pip",
         Cloak = false,
         Extras = new[] { "headband" },
@@ -211,6 +221,7 @@ public static class NpcLooks
 
     private static readonly RigLook Mage = new("adventurer_a", Skin, 0.95f, "none")
     {
+        Mood = "smile",
         Hair = "sora",
         Feminine = true,
         Cloak = true,
@@ -229,6 +240,7 @@ public static class NpcLooks
 
     private static readonly RigLook Swordsman = new("adventurer_b", new Color("e8c0a4"), 1.02f, "sword")
     {
+        Mood = "smirk",
         Hair = "spiky",
         Cloak = true,
         Extras = new[] { "headband" },
