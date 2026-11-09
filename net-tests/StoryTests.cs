@@ -471,6 +471,18 @@ public class StorySyncTests
         Run(Tuning.TickRate * 26);
         Assert.Equal(start.AddMinutes(60), server.Calendar.Now);
 
+        // Reading a dialogue stops the clock.
+        var reading = server.Calendar.Now;
+        for (var i = 0; i < Tuning.TickRate * 10; i++)
+        {
+            network.Advance(1000.0 / Tuning.TickRate);
+            server.Step();
+            client.Step(0, 0, Buttons.Reading);
+        }
+
+        Assert.Equal(reading, server.Calendar.Now);
+        start = server.Calendar.Now.AddMinutes(-60);
+
         // Sleeping in the morning does nothing; in the evening it wakes the player at six.
         Run(12, Command.Sleep);
         Assert.Equal(start.Day, server.Calendar.Now.Day);

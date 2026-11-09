@@ -167,7 +167,11 @@ Rules:
   keep a copy in `ClientPrediction.Story`; a key must be in `Story.Keys` (built from the data and `Story.CodeFlags`)
   to reach the client.
 - Calendar (`Calendar.cs`): a game hour is 26 s, a day starts at six, `Command.Sleep` from eight in the evening
-  wakes the player at six the next morning. Faction plans run every game hour. Act I lasts 70 days.
+  wakes the player at six the next morning (Mira offers the Guild bunk room then). Faction plans run every game hour.
+  Act I lasts 70 days. The clock stands still while every player reads a dialogue or the menu (`Buttons.Reading`).
+  The client lights the world by the hour (`PixelStage.SetTime`: dusk, dawn, a dark blue night with the moon);
+  `PIXEL_TIME=21` starts a new game at that hour and `PIXEL_OFF=daytime` keeps it day. The journal (L,
+  `PIXEL_BOT=journal`) lists active quests and the notes of flags the player has.
 - Saves (`SaveGame.cs`): the server writes `%LOCALAPPDATA%/PixelCreate/saves/<slot>.json` each morning and on
   `Command.Quit` (the client sends it when quitting or closing the window), keeping `<slot>.bak.json`. `PIXEL_SLOT`
   picks the slot (default `main`), `PIXEL_SAVE` the folder; test mode neither loads nor saves. A death after

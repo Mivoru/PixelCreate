@@ -283,6 +283,10 @@ public partial class GameClient : Node
             {
                 _hud.ToggleMastery();
             }
+            else if (key.Keycode == Key.L)
+            {
+                _hud.ToggleJournal();
+            }
             else if (key.Keycode is Key.Q or Key.R or Key.F && !_hud.DialogOpen && !_hud.WindowOpen)
             {
                 _hud.CastSlot(Hud.SkillKeys.IndexOf(key.Keycode.ToString()[0]));
@@ -385,6 +389,11 @@ public partial class GameClient : Node
         // Cursed ground darkens the world as the player walks into it, and lifts as they leave.
         var (_, blight, _) = _zone.GroundAt(shown.X, shown.Z);
         _gloom = Mathf.MoveToward(_gloom, blight, d * 0.6f);
+        if (_client.Latest is { } now && !PixelStage.Off("daytime"))
+        {
+            _stage.SetTime(now.Minute);
+        }
+
         _stage.SetGloom(_gloom);
         _stage.PlaceMoon();
         // A staff shows the crosshair all the time, as its fireballs fly to whatever lies under it.
@@ -450,6 +459,7 @@ public partial class GameClient : Node
         }
 
         _hud.Objective = Objective(snapshot, shown);
+        _hud.Story = new ClientStory(_client, _hud.Items);
     }
 
     private string Objective(Snapshot? snapshot, Vector3 shown)
@@ -824,7 +834,7 @@ public partial class GameClient : Node
     {
         if (_hud.WindowOpen || _hud.DialogOpen || _hud.MenuOpen)
         {
-            return (0, 0, Buttons.None);
+            return (0, 0, _hud.DialogOpen || _hud.MenuOpen ? Buttons.Reading : Buttons.None);
         }
 
         var side = (Input.IsKeyPressed(Key.D) ? 1f : 0f) - (Input.IsKeyPressed(Key.A) ? 1f : 0f);
@@ -867,12 +877,12 @@ public partial class GameClient : Node
             return MeleeBot(mode);
         }
 
-        if (mode is "character" or "mastery")
+        if (mode is "character" or "mastery" or "journal")
         {
-            // K or J as a real key opens the character or the mastery window.
+            // K, J or L as a real key opens the character, the mastery or the journal window.
             if (_client.Tick is 60 or 61)
             {
-                PressKey(mode == "character" ? Key.K : Key.J, _client.Tick == 60);
+                PressKey(mode == "character" ? Key.K : mode == "mastery" ? Key.J : Key.L, _client.Tick == 60);
             }
 
             return (0, 0, Buttons.None);

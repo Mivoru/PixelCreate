@@ -102,7 +102,7 @@ public sealed class PixelStage
     /// </summary>
     public void SetGloom(float gloom)
     {
-        var g = Mathf.Clamp(gloom, 0f, 1f);
+        var g = Mathf.Clamp(Mathf.Max(gloom, _night * 0.55f), 0f, 1f);
         _environment.AmbientLightColor = new Color("cfd8ea").Lerp(new Color("6a7898"), g);
         _environment.AmbientLightEnergy = Mathf.Lerp(0.82f, 0.66f, g);
         _environment.FogLightColor = new Color("bcd8ea").Lerp(new Color("4e5c7a"), g);
@@ -110,10 +110,46 @@ public sealed class PixelStage
         _environment.FogSkyAffect = 0.6f * g;
         _environment.VolumetricFogDensity = Mathf.Lerp(0.002f, 0.009f, g);
         _environment.VolumetricFogAlbedo = new Color("fff3e0").Lerp(new Color("9aa8c8"), g);
-        _sun.LightColor = new Color("fff0d8").Lerp(new Color("a8b8e8"), g);
-        _sun.LightEnergy = Mathf.Lerp(1.2f, 0.5f, g);
-        _moon.Visible = g > 0.02f;
-        _moonMaterial.SetShaderParameter("strength", g);
+        _sun.LightColor = new Color("fff0d8").Lerp(new Color("a8b8e8"), g).Lerp(new Color("ffb070"), _dusk * (1f - _night));
+        _sun.LightEnergy = Mathf.Lerp(1.2f, 0.5f, g) * Mathf.Lerp(1f, 0.35f, _night);
+        _environment.AmbientLightEnergy *= Mathf.Lerp(1f, 0.62f, _night);
+        _sun.RotationDegrees = new Vector3(Mathf.Lerp(-38f, -14f, Mathf.Max(_dusk, _night)), -50f + _sunTurn, 0);
+        if (_environment.Sky?.SkyMaterial is ShaderMaterial sky)
+        {
+            var top = new Color(0.24f, 0.53f, 0.86f).Lerp(new Color(0.05f, 0.07f, 0.16f), _night);
+            var horizon = new Color(0.78f, 0.9f, 0.96f).Lerp(new Color(0.98f, 0.62f, 0.42f), _dusk * (1f - _night)).Lerp(new Color(0.14f, 0.17f, 0.3f), _night);
+            sky.SetShaderParameter("top_color", top);
+            sky.SetShaderParameter("horizon_color", horizon);
+            sky.SetShaderParameter("cloud_color", new Color(1f, 0.99f, 0.96f).Lerp(new Color(0.3f, 0.33f, 0.45f), _night));
+            sky.SetShaderParameter("cloud_shade", new Color(0.72f, 0.8f, 0.9f).Lerp(new Color(0.18f, 0.2f, 0.3f), _night));
+        }
+
+        var moon = Mathf.Max(g, _night);
+        _moon.Visible = moon > 0.02f;
+        _moonMaterial.SetShaderParameter("strength", moon);
+    }
+
+    private float _night;
+    private float _dusk;
+    private float _sunTurn;
+
+    /// <summary>
+    /// The time of day from the story calendar: night from about nine in the evening to five in
+    /// the morning, a warm dusk and dawn between. Takes effect at the next <see cref="SetGloom"/>.
+    /// </summary>
+    public void SetTime(int minute)
+    {
+        var hour = minute / 60f;
+        _night = hour switch
+        {
+            < 5f => 1f,
+            < 7f => 1f - (hour - 5f) / 2f,
+            < 18.5f => 0f,
+            < 21f => (hour - 18.5f) / 2.5f,
+            _ => 1f,
+        };
+        _dusk = Mathf.Clamp(Mathf.Max(1f - Mathf.Abs(hour - 19.2f) / 1.6f, 1f - Mathf.Abs(hour - 6.3f) / 1.2f), 0f, 1f);
+        _sunTurn = Mathf.Clamp((hour - 12f) * 9f, -80f, 80f);
     }
 
     /// <summary>A great pale moon low over the north-west, seen where the world is cursed.</summary>

@@ -369,6 +369,9 @@ public enum Buttons : byte
     Heavy = 8,
     Block = 16,
     Slide = 32,
+
+    /// <summary>Not a move: the player reads a dialogue or the menu. While every player does, the story calendar stands still.</summary>
+    Reading = 64,
 }
 
 /// <summary>One tick of player input. Stored quantized, so both sides simulate the same values.</summary>

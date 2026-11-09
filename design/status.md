@@ -21,17 +21,15 @@ Hra už je hratelný prototyp akční části. Zdroj pravdy je kód a `CLAUDE.md
 | Guilda | registrace, zkouška u Rhey, tabule s 5 joby (jeden aktivní), prodej krystalů a kořisti |
 | NPC | 13 postav, každá jedna statická replika (Mira, Hollis a tabule mají větvení podle ranku) |
 | Ostatní | menu a nastavení, zvuky, foto studio, boti pro živé testy, síťový simulátor |
+| Základy příběhu (etapa 1) | kalendář s dnem a nocí, spánek, stav světa, questy a dialogy z dat, plány frakcí (engine), ukládání každé ráno, smrt stojí 10 % krystalů, deník (L) |
 
 ## 2. Navrženo, ale neexistuje
 
 | Věc | Kde je návrh | Poznámka |
 |---|---|---|
-| Ukládání hry | `systems.md` 5 | dnes stav žije jen v paměti serveru; po restartu je pryč |
-| Stav světa (flagy, pověsti, kalendář, plány frakcí, osudy NPC) | `systems.md` 5 | základ všech následků |
-| Questy z dat, víc kroků, termíny | `systems.md` 3 | dnes pevné pole v `Guild.cs` |
-| Dialogy z dat, volby odpovědí, kontrola atributů | `systems.md` 3 | dnes `switch` v `Dialogues.cs` |
-| Deník (journal) | `systems.md` 3 | |
-| Podmíněný obsah zón (`requires` / `forbids`) | `systems.md` 5 | |
+| Podmíněný obsah zón (`requires` / `forbids`) | `systems.md` 5 | přesunuto do etapy 4 (až bude co podmiňovat) |
+| Šíření drbů (hospoda, tabule) | `stage-1.md` 7 | formát a načítání hotové, šíření v etapě 4 |
+| Termíny questů (`deadline`) | `stage-1.md` 5 | formát se načítá, vyhodnocení až s prvním questem, který termín má |
 | Vyšetřování | `systems.md` 4 | |
 | Fáze bossů | `systems.md` 11 | dnes jen vzácní nepřátelé se schopnostmi |
 | Dungeony | `systems.md` 12 | interiéry na platformách už fungují, dungeon ne |
@@ -70,5 +68,4 @@ Hra už je hratelný prototyp akční části. Zdroj pravdy je kód a `CLAUDE.md
 
 ## 4. Další krok
 
-Etapa 0 je hotová: detailní návrhy `design/stage-1.md`, `stage-2.md` a `stage-3.md`. Další je
-**etapa 1** (základy živého světa).
+Etapy 0 a 1 jsou hotové. Další je **etapa 2** (hráčská postava, mimika, úprava vzhledu).

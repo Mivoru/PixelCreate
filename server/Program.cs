@@ -19,6 +19,12 @@ var server = new GameServer(transport, zone.World, new ServerOptions
     FrailExaminer = Environment.GetEnvironmentVariable("PIXEL_FRAIL") == "1",
     Save = save,
 });
+// PIXEL_TIME=21 starts a new game at nine in the evening, to check night and dusk.
+if (save is null && int.TryParse(Environment.GetEnvironmentVariable("PIXEL_TIME"), out var hour))
+{
+    server.Calendar.Now = new GameTime(1, Math.Clamp(hour, 0, 23) * 60);
+}
+
 if (!testMode)
 {
     server.Autosave = data =>

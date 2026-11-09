@@ -276,10 +276,115 @@ public partial class Hud : Control
     {
         _dialogName = "";
         DialogRole = "";
-        if (!InventoryOpen && !CharacterOpen && !MasteryOpen && Camera is not null)
+        if (!WindowOpen && Camera is not null)
         {
             Input.MouseMode = Input.MouseModeEnum.Captured;
         }
+    }
+
+    /// <summary>The journal: tasks in progress and things learned, on L.</summary>
+    public bool JournalOpen { get; private set; }
+    private bool _journalNotes;
+    private readonly List<(Rect2 Rect, bool Notes)> _journalTabs = new();
+
+    /// <summary>The story as the client sees it, set by the game every frame, for the journal.</summary>
+    public IStoryContext? Story { get; set; }
+
+    public void ToggleJournal()
+    {
+        var open = !JournalOpen;
+        CloseWindows();
+        JournalOpen = open;
+        UpdateMouse();
+    }
+
+    private void DrawJournal()
+    {
+        _journalTabs.Clear();
+        var window = new Rect2((Size.X - 760f) / 2f, (Size.Y - 660f) / 2f, 760, 660);
+        Card(window, 22, GlassDeep, true);
+        Label("Journal", window.Position + new Vector2(34, 56), 24, Text, _bold);
+        if (Story is not { } story)
+        {
+            return;
+        }
+
+        var time = story.World.Time;
+        var date = $"Day {time.Day}  ·  {time.Season}  ·  {time.Hour:00}:{time.Minute % 60:00}";
+        Label(date, window.Position + new Vector2(window.Size.X - 34 - Width(date, 17, _bold), 56), 17, Accent, _bold);
+        for (var t = 0; t < 2; t++)
+        {
+            var tab = new Rect2(window.Position + new Vector2(28 + t * 150, 76), 140, 38);
+            var active = _journalNotes == (t == 1);
+            Rounded(tab, 12, active ? Accent with { A = 0.85f } : new Color(1, 1, 1, 0.06f), Colors.Transparent, 0);
+            Label(t == 0 ? "Tasks" : "Notes", tab.Position + new Vector2(20, 26), 17, active ? new Color("181425") : Text, _bold);
+            _journalTabs.Add((tab, t == 1));
+        }
+
+        var y = window.Position.Y + 150;
+        var x = window.Position.X + 34;
+        if (!_journalNotes)
+        {
+            var any = false;
+            foreach (var quest in PixelCreate.Core.Story.Quests)
+            {
+                var state = story.World.Quest(quest.Id);
+                if (state.Status != QuestStatus.Active)
+                {
+                    continue;
+                }
+
+                any = true;
+                Label(quest.Name, new Vector2(x, y), 20, Text, _bold);
+                var step = state.Step < quest.Steps.Length ? quest.Steps[state.Step].Text : "";
+                var (done, needed) = PixelCreate.Core.Story.StepProgress(story, quest.Id);
+                var line = PixelCreate.Core.Story.QuestStatusName(story, quest.Id) == "ready" && quest.Steps[^1].Goal.Kind == "bring"
+                    ? $"{step} Everything is in the bag."
+                    : needed > 0 ? $"{step} {done} / {needed}" : step;
+                Label(line, new Vector2(x, y + 24), 15, Muted);
+                if (quest.Journal.Length > 0)
+                {
+                    Label(quest.Journal, new Vector2(x, y + 46), 14, Muted with { A = 0.7f });
+                }
+
+                y += 78;
+            }
+
+            if (!any)
+            {
+                Label("Nothing to do. The quest board in the Guild always has work.", new Vector2(x, y), 16, Muted);
+            }
+
+            var finished = PixelCreate.Core.Story.Quests.Where(q => story.World.Quest(q.Id).Completions > 0).ToList();
+            if (finished.Count > 0)
+            {
+                y += 12;
+                Label("Done", new Vector2(x, y), 16, Muted, _bold);
+                foreach (var quest in finished.Take(6))
+                {
+                    var times = story.World.Quest(quest.Id).Completions;
+                    Label(times > 1 ? $"{quest.Name}  ×{times}" : quest.Name, new Vector2(x, y + 26), 15, Muted);
+                    y += 24;
+                }
+            }
+        }
+        else
+        {
+            var notes = PixelCreate.Core.Story.Notes.Where(n => story.World.Has(n.Key)).Select(n => n.Value).ToList();
+            if (notes.Count == 0)
+            {
+                Label("Nothing written down yet.", new Vector2(x, y), 16, Muted);
+            }
+
+            foreach (var note in notes)
+            {
+                Label("·  " + note, new Vector2(x, y), 16, Text);
+                y += 30;
+            }
+        }
+
+        Keycap("L", new Vector2(window.End.X - 120, window.End.Y - 46), 14);
+        Label("close", new Vector2(window.End.X - 86, window.End.Y - 24), 15, Muted);
     }
 
     /// <summary>The character window: attributes and the points to spend on them.</summary>
@@ -301,7 +406,7 @@ public partial class Hud : Control
     }
 
     /// <summary>Whether the bag, the character or the mastery window is open. Only one is at a time.</summary>
-    public bool WindowOpen => InventoryOpen || CharacterOpen || MasteryOpen;
+    public bool WindowOpen => InventoryOpen || CharacterOpen || MasteryOpen || JournalOpen;
 
     /// <summary>Closes the bag, the character and the mastery window, so opening one never lays it over another.</summary>
     public void CloseWindows()
@@ -313,6 +418,7 @@ public partial class Hud : Control
 
         CharacterOpen = false;
         MasteryOpen = false;
+        JournalOpen = false;
         UpdateMouse();
     }
 
@@ -594,6 +700,11 @@ public partial class Hud : Control
             DrawMastery();
         }
 
+        if (JournalOpen)
+        {
+            DrawJournal();
+        }
+
         if (Items.Held is { } held)
         {
             _iconDraws.Add((new Rect2(GetLocalMousePosition() - new Vector2(32, 32), 64, 64), held.Icon, 1f));
@@ -650,6 +761,18 @@ public partial class Hud : Control
                 if (rect.HasPoint(click.Position))
                 {
                     _commands.Enqueue((Command.TakeMastery, (ushort)node));
+                    return;
+                }
+            }
+        }
+
+        if (JournalOpen && click.ButtonIndex == MouseButton.Left)
+        {
+            foreach (var (rect, notes) in _journalTabs)
+            {
+                if (rect.HasPoint(click.Position))
+                {
+                    _journalNotes = notes;
                     return;
                 }
             }

@@ -277,6 +277,9 @@ public sealed class GameServer : IEnemyEvents
         public readonly HashSet<(StoryKind Kind, string Key)> StoryChanged = new();
         public int StoryCursor;
 
+        /// <summary>Set while the player reads a dialogue or the menu.</summary>
+        public bool Reading;
+
         /// <summary>Every death after registering: where, when and with what.</summary>
         public readonly List<DeathRecord> Deaths = new();
 
@@ -742,6 +745,7 @@ public sealed class GameServer : IEnemyEvents
         }
 
         player.NextTick++;
+        player.Reading = command.Buttons.HasFlag(Buttons.Reading);
         var drawing = player.State.DrawTicks > 0;
         var landed = Movement.Step(ref player.State, command, _world);
         if ((drawing && player.State.DrawTicks == 0) ||
@@ -1353,6 +1357,7 @@ public sealed class GameServer : IEnemyEvents
     /// <summary>Moves the calendar on, and runs the faction plans once an hour.</summary>
     private void StepCalendar()
     {
+        _calendar.Paused = _players.Count > 0 && _players.Values.All(p => p.Reading);
         if (_calendar.Step() == 0)
         {
             return;
