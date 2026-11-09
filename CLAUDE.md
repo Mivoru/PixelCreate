@@ -148,7 +148,11 @@ Rules:
 - Interiors live outside the map on platforms (the guild at x 420, the trial ground at x 480). Doors are portals.
 - Character models come from Blender (`anime_*`) and use `toon.gdshader`, which also bends hair and cloth.
 - Sound effects come from ElevenLabs: `python asset-pipeline/generate_sounds.py` (cached, keys stay outside the repo).
-- A snapshot must fit one UDP packet, so the server sends each player only nearby enemies.
+- A snapshot must fit one UDP packet, so the server sends each player only nearby enemies. `GameServer.Fit` trims
+  the farthest shots, drops and enemies until it is under `MaxSnapshotBytes` (a rain of arrows over a camp in test
+  mode reached 1065 bytes, and LiteNetLib's refusal killed the server); `UdpTransport.Send` drops a packet that is
+  still too big instead of throwing. The server's errors go to `export/previews/server-errors.log`, the client's
+  output to `export/previews/client.log`, and a crashed .NET server also leaves its stack in the Windows Application log.
 - Pose check: run the Godot console executable with `--path client res://scenes/pose_test.tscn -- <folder>`.
 - Regenerate textures, palette and UI font with `python asset-pipeline/generate_textures.py`.
 - Zones live in `world/zones/*.json`: the layout is authored, the scattered detail comes from the seed.

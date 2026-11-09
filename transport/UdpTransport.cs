@@ -74,7 +74,15 @@ public sealed class UdpTransport : ITransport, IDisposable
     {
         if (_peers.TryGetValue(peer, out var target))
         {
-            target.Send(data, DeliveryMethod.Unreliable);
+            try
+            {
+                target.Send(data, DeliveryMethod.Unreliable);
+            }
+            catch (TooBigPacketException)
+            {
+                // A packet too big for one datagram is lost like any other; it must never stop the server.
+                Console.Error.WriteLine($"Dropped a packet of {data.Length} bytes: too big for one datagram.");
+            }
         }
     }
 

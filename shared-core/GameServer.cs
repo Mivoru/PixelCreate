@@ -28,6 +28,9 @@ public sealed class ServerStats
     public long MissedInputs;
     public long DroppedInputs;
     public long EnemiesKilled;
+
+    /// <summary>The largest snapshot the server encoded before trimming it to fit one packet, in bytes.</summary>
+    public int LargestSnapshot;
     public long PlayerHits;
     public long EnemyHits;
     public long Splashes;
@@ -2806,7 +2809,44 @@ public sealed class GameServer : IEnemyEvents
                 FireWalls = _walls.Where(w => Vector3.Distance(w.Origin, origin) < InterestRange).Take(2)
                     .Select(w => new FireWallView(w.Id, w.Origin, MathF.Atan2(-w.Direction.X, -w.Direction.Z), w.Length, w.HalfWidth, w.Kind)).ToArray(),
             };
-            _transport.Send(player.Id, Protocol.EncodeSnapshot(snapshot));
+            _transport.Send(player.Id, Fit(snapshot));
         }
+    }
+
+    /// <summary>Real UDP refuses larger unreliable packets (LiteNetLib stops at 1023 bytes, with room kept for its header).</summary>
+    public const int MaxSnapshotBytes = 1000;
+
+    /// <summary>
+    /// Encodes a snapshot, dropping the farthest shots, then drops, then enemies until it fits one
+    /// packet. A crowded fight (a rain of arrows over a camp) once made one too big, and the
+    /// refused send brought the whole server down.
+    /// </summary>
+    private byte[] Fit(Snapshot snapshot)
+    {
+        var bytes = Protocol.EncodeSnapshot(snapshot);
+        Stats.LargestSnapshot = Math.Max(Stats.LargestSnapshot, bytes.Length);
+        while (bytes.Length > MaxSnapshotBytes)
+        {
+            if (snapshot.Projectiles.Length > 0)
+            {
+                snapshot.Projectiles = snapshot.Projectiles[..(snapshot.Projectiles.Length * 2 / 3)];
+            }
+            else if (snapshot.Drops.Length > 0)
+            {
+                snapshot.Drops = snapshot.Drops[..(snapshot.Drops.Length / 2)];
+            }
+            else if (snapshot.Enemies.Length > 0)
+            {
+                snapshot.Enemies = snapshot.Enemies[..(snapshot.Enemies.Length * 3 / 4)];
+            }
+            else
+            {
+                break;
+            }
+
+            bytes = Protocol.EncodeSnapshot(snapshot);
+        }
+
+        return bytes;
     }
 }

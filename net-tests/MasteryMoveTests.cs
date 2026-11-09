@@ -10,13 +10,16 @@ public class MasteryMoveTests
     private static (GameServer Server, ClientPrediction Client, SimNetwork Network) Start(string weapon, string? unlock, params Vector3[] foes) =>
         Start(weapon, unlock, Array.Empty<Aabb>(), foes);
 
-    private static (GameServer Server, ClientPrediction Client, SimNetwork Network) Start(string weapon, string? unlock, Aabb[] walls, params Vector3[] foes)
+    private static (GameServer Server, ClientPrediction Client, SimNetwork Network) Start(string weapon, string? unlock, Aabb[] walls, params Vector3[] foes) =>
+        Start(weapon, unlock, walls, false, foes);
+
+    private static (GameServer Server, ClientPrediction Client, SimNetwork Network) Start(string weapon, string? unlock, Aabb[] walls, bool test, params Vector3[] foes)
     {
         var network = new SimNetwork(1, 0, 0, 0);
         var types = foes.Select(_ => "goblin_brute").ToArray();
         var camp = new EnemySpawn(new Vector3(0, 0, -60), 1f, foes.Length, Types: types);
         var world = new World(walls, null, Vector3.Zero, new[] { camp });
-        var server = new GameServer(network.Connect(0), world, new ServerOptions { Seed = 4 });
+        var server = new GameServer(network.Connect(0), world, new ServerOptions { Seed = 4, TestMode = test });
         var client = new ClientPrediction(network.Connect(1), world);
         Run(server, client, network, 10, Buttons.None);
         server.EnemiesFrozen = true;
@@ -408,6 +411,29 @@ public class MasteryMoveTests
         }
 
         Assert.Equal(taken, most > 1);
+    }
+
+    [Fact]
+    public void RainOfArrows_OverACrowd_StillFitsOnePacket()
+    {
+        // A rain with Triple Shot over sixteen foes once made a snapshot too big for UDP and killed the server.
+        var foes = Enumerable.Range(0, 16).Select(i => new Vector3(-4f + i % 4 * 2.5f, 0, -8f - i / 4 * 2.5f)).ToArray();
+        var (server, client, network) = Start("hunters_longbow", "rain_of_arrows", Array.Empty<Aabb>(), true, foes);
+        server.GrantMastery(1, "triple_shot");
+        var pitch = (short)MathF.Round(-0.12f / MathF.Tau * 65536f);
+        var hold = Tuning.FullDraw + Tuning.RainHoldTicks + 4;
+        for (var round = 0; round < 3; round++)
+        {
+            for (var tick = 0; tick < hold + 40; tick++)
+            {
+                network.Advance(1000.0 / Tuning.TickRate);
+                server.Step();
+                client.Step(0, 0, tick < hold ? Buttons.Light : Buttons.None, 0, Command.None, 0, pitch);
+            }
+        }
+
+        Console.WriteLine($"largest snapshot {server.Stats.LargestSnapshot} bytes");
+        Assert.NotNull(client.Latest);
     }
 
     private static (int Lost, int Barrier) Slammed(bool barrier)

@@ -25,7 +25,7 @@ if ($ServerHost -eq "127.0.0.1") {
     dotnet build (Join-Path $root "server") -v q
     if ($LASTEXITCODE -ne 0) { throw "The server did not build." }
     if ($Test) { $env:PIXEL_TEST = "1" }
-    $server = Start-Process (Join-Path $root "server\bin\Debug\net8.0\Server.exe") -PassThru -WindowStyle Hidden -RedirectStandardOutput (Join-Path $root "export\previews\server.log")
+    $server = Start-Process (Join-Path $root "server\bin\Debug\net8.0\Server.exe") -PassThru -WindowStyle Hidden -RedirectStandardOutput (Join-Path $root "export\previews\server.log") -RedirectStandardError (Join-Path $root "export\previews\server-errors.log")
 }
 
 try {
