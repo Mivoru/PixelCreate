@@ -42,7 +42,7 @@ Sedm obrázků 320×180 (Pixelwright, export do `src/`, PNG do klienta), stmíva
 5. Bílá.
 6. Černá. Uprostřed se pomalu objeví podivné znaky (auréjské písmo), pod nimi: *„Unfinished."*
    Pak: *„Bound."*
-7. Pád mraky, na nebi síť světelných čar (Lattice), pod ní krajina.
+7. Pád mraky, na nebi síť světelných čar (Lattice), pod ní krajina. Přes obraz název **Forty Crowns**.
 
 Pak obrazovka jména: *„What was your name?"* a úprava vzhledu: *„Remember yourself."* (etapa 2).
 

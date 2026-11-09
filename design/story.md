@@ -1,4 +1,7 @@
-# Příběh hry: vize, principy a mapa designu
+# Forty Crowns: vize, principy a mapa designu
+
+Název hry je **Forty Crowns**: tolik stojí Skyfallen na trhu (Vosk: "Forty crowns, that one. Don't damage
+the face."). Hned říká, že svět je krutý a hráč je pro něj zboží, ne vyvolený.
 
 Hlavní dokument designu. Jména ve hře anglicky (pravidlo projektu), popis česky.
 
