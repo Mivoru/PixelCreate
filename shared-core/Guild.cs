@@ -9,9 +9,6 @@ public enum Command : byte
     UseDoor = 1,
     BeginTrial = 2,
     SellCrystals = 3,
-    AcceptSlimeQuest = 4,
-    AcceptGoblinQuest = 5,
-    TurnInQuest = 6,
     SellLoot = 7,
 
     /// <summary>
@@ -43,6 +40,15 @@ public enum Command : byte
     /// skill (<see cref="Skills.NoSkill"/> empties the slot), the high byte the slot.
     /// </summary>
     SlotSkill = 209,
+
+    /// <summary>Picks a dialogue option; the argument is its place in <see cref="Story.Options"/>. The server checks it again.</summary>
+    Choose = 210,
+
+    /// <summary>Sleeps until six in the morning, when the evening has come.</summary>
+    Sleep = 211,
+
+    /// <summary>The player leaves the game: the server saves at once.</summary>
+    Quit = 212,
 }
 
 /// <summary>A newcomer must beat the guild examiner to become an adventurer.</summary>
@@ -53,34 +59,6 @@ public enum GuildRank : byte
     Adventurer = 2,
 }
 
-/// <param name="Target">
-/// The enemy id to kill, a kind prefix ending in * such as goblin_*, or item:id for a job that asks
-/// the player to bring items, which the receptionist takes at the end.
-/// </param>
-public sealed record QuestDef(byte Id, string Name, string Target, int Count, int Gold, int Xp, string Brief)
-{
-    public bool Matches(string enemyId) =>
-        !IsDelivery && (Target.EndsWith('*') ? enemyId.StartsWith(Target[..^1], StringComparison.Ordinal) : enemyId == Target);
-
-    public bool IsDelivery => Target.StartsWith("item:", StringComparison.Ordinal);
-
-    public string Item => IsDelivery ? Target[5..] : "";
-}
-
-/// <summary>Taking a job: commands from <see cref="AcceptBase"/> up name the quest by its id.</summary>
-public static class QuestCommands
-{
-    public const int AcceptBase = 32;
-
-    public static Command Accept(byte quest) => (Command)(AcceptBase + quest);
-
-    public static bool TryAccept(Command command, out byte quest)
-    {
-        quest = (byte)Math.Max(0, (int)command - AcceptBase);
-        return (int)command > AcceptBase && (int)command < ItemCommands.EatBase && Guild.Quest(quest) is not null;
-    }
-}
-
 public static class Guild
 {
     public const string ExaminerId = "guild_examiner";
@@ -89,16 +67,6 @@ public static class Guild
 
     public static readonly int[] CrystalPrices = { 5, 30, 150, 800 };
 
-    public static readonly QuestDef[] Quests =
-    {
-        new(1, "Clear the Slimes", "slime", 5, 40, 60, "kill 5 slimes"),
-        new(2, "Goblin Bounty", "goblin_*", 3, 120, 180, "kill 3 goblins"),
-        new(3, "Gel for the Alchemist", "item:slime_gel", 6, 45, 50, "bring 6 Slime Gel"),
-        new(4, "Hides for the Tanner", "item:deer_hide", 2, 60, 70, "bring 2 Deer Hides"),
-        new(5, "Proof of the Hunt", "item:goblin_tooth", 4, 90, 120, "bring 4 Goblin Teeth"),
-    };
-
-    public static QuestDef? Quest(byte id) => Quests.FirstOrDefault(q => q.Id == id);
 }
 
 public readonly record struct Portal(Vector3 From, Vector3 To);

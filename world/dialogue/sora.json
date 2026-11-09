@@ -1,0 +1,18 @@
+{
+  "npc": "sora",
+  "entries": [
+    {
+      "node": "default"
+    }
+  ],
+  "nodes": {
+    "default": {
+      "text": "I came from another world too. The trial looks hard, but watch the red marks on the ground and step aside.",
+      "options": [
+        {
+          "text": "Good advice"
+        }
+      ]
+    }
+  }
+}

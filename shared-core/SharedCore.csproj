@@ -14,5 +14,10 @@
     <EmbeddedResource Include="..\world\affixes.json" LogicalName="affixes" />
     <EmbeddedResource Include="..\world\skills.json" LogicalName="skills" />
     <EmbeddedResource Include="..\world\mastery.json" LogicalName="mastery" />
+    <EmbeddedResource Include="..\world\quests.json" LogicalName="quests" />
+    <EmbeddedResource Include="..\world\agendas.json" LogicalName="agendas" />
+    <EmbeddedResource Include="..\world\rumors.json" LogicalName="rumors" />
+    <EmbeddedResource Include="..\world\journal.json" LogicalName="journal" />
+    <EmbeddedResource Include="..\world\dialogue\*.json" LogicalName="dialogue.%(Filename)" />
   </ItemGroup>
 </Project>

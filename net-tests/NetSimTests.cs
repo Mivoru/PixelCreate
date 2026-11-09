@@ -879,15 +879,19 @@ public sealed class GuildTests
         return (server, client, network, world);
     }
 
-    private static void Run(GameServer server, ClientPrediction client, SimNetwork network, int ticks, Command command = Command.None, Buttons buttons = Buttons.None)
+    private static void Run(GameServer server, ClientPrediction client, SimNetwork network, int ticks, Command command = Command.None, Buttons buttons = Buttons.None, ushort arg = 0)
     {
         for (var i = 0; i < ticks; i++)
         {
             network.Advance(1000.0 / Tuning.TickRate);
             server.Step();
-            client.Step(0, 0, buttons, 0, i == 0 ? command : Command.None);
+            client.Step(0, 0, buttons, 0, i == 0 ? command : Command.None, null, 0, i == 0 ? arg : (ushort)0);
         }
     }
+
+    /// <summary>The place of a dialogue option, found by its NPC, words in its text and, when given, its node.</summary>
+    private static ushort Option(string npc, string words, string? node = null) =>
+        (ushort)Story.Options.First(o => o.Npc == npc && o.Text.Contains(words) && (node is null || o.Node == node)).Index;
 
     [Theory]
     [InlineData(2)]
@@ -954,9 +958,9 @@ public sealed class GuildTests
         var (server, client, network, _) = Start();
         server.GiveCrystals(1, CrystalRarity.Common, 3);
         Run(server, client, network, 12, Command.SellCrystals);
-        Run(server, client, network, 12, Command.AcceptSlimeQuest);
+        Run(server, client, network, 12, Command.Choose, Buttons.None, Option("board", "Clear the Slimes"));
         Assert.Equal(0, server.GetGold(1));
-        Assert.Equal(0, server.GetQuest(1));
+        Assert.Equal(QuestStatus.None, server.StoryState.Quest("slime_cull").Status);
     }
 
     [Fact]
@@ -1083,18 +1087,19 @@ public sealed class GuildTests
         var (server, client, network, _) = Start();
         Promote(server, client, network);
         WalkTo(server, client, network, Vector3.Zero);
-        Run(server, client, network, 12, QuestCommands.Accept(3));
-        Assert.Equal(3, server.GetQuest(1));
+        Run(server, client, network, 12, Command.Choose, Buttons.None, Option("board", "Gel for the Alchemist"));
+        Assert.Equal(QuestStatus.Active, server.StoryState.Quest("gel_for_alchemist").Status);
         server.GiveItem(1, "slime_gel", 4);
-        Run(server, client, network, 12, Command.TurnInQuest);
-        Assert.Equal(3, server.GetQuest(1));
-        Assert.Equal(4, server.GetQuestProgress(1));
+        Run(server, client, network, 12, Command.Choose, Buttons.None, Option("mira", "Hand in the job", "turn_in_gel_for_alchemist"));
+        Assert.Equal(QuestStatus.Active, server.StoryState.Quest("gel_for_alchemist").Status);
+        Assert.Equal(4, server.GetItem(1, "slime_gel"));
 
         var start = server.GetGold(1);
         server.GiveItem(1, "slime_gel", 3);
-        Run(server, client, network, 12, Command.TurnInQuest);
-        Assert.Equal(0, server.GetQuest(1));
-        Assert.Equal(start + Guild.Quest(3)!.Gold, server.GetGold(1));
+        Run(server, client, network, 12, Command.Choose, Buttons.None, Option("mira", "Hand in the job", "turn_in_gel_for_alchemist"));
+        Assert.Equal(QuestStatus.None, server.StoryState.Quest("gel_for_alchemist").Status);
+        Assert.Equal(1, server.StoryState.Quest("gel_for_alchemist").Completions);
+        Assert.Equal(start + Story.Quest("gel_for_alchemist")!.Gold, server.GetGold(1));
         Assert.Equal(1, server.GetItem(1, "slime_gel"));
     }
 
@@ -1140,8 +1145,14 @@ public sealed class GuildTests
         var (server, client, network, _) = Start();
         Promote(server, client, network);
         WalkTo(server, client, network, Vector3.Zero);
-        Run(server, client, network, 12, Command.AcceptSlimeQuest);
-        Assert.Equal(1, server.GetQuest(1));
+        Run(server, client, network, 12, Command.Choose, Buttons.None, Option("board", "Clear the Slimes"));
+        Assert.Equal(QuestStatus.Active, server.StoryState.Quest("slime_cull").Status);
+        Run(server, client, network, 30);
+        Assert.Equal(QuestStatus.Active, client.Story.Quest("slime_cull").Status);
+
+        // The board takes one job at a time.
+        Run(server, client, network, 12, Command.Choose, Buttons.None, Option("board", "Goblin Bounty"));
+        Assert.Equal(QuestStatus.None, server.StoryState.Quest("goblin_bounty").Status);
 
         var slime = server.Enemies[0];
         var position = server.GetPlayer(1)!.Value.Position;
@@ -1153,11 +1164,15 @@ public sealed class GuildTests
             Run(server, client, network, 30, Command.None, Buttons.Light);
         }
 
-        Assert.Equal(5, server.GetQuestProgress(1));
+        Assert.Equal(1, server.StoryState.Quest("slime_cull").Step);
         var gold = server.GetGold(1);
-        Run(server, client, network, 12, Command.TurnInQuest);
-        Assert.True(server.GetGold(1) > gold);
-        Assert.Equal(0, server.GetQuest(1));
+        Run(server, client, network, 12, Command.Choose, Buttons.None, Option("mira", "Hand in the job", "turn_in_slime_cull"));
+        Assert.Equal(gold + 40, server.GetGold(1));
+        Assert.Equal(QuestStatus.None, server.StoryState.Quest("slime_cull").Status);
+
+        // The client's copy of the story hears the same.
+        Run(server, client, network, 60);
+        Assert.Equal(QuestStatus.None, client.Story.Quest("slime_cull").Status);
     }
 }
 

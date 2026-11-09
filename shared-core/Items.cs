@@ -47,6 +47,8 @@ public sealed record ItemDef(
     public static ushort Index(string id) =>
         Indices.Value.TryGetValue(id, out var index) ? index : throw new KeyNotFoundException($"No item '{id}' in items.json");
 
+    public static bool TryIndex(string id, out ushort index) => Indices.Value.TryGetValue(id, out index);
+
     public static ushort CrystalIndex(CrystalRarity rarity) => (ushort)rarity;
 
     private static IReadOnlyList<ItemDef> Load()

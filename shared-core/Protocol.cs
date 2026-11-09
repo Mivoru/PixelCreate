@@ -84,8 +84,10 @@ public sealed class Snapshot
     public short Barrier;
     public GuildRank Rank;
     public int Gold;
-    public byte QuestId;
-    public byte QuestProgress;
+
+    /// <summary>The story calendar: day from 1 and minute of the day.</summary>
+    public ushort Day = 1;
+    public ushort Minute;
 
     /// <summary>Magic crystals held, by rarity.</summary>
     public int[] Crystals = new int[Core.Crystals.Tiers];
@@ -110,7 +112,16 @@ public sealed class Snapshot
     /// </summary>
     public BagEntry[] Storage = Array.Empty<BagEntry>();
     public GearEntry[] StoredGear = Array.Empty<GearEntry>();
+
+    /// <summary>Part of the story state, sent like the bag: changed entries first, then a rotating slice of all of them.</summary>
+    public StoryEntry[] Story = Array.Empty<StoryEntry>();
 }
+
+/// <summary>
+/// One value of the world state: a flag, a reputation, a fate, a quest. The key is a place in
+/// <see cref="Core.Story.Keys"/> for its kind; the value is packed as <see cref="StoryMirror"/> reads it.
+/// </summary>
+public readonly record struct StoryEntry(StoryKind Kind, ushort Key, int Value);
 
 /// <summary>Binary encoding of the two packets the game sends.</summary>
 public static class Protocol
@@ -208,8 +219,8 @@ public static class Protocol
         writer.Write(snapshot.MasteryTaken);
         writer.Write((byte)snapshot.Rank);
         writer.Write(snapshot.Gold);
-        writer.Write(snapshot.QuestId);
-        writer.Write(snapshot.QuestProgress);
+        writer.Write(snapshot.Day);
+        writer.Write(snapshot.Minute);
         foreach (var count in snapshot.Crystals)
         {
             writer.Write((ushort)count);
@@ -295,6 +306,14 @@ public static class Protocol
 
         WriteGear(writer, snapshot.StoredGear);
 
+        writer.Write((byte)snapshot.Story.Length);
+        foreach (var entry in snapshot.Story)
+        {
+            writer.Write((byte)entry.Kind);
+            writer.Write(entry.Key);
+            writer.Write(entry.Value);
+        }
+
         writer.Flush();
         return stream.ToArray();
     }
@@ -337,8 +356,8 @@ public static class Protocol
         snapshot.MasteryTaken = reader.ReadUInt64();
         snapshot.Rank = (GuildRank)reader.ReadByte();
         snapshot.Gold = reader.ReadInt32();
-        snapshot.QuestId = reader.ReadByte();
-        snapshot.QuestProgress = reader.ReadByte();
+        snapshot.Day = reader.ReadUInt16();
+        snapshot.Minute = reader.ReadUInt16();
         for (var i = 0; i < snapshot.Crystals.Length; i++)
         {
             snapshot.Crystals[i] = reader.ReadUInt16();
@@ -402,6 +421,12 @@ public static class Protocol
         }
 
         snapshot.StoredGear = ReadGear(reader);
+
+        snapshot.Story = new StoryEntry[reader.ReadByte()];
+        for (var i = 0; i < snapshot.Story.Length; i++)
+        {
+            snapshot.Story[i] = new StoryEntry((StoryKind)reader.ReadByte(), reader.ReadUInt16(), reader.ReadInt32());
+        }
 
         return true;
     }

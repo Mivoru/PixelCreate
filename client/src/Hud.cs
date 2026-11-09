@@ -60,7 +60,7 @@ public partial class Hud : Control
     private string _dialogName = "";
     private string _dialogText = "";
     private float _dialogAge;
-    private (string Label, Command Command)[] _dialogOptions = Array.Empty<(string, Command)>();
+    private DialogChoice[] _dialogOptions = Array.Empty<DialogChoice>();
     private string[] _story = Array.Empty<string>();
     private float _storyTime;
     private float _bannerTime;
@@ -259,7 +259,11 @@ public partial class Hud : Control
     public bool DialogOpen => _dialogName.Length > 0;
 
     /// <summary>Opens a conversation. Options are chosen with the number keys or the mouse.</summary>
-    public void ShowDialog(string name, string text, params (string Label, Command Command)[] options)
+    public void ShowDialog(string name, string text, params (string Label, Command Command)[] options) =>
+        ShowDialog(name, text, options.Select(o => new DialogChoice(o.Label, o.Command)).ToArray());
+
+    /// <summary>Opens a conversation whose options may carry an argument and a follow-up, such as the next node of a dialogue.</summary>
+    public void ShowDialog(string name, string text, DialogChoice[] options)
     {
         _dialogName = name;
         _dialogText = text;
@@ -450,20 +454,34 @@ public partial class Hud : Control
         Label("close", new Vector2(window.End.X - 86, window.End.Y - 24), 15, Muted);
     }
 
-    /// <summary>Picks the option with this command, as a player would by reading the list.</summary>
-    public Command ChooseCommand(Command wanted) => Choose(Array.FindIndex(_dialogOptions, o => o.Command == wanted) is var i and >= 0 ? i : int.MaxValue);
+    /// <summary>Picks the first option whose text contains these words, as a player would by reading the list.</summary>
+    public (Command Command, ushort Arg) ChooseLabel(string words) =>
+        Choose(Array.FindIndex(_dialogOptions, o => o.Label.Contains(words, StringComparison.OrdinalIgnoreCase)) is var i and >= 0 ? i : int.MaxValue);
 
-    /// <summary>Picks an option and closes the conversation, returning the command to send.</summary>
-    public Command Choose(int index)
+    /// <summary>The texts of the options shown now, for bots and checks.</summary>
+    public IEnumerable<string> DialogLabels => _dialogOptions.Select(o => o.Label);
+
+    /// <summary>
+    /// Picks an option and closes the conversation, returning the command to send. An option with a
+    /// follow-up (the next node of a dialogue) opens it straight away.
+    /// </summary>
+    public (Command Command, ushort Arg) Choose(int index)
     {
         if (index >= _dialogOptions.Length)
         {
-            return Command.None;
+            return (Command.None, 0);
         }
 
-        var command = _dialogOptions[index].Command;
+        var option = _dialogOptions[index];
+        var role = DialogRole;
         CloseDialog();
-        return command;
+        if (option.Then is { } then)
+        {
+            DialogRole = role;
+            then();
+        }
+
+        return (option.Command, option.Arg);
     }
 
     /// <summary>Shows lines of the story one after another in the middle of the screen.</summary>
@@ -605,10 +623,10 @@ public partial class Hud : Control
             {
                 if (_optionRects[i].HasPoint(click.Position))
                 {
-                    var command = Choose(i);
-                    if (command != Command.None)
+                    var choice = Choose(i);
+                    if (choice.Command != Command.None)
                     {
-                        _commands.Enqueue((command, 0));
+                        _commands.Enqueue(choice);
                     }
 
                     return;
@@ -1277,7 +1295,7 @@ public partial class Hud : Control
             var appear = ready ? 1f : 0.35f;
             Rounded(rect, 12, new Color(1, 1, 1, hover ? 0.1f : 0.04f), hover ? AccentDim : new Color(1, 1, 1, 0.07f));
             Keycap((i + 1).ToString(), rect.Position + new Vector2(10, 7), 14);
-            var color = _dialogOptions[i].Command == Command.None ? Muted : Text;
+            var color = _dialogOptions[i].Command == Command.None && _dialogOptions[i].Then is null && !_dialogOptions[i].Plain ? Muted : Text;
             Label(_dialogOptions[i].Label, rect.Position + new Vector2(52, 27), 19, color with { A = appear }, hover ? _bold : _font);
             if (hover)
             {
@@ -1782,3 +1800,9 @@ public partial class Hud : Control
         }
     }
 }
+
+/// <summary>
+/// One option in a conversation: its text, the command it sends (with an argument), and what to show
+/// next. A plain option only closes the conversation and is drawn like any other.
+/// </summary>
+public sealed record DialogChoice(string Label, Command Command, ushort Arg = 0, System.Action? Then = null, bool Plain = false);

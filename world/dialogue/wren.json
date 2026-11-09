@@ -1,0 +1,36 @@
+{
+  "npc": "wren",
+  "entries": [
+    {
+      "when": {
+        "gold": {
+          "min": 1
+        }
+      },
+      "node": "shop"
+    },
+    {
+      "node": "broke"
+    }
+  ],
+  "nodes": {
+    "shop": {
+      "text": "Potions, fresh from the cauldron! One heals you at once, but give your body three breaths before the next. You have {gold} gold.",
+      "shop": "alchemist",
+      "options": [
+        {
+          "text": "Goodbye"
+        }
+      ]
+    },
+    "broke": {
+      "text": "Potions, fresh from the cauldron! Come back when the Guild has paid you; I do not give them away.",
+      "shop": "alchemist",
+      "options": [
+        {
+          "text": "Goodbye"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,100 @@
+{
+  "npc": "board",
+  "entries": [
+    {
+      "when": {
+        "rank": {
+          "max": 0
+        }
+      },
+      "node": "closed"
+    },
+    {
+      "when": {
+        "activeJobs": {
+          "min": 1
+        }
+      },
+      "node": "busy"
+    },
+    {
+      "node": "jobs"
+    }
+  ],
+  "nodes": {
+    "closed": {
+      "text": "Only registered adventurers may take jobs.",
+      "options": [
+        {
+          "text": "Leave"
+        }
+      ]
+    },
+    "busy": {
+      "text": "You already have a job. Finish it first.",
+      "options": [
+        {
+          "text": "Leave"
+        }
+      ]
+    },
+    "jobs": {
+      "text": "Notices flutter on the board. Some ask for heads, some only for what the beasts leave behind.",
+      "options": [
+        {
+          "text": "Clear the Slimes: kill 5 slimes (40 gold)",
+          "effects": [
+            {
+              "quest": {
+                "start": "slime_cull"
+              }
+            }
+          ]
+        },
+        {
+          "text": "Goblin Bounty: kill 3 goblins (120 gold)",
+          "effects": [
+            {
+              "quest": {
+                "start": "goblin_bounty"
+              }
+            }
+          ]
+        },
+        {
+          "text": "Gel for the Alchemist: bring 6 Slime Gel (45 gold)",
+          "effects": [
+            {
+              "quest": {
+                "start": "gel_for_alchemist"
+              }
+            }
+          ]
+        },
+        {
+          "text": "Hides for the Tanner: bring 2 Deer Hides (60 gold)",
+          "effects": [
+            {
+              "quest": {
+                "start": "hides_for_tanner"
+              }
+            }
+          ]
+        },
+        {
+          "text": "Proof of the Hunt: bring 4 Goblin Teeth (90 gold)",
+          "effects": [
+            {
+              "quest": {
+                "start": "proof_of_hunt"
+              }
+            }
+          ]
+        },
+        {
+          "text": "Leave"
+        }
+      ]
+    }
+  }
+}

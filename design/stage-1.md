@@ -12,7 +12,7 @@ Návaznost: `design/stages.md` (etapa 1), `design/systems.md` (kapitoly 3, 5, 5a
 | Dnes | Po etapě 1 |
 |---|---|
 | Stav hráče jen v paměti `GameServer.Player`, po restartu pryč | uložený v souboru, načtený při startu |
-| `GuildRank` Newcomer, InTrial, Adventurer | rank jako číslo: 0 = bez registrace, 1 = F, 2 = E … 7 = S, plus příznak „ve zkoušce" |
+| `GuildRank` Newcomer, InTrial, Adventurer | zůstává; podmínka `rank` dává 0 před registrací a 1 po ní. Ranky F až S přijdou v etapě 4 |
 | Jeden aktivní quest (`QuestId`, `QuestProgress`), pole `Guild.Quests` | víc aktivních questů, stav každého (krok, postup), questy z `world/quests.json` |
 | Repliky a větvení v `Dialogues.cs` (`switch` podle role) | dialogy z `world/dialogue/*.json`, klient je jen vykresluje |
 | Příkazy `AcceptSlimeQuest`, `AcceptGoblinQuest`, `QuestCommands`, `TurnInQuest` | obecné `Command.Choose` (volba v dialogu) |

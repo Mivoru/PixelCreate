@@ -142,8 +142,21 @@ public partial class GameClient : Node
     private float _travelled;
     private readonly Random _botRandom = new(5);
 
+    private bool _closing;
+    private int _quitFrames;
+
+    /// <summary>Closing the window quits like the menu does, so the server can save first.</summary>
+    public override void _Notification(int what)
+    {
+        if (what == NotificationWMCloseRequest)
+        {
+            _closing = true;
+        }
+    }
+
     public override void _Ready()
     {
+        GetTree().AutoAcceptQuit = false;
         var args = OS.GetCmdlineUserArgs();
         var host = args.ElementAtOrDefault(0) ?? "127.0.0.1";
         var port = int.Parse(args.ElementAtOrDefault(1) ?? "7777");
@@ -245,9 +258,9 @@ public partial class GameClient : Node
             else if (_hud.DialogOpen && key.Keycode >= Key.Key1 && key.Keycode <= Key.Key9)
             {
                 var choice = _hud.Choose((int)(key.Keycode - Key.Key1));
-                if (choice != Command.None)
+                if (choice.Command != Command.None)
                 {
-                    _pendingCommand = choice;
+                    (_pendingCommand, _pendingArg) = choice;
                 }
             }
             else if (key.Keycode == Key.F3)
@@ -299,10 +312,19 @@ public partial class GameClient : Node
             _measuredFrames++;
         }
 
-        if (_hud.QuitRequested)
+        if (_hud.QuitRequested || _closing)
         {
-            GetTree().Quit();
-            return;
+            // Tell the server first, so it saves; the command rides in the next few input packets.
+            if (_quitFrames == 0)
+            {
+                _pendingCommand = Command.Quit;
+            }
+
+            if (++_quitFrames > 12 || !_transport.IsConnected)
+            {
+                GetTree().Quit();
+                return;
+            }
         }
 
         _transport.Poll();
@@ -430,7 +452,7 @@ public partial class GameClient : Node
         _hud.Objective = Objective(snapshot, shown);
     }
 
-    private static string Objective(Snapshot? snapshot, Vector3 shown)
+    private string Objective(Snapshot? snapshot, Vector3 shown)
     {
         if (snapshot is null)
         {
@@ -447,11 +469,16 @@ public partial class GameClient : Node
             return "Defeat Examiner Rhea";
         }
 
-        if (Guild.Quest(snapshot.QuestId) is { } quest)
+        var story = new ClientStory(_client, _hud.Items);
+        foreach (var quest in Story.Quests.Where(q => _client.Story.Quest(q.Id).Status == QuestStatus.Active))
         {
-            return snapshot.QuestProgress >= quest.Count
-                ? $"{quest.Name}: report to Mira"
-                : $"{quest.Name}: {snapshot.QuestProgress} / {quest.Count}";
+            if (Story.QuestStatusName(story, quest.Id) == "ready")
+            {
+                return $"{quest.Name}: report to Mira";
+            }
+
+            var (done, needed) = Story.StepProgress(story, quest.Id);
+            return needed > 0 ? $"{quest.Name}: {done} / {needed}" : $"{quest.Name}: {quest.Steps[_client.Story.Quest(quest.Id).Step].Text}";
         }
 
         if (shown.X > ArenaX)
@@ -476,7 +503,7 @@ public partial class GameClient : Node
             .OrderBy(n => new Vector2(n.Position.X - position.X, n.Position.Z - position.Z).Length()).Cast<Npc?>().FirstOrDefault();
         if (npc is { } target)
         {
-            Dialogues.Open(_hud, target, _client.Latest);
+            Dialogues.Open(_hud, target, new ClientStory(_client, _hud.Items), _client.Latest);
             return;
         }
 
@@ -874,7 +901,7 @@ public partial class GameClient : Node
 
         if (mode == "trial" && _client.Tick == 90)
         {
-            _pendingCommand = _hud.Choose(0);
+            (_pendingCommand, _pendingArg) = _hud.Choose(0);
         }
 
         if (mode == "trial" && _client.Tick > 90)
@@ -924,7 +951,7 @@ public partial class GameClient : Node
         var board = _world.Npcs.First(n => n.Role == "quest_board").Position;
         if (snapshot.Rank == GuildRank.Newcomer)
         {
-            return BotConverse("talk to Mira", new Vector3(mira.X, 0, mira.Z + 2.6f), Command.BeginTrial);
+            return BotConverse("talk to Mira", new Vector3(mira.X, 0, mira.Z + 2.6f), "Take the trial");
         }
 
         if (snapshot.Rank == GuildRank.InTrial)
@@ -953,13 +980,13 @@ public partial class GameClient : Node
             return walk;
         }
 
-        if (snapshot.QuestId == 0)
+        if (Story.ActiveJobs(_client.Story) == 0)
         {
-            return BotConverse("take a job", new Vector3(board.X + 2.2f, 0, board.Z), Command.AcceptSlimeQuest);
+            return BotConverse("take a job", new Vector3(board.X + 2.2f, 0, board.Z), "Clear the Slimes");
         }
 
         return snapshot.Crystals.Sum() > 0
-            ? BotConverse("sell crystals", new Vector3(mira.X, 0, mira.Z + 2.6f), Command.SellCrystals)
+            ? BotConverse("sell crystals", new Vector3(mira.X, 0, mira.Z + 2.6f), "Sell all crystals")
             : BotDone();
     }
 
@@ -1189,7 +1216,7 @@ public partial class GameClient : Node
     }
 
     /// <summary>Walks to a spot, opens the conversation, holds it for a moment, then picks the wanted choice.</summary>
-    private (sbyte X, sbyte Z, Buttons Buttons) BotConverse(string stage, Vector3 spot, Command wanted)
+    private (sbyte X, sbyte Z, Buttons Buttons) BotConverse(string stage, Vector3 spot, string wanted)
     {
         BotStage(stage);
         var walk = BotWalk(spot, 0.5f, Buttons.None);
@@ -1205,7 +1232,7 @@ public partial class GameClient : Node
         }
         else if (++_botWait > BotDialogTicks)
         {
-            _pendingCommand = _hud.ChooseCommand(wanted);
+            (_pendingCommand, _pendingArg) = _hud.ChooseLabel(wanted);
             _botWait = 0;
         }
 

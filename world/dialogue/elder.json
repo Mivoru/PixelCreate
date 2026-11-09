@@ -1,0 +1,18 @@
+{
+  "npc": "elder",
+  "entries": [
+    {
+      "node": "default"
+    }
+  ],
+  "nodes": {
+    "default": {
+      "text": "You have a strange look, stranger. Lost? The Guild in the west takes in folk like you.",
+      "options": [
+        {
+          "text": "Goodbye"
+        }
+      ]
+    }
+  }
+}

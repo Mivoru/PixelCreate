@@ -1,0 +1,263 @@
+{
+  "npc": "mira",
+  "entries": [
+    {
+      "when": {
+        "rank": {
+          "max": 0
+        }
+      },
+      "node": "register"
+    },
+    {
+      "when": {
+        "quest": {
+          "slime_cull": "ready"
+        }
+      },
+      "node": "turn_in_slime_cull"
+    },
+    {
+      "when": {
+        "quest": {
+          "goblin_bounty": "ready"
+        }
+      },
+      "node": "turn_in_goblin_bounty"
+    },
+    {
+      "when": {
+        "quest": {
+          "gel_for_alchemist": "ready"
+        }
+      },
+      "node": "turn_in_gel_for_alchemist"
+    },
+    {
+      "when": {
+        "quest": {
+          "hides_for_tanner": "ready"
+        }
+      },
+      "node": "turn_in_hides_for_tanner"
+    },
+    {
+      "when": {
+        "quest": {
+          "proof_of_hunt": "ready"
+        }
+      },
+      "node": "turn_in_proof_of_hunt"
+    },
+    {
+      "node": "default"
+    }
+  ],
+  "nodes": {
+    "register": {
+      "text": "Welcome to the Adventurers Guild! To register you must pass a trial against one of our staff.",
+      "face": "smile",
+      "options": [
+        {
+          "text": "Take the trial",
+          "effects": [
+            {
+              "action": "beginTrial"
+            }
+          ]
+        },
+        {
+          "text": "Not yet"
+        }
+      ]
+    },
+    "turn_in_slime_cull": {
+      "text": "Well done! Here is your pay for Clear the Slimes: 40 gold.",
+      "face": "smile",
+      "options": [
+        {
+          "text": "Hand in the job",
+          "effects": [
+            {
+              "quest": {
+                "complete": "slime_cull"
+              }
+            }
+          ]
+        },
+        {
+          "text": "Sell all crystals ({crystalWorth} gold)",
+          "effects": [
+            {
+              "action": "sellCrystals"
+            }
+          ]
+        },
+        {
+          "text": "Goodbye"
+        }
+      ]
+    },
+    "turn_in_goblin_bounty": {
+      "text": "Well done! Here is your pay for Goblin Bounty: 120 gold.",
+      "face": "smile",
+      "options": [
+        {
+          "text": "Hand in the job",
+          "effects": [
+            {
+              "quest": {
+                "complete": "goblin_bounty"
+              }
+            }
+          ]
+        },
+        {
+          "text": "Sell all crystals ({crystalWorth} gold)",
+          "effects": [
+            {
+              "action": "sellCrystals"
+            }
+          ]
+        },
+        {
+          "text": "Goodbye"
+        }
+      ]
+    },
+    "turn_in_gel_for_alchemist": {
+      "text": "You brought everything for Gel for the Alchemist! Here is your pay: 45 gold.",
+      "face": "smile",
+      "options": [
+        {
+          "text": "Hand in the job",
+          "effects": [
+            {
+              "quest": {
+                "complete": "gel_for_alchemist"
+              }
+            }
+          ]
+        },
+        {
+          "text": "Sell all crystals ({crystalWorth} gold)",
+          "effects": [
+            {
+              "action": "sellCrystals"
+            }
+          ]
+        },
+        {
+          "text": "Goodbye"
+        }
+      ]
+    },
+    "turn_in_hides_for_tanner": {
+      "text": "You brought everything for Hides for the Tanner! Here is your pay: 60 gold.",
+      "face": "smile",
+      "options": [
+        {
+          "text": "Hand in the job",
+          "effects": [
+            {
+              "quest": {
+                "complete": "hides_for_tanner"
+              }
+            }
+          ]
+        },
+        {
+          "text": "Sell all crystals ({crystalWorth} gold)",
+          "effects": [
+            {
+              "action": "sellCrystals"
+            }
+          ]
+        },
+        {
+          "text": "Goodbye"
+        }
+      ]
+    },
+    "turn_in_proof_of_hunt": {
+      "text": "You brought everything for Proof of the Hunt! Here is your pay: 90 gold.",
+      "face": "smile",
+      "options": [
+        {
+          "text": "Hand in the job",
+          "effects": [
+            {
+              "quest": {
+                "complete": "proof_of_hunt"
+              }
+            }
+          ]
+        },
+        {
+          "text": "Sell all crystals ({crystalWorth} gold)",
+          "effects": [
+            {
+              "action": "sellCrystals"
+            }
+          ]
+        },
+        {
+          "text": "Goodbye"
+        }
+      ]
+    },
+    "default": {
+      "text": "Good to see you. The Guild buys every magic crystal you bring. Hides, teeth and the like go to Hollis at the side counter.",
+      "options": [
+        {
+          "text": "Sell all crystals ({crystalWorth} gold)",
+          "effects": [
+            {
+              "action": "sellCrystals"
+            }
+          ]
+        },
+        {
+          "text": "Reset my attribute points ({resetCost} gold)",
+          "when": {
+            "any": [
+              {
+                "attr": {
+                  "Strength": 1
+                }
+              },
+              {
+                "attr": {
+                  "Dexterity": 1
+                }
+              },
+              {
+                "attr": {
+                  "Intelligence": 1
+                }
+              },
+              {
+                "attr": {
+                  "Vitality": 1
+                }
+              },
+              {
+                "attr": {
+                  "Endurance": 1
+                }
+              }
+            ]
+          },
+          "effects": [
+            {
+              "action": "resetAttributes"
+            }
+          ]
+        },
+        {
+          "text": "Goodbye"
+        }
+      ]
+    }
+  }
+}

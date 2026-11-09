@@ -21,6 +21,9 @@ public sealed class ServerOptions
 
     /// <summary>The Guild examiner starts with one hit point, for the bot that plays the Guild story.</summary>
     public bool FrailExaminer { get; init; }
+
+    /// <summary>A saved game to continue: the world at once, the player when they join.</summary>
+    public SaveData? Save { get; init; }
 }
 
 public sealed class ServerStats
@@ -269,8 +272,13 @@ public sealed class GameServer : IEnemyEvents
         public float BarrierCarry;
         public GuildRank Rank;
         public int Gold;
-        public byte QuestId;
-        public byte QuestProgress;
+
+        /// <summary>Story entries changed since this player last heard them, and the place of the rotating slice.</summary>
+        public readonly HashSet<(StoryKind Kind, string Key)> StoryChanged = new();
+        public int StoryCursor;
+
+        /// <summary>Every death after registering: where, when and with what.</summary>
+        public readonly List<DeathRecord> Deaths = new();
 
         /// <summary>Items held, by index. An item stays listed at zero so the client hears that it is gone.</summary>
         public readonly SortedDictionary<ushort, int> Bag = new();
@@ -406,12 +414,21 @@ public sealed class GameServer : IEnemyEvents
 
     public IReadOnlyList<Enemy> Enemies => _enemies;
 
+    private readonly WorldState _story = new();
+    private readonly Calendar _calendar = new();
+
     public GameServer(ITransport transport, World world, ServerOptions options)
     {
         _transport = transport;
         _world = world;
         _options = options;
         _random = new Random(options.Seed);
+        if (options.Save is { } save)
+        {
+            save.World.Into(_story);
+            _calendar.Now = _story.Time;
+        }
+
         var spawns = world.EnemySpawns.Count > 0 ? world.EnemySpawns
             : new[] { new EnemySpawn(world.Spawn, 15f, options.EnemyCount) };
         foreach (var spawn in spawns)
@@ -461,9 +478,17 @@ public sealed class GameServer : IEnemyEvents
     /// <summary>Sets a player's health. For tests and tools.</summary>
     public void SetHealth(int id, short health) => _players[id].State.Health = health;
 
-    public byte GetQuest(int id) => _players[id].QuestId;
+    /// <summary>The world the story remembers: flags, quests, fates, the calendar. One for the whole server.</summary>
+    public WorldState StoryState => _story;
 
-    public int GetQuestProgress(int id) => QuestProgress(_players[id]);
+    /// <summary>The story calendar, which the server moves on with its ticks.</summary>
+    public Calendar Calendar => _calendar;
+
+    /// <summary>Called with a save each morning and when the player quits. The server process writes it to disk.</summary>
+    public Action<SaveData>? Autosave { get; set; }
+
+    /// <summary>The story context of one player, for tests that check conditions as the server sees them.</summary>
+    public IStoryActions StoryFor(int id) => new StoryActions(this, _players[id]);
 
     /// <summary>For tests: gives a player crystals as if looted.</summary>
     public void GiveCrystals(int id, CrystalRarity rarity, int count) => _players[id].Crystals[(int)rarity] += count;
@@ -478,6 +503,12 @@ public sealed class GameServer : IEnemyEvents
 
     /// <summary>For tests: wounds a player without an enemy.</summary>
     public void HurtForTest(int id, short damage) => _players[id].State.Health -= damage;
+
+    /// <summary>Sets a player's standing with the Guild. For tests and tools.</summary>
+    public void SetRank(int id, GuildRank rank) => _players[id].Rank = rank;
+
+    /// <summary>The deaths written down for a player. For tests and tools.</summary>
+    public IReadOnlyList<DeathRecord> GetDeaths(int id) => _players[id].Deaths;
 
     /// <summary>How many of an item a player holds.</summary>
     public int GetItem(int id, string item) => _players[id].Bag.GetValueOrDefault(ItemDef.Index(item));
@@ -541,6 +572,7 @@ public sealed class GameServer : IEnemyEvents
 
         StepLoot();
         StepBleeding();
+        StepCalendar();
         foreach (var finished in _finishedTrials)
         {
             _enemies.Remove(finished);
@@ -620,10 +652,18 @@ public sealed class GameServer : IEnemyEvents
             };
             _players.Add(peer, player);
 
-            // Everyone starts with the wooden sword in hand: a weapon like any other.
-            player.Gear[0] = new GearPiece(ItemDef.Index("wooden_sword"), Rarity.Common, 1, Array.Empty<AffixRoll>());
-            player.GearChanged.Add(0);
-            ToggleWorn(player, 0, player.Gear[0]!);
+            if (_options.Save?.Player is { } saved && _players.Count == 1)
+            {
+                Restore(player, saved);
+            }
+            else
+            {
+                // Everyone starts with the wooden sword in hand: a weapon like any other.
+                player.Gear[0] = new GearPiece(ItemDef.Index("wooden_sword"), Rarity.Common, 1, Array.Empty<AffixRoll>());
+                player.GearChanged.Add(0);
+                ToggleWorn(player, 0, player.Gear[0]!);
+            }
+
             if (_options.TestMode)
             {
                 // Test runs know every skill and carry one book, so skills can be tried at once.
@@ -774,6 +814,19 @@ public sealed class GameServer : IEnemyEvents
             {
                 EndTrial(player);
                 player.Rank = GuildRank.Newcomer;
+            }
+            else if (player.Rank == GuildRank.Adventurer)
+            {
+                // The Anchor Stone rebuilds the body from what the player carries: a tenth of the
+                // crystals not yet sold. The death is written down for the echoes of act III.
+                for (var i = 0; i < player.Crystals.Length; i++)
+                {
+                    player.Crystals[i] -= player.Crystals[i] / 10;
+                }
+
+                var at = player.State.Position;
+                player.Deaths.Add(new DeathRecord(_calendar.Now.Day, new[] { at.X, at.Y, at.Z }, player.Level,
+                    player.Stats.Weapon is { Length: > 0 } weapon ? weapon : "none"));
             }
 
             player.State = PlayerState.Spawn(_world.Spawn, maxHealth);
@@ -1070,38 +1123,23 @@ public sealed class GameServer : IEnemyEvents
                 }
 
                 break;
-            case Command.BeginTrial when player.Rank == GuildRank.Newcomer && Near(player, "receptionist"):
-                BeginTrial(player);
+            case Command.BeginTrial:
+                RunAction(player, "beginTrial");
                 break;
-            case Command.SellCrystals when player.Rank == GuildRank.Adventurer && Near(player, "receptionist"):
-                for (var i = 0; i < player.Crystals.Length; i++)
-                {
-                    player.Gold += player.Crystals[i] * Guild.CrystalPrices[i];
-                    player.Crystals[i] = 0;
-                }
-
+            case Command.SellCrystals:
+                RunAction(player, "sellCrystals");
                 break;
-            case Command.AcceptSlimeQuest when player.Rank == GuildRank.Adventurer && player.QuestId == 0 && Near(player, "quest_board"):
-                player.QuestId = 1;
-                player.QuestProgress = 0;
+            case Command.SellLoot:
+                RunAction(player, "sellLoot");
                 break;
-            case Command.AcceptGoblinQuest when player.Rank == GuildRank.Adventurer && player.QuestId == 0 && Near(player, "quest_board"):
-                player.QuestId = 2;
-                player.QuestProgress = 0;
+            case Command.Sleep:
+                RunAction(player, "sleep");
                 break;
-            case var take when QuestCommands.TryAccept(take, out var job) && player.Rank == GuildRank.Adventurer &&
-                               player.QuestId == 0 && Near(player, "quest_board"):
-                player.QuestId = job;
-                player.QuestProgress = 0;
+            case Command.Choose:
+                Choose(player, arg);
                 break;
-            case Command.SellLoot when player.Rank == GuildRank.Adventurer && Near(player, "appraiser"):
-                foreach (var (item, count) in player.Bag.Where(p => p.Value > 0 && ItemDef.All[p.Key].Sellable).ToList())
-                {
-                    player.Gold += count * ItemDef.All[item].Price;
-                    Stats.ItemsSold += count;
-                    AddItem(player, item, -count);
-                }
-
+            case Command.Quit:
+                Autosave?.Invoke(Export());
                 break;
             case var eat when ItemCommands.TryEat(eat, out var food) && ItemDef.All[food].IsFood &&
                               player.Bag.GetValueOrDefault(food) > 0 && player.State.Health > 0:
@@ -1127,24 +1165,298 @@ public sealed class GameServer : IEnemyEvents
                 player.Gear[spot] = null;
                 player.GearChanged.Add(spot);
                 break;
-            case Command.TurnInQuest when Guild.Quest(player.QuestId) is { } quest && QuestProgress(player) >= quest.Count && Near(player, "receptionist"):
-                if (quest.IsDelivery)
+        }
+    }
+
+    /// <summary>The game as it stands: the world and the first player. The game is for one player; co-op saves come later.</summary>
+    public SaveData Export()
+    {
+        _story.Time = _calendar.Now;
+        var data = new SaveData { World = SavedWorld.From(_story) };
+        if (_players.Values.OrderBy(p => p.Id).FirstOrDefault() is not { } player)
+        {
+            return data;
+        }
+
+        static SavedGear? Gear(GearPiece? piece) => piece is null ? null
+            : new SavedGear(ItemDef.All[piece.Item].Id, (byte)piece.Rarity, piece.Level, piece.Affixes.SelectMany(a => new[] { (short)a.Affix, a.Value }).ToArray());
+        var at = player.State.Position;
+        data.Player = new SavedPlayer
+        {
+            Level = player.Level,
+            Xp = player.Xp,
+            Gold = player.Gold,
+            Rank = (byte)(player.Rank == GuildRank.InTrial ? GuildRank.Newcomer : player.Rank),
+            Crystals = player.Crystals.ToArray(),
+            Attributes = player.Attributes.ToArray(),
+            Skills = player.Skills.Order().ToArray(),
+            SkillSlots = player.SkillSlots.ToArray(),
+            MasteryLevels = player.MasteryLevels.ToArray(),
+            MasteryXp = player.MasteryXp.ToArray(),
+            MasteryTaken = player.MasteryTaken,
+            Bag = player.Bag.Where(p => p.Value > 0).ToDictionary(p => ItemDef.All[p.Key].Id, p => p.Value),
+            Gear = player.Gear.Select(Gear).ToArray(),
+            Worn = player.Worn.Order().ToArray(),
+            Storage = player.Storage.Where(p => p.Value > 0).ToDictionary(p => ItemDef.All[p.Key].Id, p => p.Value),
+            StoredGear = player.StoredGear.Select(Gear).ToArray(),
+            Position = player.Rank == GuildRank.InTrial ? Array.Empty<float>() : new[] { at.X, at.Y, at.Z },
+            Deaths = player.Deaths.ToList(),
+        };
+        return data;
+    }
+
+    /// <summary>Puts a saved player back: purse, bag, gear, growth and place.</summary>
+    private void Restore(Player player, SavedPlayer saved)
+    {
+        static GearPiece? Gear(SavedGear? piece)
+        {
+            if (piece is null || !ItemDef.TryIndex(piece.Item, out var item))
+            {
+                return null;
+            }
+
+            var affixes = new List<AffixRoll>();
+            for (var i = 0; i + 1 < piece.Affixes.Length; i += 2)
+            {
+                affixes.Add(new AffixRoll((byte)piece.Affixes[i], piece.Affixes[i + 1]));
+            }
+
+            return new GearPiece(item, (Rarity)piece.Rarity, piece.Level, affixes.ToArray());
+        }
+
+        player.Level = (byte)Math.Clamp(saved.Level, 1, 255);
+        player.Xp = saved.Xp;
+        player.Gold = saved.Gold;
+        player.Rank = (GuildRank)saved.Rank;
+        saved.Crystals.Take(player.Crystals.Length).ToArray().CopyTo(player.Crystals, 0);
+        saved.Attributes.Take(player.Attributes.Length).ToArray().CopyTo(player.Attributes, 0);
+        foreach (var skill in saved.Skills.Where(s => s >= 0 && s < SkillDef.All.Count))
+        {
+            player.Skills.Add(skill);
+        }
+
+        saved.SkillSlots.Take(player.SkillSlots.Length).ToArray().CopyTo(player.SkillSlots, 0);
+        saved.MasteryLevels.Take(player.MasteryLevels.Length).ToArray().CopyTo(player.MasteryLevels, 0);
+        saved.MasteryXp.Take(player.MasteryXp.Length).ToArray().CopyTo(player.MasteryXp, 0);
+        player.MasteryTaken = saved.MasteryTaken;
+        foreach (var (id, count) in saved.Bag)
+        {
+            if (ItemDef.TryIndex(id, out var item))
+            {
+                AddItem(player, item, count);
+            }
+        }
+
+        foreach (var (id, count) in saved.Storage)
+        {
+            if (ItemDef.TryIndex(id, out var item))
+            {
+                player.Storage[item] = count;
+                player.StorageChanged.Add(item);
+            }
+        }
+
+        for (var i = 0; i < player.Gear.Length && i < saved.Gear.Length; i++)
+        {
+            player.Gear[i] = Gear(saved.Gear[i]);
+            player.GearChanged.Add(i);
+        }
+
+        for (var i = 0; i < player.StoredGear.Length && i < saved.StoredGear.Length; i++)
+        {
+            player.StoredGear[i] = Gear(saved.StoredGear[i]);
+            player.StoredGearChanged.Add(i);
+        }
+
+        foreach (var place in saved.Worn.Where(p => p >= 0 && p < player.Gear.Length && player.Gear[p] is not null))
+        {
+            ToggleWorn(player, place, player.Gear[place]!);
+        }
+
+        player.Deaths.AddRange(saved.Deaths);
+        if (saved.Position.Length == 3)
+        {
+            Move(player, new Vector3(saved.Position[0], saved.Position[1], saved.Position[2]));
+        }
+
+        ApplyAttributes(player);
+        RecomputeStats(player);
+        player.State.Health = MaxHealth(player);
+    }
+
+    /// <summary>
+    /// A choice in a dialogue: checked again with the server's own state, and only by the NPC who
+    /// says it, then its effects run.
+    /// </summary>
+    private void Choose(Player player, ushort index)
+    {
+        if (index >= Story.Options.Count)
+        {
+            return;
+        }
+
+        var option = Story.Options[index];
+        var context = new StoryActions(this, player);
+        if (!NearNpc(player, option.Npc) || !option.When.Holds(context) ||
+            !Story.Dialogues.TryGetValue(option.Npc, out var dialogue) || !dialogue.Reachable(context, option.Node))
+        {
+            return;
+        }
+
+        Effect.ApplyAll(option.Effects, context);
+    }
+
+    /// <summary>The server actions that story data can name. Each checks what it needs by itself.</summary>
+    private void RunAction(Player player, string action)
+    {
+        switch (action)
+        {
+            case "beginTrial" when player.Rank == GuildRank.Newcomer && Near(player, "receptionist"):
+                BeginTrial(player);
+                break;
+            case "sellCrystals" when player.Rank == GuildRank.Adventurer && Near(player, "receptionist"):
+                for (var i = 0; i < player.Crystals.Length; i++)
                 {
-                    AddItem(player, ItemDef.Index(quest.Item), -quest.Count);
+                    player.Gold += player.Crystals[i] * Guild.CrystalPrices[i];
+                    player.Crystals[i] = 0;
                 }
 
-                player.Gold += quest.Gold;
-                player.QuestId = 0;
-                player.QuestProgress = 0;
-                AwardXp(player.Id, quest.Xp);
+                break;
+            case "sellLoot" when player.Rank == GuildRank.Adventurer && Near(player, "appraiser"):
+                foreach (var (item, count) in player.Bag.Where(p => p.Value > 0 && ItemDef.All[p.Key].Sellable).ToList())
+                {
+                    player.Gold += count * ItemDef.All[item].Price;
+                    Stats.ItemsSold += count;
+                    AddItem(player, item, -count);
+                }
+
+                break;
+            case "resetAttributes":
+                Obey(player, Command.ResetAttributes);
+                break;
+            case "sleep" when _calendar.Now.CanSleep:
+                _calendar.Now = _calendar.Now.AfterSleep();
+                _story.Time = _calendar.Now;
+                RunAgendas();
+                Autosave?.Invoke(Export());
                 break;
         }
     }
 
-    /// <summary>Kills counted so far, or for a delivery the items in the bag, up to what the job asks.</summary>
-    private static int QuestProgress(Player player) => Guild.Quest(player.QuestId) is { IsDelivery: true } quest
-        ? Math.Min(player.Bag.GetValueOrDefault(ItemDef.Index(quest.Item)), quest.Count)
-        : player.QuestProgress;
+    /// <summary>What the appraiser pays for the materials and food in a player's bag.</summary>
+    private static int SaleValue(Player player) =>
+        player.Bag.Where(p => p.Value > 0 && ItemDef.All[p.Key].Sellable).Sum(p => p.Value * ItemDef.All[p.Key].Price);
+
+    private bool NearNpc(Player player, string id) => _world.Npcs.Any(n => n.Id == id &&
+        Vector3.Distance(n.Position with { Y = 0 }, player.State.Position with { Y = 0 }) < Guild.TalkRange + 1f);
+
+    /// <summary>Moves the calendar on, and runs the faction plans once an hour.</summary>
+    private void StepCalendar()
+    {
+        if (_calendar.Step() == 0)
+        {
+            return;
+        }
+
+        _story.Time = _calendar.Now;
+        if (_calendar.Now.Minute % 60 == 0)
+        {
+            RunAgendas();
+        }
+
+        if (_calendar.Now.Minute == GameTime.DayStartMinute)
+        {
+            Autosave?.Invoke(Export());
+        }
+    }
+
+    private void RunAgendas()
+    {
+        var player = _players.Values.OrderBy(p => p.Id).FirstOrDefault();
+        Story.RunAgendas(player is null ? new WorldOnly(_story) : new StoryActions(this, player));
+    }
+
+    /// <summary>The story as seen by one player on the server: their purse, bag and place, and the shared world.</summary>
+    private sealed class StoryActions(GameServer server, Player player) : IStoryActions
+    {
+        public WorldState World => server._story;
+
+        public int Rank => player.Rank == GuildRank.Adventurer ? 1 : 0;
+
+        public int Gold => player.Gold;
+
+        public int Level => player.Level;
+
+        public int SaleValue => GameServer.SaleValue(player);
+
+        public int ItemCount(string item) => ItemDef.TryIndex(item, out var index) ? player.Bag.GetValueOrDefault(index) : 0;
+
+        public int Attribute(string name) => Enum.TryParse<PlayerAttribute>(name, true, out var which) ? player.Attribute(which) : 0;
+
+        public bool Near(string role) => server.Near(player, role);
+
+        public void AddGold(int amount) => player.Gold = Math.Max(0, player.Gold + amount);
+
+        public void GiveItem(string item, int count)
+        {
+            if (ItemDef.TryIndex(item, out var index))
+            {
+                GameServer.AddItem(player, index, count);
+            }
+        }
+
+        public void TakeItem(string item, int count)
+        {
+            if (ItemDef.TryIndex(item, out var index))
+            {
+                GameServer.AddItem(player, index, -Math.Min(count, player.Bag.GetValueOrDefault(index)));
+            }
+        }
+
+        public void AddXp(int amount) => server.AwardXp(player.Id, amount);
+
+        public void RunAction(string action) => server.RunAction(player, action);
+    }
+
+    /// <summary>The story with no player in it: faction plans still run while nobody is connected.</summary>
+    private sealed class WorldOnly(WorldState world) : IStoryActions
+    {
+        public WorldState World => world;
+
+        public int Rank => 0;
+
+        public int Gold => 0;
+
+        public int Level => 1;
+
+        public int SaleValue => 0;
+
+        public int ItemCount(string item) => 0;
+
+        public int Attribute(string name) => 0;
+
+        public bool Near(string role) => false;
+
+        public void AddGold(int amount)
+        {
+        }
+
+        public void GiveItem(string item, int count)
+        {
+        }
+
+        public void TakeItem(string item, int count)
+        {
+        }
+
+        public void AddXp(int amount)
+        {
+        }
+
+        public void RunAction(string action)
+        {
+        }
+    }
 
     private bool Near(Player player, string role) => _world.Npcs.Any(n => n.Role == role &&
         Vector3.Distance(n.Position with { Y = 0 }, player.State.Position with { Y = 0 }) < Guild.TalkRange + 1f);
@@ -1768,16 +2080,14 @@ public sealed class GameServer : IEnemyEvents
         if (enemy.TrialOf >= 0)
         {
             killer.Rank = GuildRank.Adventurer;
+            _story.SetFlag("guild.registered");
             killer.Gold += 25;
             AwardXp(killer.Id, 60);
             _finishedTrials.Add(enemy);
             return;
         }
 
-        if (Guild.Quest(killer.QuestId) is { } quest && quest.Matches(enemy.Def.Id) && killer.QuestProgress < quest.Count)
-        {
-            killer.QuestProgress++;
-        }
+        Story.OnKill(_story, enemy.Def.Id);
 
         var winner = _players.TryGetValue(enemy.TaggedBy, out var tagged) ? tagged : killer;
         AwardXp(winner.Id, Progression.KillXp(enemy.Level, winner.Level, enemy.Def.Rare));
@@ -2813,6 +3123,12 @@ public sealed class GameServer : IEnemyEvents
     {
         foreach (var player in _players.Values)
         {
+            player.StoryChanged.UnionWith(_story.Changed);
+        }
+
+        _story.Changed.Clear();
+        foreach (var player in _players.Values)
+        {
             var origin = player.State.Position;
             var enemies = _enemies
                 .Where(e => Vector3.Distance(e.Position, origin) < InterestRange)
@@ -2852,8 +3168,9 @@ public sealed class GameServer : IEnemyEvents
                 Barrier = (short)player.Barrier,
                 Rank = player.Rank,
                 Gold = player.Gold,
-                QuestId = player.QuestId,
-                QuestProgress = (byte)QuestProgress(player),
+                Day = (ushort)_calendar.Now.Day,
+                Minute = (ushort)_calendar.Now.Minute,
+                Story = StoryMirror.Slice(_story, player.StoryChanged, ref player.StoryCursor),
                 Crystals = player.Crystals.ToArray(),
                 Others = _players.Values.Where(p => p.Id != player.Id).Take(6)
                     .Select(p => new RemotePlayer(p.Id, p.State.Position, p.State.Velocity, p.State.AttackAim, p.State.Attack, p.State.AttackTick, p.State.Weapon)).ToArray(),

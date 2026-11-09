@@ -1,0 +1,18 @@
+{
+  "npc": "pip",
+  "entries": [
+    {
+      "node": "default"
+    }
+  ],
+  "nodes": {
+    "default": {
+      "text": "Boars dig up the jungle edge again. And the cows are scared of anyone who runs at them, so walk slowly, please.",
+      "options": [
+        {
+          "text": "Goodbye"
+        }
+      ]
+    }
+  }
+}

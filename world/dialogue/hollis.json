@@ -1,0 +1,58 @@
+{
+  "npc": "hollis",
+  "entries": [
+    {
+      "when": {
+        "rank": {
+          "max": 0
+        }
+      },
+      "node": "closed"
+    },
+    {
+      "when": {
+        "saleValue": {
+          "min": 1
+        }
+      },
+      "node": "sell"
+    },
+    {
+      "node": "nothing"
+    }
+  ],
+  "nodes": {
+    "closed": {
+      "text": "I only trade with registered adventurers. Pass Rhea's trial first, then bring me what you hunt.",
+      "options": [
+        {
+          "text": "Goodbye"
+        }
+      ]
+    },
+    "nothing": {
+      "text": "Nothing to sell? Bring me gel, teeth, hides, horns, meat. I pay for all of it. Gear you find, you keep.",
+      "options": [
+        {
+          "text": "Goodbye"
+        }
+      ]
+    },
+    "sell": {
+      "text": "Let me have a look... good, good. I will take the materials and the meat. Your gear stays with you.",
+      "options": [
+        {
+          "text": "Sell materials and food ({saleValue} gold)",
+          "effects": [
+            {
+              "action": "sellLoot"
+            }
+          ]
+        },
+        {
+          "text": "Keep everything"
+        }
+      ]
+    }
+  }
+}

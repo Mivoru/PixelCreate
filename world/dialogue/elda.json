@@ -1,0 +1,18 @@
+{
+  "npc": "elda",
+  "entries": [
+    {
+      "node": "default"
+    }
+  ],
+  "nodes": {
+    "default": {
+      "text": "Another one who fell from the sky? You are the third this year. If you are hurt, eat something: a good steak mends more than any potion.",
+      "options": [
+        {
+          "text": "Thank you"
+        }
+      ]
+    }
+  }
+}

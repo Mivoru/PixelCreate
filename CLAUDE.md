@@ -154,6 +154,24 @@ Rules:
   slanted red crescents side by side, and Moonleaper's `superJump` crouches with swelling thighs, cracks the ground
   at take-off, flies as an arrow and lands as a strike (`Enemy.Landed`) or, on a miss, rolls (`EnemyAction.Roll`).
   `net-tests/WerewolfTests.cs`.
+- Story data (`Story.cs`, design in `design/stage-1.md`): quests in `world/quests.json`, what people say in
+  `world/dialogue/<npc id>.json` (every NPC but the chest has one; entries pick the opening node by condition),
+  faction plans in `world/agendas.json`, rumours in `world/rumors.json`, journal notes in `world/journal.json`.
+  Conditions and effects share one small JSON language (`Conditions.cs`, `Effects.cs`); server actions an effect may
+  name are listed in `Effect.Actions`. A dialogue choice sends `Command.Choose` with the option's place in
+  `Story.Options`; the server checks it again (near that NPC, node reachable, condition holds) and applies the effects.
+  Effects must read their JSON values while parsing: the documents are disposed after loading, and a lazy read once
+  crashed the server on the first choice. `StoryTests` run every choice once to catch that.
+- World state (`WorldState.cs`): flags, reputation, trust, NPC fates, memberships, quest states and agenda steps, one
+  per server. Clients get it as `StoryEntry` slices in snapshots (changed first, then a rotation, `StoryMirror`) and
+  keep a copy in `ClientPrediction.Story`; a key must be in `Story.Keys` (built from the data and `Story.CodeFlags`)
+  to reach the client.
+- Calendar (`Calendar.cs`): a game hour is 26 s, a day starts at six, `Command.Sleep` from eight in the evening
+  wakes the player at six the next morning. Faction plans run every game hour. Act I lasts 70 days.
+- Saves (`SaveGame.cs`): the server writes `%LOCALAPPDATA%/PixelCreate/saves/<slot>.json` each morning and on
+  `Command.Quit` (the client sends it when quitting or closing the window), keeping `<slot>.bak.json`. `PIXEL_SLOT`
+  picks the slot (default `main`), `PIXEL_SAVE` the folder; test mode neither loads nor saves. A death after
+  registering costs a tenth of the unsold crystals and is written down for the act III echoes.
 - Interiors live outside the map on platforms (the guild at x 420, the trial ground at x 480). Doors are portals.
 - Character models come from Blender (`anime_*`) and use `toon.gdshader`, which also bends hair and cloth.
 - Sound effects come from ElevenLabs: `python asset-pipeline/generate_sounds.py` (cached, keys stay outside the repo).

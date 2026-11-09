@@ -1,0 +1,18 @@
+{
+  "npc": "garrick",
+  "entries": [
+    {
+      "node": "default"
+    }
+  ],
+  "nodes": {
+    "default": {
+      "text": "The south road leads to Goblin Hollow. Do not go there before the Guild gives you its badge.",
+      "options": [
+        {
+          "text": "Understood"
+        }
+      ]
+    }
+  }
+}

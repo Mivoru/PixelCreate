@@ -46,6 +46,9 @@ public sealed class ClientPrediction
     public PlayerState State;
     public Snapshot? Latest { get; private set; }
 
+    /// <summary>The client's copy of the story state, built from the entries in snapshots.</summary>
+    public WorldState Story { get; } = new();
+
     /// <summary>The gear list as the server last described each place of it.</summary>
     public IReadOnlyCollection<GearEntry> Gear => _gear.Values;
 
@@ -80,6 +83,11 @@ public sealed class ClientPrediction
             if (Protocol.TryDecodeSnapshot(data, out var snapshot))
             {
                 Apply(snapshot);
+                Story.Time = new GameTime(snapshot.Day, snapshot.Minute);
+                foreach (var entry in snapshot.Story)
+                {
+                    StoryMirror.Apply(Story, entry);
+                }
             }
         }
 

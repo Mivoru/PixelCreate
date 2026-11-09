@@ -1,0 +1,18 @@
+{
+  "npc": "smith",
+  "entries": [
+    {
+      "node": "default"
+    }
+  ],
+  "nodes": {
+    "default": {
+      "text": "Slimes by the road again. Mind the ground when they jump: the mark shows where they land.",
+      "options": [
+        {
+          "text": "Goodbye"
+        }
+      ]
+    }
+  }
+}
