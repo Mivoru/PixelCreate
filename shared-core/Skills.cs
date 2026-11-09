@@ -37,6 +37,13 @@ public sealed record SkillDef(
 /// <summary>Skill rules shared by both sides.</summary>
 public static class Skills
 {
+    /// <summary>
+    /// A player carries at most this many skills ready to cast, in skill slots on Q, R and F; more
+    /// can be learned, but only the slotted ones are cast. Eight on the hotbar at once was too strong.
+    /// </summary>
+    public const int Slots = 3;
+    public const byte NoSkill = 0xFF;
+
     /// <summary>Each Intelligence point takes this share off every skill cooldown, up to the limit.</summary>
     public const float CooldownCutPerIntelligence = 0.01f;
     public const float MaxCooldownCut = 0.3f;

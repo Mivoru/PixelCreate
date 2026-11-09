@@ -426,8 +426,10 @@ public partial class Hud : Control
             }
         }
 
-        // Skills learned from books: drag one onto the hotbar to cast it with that key.
+        // Skills learned from books: drag one onto a skill slot (Q, R, F) to cast it with that key.
         Label("Skills", window.Position + new Vector2(34, 482), 18, Text, _bold);
+        const string hint = "Drag onto a skill slot (Q R F); right-click a slot to empty it. A newly slotted skill starts on its cooldown.";
+        Label(hint, window.Position + new Vector2(110, 482), 13, Muted);
         for (var i = 0; i < SkillDef.All.Count; i++)
         {
             var rect = new Rect2(window.Position + new Vector2(34 + i * (SlotSize + 9), 494), SlotSize, SlotSize);
@@ -679,6 +681,10 @@ public partial class Hud : Control
                     _commands.Enqueue((GearCommands.Toggle(piece.Place), 0));
                 }
             }
+            else if (click.ButtonIndex == MouseButton.Right && slot.Area == "skillslot")
+            {
+                _commands.Enqueue((Command.SlotSkill, (ushort)(Skills.NoSkill | slot.Index << 8)));
+            }
             else if (click.ButtonIndex == MouseButton.Right)
             {
                 Use(Read(slot));
@@ -746,12 +752,6 @@ public partial class Hud : Control
             return;
         }
 
-        if (Items.Hotbar[index] is { IsSkill: true } skill)
-        {
-            Cast(skill);
-            return;
-        }
-
         if (Items.Hotbar[index] is { IsGear: true } piece && !Items.IsWorn(piece))
         {
             _commands.Enqueue((GearCommands.Toggle(piece.Place), 0));
@@ -760,7 +760,22 @@ public partial class Hud : Control
         Items.SelectedHotbar = index;
     }
 
-    /// <summary>Casts a skill from the hotbar, unless it is still cooling down.</summary>
+    /// <summary>The skill in a skill slot, as the server last said, or null.</summary>
+    public Item? SkillInSlot(int slot) =>
+        Snapshot is { } s && slot < s.SkillSlots.Length && s.SkillSlots[slot] != Skills.NoSkill ? Items.Skill(s.SkillSlots[slot]) : null;
+
+    /// <summary>Q, R and F cast the skill in their slot.</summary>
+    public void CastSlot(int slot)
+    {
+        if (SkillInSlot(slot) is { } skill)
+        {
+            Cast(skill);
+        }
+    }
+
+    public const string SkillKeys = "QRF";
+
+    /// <summary>Casts a skill from its slot, unless it is still cooling down.</summary>
     private void Cast(Item skill)
     {
         if (SkillCooldown(skill.Index) > 0f)
@@ -832,6 +847,25 @@ public partial class Hud : Control
             return;
         }
 
+        // A skill slot takes a skill lifted from the character window or from another skill slot;
+        // the server keeps the slots, and starts a newly slotted skill on its cooldown.
+        if (slot.Area == "skillslot")
+        {
+            if (Items.Held is { IsSkill: true } skill)
+            {
+                _commands.Enqueue((Command.SlotSkill, (ushort)(skill.Index | slot.Index << 8)));
+                Items.Held = null;
+                Items.HeldShortcut = false;
+            }
+            else if (Items.Held is null && current is not null)
+            {
+                Items.Held = current;
+                Items.HeldShortcut = true;
+            }
+
+            return;
+        }
+
         // The potion bar holds shortcuts to potions only, the same way the hotbar does.
         if (slot.Area == "potion")
         {
@@ -860,7 +894,13 @@ public partial class Hud : Control
         // it vanishes when put down anywhere else.
         if (slot.Area == "hotbar")
         {
-            if (Items.Held is { } item)
+            if (Items.Held is { IsSkill: true })
+            {
+                // Skills live in the skill slots, not on the hotbar.
+                Items.Held = null;
+                Items.HeldShortcut = false;
+            }
+            else if (Items.Held is { } item)
             {
                 Items.PutOnHotbar(slot.Index, item);
                 Items.Held = null;
@@ -921,6 +961,7 @@ public partial class Hud : Control
         "hotbar" => Items.Hotbar[slot.Index],
         "potion" => Items.Potions[slot.Index],
         "skill" => Items.Skill(slot.Index),
+        "skillslot" => SkillInSlot(slot.Index),
         "chest" => slot.Index < Items.ChestContents().Count ? Items.ChestContents()[slot.Index].Item : null,
         _ => Items.Equipped[slot.Equip],
     };
@@ -1295,6 +1336,8 @@ public partial class Hud : Control
             Label((i + 1).ToString(), rect.Position + new Vector2(7, 18), 13, Muted, _bold);
         }
 
+        DrawSkillBar(left - 14, top);
+
         // Experience runs as a thin line above the hotbar, with the numbers on its right.
         var bar = new Rect2(left + 12, top - 30, width - 24, 6);
         Bar(bar, _shownXp, _shownXp, Accent, new Color("ffe29a"), false);
@@ -1302,6 +1345,20 @@ public partial class Hud : Control
         Label(label, new Vector2(bar.End.X - Width(label, 14, _bold), bar.Position.Y - 8), 14, Text, _bold, true);
         Label($"Level {Level}", new Vector2(bar.Position.X, bar.Position.Y - 8), 14, Accent, _bold, true);
         DrawPotionBar(left + width + 14, top);
+    }
+
+    /// <summary>The skill bar left of the hotbar: three skill slots on Q, R and F, the only skills that can be cast.</summary>
+    private void DrawSkillBar(float right, float top)
+    {
+        var width = Skills.Slots * (SlotSize + SlotGap) - SlotGap + 24;
+        var left = right - width;
+        Card(new Rect2(left, top - 12, width, SlotSize + 24), 18);
+        for (var i = 0; i < Skills.Slots; i++)
+        {
+            var rect = new Rect2(left + 12 + i * (SlotSize + SlotGap), top, SlotSize, SlotSize);
+            DrawSlot(rect, SkillInSlot(i), new SlotRef("skillslot", i));
+            Label(SkillKeys[i].ToString(), rect.Position + new Vector2(7, 18), 13, Muted, _bold);
+        }
     }
 
     /// <summary>The potion bar beside the hotbar: three slots, Z X C, dimmed while potions cool down.</summary>

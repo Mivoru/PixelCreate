@@ -270,6 +270,10 @@ public partial class GameClient : Node
             {
                 _hud.ToggleMastery();
             }
+            else if (key.Keycode is Key.Q or Key.R or Key.F && !_hud.DialogOpen && !_hud.WindowOpen)
+            {
+                _hud.CastSlot(Hud.SkillKeys.IndexOf(key.Keycode.ToString()[0]));
+            }
             else if (key.Keycode is Key.Z or Key.X or Key.C && !_hud.DialogOpen)
             {
                 _hud.DrinkPotion(key.Keycode == Key.Z ? 0 : key.Keycode == Key.X ? 1 : 2);

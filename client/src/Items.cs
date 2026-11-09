@@ -170,7 +170,7 @@ public sealed class Inventory
     /// <summary>A learned skill as an item, or null if it is not learned.</summary>
     public Item? Skill(int index) => _skills.GetValueOrDefault(index);
 
-    /// <summary>Takes in the learned skills from a snapshot; each new one goes to the first empty hotbar slot.</summary>
+    /// <summary>Takes in the learned skills from a snapshot. They are cast from the skill slots, which the server keeps, not the hotbar.</summary>
     public void ApplySkills(uint known)
     {
         for (var i = 0; i < SkillDef.All.Count; i++)
@@ -180,13 +180,7 @@ public sealed class Inventory
                 continue;
             }
 
-            var skill = Item.FromSkill(i);
-            _skills[i] = skill;
-            // The first slot stays for the weapon a player starts with.
-            if (Array.IndexOf(Hotbar, null, 1) is var free and >= 1)
-            {
-                Hotbar[free] = skill;
-            }
+            _skills[i] = Item.FromSkill(i);
         }
     }
 

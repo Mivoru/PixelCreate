@@ -37,6 +37,12 @@ public enum Command : byte
 
     /// <summary>Takes a node of a weapon mastery tree, named by its place in <see cref="Mastery.Nodes"/>.</summary>
     TakeMastery = 208,
+
+    /// <summary>
+    /// Puts a learned skill in one of the <see cref="Skills.Slots"/> skill slots: the low byte names the
+    /// skill (<see cref="Skills.NoSkill"/> empties the slot), the high byte the slot.
+    /// </summary>
+    SlotSkill = 209,
 }
 
 /// <summary>A newcomer must beat the guild examiner to become an adventurer.</summary>

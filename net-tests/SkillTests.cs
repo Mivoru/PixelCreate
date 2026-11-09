@@ -45,6 +45,30 @@ public class SkillTests
     }
 
     [Fact]
+    public void OnlySlottedSkills_CanBeCast()
+    {
+        // Four skills learned: three fill the slots, the fourth waits until it is slotted, and then
+        // starts on its cooldown.
+        var (server, client, network) = Start();
+        var learned = SkillDef.All.Take(Skills.Slots + 1).Select(s => Learn(server, client, network, s.Id)).ToArray();
+        Assert.Equal(learned.Take(Skills.Slots).Select(s => (byte)s), client.Latest!.SkillSlots);
+
+        var fourth = learned[^1];
+        Run(server, client, network, 12, Command.CastSkill, fourth);
+        Assert.Equal(0, server.Stats.SkillsCast);
+
+        Run(server, client, network, 12, Command.SlotSkill, (ushort)(fourth | 1 << 8));
+        Assert.Equal((byte)fourth, client.Latest!.SkillSlots[1]);
+        Run(server, client, network, 12, Command.CastSkill, fourth);
+        Assert.Equal(0, server.Stats.SkillsCast);
+
+        var wait = Skills.Cooldown(SkillDef.All[fourth], 0);
+        Run(server, client, network, wait);
+        Run(server, client, network, 12, Command.CastSkill, fourth);
+        Assert.Equal(1, server.Stats.SkillsCast);
+    }
+
+    [Fact]
     public void Skill_FliesThroughTheCrosshairOfTheCastingInput()
     {
         // The foe stands to the side; the cast carries a fine aim at it, while the body faces ahead.

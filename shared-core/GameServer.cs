@@ -236,6 +236,9 @@ public sealed class GameServer : IEnemyEvents
         public readonly HashSet<int> Skills = new();
         public readonly uint[] SkillReady = new uint[SkillDef.All.Count];
 
+        /// <summary>The skill in each skill slot, or <see cref="Skills.NoSkill"/>. Only slotted skills can be cast.</summary>
+        public readonly byte[] SkillSlots = Enumerable.Repeat(Core.Skills.NoSkill, Core.Skills.Slots).ToArray();
+
         /// <summary>Weapon mastery by place in <see cref="Mastery.Weapons"/>: level and experience toward the next; and the nodes taken.</summary>
         public readonly byte[] MasteryLevels = new byte[Mastery.Weapons.Length];
         public readonly int[] MasteryXp = new int[Mastery.Weapons.Length];
@@ -627,6 +630,7 @@ public sealed class GameServer : IEnemyEvents
                 for (var skill = 0; skill < SkillDef.All.Count; skill++)
                 {
                     player.Skills.Add(skill);
+                    FillSkillSlot(player, skill);
                 }
 
                 AddItem(player, SkillDef.All[0].Book, 1);
@@ -820,7 +824,54 @@ public sealed class GameServer : IEnemyEvents
         {
             AddItem(player, item, -1);
             Stats.SkillsLearned++;
+            FillSkillSlot(player, skill);
         }
+    }
+
+    /// <summary>A newly learned skill takes the first empty skill slot, if there is one.</summary>
+    private static void FillSkillSlot(Player player, int skill)
+    {
+        var free = Array.IndexOf(player.SkillSlots, Skills.NoSkill);
+        if (free >= 0)
+        {
+            player.SkillSlots[free] = (byte)skill;
+        }
+    }
+
+    /// <summary>
+    /// Puts a learned skill in a slot (moving it if it sat in another), or empties the slot. A skill
+    /// put in starts on its cooldown, so swapping cannot stand in for more slots.
+    /// </summary>
+    private void SlotSkill(Player player, ushort arg)
+    {
+        var skill = (byte)(arg & 0xFF);
+        var slot = arg >> 8;
+        if (slot >= Skills.Slots || (skill != Skills.NoSkill && (skill >= SkillDef.All.Count || !player.Skills.Contains(skill))))
+        {
+            return;
+        }
+
+        if (skill != Skills.NoSkill)
+        {
+            if (player.SkillSlots[slot] == skill)
+            {
+                return;
+            }
+
+            var before = Array.IndexOf(player.SkillSlots, skill);
+            if (before >= 0)
+            {
+                // Moving a skill between slots keeps its cooldown as it is.
+                player.SkillSlots[before] = player.SkillSlots[slot];
+                player.SkillSlots[slot] = skill;
+                return;
+            }
+
+            var cooldown = Tick + (uint)Skills.Cooldown(SkillDef.All[skill], player.Attribute(PlayerAttribute.Intelligence));
+            player.SkillReady[skill] = Math.Max(player.SkillReady[skill], cooldown);
+        }
+
+        player.SkillSlots[slot] = skill;
     }
 
     /// <summary>
@@ -830,7 +881,7 @@ public sealed class GameServer : IEnemyEvents
     private void CastSkill(Player player, ushort index)
     {
         var skill = SkillDef.All[index];
-        if (!player.Skills.Contains(index) || Tick < player.SkillReady[index] || player.State.Stamina < skill.Stamina || player.State.Health <= 0)
+        if (!player.Skills.Contains(index) || Array.IndexOf(player.SkillSlots, (byte)index) < 0 || Tick < player.SkillReady[index] || player.State.Stamina < skill.Stamina || player.State.Health <= 0)
         {
             return;
         }
@@ -981,6 +1032,12 @@ public sealed class GameServer : IEnemyEvents
         if (command == Command.CastSkill && arg < SkillDef.All.Count)
         {
             CastSkill(player, arg);
+            return;
+        }
+
+        if (command == Command.SlotSkill)
+        {
+            SlotSkill(player, arg);
             return;
         }
 
@@ -2782,6 +2839,7 @@ public sealed class GameServer : IEnemyEvents
                 MasteryLevels = (byte[])player.MasteryLevels.Clone(),
                 MasteryXp = (int[])player.MasteryXp.Clone(),
                 MasteryTaken = player.MasteryTaken,
+                SkillSlots = (byte[])player.SkillSlots.Clone(),
                 SkillCooldowns = player.SkillReady.Select(ready => (byte)Math.Clamp((ready > Tick ? ready - Tick : 0) / 6, 0, 255)).ToArray(),
                 UnspentPoints = (byte)Math.Clamp(player.UnspentPoints, 0, 255),
                 Xp = player.Xp,

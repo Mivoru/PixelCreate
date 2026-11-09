@@ -65,6 +65,9 @@ public sealed class Snapshot
     public uint KnownSkills;
     public byte[] SkillCooldowns = Array.Empty<byte>();
 
+    /// <summary>The skill in each skill slot (<see cref="Skills.NoSkill"/> for an empty one). Only these can be cast.</summary>
+    public byte[] SkillSlots = Enumerable.Repeat(Skills.NoSkill, Skills.Slots).ToArray();
+
     /// <summary>Weapon mastery, by place in <see cref="Mastery.Weapons"/>: level and experience; and the tree nodes taken.</summary>
     public byte[] MasteryLevels = new byte[Mastery.Weapons.Length];
     public int[] MasteryXp = new int[Mastery.Weapons.Length];
@@ -195,6 +198,7 @@ public static class Protocol
         writer.Write(snapshot.KnownSkills);
         writer.Write((byte)snapshot.SkillCooldowns.Length);
         writer.Write(snapshot.SkillCooldowns);
+        writer.Write(snapshot.SkillSlots, 0, Skills.Slots);
         writer.Write(snapshot.MasteryLevels, 0, Mastery.Weapons.Length);
         foreach (var xp in snapshot.MasteryXp)
         {
@@ -322,6 +326,7 @@ public static class Protocol
         snapshot.UnspentPoints = reader.ReadByte();
         snapshot.KnownSkills = reader.ReadUInt32();
         snapshot.SkillCooldowns = reader.ReadBytes(reader.ReadByte());
+        snapshot.SkillSlots = reader.ReadBytes(Skills.Slots);
         snapshot.MasteryLevels = reader.ReadBytes(Mastery.Weapons.Length);
         snapshot.MasteryXp = new int[Mastery.Weapons.Length];
         for (var i = 0; i < snapshot.MasteryXp.Length; i++)

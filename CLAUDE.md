@@ -45,8 +45,12 @@ Rules:
   every frame otherwise, and that flood of warnings froze the client once.
 - Skills (`world/skills.json`, `Skills.cs`): each reuses an enemy ability's effect turned on enemies (fireball, air
   slash, earth crack, summoned spears, fang slash). Enemies listed as `teachers` drop `book_<skill>` items (rares at
-  `rareBookChance`); reading one (`Command.UseItem`) teaches the skill. A learned skill goes on the hotbar (slot 1 stays
-  for the weapon) and casts with `Command.CastSkill` along the latest aim, for stamina, with a cooldown cut by
+  `rareBookChance`); reading one (`Command.UseItem`) teaches the skill. Only `Skills.Slots` (3) skills can be cast: the
+  server keeps `Player.SkillSlots` (in `Snapshot.SkillSlots`), a learned skill fills the first empty one, and
+  `Command.SlotSkill` (low byte skill or `Skills.NoSkill`, high byte slot) changes them; a newly slotted skill starts on
+  its cooldown, so swapping cannot stand in for more slots. The skill bar left of the hotbar casts them with Q, R and F;
+  skills are dragged onto it from the character window (K) and never sit on the hotbar. A slotted skill casts with
+  `Command.CastSkill` along the latest aim, for stamina, with a cooldown cut by
   Intelligence. Skill damage scales with level and Intelligence, not weapon power. Test mode knows every skill.
   `Command.UseItem` (arg = item index) replaced the eat range for the interface, so there is no 64-item limit there.
 - Weapon mastery (`world/mastery.json`, `Mastery.cs`, window on J): kills earn the weapon kind in hand mastery
