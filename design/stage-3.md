@@ -14,8 +14,8 @@ Repliky jsou anglicky (texty ve hře), poznámky česky. Repliky jsou první ver
 |---|---|---|---|---|
 | 1 | Úvodní obrázky | — | — | 2D pixel art obrázky, jméno, úprava vzhledu |
 | 2 | Pád | Mirror Lake (70, 132) | den 1, 9:00 | dopad do mělčiny, vybrodit, první volba tónu, síť |
-| 3 | Klec | tábor lovců u cesty (asi 80, 80) | den 1, 19:00 | rozhovory v kleci, prohlédnout mříže |
-| 4 | Přepadení | totéž | den 1, 21:00 | goblini, Haruto zemře, Rusty Dagger, první boj |
+| 3 | Klec | tábor lovců u jezera (70, 101) | den 1, 19:00 | rozhovory v kleci, prohlédnout mříže, vůz vyráží k East Watch |
+| 4 | Přepadení | cesta u Old Ruins (71.5, 72) | den 1, 21:00 | kmen přes cestu, goblini z ruin, Haruto zemře, dřevěný meč po Hanne, první boj |
 | 5 | Noční cesta | cesta na západ k Mill Hill | den 1, noc | Nell jde s hráčem, slimáci, těžký útok, uhýbání, probuzení Marku |
 | 6 | Pip | pole u Mill Hill (34, 8) | noc | chůze kolem zvířat, druhá volba tónu |
 | 7 | Elda | pekárna, Hearthmere | před svítáním | jídlo léčí, spánek (stmívačka do rána) |
@@ -26,6 +26,13 @@ Repliky jsou anglicky (texty ve hře), poznámky česky. Repliky jsou první ver
 
 Souřadnice jsou z dnešní zóny (oblasti `Mirror Lake`, `Old Ruins`, `Mill Hill`, `Meadow Village`).
 Přesná místa se vyberou při stavbě: rovná zem, mimo tábory nepřátel, kontrola sklonu před umístěním.
+
+**Pravidla scén (rozhodnuto při hraní 2026-11-09):**
+- Rozhovor začne, až hráč a mluvčí stojí u sebe (`SceneData.SpeakRange`, 4,5 m). Do té doby se hráč
+  volně hýbe a cíl v HUDu říká „Go to <jméno>". Kdo jde za hráčem (Nell) nebo má `approach`, dojde sám.
+  Výkřiky (`bark`) se nesou na dálku.
+- Hráč, kterého scéna drží na místě (klec, rozhovor), není pro nepřátele cíl.
+- Cesta vozem se neukazuje: stmívačka v táboře, rozednění na cestě u ruin.
 
 ---
 
@@ -98,8 +105,10 @@ Haruto se vypotácí ven, goblin ho probodne. Haruto se rozpadne ve světlo, kte
 k severovýchodu (k jezeru).
 > **Nell:** He— he's gone. Where did he go?
 
-Mrtvý lovec u klece: **Rusty Dagger** (výzva k sebrání). **První boj:** dva goblini
-(`goblin_skirmisher`). Nápověda: lehký útok. Goblini mají nové železné zbraně: kamera se na chvíli
+Vůz stojí na cestě u Old Ruins: přes cestu leží podťatý kmen. Hanne a Corb ho jdou odklidit a padnou
+jako první. Po Hanne zůstane **Wooden Sword** (zbraň sebraná do prázdných rukou jde rovnou do ruky).
+**První boj:** dva goblini (`goblin_skirmisher`, poloviční zdraví). Kdo padne, probudí se u klece
+(`checkpoint` scény), dokud není vázaný na Anchor Stone. Nápověda: lehký útok. Goblini mají nové železné zbraně: kamera se na chvíli
 zastaví na čepeli (hráč si to zapamatuje).
 
 > **Vosk:** *(na koni, ve tmě)* Not worth dying for! Fall back! Fall back!

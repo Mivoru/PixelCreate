@@ -1034,6 +1034,49 @@ def cart():
     blob("hay_load", (-0.1, 0, 1.3), 0.75, "hay", 6, 0.6, 2)
 
 
+def cage_frame(broken):
+    """A finder's cage wagon: a low bed on small wheels, posts and bars of rough wood, a plank roof."""
+    box("bed", (0, 0, 0.12), (3.0, 2.0, 0.16), "wood_dark")
+    for x in (-1.0, 1.0):
+        for y in (-1.06, 1.06):
+            loft("wheel", [(-0.06, 0.42, 0.42), (0.06, 0.42, 0.42)], "wood_dark", 12, (0, 0, 0))
+    wheels = [o for o in bpy.context.collection.objects if o.name.startswith("wheel")]
+    for index, obj in enumerate(wheels):
+        obj.rotation_euler = (math.pi / 2, 0, 0)
+        obj.location = (-1.0 if index % 2 == 0 else 1.0, -1.06 if index < 2 else 1.06, 0.3)
+    for x in (-1.45, 1.45):
+        for y in (-0.95, 0.95):
+            timber("post", (x, y, 0.2), (x, y, 2.1), 0.07, "wood_dark")
+    rng = random.Random(311)
+    # Bars on all four sides; the broken cage has lost two bars and has one bent out at the front.
+    for i in range(9):
+        x = -1.2 + i * 0.3
+        for y in (-0.95, 0.95):
+            if broken and y < 0 and i in (4, 5):
+                continue
+            lean = 0.25 if broken and y < 0 and i == 3 else 0.0
+            timber("bar", (x, y, 0.2), (x + rng.uniform(-0.02, 0.02), y - lean, 2.05), 0.032, "wood")
+    for i in range(6):
+        y = -0.75 + i * 0.3
+        for x in (-1.45, 1.45):
+            timber("bar", (x, y, 0.2), (x, y + rng.uniform(-0.02, 0.02), 2.05), 0.032, "wood")
+    for x in (-1.45, 1.45):
+        timber("rail", (x, -0.95, 1.2), (x, 0.95, 1.2), 0.045, "wood_dark")
+    for y in (-0.95, 0.95):
+        timber("rail", (-1.45, y, 1.2), (1.45, y, 1.2), 0.045, "wood_dark")
+    box("roof", (0, 0, 2.15), (3.2, 2.2, 0.1), "wood")
+    timber("shaft", (1.5, -0.3, 0.3), (2.9, -0.3, 0.45), 0.07)
+    timber("shaft", (1.5, 0.3, 0.3), (2.9, 0.3, 0.45), 0.07)
+
+
+def cage_cart():
+    cage_frame(False)
+
+
+def cage_cart_broken():
+    cage_frame(True)
+
+
 def bench():
     box("seat", (0, 0, 0.5), (1.9, 0.5, 0.1), "wood")
     for x in (-0.75, 0.75):
@@ -1867,6 +1910,8 @@ MODELS = {
     "anime_hair_bram": anime_hair_bram,
     "anime_hair_tess": anime_hair_tess,
     "anime_beard": anime_beard,
+    "cage_cart": cage_cart,
+    "cage_cart_broken": cage_cart_broken,
     "anime_hair_undercut": anime_hair_undercut,
     "anime_hair_topknot": anime_hair_topknot,
     "anime_hair_swept": anime_hair_swept,

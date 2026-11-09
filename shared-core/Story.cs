@@ -88,7 +88,10 @@ public static class Story
     private static readonly JsonDocumentOptions JsonOptions = new() { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true };
 
     /// <summary>Flags set by code rather than by data. They must be known to the registry like any other.</summary>
-    public static readonly string[] CodeFlags = { "guild.registered" };
+    public static readonly string[] CodeFlags =
+    {
+        "guild.registered", "prologue.new", "look.chosen", "hud.mark", "trial.round2", "trial.round3",
+    };
 
     public static IReadOnlyList<StoryQuest> Quests { get; }
 

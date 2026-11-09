@@ -49,7 +49,11 @@ public sealed class HeightField
 }
 
 /// <param name="Slope">How much a long piece such as a fence rises per metre along its own x axis, so it follows the ground.</param>
-public readonly record struct PlacedProp(string Model, Vector3 Position, float Scale, float Yaw, float Slope = 0f);
+/// <param name="Flag">Shown only once this story flag is set; <paramref name="Unless"/> hides it once that flag is set.</param>
+public readonly record struct PlacedProp(string Model, Vector3 Position, float Scale, float Yaw, float Slope = 0f, string? Flag = null, string? Unless = null)
+{
+    public bool Conditional => Flag is not null || Unless is not null;
+}
 
 /// <summary>
 /// A part of the world, built from a hand-written file in world/zones. The layout is authored;
@@ -78,7 +82,9 @@ public sealed class Zone
 
     private sealed record PathData(float Width, float[][] Points);
 
-    private sealed record PropData(string Model, float X, float Z, float Yaw = 0f);
+    /// <param name="Flag">Shown only once this story flag is set.</param>
+    /// <param name="Unless">Hidden once this story flag is set.</param>
+    private sealed record PropData(string Model, float X, float Z, float Yaw = 0f, string? Flag = null, string? Unless = null);
 
     /// <summary>Blob shapes the area like a wood instead of a rectangle; Clusters above 0 gathers things into groups.</summary>
     private sealed record ScatterData(
@@ -116,6 +122,9 @@ public sealed class Zone
     {
         "twigs", "berry_bush", "tall_bush", "reeds", "grass_tuft", "field", "pier", "fern", "bridge", "bridge_stone",
         "guild_interior", "trial_arena", "flowers", "mushroom", "bush",
+
+        // The finders' cage: a scene keeps the player in it, and it must not trap anyone after.
+        "cage_cart", "cage_cart_broken",
     };
 
     /// <summary>One collision box of a model, around its origin in its own axes: x, z and the top.</summary>
@@ -200,7 +209,7 @@ public sealed class Zone
         {
             var position = new Vector3(prop.X, Settle(ground, prop.Model, prop.X, prop.Z, prop.Yaw), prop.Z);
             var (height, slope) = IsRun(prop.Model) ? Lean(ground, prop.Model, prop.X, prop.Z, prop.Yaw) : (position.Y, 0f);
-            props.Add(new PlacedProp(prop.Model, position with { Y = height }, 1f, prop.Yaw, slope));
+            props.Add(new PlacedProp(prop.Model, position with { Y = height }, 1f, prop.Yaw, slope, prop.Flag, prop.Unless));
         }
 
         Bridges = platforms.Where(p => p.MaxX < data.Size / 2).ToArray();
@@ -235,6 +244,7 @@ public sealed class Zone
             Platforms = platforms,
             TrialGround = trial,
             Portals = (data.Portals ?? Array.Empty<PortalData>()).Select(p => new Portal(Place(p.X, p.Z), Place(p.ToX, p.ToZ))).ToArray(),
+            Roads = RoadCourses.ToArray(),
             Npcs = (data.Npcs ?? Array.Empty<NpcData>()).Select(n => new Npc(n.Id, n.Name, n.Role, Place(n.X, n.Z), n.Yaw)).ToArray(),
         };
         Waterfall = data.Waterfall is { } w ? new Vector3(w[0], terrain.At(w[0], w[1]), w[1]) : null;

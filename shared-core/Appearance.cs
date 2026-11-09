@@ -94,6 +94,9 @@ public static class Appearance
     /// <summary>The argument of a <see cref="Command.SetAppearance"/>: the field in the high byte, the choice in the low.</summary>
     public static ushort Arg(AppearanceField field, int value) => (ushort)(((int)field << 8) | (value & 0xff));
 
+    /// <summary>The argument that confirms the look as it stands (the creator's "This is me").</summary>
+    public const ushort Confirm = 0xff00;
+
     private static AppearanceOptions Load()
     {
         using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("appearance")!;

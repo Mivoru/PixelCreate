@@ -258,10 +258,24 @@ public partial class Hud : Control
 
     public bool DialogOpen => _dialogName.Length > 0;
 
+    /// <summary>False in the prologue until the first monster falls: levels, experience and skills stay hidden.</summary>
+    public bool MarkAwake { get; set; } = true;
+
+    /// <summary>How black the screen is, from 0 to 1, for a scene's fades.</summary>
+    public float Fade { get; set; }
+
+    /// <summary>A scene's picture over everything (the intro), and the words under it.</summary>
+    public Texture2D? Slide { get; set; }
+    public bool SlideShown { get; set; }
+    public string SlideCaption { get; set; } = "";
+
     /// <summary>The speaker's face, rendered live by the game; shown while <see cref="PortraitShown"/> is set.</summary>
     public Texture2D? Portrait { get; set; }
 
     public bool PortraitShown { get; set; }
+
+    /// <summary>Set while the dialogue box shows a scene's line or talk, so the scene can close it.</summary>
+    public bool SceneDialog { get; set; }
 
     /// <summary>The id of the NPC speaking, or empty for lines without a person behind them.</summary>
     public string Speaker { get; set; } = "";
@@ -291,6 +305,7 @@ public partial class Hud : Control
         _dialogName = "";
         Speaker = "";
         DialogFace = null;
+        SceneDialog = false;
         DialogRole = "";
         if (!WindowOpen && Camera is not null)
         {
@@ -367,6 +382,14 @@ public partial class Hud : Control
         Label("This is me", _creatorDone.Position + new Vector2(50, 30), 18, Ink, _bold);
     }
 
+    /// <summary>Confirms the look, as the This is me button does.</summary>
+    public void ConfirmLook()
+    {
+        _commands.Enqueue((Command.SetAppearance, Appearance.Confirm));
+        CreatorOpen = false;
+        UpdateMouse();
+    }
+
     /// <summary>Picks every part of the look at random, as the Random button does.</summary>
     public void RandomLook()
     {
@@ -408,7 +431,7 @@ public partial class Hud : Control
         if (_creatorDone.HasPoint(at))
         {
             // Confirming without a change still tells the server the look is chosen.
-            _commands.Enqueue((Command.SetAppearance, Appearance.Arg(AppearanceField.Face, look[(int)AppearanceField.Face])));
+            _commands.Enqueue((Command.SetAppearance, Appearance.Confirm));
             CreatorOpen = false;
             UpdateMouse();
             return true;
@@ -715,11 +738,14 @@ public partial class Hud : Control
 
         var option = _dialogOptions[index];
         var role = DialogRole;
+        var scene = SceneDialog;
         CloseDialog();
         if (option.Then is { } then)
         {
+            // The next node of the same talk: still the scene's, if it was.
             DialogRole = role;
             then();
+            SceneDialog = scene;
         }
 
         return (option.Command, option.Arg);
@@ -819,6 +845,7 @@ public partial class Hud : Control
 
         DrawDraw();
         DrawMessages();
+        DrawScene();
         DrawDialog();
         if (InventoryOpen)
         {
@@ -1082,6 +1109,14 @@ public partial class Hud : Control
 
     private void Use(Item? item)
     {
+        if (item is { Index: >= 0 } paper && ItemDef.All[paper.Index].Kind == "document" && Items.Count(paper) > 0)
+        {
+            // A document is read, not used up: its words open in the dialogue box.
+            var def = ItemDef.All[paper.Index];
+            ShowDialog(def.Name, def.Description, ("Put it away", Command.None));
+            return;
+        }
+
         if (item is { Index: >= 0 } book && book.IsSkillBook && Items.Count(book) > 0)
         {
             _commands.Enqueue((Command.UseItem, (ushort)book.Index));
@@ -1377,8 +1412,11 @@ public partial class Hud : Control
         Label("Wanderer", card.Position + new Vector2(22, 40), 24, Text, _bold);
         var level = $"Lv {Level}";
         var levelWidth = Width(level, 15, _bold) + 20;
-        Pill(new Rect2(card.End.X - levelWidth - 18, card.Position.Y + 18, levelWidth, 26), Accent);
-        Label(level, new Vector2(card.End.X - levelWidth - 8, card.Position.Y + 37), 15, Ink, _bold);
+        if (MarkAwake)
+        {
+            Pill(new Rect2(card.End.X - levelWidth - 18, card.Position.Y + 18, levelWidth, 26), Accent);
+            Label(level, new Vector2(card.End.X - levelWidth - 8, card.Position.Y + 37), 15, Ink, _bold);
+        }
 
         // Health is the wide bar with its numbers inside; stamina is the thin bar under it.
         var maxHealth = Snapshot?.MaxHealth ?? Tuning.PlayerHealth;
@@ -1519,6 +1557,32 @@ public partial class Hud : Control
     /// The conversation window: a name plate with the speaker's title, text that types itself out
     /// word by word, and choices as buttons that answer to the mouse and to the number keys.
     /// </summary>
+    /// <summary>The black of a fade, and a slide with its caption, under the dialogue box.</summary>
+    private void DrawScene()
+    {
+        if (Fade > 0.001f && !SlideShown)
+        {
+            DrawRect(new Rect2(Vector2.Zero, Size), new Color(0, 0, 0, Mathf.Clamp(Fade, 0f, 1f)));
+        }
+
+        if (SlideShown)
+        {
+            DrawRect(new Rect2(Vector2.Zero, Size), new Color("0b0a12"));
+            if (Slide is not null)
+            {
+                // Whole steps only, so the pixels stay square.
+                var scale = Mathf.Max(1f, Mathf.Floor(Mathf.Min(Size.X / Slide.GetWidth(), (Size.Y - 120f) / Slide.GetHeight())));
+                var size = new Vector2(Slide.GetWidth(), Slide.GetHeight()) * scale;
+                DrawTextureRect(Slide, new Rect2((Size - size) / 2f - new Vector2(0, 30), size), false);
+            }
+
+            if (SlideCaption.Length > 0)
+            {
+                Label(SlideCaption, new Vector2((Size.X - Width(SlideCaption, 24, _bold)) / 2f, Size.Y - 70), 24, Text, _bold);
+            }
+        }
+    }
+
     private void DrawDialog()
     {
         _optionRects.Clear();
@@ -1577,7 +1641,8 @@ public partial class Hud : Control
             var appear = ready ? 1f : 0.35f;
             Rounded(rect, 12, new Color(1, 1, 1, hover ? 0.1f : 0.04f), hover ? AccentDim : new Color(1, 1, 1, 0.07f));
             Keycap((i + 1).ToString(), rect.Position + new Vector2(10, 7), 14);
-            var color = _dialogOptions[i].Command == Command.None && _dialogOptions[i].Then is null && !_dialogOptions[i].Plain ? Muted : Text;
+            var option = _dialogOptions[i];
+            var color = option.Muted || (option.Command == Command.None && option.Then is null && !option.Plain) ? Muted : Text;
             Label(_dialogOptions[i].Label, rect.Position + new Vector2(52, 27), 19, color with { A = appear }, hover ? _bold : _font);
             if (hover)
             {
@@ -1636,6 +1701,13 @@ public partial class Hud : Control
             Label((i + 1).ToString(), rect.Position + new Vector2(7, 18), 13, Muted, _bold);
         }
 
+        DrawPotionBar(left + width + 14, top);
+        if (!MarkAwake)
+        {
+            // Before the Mark wakes, the hero knows nothing of levels and skills.
+            return;
+        }
+
         DrawSkillBar(left - 14, top);
 
         // Experience runs as a thin line above the hotbar, with the numbers on its right.
@@ -1644,7 +1716,6 @@ public partial class Hud : Control
         var label = $"{Snapshot?.Xp ?? 0} / {Snapshot?.XpToNext ?? 0} XP";
         Label(label, new Vector2(bar.End.X - Width(label, 14, _bold), bar.Position.Y - 8), 14, Text, _bold, true);
         Label($"Level {Level}", new Vector2(bar.Position.X, bar.Position.Y - 8), 14, Accent, _bold, true);
-        DrawPotionBar(left + width + 14, top);
     }
 
     /// <summary>The skill bar left of the hotbar: three skill slots on Q, R and F, the only skills that can be cast.</summary>
@@ -2087,4 +2158,4 @@ public partial class Hud : Control
 /// One option in a conversation: its text, the command it sends (with an argument), and what to show
 /// next. A plain option only closes the conversation and is drawn like any other.
 /// </summary>
-public sealed record DialogChoice(string Label, Command Command, ushort Arg = 0, System.Action? Then = null, bool Plain = false);
+public sealed record DialogChoice(string Label, Command Command, ushort Arg = 0, System.Action? Then = null, bool Plain = false, bool Muted = false);

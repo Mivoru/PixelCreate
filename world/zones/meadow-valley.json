@@ -7,7 +7,7 @@
   "regions": [
     { "name": "Adventurers Guild", "x": 420, "z": 0, "radius": 24 },
     { "name": "Guild Trial Ground", "x": 480, "z": 0, "radius": 30 },
-    { "name": "Meadow Village", "x": 2, "z": 4, "radius": 34 },
+    { "name": "Hearthmere", "x": 2, "z": 4, "radius": 34 },
     { "name": "Emerald Jungle", "x": -96, "z": -112, "radius": 50 },
     { "name": "Silver Falls", "x": -24, "z": 118, "radius": 28 },
     { "name": "Slime Fields", "x": -8, "z": -46, "radius": 52 },
@@ -119,6 +119,7 @@
     { "x": 480, "z": 18.5, "toX": 420, "toZ": 6.5 }
   ],
   "npcs": [
+    {"id": "anchor", "name": "Anchor Stone", "role": "anchor_stone", "x": 428.2, "z": 4.6, "yaw": 0},
     { "id": "mira", "name": "Mira", "role": "receptionist", "x": 420, "z": -6.6, "yaw": 3.14159 },
     { "id": "board", "name": "Quest Board", "role": "quest_board", "x": 410.4, "z": 2, "yaw": 1.5708 },
     { "id": "elder", "name": "Old Bram", "role": "villager", "x": -2, "z": 11, "yaw": 2.6 },
@@ -204,7 +205,7 @@
     { "x": 84, "z": -115, "radius": 7, "count": 6, "respawnTicks": 1800, "hunts": true, "types": ["goblin_brute", "goblin_skirmisher", "goblin_sharpshooter"] },
     { "x": 101, "z": -95, "radius": 3, "count": 1, "respawnTicks": 10800, "rare": true, "types": ["goblin_shaman"] },
     { "x": -96, "z": 46, "radius": 20, "count": 7, "minLevel": 2, "maxLevel": 4, "respawnTicks": 1200 },
-    { "x": 96, "z": 62, "radius": 15, "count": 5, "respawnTicks": 1500, "hunts": true, "types": ["goblin_rapid_archer", "goblin_skirmisher"] },
+    { "x": 104, "z": 57, "radius": 12, "count": 5, "respawnTicks": 1500, "hunts": true, "types": ["goblin_rapid_archer", "goblin_skirmisher"] },
     { "x": 196, "z": 184, "radius": 8, "count": 4, "respawnTicks": 1800, "types": ["wolf"] },
     { "x": 218, "z": 212, "radius": 7, "count": 3, "respawnTicks": 1800, "types": ["wolf"] },
     { "x": 176, "z": 172, "radius": 6, "count": 3, "respawnTicks": 1800, "types": ["wolf"] },
@@ -221,7 +222,7 @@
     { "x": 225.0, "z": -126.0, "radius": 2, "count": 1, "respawnTicks": 9000, "types": ["orc_spearcaller"] },
     { "x": 200.0, "z": -136.0, "radius": 2, "count": 1, "respawnTicks": 9000, "types": ["orc_stormaxe"] },
     { "x": 60, "z": -88, "radius": 2.5, "count": 3, "respawnTicks": 2400, "hunts": true, "types": ["goblin_skirmisher", "goblin_skirmisher", "goblin_rapid_archer"], "route": [[34, -78], [6, -64]] },
-    { "x": 84, "z": 38, "radius": 2.5, "count": 2, "respawnTicks": 2400, "hunts": true, "types": ["goblin_skirmisher", "goblin_rapid_archer"], "route": [[92, 56], [110, 52]] },
+    { "x": 98, "z": 36, "radius": 2.5, "count": 2, "respawnTicks": 2400, "hunts": true, "types": ["goblin_skirmisher", "goblin_rapid_archer"], "route": [[104, 50], [116, 46]] },
     { "x": -60, "z": -58, "radius": 2.5, "count": 2, "respawnTicks": 2400, "hunts": true, "types": ["goblin_skirmisher", "goblin_brute"], "route": [[-74, -62]] },
     { "x": -203, "z": -6, "radius": 5, "count": 3, "respawnTicks": 2400, "hunts": true, "types": ["goblin_skirmisher", "goblin_rapid_archer", "goblin_brute"] },
     { "x": -26, "z": -207, "radius": 4, "count": 2, "respawnTicks": 2400, "hunts": true, "types": ["goblin_skirmisher", "goblin_sharpshooter"] },
@@ -235,6 +236,16 @@
     { "x": -165, "z": 220, "radius": 2, "count": 1, "respawnTicks": 9000, "types": ["werewolf_moonleaper"] }
   ],
   "props": [
+    {"model": "cage_cart", "x": 70, "z": 101, "yaw": 0, "unless": "prologue.moved"},
+    {"model": "cage_cart", "x": 71.5, "z": 72, "yaw": 1.5708, "flag": "prologue.moved", "unless": "prologue.cage_broken"},
+    {"model": "cage_cart_broken", "x": 71.5, "z": 72, "yaw": 1.5708, "flag": "prologue.cage_broken"},
+    {"model": "fallen_log", "x": 74.3, "z": 65.5, "yaw": 0.12},
+    {"model": "camp_fire", "x": 73.5, "z": 97.2},
+    {"model": "tent", "x": 65.5, "z": 104, "yaw": 0.4},
+    {"model": "tent", "x": 76, "z": 104.5, "yaw": -0.5},
+    {"model": "crate", "x": 67.3, "z": 97.6, "yaw": 0.3},
+    {"model": "crate", "x": 77.4, "z": 99.5},
+    {"model": "rune_stone", "x": 429, "z": 6.4},
     { "model": "palisade", "x": 97.2, "z": -74.6, "yaw": -0.7 },
     { "model": "palisade", "x": 101.1, "z": -68.0, "yaw": -1.4 },
     { "model": "palisade", "x": 99.8, "z": -60.4, "yaw": -2.09 },

@@ -13,6 +13,86 @@
           "text": "Goodbye"
         }
       ]
+    },
+    "night": {
+      "text": "Stop there! Who walks the fields at night? ...Gods. You're one of them. A shine. Get away from my cows!",
+      "face": "afraid",
+      "options": [
+        {
+          "text": "[Let Nell speak.]",
+          "next": "night_nell"
+        }
+      ]
+    },
+    "night_nell": {
+      "text": "Nell? The tinker's girl from the summer fair? ...A shine got you out. Walk slow past the cows. They scare. Elda's lit; she bakes before dawn.",
+      "options": [
+        {
+          "text": "Thank you, Pip.",
+          "tone": "compassionate",
+          "effects": [
+            {
+              "trust": {
+                "pip": 3
+              }
+            }
+          ],
+          "next": "night_thanks"
+        },
+        {
+          "text": "Why do you hate us?",
+          "tone": "pragmatic",
+          "next": "night_barn",
+          "effects": [
+            {
+              "setFlag": "pip.told_barn"
+            }
+          ]
+        },
+        {
+          "text": "I'll go where I like.",
+          "tone": "hard",
+          "effects": [
+            {
+              "trust": {
+                "pip": -5
+              }
+            },
+            {
+              "rep": {
+                "hearthmere": -3
+              }
+            }
+          ],
+          "next": "night_hard"
+        }
+      ]
+    },
+    "night_thanks": {
+      "text": "Don't thank me. Just don't run.",
+      "options": [
+        {
+          "text": "Goodbye"
+        }
+      ]
+    },
+    "night_barn": {
+      "text": "One of you burned my barn last year. With my dog in it. For a quest, he said.",
+      "face": "angry",
+      "options": [
+        {
+          "text": "I'm not him."
+        }
+      ]
+    },
+    "night_hard": {
+      "text": "Then the cows'll trample you, and good riddance.",
+      "face": "angry",
+      "options": [
+        {
+          "text": "Goodbye"
+        }
+      ]
     }
   }
 }

@@ -10,7 +10,7 @@ namespace PixelCreate.Core;
 /// </summary>
 /// <param name="Kind">
 /// lockInput, unlockInput, spawn, despawn, place, move, follow, unfollow, pose, camera, playerCamera,
-/// fade, slides, say, talk, teleport, time, effects, wait, waitFor, spawnEnemies, waitForKills, drop, scene.
+/// fade, slides, say, talk, teleport, time, effects, wait, waitFor, spawnEnemies, waitForKills, drop, checkpoint, scene.
 /// </param>
 public sealed record SceneStep(string Kind)
 {
@@ -38,6 +38,18 @@ public sealed record SceneStep(string Kind)
     public int Hour { get; init; }
     public int Level { get; init; } = 1;
 
+    /// <summary>The share of their full health that spawned enemies start with: a first fight can be a gentle one.</summary>
+    public float Health { get; init; } = 1f;
+
+    /// <summary>A speaker's name for someone who is not an actor (Rhea in the arena).</summary>
+    public string Name { get; init; } = "";
+
+    /// <summary>The speaker walks up to the player before a line or a talk, instead of waiting to be walked up to.</summary>
+    public bool Approach { get; init; }
+
+    /// <summary>A line called out while the player keeps playing: shown as a banner, never holding the controls.</summary>
+    public bool Bark { get; init; }
+
     /// <summary>How long a line stays when nobody presses on: long enough to read.</summary>
     public float ReadSeconds => 1.6f + Text.Length * 0.055f;
 }
@@ -47,6 +59,9 @@ public sealed record SceneTrigger(Condition When, Vector3? Near, float Radius);
 
 public sealed record SceneDef(string Id, int Index, SceneStep[] Steps, SceneTrigger? Trigger)
 {
+    /// <summary>Ends the scene at once when it holds: the fight it comments on is over, the player has left.</summary>
+    public Condition? Until { get; init; }
+
     /// <summary>The flag set when the scene has played to its end.</summary>
     public string DoneFlag => $"scene.{Id}";
 }
@@ -65,7 +80,10 @@ public static class SceneData
                 t.TryGetProperty("radius", out var r) ? r.GetSingle() : 6f);
         }
 
-        return new SceneDef(root.GetProperty("id").GetString()!, index, steps, trigger);
+        return new SceneDef(root.GetProperty("id").GetString()!, index, steps, trigger)
+        {
+            Until = root.TryGetProperty("until", out var u) ? Condition.Parse(u) : null,
+        };
     }
 
     private static Vector3 Ground(JsonElement point) => new(point[0].GetSingle(), 0, point[1].GetSingle());
@@ -104,8 +122,13 @@ public static class SceneData
                 Slides = v.GetProperty("images").EnumerateArray().Select(i => i.GetString()!).ToArray(),
                 Text = Str(v, "caption"), Seconds = v.TryGetProperty("seconds", out var ss) ? ss.GetSingle() : 4f,
             },
-            "say" => new SceneStep("say") { Actor = Str(v, "actor"), Text = Str(v, "text"), Face = v.TryGetProperty("face", out var f) ? f.GetString() : null },
-            "talk" => new SceneStep("talk") { Actor = Str(v, "actor"), Node = Str(v, "node") },
+            "say" => new SceneStep("say")
+            {
+                Actor = Str(v, "actor"), Text = Str(v, "text"), Face = v.TryGetProperty("face", out var f) ? f.GetString() : null,
+                Name = Str(v, "name"), Bark = v.TryGetProperty("bark", out var b) && b.GetBoolean(),
+                Approach = v.TryGetProperty("approach", out var sa) && sa.GetBoolean(),
+            },
+            "talk" => new SceneStep("talk") { Actor = Str(v, "actor"), Node = Str(v, "node"), Approach = v.TryGetProperty("approach", out var ta) && ta.GetBoolean() },
             "teleport" => new SceneStep("teleport") { Points = new[] { Ground(v.GetProperty("to")) }, Yaw = Degrees(v, "yaw") },
             "time" => new SceneStep("time") { Day = v.GetProperty("day").GetInt32(), Hour = v.GetProperty("hour").GetInt32() },
             "effects" => new SceneStep("effects") { Effects = Effect.ParseList(v) },
@@ -115,13 +138,26 @@ public static class SceneData
             {
                 Item = Str(v, "type"), Count = v.TryGetProperty("count", out var c) ? c.GetInt32() : 1, Points = new[] { Ground(v.GetProperty("at")) },
                 Tag = Str(v, "tag"), Level = v.TryGetProperty("level", out var l) ? l.GetInt32() : 1,
+                Health = v.TryGetProperty("health", out var h) ? h.GetSingle() : 1f,
             },
+            "checkpoint" => new SceneStep("checkpoint") { Points = new[] { Ground(v) } },
             "waitForKills" => new SceneStep("waitForKills") { Tag = v.GetString()! },
             "drop" => new SceneStep("drop") { Item = Str(v, "item"), Points = new[] { Ground(v.GetProperty("at")) }, Count = v.TryGetProperty("count", out var dc) ? dc.GetInt32() : 1 },
             "scene" => new SceneStep("scene") { Scene = v.GetString()! },
             _ => throw new FormatException($"Unknown scene step '{property.Name}'."),
         };
     }
+
+    /// <summary>How close the player and a speaker must be for a line or a talk to begin.</summary>
+    public const float SpeakRange = 4.5f;
+
+    /// <summary>
+    /// Whether a line or a talk still waits for the player and the speaker to meet. People speak face
+    /// to face: until then the player walks freely, and the words do not show. Barks carry any distance.
+    /// </summary>
+    public static bool Apart(SceneStep step, Vector3 speaker, Vector3 player) =>
+        (step.Kind == "talk" || (step.Kind == "say" && !step.Bark)) &&
+        Vector3.Distance(speaker with { Y = 0 }, player with { Y = 0 }) > SpeakRange;
 
     /// <summary>Steps that hold the scene until something happens; the rest run at once.</summary>
     public static bool Holds(SceneStep step) => step.Kind is "fade" or "slides" or "say" or "talk" or "wait" or "waitFor" or "waitForKills"

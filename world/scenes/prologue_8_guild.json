@@ -1,0 +1,93 @@
+{
+  "id": "prologue_8_guild",
+  "trigger": {
+    "when": {
+      "all": [
+        {
+          "flag": "prologue.slept"
+        },
+        {
+          "notFlag": "prologue.met_mira"
+        }
+      ]
+    },
+    "near": [
+      420,
+      -4
+    ],
+    "radius": 4
+  },
+  "steps": [
+    {
+      "lockInput": true
+    },
+    {
+      "unfollow": "nell"
+    },
+    {
+      "place": {
+        "actor": "nell",
+        "at": [
+          418.5,
+          -1.5
+        ],
+        "yaw": 180
+      }
+    },
+    {
+      "talk": {
+        "actor": "mira",
+        "node": "prologue_arrive"
+      }
+    },
+    {
+      "move": {
+        "actor": "nell",
+        "to": [
+          [
+            426,
+            -2.5
+          ],
+          [
+            430.5,
+            -8
+          ]
+        ],
+        "speed": 3
+      },
+      "wait": true
+    },
+    {
+      "despawn": "nell"
+    },
+    {
+      "effects": [
+        {
+          "setFlag": "nell.hidden"
+        },
+        {
+          "quest": {
+            "step": [
+              "prologue_fallen",
+              4
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "unlockInput": true
+    },
+    {
+      "waitFor": {
+        "flag": "anchor.bound"
+      }
+    },
+    {
+      "talk": {
+        "actor": "mira",
+        "node": "prologue_trial"
+      }
+    }
+  ]
+}

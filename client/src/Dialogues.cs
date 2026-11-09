@@ -256,11 +256,96 @@ public static class NpcLooks
         },
     };
 
+    /// <summary>Nell: a thin girl of thirteen in a worn dress, sold for her father's debt.</summary>
+    private static readonly RigLook Captive = new("captive", new Color("f0c8b0"), 0.8f, "none")
+    {
+        Hair = "lina",
+        Feminine = true,
+        Skirt = true,
+        Cloak = false,
+        Rest = "clasped",
+        Mood = "afraid",
+        Extras = new[] { "apron" },
+        Eyes = new Color("6a4a30"),
+        Brows = new Color("4a3020"),
+        Palette = new Dictionary<string, Color>
+        {
+            ["anime_hair"] = new("6a4a30"),
+            ["anime_shirt"] = new("9a8a6a"),
+            ["anime_cloak"] = new("6a5a3e"),
+            ["anime_trousers"] = new("8a7a5a"),
+            ["anime_dark"] = new("6a5a3e"),
+            ["anime_vest"] = new("7a6a4a"),
+            ["anime_glove"] = new("f0c8b0"),
+        },
+    };
+
+    /// <summary>Haruto: a Skyfallen office worker, still in the white shirt he died in.</summary>
+    private static readonly RigLook Lost = new("lost", Skin, 0.97f, "none")
+    {
+        Hair = "short",
+        Cloak = false,
+        Stoop = 0.1f,
+        Rest = "relaxed",
+        Mood = "tired",
+        Eyes = new Color("2a2a32"),
+        Brows = new Color("1c1a24"),
+        Palette = new Dictionary<string, Color>
+        {
+            ["anime_hair"] = new("1c1a24"),
+            ["anime_shirt"] = new("f4f0e6"),
+            ["anime_trousers"] = new("2e3040"),
+            ["anime_dark"] = new("2a2a32"),
+            ["anime_glove"] = Skin,
+        },
+    };
+
+    /// <summary>Brann Vosk: the finders' captain, broad, scarred, in a worn leather coat.</summary>
+    private static readonly RigLook FinderCaptain = new("finder_captain", new Color("e0b494"), 1.08f, "club")
+    {
+        Hair = "swept",
+        Cloak = true,
+        Mood = "smirk",
+        Extras = new[] { "beard_short", "vest" },
+        Eyes = new Color("5a4a3a"),
+        Brows = new Color("3a2418"),
+        FaceStyle = new FaceStyle(2, 0, 2, "cheek"),
+        Palette = new Dictionary<string, Color>
+        {
+            ["anime_hair"] = new("4a3020"),
+            ["anime_shirt"] = new("5a4a3a"),
+            ["anime_cloak"] = new("3a2a24"),
+            ["anime_vest"] = new("6a4a3a"),
+            ["anime_trousers"] = new("3a3440"),
+        },
+    };
+
+    /// <summary>A finder: one of Vosk's hired men, in drab hooded leathers.</summary>
+    private static readonly RigLook Finder = new("finder", new Color("e8c0a4"), 1.0f, "club")
+    {
+        Hair = "pip",
+        Cloak = true,
+        Mood = "neutral",
+        Extras = new[] { "vest" },
+        Eyes = new Color("4a6a3a"),
+        Brows = new Color("3a2418"),
+        FaceStyle = new FaceStyle(1, 0, 1, "none", true, new Color("3a2418")),
+        Palette = new Dictionary<string, Color>
+        {
+            ["anime_hair"] = new("5a4a3a"),
+            ["anime_shirt"] = new("6a6a5a"),
+            ["anime_cloak"] = new("4a4a3e"),
+            ["anime_vest"] = new("5a4a3a"),
+            ["anime_trousers"] = new("3a3440"),
+        },
+    };
+
     /// <summary>Every person with a name, for the photo studio.</summary>
     public static readonly (string Name, RigLook Look)[] All =
     {
         ("rhea", Examiner), ("mira", Receptionist), ("bram", Villager), ("tess", VillagerB), ("lina", Merchant),
         ("garrick", Guard), ("hollis", Appraiser), ("elda", Baker), ("pip", Farmer), ("sora", Mage), ("kai", Swordsman),
+        ("nell", Captive), ("haruto", Lost), ("vosk", FinderCaptain), ("finder", Finder),
     };
 
     public static RigLook? For(string role) => role switch
@@ -276,6 +361,10 @@ public static class NpcLooks
         "farmer" => Farmer,
         "adventurer_a" => Mage,
         "adventurer_b" => Swordsman,
+        "captive" => Captive,
+        "lost" => Lost,
+        "finder_captain" => FinderCaptain,
+        "finder" => Finder,
         _ => null,
     };
 }
@@ -299,6 +388,11 @@ public static class Dialogues
         "baker" => "Baker",
         "farmer" => "Farmer",
         "adventurer_a" or "adventurer_b" => "Adventurer",
+        "captive" => "Bonded Girl",
+        "lost" => "Lightborn",
+        "finder_captain" => "Finder Captain",
+        "finder" => "Finder",
+        "object" or "anchor_stone" => "",
         _ => "Villager",
     };
 
@@ -319,6 +413,16 @@ public static class Dialogues
         Show(hud, npc, dialogue, node, context, snapshot);
     }
 
+    /// <summary>Opens a given node of someone's dialogue, as a scene asks.</summary>
+    public static void OpenNode(Hud hud, Npc npc, string node, IStoryContext context, Snapshot? snapshot)
+    {
+        if (Story.Dialogues.TryGetValue(npc.Id, out var dialogue) && dialogue.Nodes.TryGetValue(node, out var start))
+        {
+            hud.DialogRole = Title(npc.Role);
+            Show(hud, npc, dialogue, start, context, snapshot);
+        }
+    }
+
     private static void Show(Hud hud, Npc npc, DialogueDef dialogue, DialogueNode node, IStoryContext context, Snapshot? snapshot)
     {
         var choices = new List<DialogChoice>();
@@ -333,11 +437,13 @@ public static class Dialogues
 
         foreach (var option in node.Options.Where(o => o.When.Holds(context)))
         {
-            var command = option.Effects.Length > 0 ? Command.Choose : Command.None;
+            // A choice with effects, or one that ends the talk, goes to the server: a scene waits for
+            // the talk to end. Goodbyes stay grey all the same.
+            var command = option.Effects.Length > 0 || option.Next is null ? Command.Choose : Command.None;
             System.Action? then = option.Next is { } next && dialogue.Nodes.TryGetValue(next, out var nextNode)
                 ? () => Show(hud, npc, dialogue, nextNode, context, snapshot)
                 : null;
-            choices.Add(new DialogChoice(Fill(option.Text, context, snapshot), command, (ushort)option.Index, then));
+            choices.Add(new DialogChoice(Fill(option.Text, context, snapshot), command, (ushort)option.Index, then, Muted: option.Effects.Length == 0 && option.Next is null));
         }
 
         hud.ShowDialog(npc.Name, Fill(node.Text, context, snapshot), choices.ToArray());
@@ -395,4 +501,6 @@ public sealed class ClientStory : IStoryContext
         System.Enum.TryParse<PlayerAttribute>(name, true, out var which) && _client.Latest is { } s ? s.Attributes[(int)which] : 0;
 
     public bool Near(string role) => true;
+
+    public System.Numerics.Vector3 Position => _client.State.Position;
 }

@@ -1,0 +1,161 @@
+{
+  "id": "prologue_2_cage",
+  "steps": [
+    {
+      "teleport": {
+        "to": [
+          70,
+          101
+        ]
+      }
+    },
+    {
+      "time": {
+        "day": 1,
+        "hour": 19
+      }
+    },
+    {
+      "spawn": {
+        "actor": "nell",
+        "at": [
+          69.2,
+          101.5
+        ],
+        "yaw": 160
+      }
+    },
+    {
+      "spawn": {
+        "actor": "haruto",
+        "at": [
+          70.9,
+          100.6
+        ],
+        "yaw": 200
+      }
+    },
+    {
+      "spawn": {
+        "actor": "cage_bars",
+        "at": [
+          70,
+          99.4
+        ]
+      }
+    },
+    {
+      "spawn": {
+        "actor": "vosk",
+        "at": [
+          73.8,
+          98.6
+        ],
+        "yaw": -110
+      }
+    },
+    {
+      "spawn": {
+        "actor": "gil",
+        "at": [
+          72.6,
+          97.3
+        ],
+        "yaw": -40
+      }
+    },
+    {
+      "spawn": {
+        "actor": "hanne",
+        "at": [
+          66.3,
+          99.4
+        ],
+        "yaw": 70
+      }
+    },
+    {
+      "spawn": {
+        "actor": "corb",
+        "at": [
+          76.6,
+          102.4
+        ],
+        "yaw": -120
+      }
+    },
+    {
+      "lockInput": true
+    },
+    {
+      "fade": {
+        "to": "in",
+        "seconds": 1.5
+      }
+    },
+    {
+      "say": {
+        "actor": "nell",
+        "text": "Don't shout. They beat the last one who shouted.",
+        "face": "afraid"
+      }
+    },
+    {
+      "waitFor": {
+        "time": {
+          "from": 1185,
+          "to": 1439
+        }
+      }
+    },
+    {
+      "move": {
+        "actor": "vosk",
+        "to": [
+          [
+            71.4,
+            99.0
+          ]
+        ],
+        "speed": 2.5
+      },
+      "wait": true
+    },
+    {
+      "say": {
+        "actor": "vosk",
+        "text": "Forty crowns, that one. Don't damage the face.",
+        "face": "smirk"
+      }
+    },
+    {
+      "say": {
+        "actor": "vosk",
+        "text": "And you, girl. Quiet. Fifteen crowns doesn't need a tongue.",
+        "face": "smirk"
+      }
+    },
+    {
+      "say": {
+        "actor": "vosk",
+        "text": "Gil, Corb. Hitch up. I want the East Watch road before the moon is up."
+      }
+    },
+    {
+      "fade": {
+        "to": "out",
+        "seconds": 1.2
+      }
+    },
+    {
+      "effects": [
+        {
+          "setFlag": "prologue.moved"
+        }
+      ]
+    },
+    {
+      "scene": "prologue_3_ambush"
+    }
+  ]
+}

@@ -25,6 +25,9 @@ public sealed class ServerOptions
     /// <summary>A saved game to continue: the world at once, the player when they join.</summary>
     public SaveData? Save { get; init; }
 
+    /// <summary>A new game begins with the prologue: the fall, the cage, the escape. Off for test runs and for saves.</summary>
+    public bool Prologue { get; init; }
+
     /// <summary>New players start with the default look instead of an unchosen one, so no creator screen opens (tests and tools).</summary>
     public bool ChosenLook { get; init; } = true;
 }
@@ -283,6 +286,9 @@ public sealed class GameServer : IEnemyEvents
         /// <summary>Set while the player reads a dialogue or the menu.</summary>
         public bool Reading;
 
+        /// <summary>The block, parry and dodge counts when the current round of the prologue trial began.</summary>
+        public (byte Blocks, byte Parries, byte Dodges) TrialMark;
+
         /// <summary>How the player looks, one choice per <see cref="AppearanceField"/>.</summary>
         public byte[] Appearance = Core.Appearance.NotChosen;
 
@@ -435,6 +441,10 @@ public sealed class GameServer : IEnemyEvents
     private bool _sceneTalked;
     private bool _sceneLocked;
     private bool _sceneEntered;
+    private bool _sceneApart;
+
+    // Where a player not yet bound to the Anchor Stone wakes after dying, set by a scene's checkpoint step.
+    private Vector3? _checkpoint;
     private readonly Dictionary<int, string> _enemyTags = new();
 
     /// <summary>The scene playing and its step, for tests.</summary>
@@ -638,7 +648,9 @@ public sealed class GameServer : IEnemyEvents
         _finishedTrials.Clear();
         if (!EnemiesFrozen)
         {
-            var targets = _players.Values.OrderBy(p => p.Id)
+            // A player a scene holds still (in the cage, in a talk) is out of the fight: nothing notices them.
+            var held = _sceneLocked && !_sceneApart;
+            var targets = _players.Values.Where(p => !held).OrderBy(p => p.Id)
                 .Select(p => new Target(p.Id, p.State.Position, p.State.Velocity, p.State.Attack != AttackKind.None)).Concat(CreatureTargets()).ToArray();
             foreach (var enemy in _enemies)
             {
@@ -712,6 +724,10 @@ public sealed class GameServer : IEnemyEvents
             if (_options.Save?.Player is { } saved && _players.Count == 1)
             {
                 Restore(player, saved);
+            }
+            else if (_options.Prologue && _players.Count == 1)
+            {
+                _story.SetFlag("prologue.new");
             }
             else
             {
@@ -806,7 +822,7 @@ public sealed class GameServer : IEnemyEvents
 
         player.NextTick++;
         player.Reading = command.Buttons.HasFlag(Buttons.Reading);
-        if (_sceneLocked)
+        if (_sceneLocked && !_sceneApart)
         {
             // A scene holds the player still; the client holds its prediction still the same way.
             command.MoveX = 0;
@@ -880,6 +896,7 @@ public sealed class GameServer : IEnemyEvents
 
         var maxHealth = MaxHealth(player);
         StepBarrier(player, maxHealth);
+        StepTrialRounds(player);
         if (player.State.Health <= 0)
         {
             if (player.Rank == GuildRank.InTrial)
@@ -901,7 +918,11 @@ public sealed class GameServer : IEnemyEvents
                     player.Stats.Weapon is { Length: > 0 } weapon ? weapon : "none"));
             }
 
-            player.State = PlayerState.Spawn(_world.Spawn, maxHealth);
+            // A player bound to the Anchor Stone wakes beside it; before that, where the zone starts everyone.
+            // During the prologue a scene's checkpoint stands in, so a lost fight starts again where it was.
+            var wake = _story.Has("anchor.bound") && _actorById.TryGetValue("anchor", out var anchor) ? anchor.Position + new Vector3(0, 0, 1.6f)
+                : _checkpoint is { } checkpoint ? checkpoint with { Y = _world.GroundHeight(checkpoint.X, checkpoint.Z) } : _world.Spawn;
+            player.State = PlayerState.Spawn(wake, maxHealth);
             // Worn gear survives death, so the weapon it picks does too; so do the attributes.
             player.State.Weapon = Weapons.Of(player.Stats.Weapon);
             player.State.Endurance = player.Attributes[(int)PlayerAttribute.Endurance];
@@ -1226,14 +1247,23 @@ public sealed class GameServer : IEnemyEvents
                 break;
             case Command.SetAppearance:
                 var field = (AppearanceField)(arg >> 8);
-                if ((int)field < player.Appearance.Length && Core.Appearance.Valid(field, arg & 0xff))
+                var confirmed = arg == Core.Appearance.Confirm;
+                if (confirmed || ((int)field < player.Appearance.Length && Core.Appearance.Valid(field, arg & 0xff)))
                 {
                     if (!Core.Appearance.IsChosen(player.Appearance))
                     {
                         player.Appearance = Core.Appearance.Default;
                     }
 
-                    player.Appearance[(int)field] = (byte)(arg & 0xff);
+                    if (confirmed)
+                    {
+                        // Only "This is me" ends the choosing: the prologue waits for it, not for the first change.
+                        _story.SetFlag("look.chosen");
+                    }
+                    else
+                    {
+                        player.Appearance[(int)field] = (byte)(arg & 0xff);
+                    }
                 }
 
                 break;
@@ -1480,6 +1510,7 @@ public sealed class GameServer : IEnemyEvents
         }
 
         var context = new StoryActions(this, player);
+        _sceneApart = false;
         if (_scene is null)
         {
             if (Tick % 15 != 0)
@@ -1505,7 +1536,7 @@ public sealed class GameServer : IEnemyEvents
 
         for (var guard = 0; guard < 64 && _scene is not null; guard++)
         {
-            if (_sceneStep >= _scene.Steps.Length)
+            if (_sceneStep >= _scene.Steps.Length || _scene.Until?.Holds(context) == true)
             {
                 _story.SetFlag(_scene.DoneFlag);
                 _scene = null;
@@ -1519,6 +1550,26 @@ public sealed class GameServer : IEnemyEvents
                 // A walk that holds the scene starts when the scene reaches it.
                 _sceneEntered = true;
                 RunStep(step, player, context);
+            }
+
+            if (_sceneRead != _sceneStep && !_sceneTalked && step.Actor.Length > 0 && _actorById.TryGetValue(step.Actor, out var speaker) &&
+                speaker.Active && SceneData.Apart(step, speaker.Position, player.State.Position))
+            {
+                // Words wait until the two stand together: the player is free to walk up, a speaker
+                // who approaches comes over, and the time to read starts when they meet.
+                _sceneApart = true;
+                _sceneStepTick = Tick;
+                if (step.Approach && speaker.Follows < 0 && Tick % 20 == 0)
+                {
+                    var gap = player.State.Position - speaker.Position;
+                    gap.Y = 0;
+                    var stop = player.State.Position - Vector3.Normalize(gap) * 2.2f;
+                    speaker.Path.Clear();
+                    speaker.Speed = Math.Max(speaker.Speed, 4.5f);
+                    speaker.Path.Enqueue(stop with { Y = _world.GroundHeight(stop.X, stop.Z) });
+                }
+
+                return;
             }
 
             if (SceneData.Holds(step) ? !StepDone(step, context) : !RunStep(step, player, context))
@@ -1541,7 +1592,7 @@ public sealed class GameServer : IEnemyEvents
         {
             "fade" or "wait" => elapsed >= step.Seconds,
             "slides" => _sceneSlide >= step.Slides.Length || elapsed >= step.Seconds * step.Slides.Length,
-            "say" => _sceneRead == _sceneStep || elapsed >= step.ReadSeconds * 1.6f,
+            "say" => step.Bark ? elapsed >= step.ReadSeconds : _sceneRead == _sceneStep || elapsed >= step.ReadSeconds * 1.6f,
             "talk" => _sceneTalked,
             "waitFor" => step.When.Holds(context),
             "waitForKills" => !_enemies.Any(e => e.Alive && _enemyTags.TryGetValue(e.Id, out var tag) && tag == step.Tag),
@@ -1564,6 +1615,7 @@ public sealed class GameServer : IEnemyEvents
                 _sceneLocked = false;
                 break;
             case "spawn" or "place" when actor is not null:
+                actor.Take();
                 actor.Path.Clear();
                 actor.Position = Ground(step.Points[0]);
                 actor.Yaw = step.Yaw;
@@ -1573,6 +1625,7 @@ public sealed class GameServer : IEnemyEvents
                 actor.Rest();
                 break;
             case "move" when actor is not null:
+                actor.Take();
                 actor.Speed = step.Speed;
                 foreach (var point in step.Points)
                 {
@@ -1581,12 +1634,14 @@ public sealed class GameServer : IEnemyEvents
 
                 break;
             case "follow" when actor is not null:
+                actor.Take();
                 actor.Follows = player.Id;
                 break;
             case "unfollow" when actor is not null:
                 actor.Follows = -1;
                 break;
             case "pose" when actor is not null:
+                actor.Take();
                 actor.Pose = step.Pose;
                 break;
             case "teleport":
@@ -1595,6 +1650,12 @@ public sealed class GameServer : IEnemyEvents
             case "time":
                 _calendar.Now = new GameTime(step.Day, step.Hour * 60);
                 _story.Time = _calendar.Now;
+                if (_calendar.Now.Minute == GameTime.DayStartMinute)
+                {
+                    // A scene that brings the morning saves, like waking does.
+                    Autosave?.Invoke(Export());
+                }
+
                 break;
             case "effects":
                 var before = _scene;
@@ -1605,6 +1666,9 @@ public sealed class GameServer : IEnemyEvents
                 break;
             case "drop":
                 DropAt(player, step.Item, step.Points[0], step.Count);
+                break;
+            case "checkpoint":
+                _checkpoint = step.Points[0];
                 break;
             case "scene":
                 _story.SetFlag(_scene!.DoneFlag);
@@ -1631,6 +1695,7 @@ public sealed class GameServer : IEnemyEvents
             };
             enemy.Reset(_random, _world);
             enemy.Position = at;
+            enemy.Health = (short)Math.Max(1, (int)(enemy.Health * step.Health));
             enemy.TargetId = player.Id;
             _enemyTags[enemy.Id] = step.Tag;
             _enemies.Add(enemy);
@@ -1660,10 +1725,53 @@ public sealed class GameServer : IEnemyEvents
 
     private void StepActors()
     {
+        var hour = _calendar.Now.Day * 24 + _calendar.Now.Hour;
+        if (hour != _scheduleHour)
+        {
+            // People move on with their day each hour, on foot; a jump in time (sleep, a scene, a loaded game) puts them there.
+            ApplySchedules(hour != _scheduleHour + 1);
+            _scheduleHour = hour;
+        }
+
         foreach (var actor in _actors.Where(a => a.Active))
         {
             Vector3? leader = actor.Follows >= 0 && _players.TryGetValue(actor.Follows, out var followed) ? followed.State.Position : null;
             actor.Step(_world, leader);
+        }
+    }
+
+    private const float StrollSpeed = 2.3f;
+    private int _scheduleHour = int.MinValue;
+    private RoadMap? _roads;
+
+    private void ApplySchedules(bool atOnce)
+    {
+        _roads ??= new RoadMap(_world.Roads);
+        var context = new WorldOnly(_story);
+        foreach (var actor in _actors)
+        {
+            var spot = Schedules.RestOf(actor, context, _calendar.Now.Hour, _world);
+            if (actor.Scripted || actor.Follows >= 0)
+            {
+                // A scene has them: they go back to their day when it lets them go.
+                actor.Spot = spot;
+                continue;
+            }
+
+            if (spot == actor.Spot)
+            {
+                continue;
+            }
+
+            if (atOnce)
+            {
+                actor.Spot = spot;
+                actor.Rest();
+            }
+            else
+            {
+                actor.WalkTo(spot, _roads.Route(actor.Position, spot.At, _world), StrollSpeed);
+            }
         }
     }
 
@@ -1718,6 +1826,8 @@ public sealed class GameServer : IEnemyEvents
 
         public bool Near(string role) => server.Near(player, role);
 
+        public Vector3 Position => player.State.Position;
+
         public void AddGold(int amount) => player.Gold = Math.Max(0, player.Gold + amount);
 
         public void GiveItem(string item, int count)
@@ -1759,6 +1869,8 @@ public sealed class GameServer : IEnemyEvents
         public int Attribute(string name) => 0;
 
         public bool Near(string role) => false;
+
+        public Vector3 Position => new(float.MaxValue, 0, float.MaxValue);
 
         public void AddGold(int amount)
         {
@@ -1807,6 +1919,14 @@ public sealed class GameServer : IEnemyEvents
         };
         examiner.Reset(_random, _world);
         examiner.TargetId = player.Id;
+        if (_story.Has("prologue.started") && !_story.Has("prologue.done"))
+        {
+            // The prologue's trial teaches first: guard, then dash, then a real duel. A retry after a
+            // lost duel starts at the duel.
+            examiner.TrialRound = _story.Has("trial.round3") || _options.FrailExaminer ? 3 : 1;
+            player.TrialMark = (player.Blocks, player.Parries, player.Dodges);
+        }
+
         if (_options.FrailExaminer)
         {
             examiner.Health = 1;
@@ -1817,6 +1937,30 @@ public sealed class GameServer : IEnemyEvents
     }
 
     private void EndTrial(Player player) => _enemies.RemoveAll(e => e.TrialOf == player.Id);
+
+    /// <summary>Moves the prologue trial on when the player has shown the lesson of the round.</summary>
+    private void StepTrialRounds(Player player)
+    {
+        if (player.Rank != GuildRank.InTrial || _enemies.FirstOrDefault(e => e.TrialOf == player.Id && e.TrialRound is 1 or 2) is not { } examiner)
+        {
+            return;
+        }
+
+        var blocks = (byte)(player.Blocks - player.TrialMark.Blocks);
+        var parries = (byte)(player.Parries - player.TrialMark.Parries);
+        var dodges = (byte)(player.Dodges - player.TrialMark.Dodges);
+        if (examiner.TrialRound == 1 && blocks >= 3 && parries >= 1)
+        {
+            examiner.TrialRound = 2;
+            player.TrialMark = (player.Blocks, player.Parries, player.Dodges);
+            _story.SetFlag("trial.round2");
+        }
+        else if (examiner.TrialRound == 2 && dodges >= 3)
+        {
+            examiner.TrialRound = 3;
+            _story.SetFlag("trial.round3");
+        }
+    }
 
     /// <summary>
     /// Hurts a player, unless a dash avoids it or the guard takes it. Returns true when the attack
@@ -2412,6 +2556,12 @@ public sealed class GameServer : IEnemyEvents
 
         Story.OnKill(_story, enemy.Def.Id);
 
+        // The first monster the hero kills wakes the Mark: levels, experience and skills appear.
+        if (_story.Has("prologue.started") && !_story.Has("hud.mark") && enemy.Def.Kind != "animal")
+        {
+            _story.SetFlag("hud.mark");
+        }
+
         var winner = _players.TryGetValue(enemy.TaggedBy, out var tagged) ? tagged : killer;
         AwardXp(winner.Id, Progression.KillXp(enemy.Level, winner.Level, enemy.Def.Rare));
         AwardMastery(killer, Progression.KillXp(enemy.Level, killer.Level, enemy.Def.Rare));
@@ -2486,6 +2636,11 @@ public sealed class GameServer : IEnemyEvents
 
                 owner.Gear[free] = piece;
                 owner.GearChanged.Add(free);
+                if (piece.Def.Slot == "weapon" && !owner.Worn.Any(w => owner.Gear[w]?.Def.Slot == "weapon"))
+                {
+                    // A weapon picked up with empty hands goes straight into the hand.
+                    ToggleWorn(owner, free, piece);
+                }
                 Stats.ItemsLooted++;
             }
             else if (def.IsCrystal)

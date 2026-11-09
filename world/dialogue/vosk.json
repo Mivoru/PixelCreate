@@ -1,0 +1,63 @@
+{
+  "npc": "vosk",
+  "entries": [
+    {
+      "node": "shore"
+    }
+  ],
+  "nodes": {
+    "shore": {
+      "text": "Easy now, Lightborn. Easy. Nobody wants you hurt. Hurt ones sell cheap.",
+      "face": "smirk",
+      "options": [
+        {
+          "text": "Where am I?",
+          "tone": "neutral",
+          "next": "where"
+        },
+        {
+          "text": "Stay back.",
+          "tone": "hard",
+          "next": "back",
+          "effects": [
+            {
+              "setFlag": "vosk.defied"
+            }
+          ]
+        },
+        {
+          "text": "[Say nothing.]",
+          "tone": "pragmatic",
+          "next": "quiet"
+        }
+      ]
+    },
+    "where": {
+      "text": "Somewhere you don't belong. That makes you mine.",
+      "face": "smirk",
+      "options": [
+        {
+          "text": "..."
+        }
+      ]
+    },
+    "back": {
+      "text": "Spirit. Good. Spirit fetches a better price.",
+      "face": "smirk",
+      "options": [
+        {
+          "text": "..."
+        }
+      ]
+    },
+    "quiet": {
+      "text": "Quiet one. Even better.",
+      "face": "smirk",
+      "options": [
+        {
+          "text": "..."
+        }
+      ]
+    }
+  }
+}

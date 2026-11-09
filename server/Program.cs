@@ -21,11 +21,23 @@ var server = new GameServer(transport, zone.World, new ServerOptions
 
     // A new game opens the character creator; test runs and PIXEL_LOOK=default skip it.
     ChosenLook = testMode || Environment.GetEnvironmentVariable("PIXEL_LOOK") == "default",
+
+    // A new game starts with the prologue; PIXEL_SKIP_PROLOGUE=1 starts in the village as before.
+    Prologue = save is null && !testMode && Environment.GetEnvironmentVariable("PIXEL_SKIP_PROLOGUE") != "1",
 });
 // PIXEL_TIME=21 starts a new game at nine in the evening, to check night and dusk.
 if (save is null && int.TryParse(Environment.GetEnvironmentVariable("PIXEL_TIME"), out var hour))
 {
     server.Calendar.Now = new GameTime(1, Math.Clamp(hour, 0, 23) * 60);
+}
+
+// PIXEL_FLAGS=prologue.started,prologue.free sets story flags on a new game, to start a check partway through the story.
+if (save is null && Environment.GetEnvironmentVariable("PIXEL_FLAGS") is { Length: > 0 } flags)
+{
+    foreach (var flag in flags.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+    {
+        server.StoryState.SetFlag(flag);
+    }
 }
 
 if (!testMode)

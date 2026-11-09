@@ -83,7 +83,7 @@ Jediná pevná část hry. Detailní tutoriál je v `design/systems.md`.
 3. **Klec** na voze lovců. Nell (13, dlužnice) a Haruto (Skyfallen, blouzní). Vosk: „Forty crowns,
    that one. Don't damage the face."
 4. **Přepadení** goblinů se železnými zbraněmi. Lovci padají, klec se rozbije, Haruto zemře a zmizí
-   ve světle. Hráč sebere Rusty Dagger. První boj. Vosk utíká.
+   ve světle. Hráč sebere dřevěný meč po mrtvé lovkyni. První boj. Vosk utíká.
 5. **Útěk s Nell** přes Slime Fields. První zabití monstra: rozsvítí se Mark. Nell couvne:
    „You're one of *them*. The Lightborn."
 6. **Hearthmere:** Pip s vidlemi, Elda nakrmí, Bram pošle do Guildy: „Register before sundown, boy.

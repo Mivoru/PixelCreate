@@ -13,6 +13,37 @@
           "text": "Thank you"
         }
       ]
+    },
+    "night": {
+      "text": "Another one who fell from the sky? You are the third this year. Sit. Eat. Both of you.",
+      "face": "smile",
+      "options": [
+        {
+          "text": "Thank you.",
+          "next": "night_food",
+          "effects": [
+            {
+              "give": {
+                "item": "bread",
+                "count": 2
+              }
+            },
+            {
+              "give": {
+                "item": "raw_beef"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "night_food": {
+      "text": "Eat something when you're hurt. A good steak mends more than any potion. And sleep by the oven. Nobody comes looking in a bakery.",
+      "options": [
+        {
+          "text": "Sleep by the oven"
+        }
+      ]
     }
   }
 }

@@ -186,6 +186,27 @@ public sealed partial class Enemy
     /// <summary>The player taking the guild trial against this enemy, or -1.</summary>
     public int TrialOf = -1;
 
+    /// <summary>
+    /// The round of the prologue trial: 1 only light blows (to block and parry), 2 only the heavy
+    /// slam (to dash through), 3 a real duel; 0 for an ordinary trial or any other enemy.
+    /// </summary>
+    public int TrialRound;
+
+    /// <summary>In a lesson round, holds back every ability but the one the round teaches, and keeps that one coming.</summary>
+    private void HoldTrialAbilities()
+    {
+        if (TrialRound is not (1 or 2) || Def.Abilities is not { } abilities)
+        {
+            return;
+        }
+
+        var taught = TrialRound == 1 ? "melee" : "slam";
+        for (var i = 0; i < abilities.Length; i++)
+        {
+            _cooldowns[i] = abilities[i].Effect == taught ? Math.Min(_cooldowns[i], TrialRound == 1 ? 40 : 100) : Math.Max(_cooldowns[i], 2);
+        }
+    }
+
     public bool Returning;
 
     /// <summary>Bleeding: ticks left, damage dealt each second, and the player who caused it.</summary>
@@ -247,6 +268,7 @@ public sealed partial class Enemy
     public void Step(World world, Random random, IReadOnlyList<Target> targets, IEnemyEvents events)
     {
         if (HitFlash > 0) HitFlash--;
+        HoldTrialAbilities();
         Recover();
         WatchForStuck(world, random, targets);
         if (LeapCooldown > 0) LeapCooldown--;
@@ -393,7 +415,8 @@ public sealed partial class Enemy
     /// <summary>Takes damage from a player. Returns true when this hit kills the enemy.</summary>
     public bool TakeHit(short damage, Vector3 from, int attackerId = -1)
     {
-        if (InShadow || Dodging)
+        // The first two rounds of the prologue trial are lessons: the examiner cannot be hurt.
+        if (InShadow || Dodging || TrialRound is 1 or 2)
         {
             return false;
         }

@@ -1,0 +1,54 @@
+{
+  "npc": "anchor",
+  "entries": [
+    {
+      "when": {
+        "flag": "anchor.bound"
+      },
+      "node": "bound"
+    },
+    {
+      "when": {
+        "flag": "prologue.met_mira"
+      },
+      "node": "touch"
+    },
+    {
+      "node": "silent"
+    }
+  ],
+  "nodes": {
+    "silent": {
+      "text": "A grey stone, taller than a man, carved with signs you almost understand. It is warm.",
+      "options": [
+        {
+          "text": "Leave it."
+        }
+      ]
+    },
+    "touch": {
+      "text": "A grey stone, taller than a man, carved with signs you almost understand. Light moves under the carving, waiting.",
+      "options": [
+        {
+          "text": "Touch the stone.",
+          "effects": [
+            {
+              "setFlag": "anchor.bound"
+            }
+          ]
+        },
+        {
+          "text": "Not yet."
+        }
+      ]
+    },
+    "bound": {
+      "text": "The stone knows you now. If you fall, you will wake here.",
+      "options": [
+        {
+          "text": "Leave it."
+        }
+      ]
+    }
+  }
+}

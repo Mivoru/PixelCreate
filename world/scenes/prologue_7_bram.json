@@ -1,0 +1,34 @@
+{
+  "id": "prologue_7_bram",
+  "trigger": {
+    "when": {
+      "all": [
+        {
+          "flag": "prologue.slept"
+        },
+        {
+          "notFlag": "prologue.bram"
+        }
+      ]
+    },
+    "near": [
+      -2,
+      11
+    ],
+    "radius": 5
+  },
+  "steps": [
+    {
+      "lockInput": true
+    },
+    {
+      "talk": {
+        "actor": "elder",
+        "node": "prologue"
+      }
+    },
+    {
+      "unlockInput": true
+    }
+  ]
+}

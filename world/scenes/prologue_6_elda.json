@@ -1,0 +1,100 @@
+{
+  "id": "prologue_6_elda",
+  "trigger": {
+    "when": {
+      "all": [
+        {
+          "flag": "prologue.free"
+        },
+        {
+          "notFlag": "prologue.slept"
+        }
+      ]
+    },
+    "near": [
+      18,
+      3.5
+    ],
+    "radius": 4.5
+  },
+  "steps": [
+    {
+      "lockInput": true
+    },
+    {
+      "talk": {
+        "actor": "elda",
+        "node": "night"
+      }
+    },
+    {
+      "fade": {
+        "to": "out",
+        "seconds": 1
+      }
+    },
+    {
+      "unfollow": "nell"
+    },
+    {
+      "despawn": "pip"
+    },
+    {
+      "time": {
+        "day": 2,
+        "hour": 6
+      }
+    },
+    {
+      "teleport": {
+        "to": [
+          19.5,
+          6
+        ]
+      }
+    },
+    {
+      "place": {
+        "actor": "nell",
+        "at": [
+          17.5,
+          6.2
+        ],
+        "yaw": 90
+      }
+    },
+    {
+      "follow": "nell"
+    },
+    {
+      "checkpoint": [
+        19.5,
+        6
+      ]
+    },
+    {
+      "effects": [
+        {
+          "setFlag": "prologue.slept"
+        },
+        {
+          "quest": {
+            "step": [
+              "prologue_fallen",
+              3
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "fade": {
+        "to": "in",
+        "seconds": 1.5
+      }
+    },
+    {
+      "unlockInput": true
+    }
+  ]
+}

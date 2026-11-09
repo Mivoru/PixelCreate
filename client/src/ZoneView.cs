@@ -9,6 +9,9 @@ namespace PixelCreate;
 /// <summary>Builds what the player sees from the same zone data the server uses for collision.</summary>
 public static class ZoneView
 {
+    /// <summary>Props shown or hidden by story flags, which the game toggles every frame.</summary>
+    public static readonly System.Collections.Generic.List<(Node3D Node, string? Flag, string? Unless)> Conditional = new();
+
     private const int BatchMinimum = 8;
     private const float BatchCell = 60f;
     private const float SmallRange = 70f;
@@ -83,9 +86,10 @@ public static class ZoneView
         var shader = GD.Load<Shader>("res://shaders/prop.gdshader");
         var materials = new Dictionary<Material, ShaderMaterial>();
         var batched = BuildBatches(zone, root, shader, materials);
+        Conditional.Clear();
         foreach (var prop in zone.Props)
         {
-            if (batched.Contains(prop.Model))
+            if (batched.Contains(prop.Model) && !prop.Conditional)
             {
                 continue;
             }
@@ -98,6 +102,10 @@ public static class ZoneView
 
             var instance = model.Instantiate<Node3D>();
             instance.Transform = new Transform3D(PropBasis(prop), new Vector3(prop.Position.X, prop.Position.Y, prop.Position.Z));
+            if (prop.Conditional)
+            {
+                Conditional.Add((instance, prop.Flag, prop.Unless));
+            }
             Retexture(instance, shader, materials);
             root.AddChild(instance);
             // The mill's sails hang under their own node, so they can turn.
@@ -344,7 +352,7 @@ public static class ZoneView
         }
 
         var batched = new HashSet<string>(counts.Where(c => c.Value >= BatchMinimum && c.Key != "camp_fire").Select(c => c.Key));
-        foreach (var prop in zone.Props.Where(p => batched.Contains(p.Model)))
+        foreach (var prop in zone.Props.Where(p => batched.Contains(p.Model) && !p.Conditional))
         {
             var key = (prop.Model, (int)Mathf.Floor(prop.Position.X / BatchCell), (int)Mathf.Floor(prop.Position.Z / BatchCell));
             if (!groups.TryGetValue(key, out var list))

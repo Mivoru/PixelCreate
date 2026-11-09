@@ -27,6 +27,9 @@ public interface IStoryContext
 
     /// <summary>Whether the player stands by an NPC of this role. The client always says yes; the server checks.</summary>
     bool Near(string role);
+
+    /// <summary>Where the player stands, for conditions about places.</summary>
+    System.Numerics.Vector3 Position { get; }
 }
 
 /// <summary>A test over the story state, read from the small condition language in the story data.</summary>
@@ -82,6 +85,8 @@ public abstract class Condition
         "saleValue" => new Range("saleValue", null, Min(value), Max(value), c => c.SaleValue),
         "activeJobs" => new Range("activeJobs", null, Min(value), Max(value), c => Story.ActiveJobs(c.World)),
         "near" => new NearRole(value.GetString()!),
+        "at" => new AtPlace(new System.Numerics.Vector3(value.GetProperty("x").GetSingle(), 0, value.GetProperty("z").GetSingle()),
+            value.TryGetProperty("r", out var radius) ? radius.GetSingle() : 6f),
         _ => throw new FormatException($"Unknown condition '{key}'."),
     };
 
@@ -171,6 +176,12 @@ public abstract class Condition
         };
 
         public override IEnumerable<(string, string)> References() => new[] { ("agenda", step) };
+    }
+
+    private sealed class AtPlace(System.Numerics.Vector3 place, float radius) : Condition
+    {
+        public override bool Holds(IStoryContext context) =>
+            System.Numerics.Vector3.Distance(context.Position with { Y = 0 }, place) < radius;
     }
 
     private sealed class NearRole(string role) : Condition

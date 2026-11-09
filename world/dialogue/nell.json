@@ -1,0 +1,200 @@
+{
+  "npc": "nell",
+  "entries": [
+    {
+      "when": {
+        "flag": "prologue.slept"
+      },
+      "node": "village"
+    },
+    {
+      "when": {
+        "flag": "prologue.free"
+      },
+      "node": "road"
+    },
+    {
+      "node": "cage"
+    }
+  ],
+  "nodes": {
+    "cage": {
+      "text": "Don't shout. They beat the last one who shouted.",
+      "face": "afraid",
+      "options": [
+        {
+          "text": "Who are you?",
+          "next": "who",
+          "effects": [
+            {
+              "setFlag": "prologue.nell_asked"
+            }
+          ]
+        },
+        {
+          "text": "Who are they?",
+          "next": "finders"
+        },
+        {
+          "text": "Where are we?",
+          "next": "where"
+        },
+        {
+          "text": "We'll get out of here.",
+          "tone": "compassionate",
+          "next": "hope",
+          "effects": [
+            {
+              "trust": {
+                "nell": 5
+              }
+            }
+          ]
+        },
+        {
+          "text": "[Say nothing.]"
+        }
+      ]
+    },
+    "who": {
+      "text": "Nell. From Westwood. My da owed the Company. Now I'm what he owed.",
+      "face": "sad",
+      "options": [
+        {
+          "text": "I'm sorry.",
+          "tone": "compassionate",
+          "effects": [
+            {
+              "trust": {
+                "nell": 3
+              }
+            }
+          ],
+          "next": "cage"
+        },
+        {
+          "text": "Back",
+          "next": "cage"
+        }
+      ]
+    },
+    "finders": {
+      "text": "Finders. Company men. They wait at the lake for your kind. Lightborn sell for forty crowns. I sell for fifteen.",
+      "face": "afraid",
+      "options": [
+        {
+          "text": "Back",
+          "next": "cage"
+        }
+      ]
+    },
+    "where": {
+      "text": "The March. The far end of the kingdom, where the Company does what it likes.",
+      "options": [
+        {
+          "text": "Back",
+          "next": "cage"
+        }
+      ]
+    },
+    "hope": {
+      "text": "...You don't know that. But thank you for saying it.",
+      "face": "sad",
+      "options": [
+        {
+          "text": "Back",
+          "next": "cage"
+        }
+      ]
+    },
+    "road": {
+      "text": "Keep going. West, to Hearthmere. Don't stop for anything.",
+      "face": "afraid",
+      "options": [
+        {
+          "text": "Stay close."
+        }
+      ]
+    },
+    "mark": {
+      "text": "Your eyes. They lit up. You're one of them. The Lightborn.",
+      "face": "afraid",
+      "options": [
+        {
+          "text": "I don't know what I am.",
+          "tone": "compassionate",
+          "effects": [
+            {
+              "trust": {
+                "nell": 5
+              }
+            }
+          ],
+          "next": "mark_soft"
+        },
+        {
+          "text": "Does it matter? We need to move.",
+          "tone": "pragmatic",
+          "next": "mark_move"
+        },
+        {
+          "text": "Afraid of me?",
+          "tone": "hard",
+          "effects": [
+            {
+              "trust": {
+                "nell": -5
+              }
+            }
+          ],
+          "next": "mark_hard"
+        }
+      ]
+    },
+    "mark_soft": {
+      "text": "...The Guild knows. Mira knows everything.",
+      "options": [
+        {
+          "text": "Then let's find her."
+        }
+      ]
+    },
+    "mark_move": {
+      "text": "No. I suppose not. West, then.",
+      "options": [
+        {
+          "text": "West."
+        }
+      ]
+    },
+    "mark_hard": {
+      "text": "Everyone is. You'll see.",
+      "face": "sad",
+      "options": [
+        {
+          "text": "Come on."
+        }
+      ]
+    },
+    "village": {
+      "text": "Elda says I can stay until... until someone decides what I am.",
+      "face": "sad",
+      "options": [
+        {
+          "text": "You're a person, Nell.",
+          "tone": "compassionate",
+          "effects": [
+            {
+              "trust": {
+                "nell": 3
+              }
+            }
+          ]
+        },
+        {
+          "text": "Goodbye"
+        }
+      ]
+    }
+  }
+}

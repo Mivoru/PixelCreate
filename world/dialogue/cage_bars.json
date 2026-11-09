@@ -1,0 +1,23 @@
+{
+  "npc": "cage_bars",
+  "entries": [
+    {
+      "node": "look"
+    }
+  ],
+  "nodes": {
+    "look": {
+      "text": "The lock is new iron. The bars are old wood. One of them is cracked near the floor.",
+      "options": [
+        {
+          "text": "Remember it.",
+          "effects": [
+            {
+              "setFlag": "prologue.bar_seen"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

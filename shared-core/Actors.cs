@@ -49,17 +49,65 @@ public sealed class Actor
     /// <summary>The player this actor walks behind, or -1.</summary>
     public int Follows = -1;
 
-    /// <summary>Whether the client needs to hear about this actor: moved, posed, or a scene actor in the world.</summary>
-    public bool Away => Active != Resident || Pose != ActorPose.Stand || Vector3.DistanceSquared(Position, Home) > 0.01f || MathF.Abs(Yaw - HomeYaw) > 0.01f;
+    /// <summary>
+    /// Where the actor rests now, which the client works out by itself (<see cref="Schedules.RestOf"/>):
+    /// the place of this hour of their day, or where the zone puts them.
+    /// </summary>
+    public RestSpot Spot;
 
+    /// <summary>Set while a scene has the actor: their day waits until the scene lets them go.</summary>
+    public bool Scripted;
+
+    /// <summary>Whether the client needs to hear about this actor: not where and how they rest by their day.</summary>
+    public bool Away => Active != Spot.Present || Pose != Spot.Pose || Vector3.DistanceSquared(Position, Spot.At) > 0.01f ||
+        (Active && MathF.Abs(Yaw - Spot.Yaw) > 0.01f);
+
+    /// <summary>Puts the actor where they rest at this hour, at once.</summary>
     public void Rest()
     {
-        Position = Home;
-        Yaw = HomeYaw;
-        Pose = ActorPose.Stand;
-        Active = Resident;
+        Position = Spot.At;
+        Yaw = Spot.Yaw;
+        Pose = Spot.Pose;
+        Active = Spot.Present;
         Path.Clear();
         Follows = -1;
+        Scripted = false;
+    }
+
+    /// <summary>Sends the actor walking to a new resting place; they take its pose, or go indoors, when they arrive.</summary>
+    public void WalkTo(RestSpot spot, List<Vector3> way, float speed)
+    {
+        Spot = spot;
+        Path.Clear();
+        foreach (var point in way)
+        {
+            Path.Enqueue(point);
+        }
+
+        Speed = speed;
+        Pose = ActorPose.Stand;
+        Active = true;
+        _arriving = true;
+    }
+
+    private bool _arriving;
+
+    /// <summary>A scene takes the actor: their day waits, and a walk they were on no longer ends in its pose.</summary>
+    public void Take()
+    {
+        Scripted = true;
+        _arriving = false;
+    }
+
+    private void Arrive()
+    {
+        if (_arriving && Path.Count == 0)
+        {
+            _arriving = false;
+            Yaw = Spot.Yaw;
+            Pose = Spot.Pose;
+            Active = Spot.Present;
+        }
     }
 
     /// <summary>Walks one tick along the path, or after the followed player.</summary>
@@ -106,6 +154,7 @@ public sealed class Actor
                 Path.Dequeue();
             }
 
+            Arrive();
             return;
         }
 
@@ -140,6 +189,7 @@ public static class Actors
     private static Actor Make(string id, string name, string role, ushort index, Vector3 home, float yaw, bool resident)
     {
         var actor = new Actor { Id = id, Name = name, Role = role, Index = index, Home = home, HomeYaw = yaw, Resident = resident };
+        actor.Spot = new RestSpot(home, yaw, ActorPose.Stand, resident);
         actor.Rest();
         return actor;
     }

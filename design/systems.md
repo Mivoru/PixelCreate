@@ -16,7 +16,7 @@ batoh, u Rhey stamina a blok.
 | 0 | video | úprava vzhledu | 2D pixel art obrázky: přechod, náklaďák; pak jméno a úprava vzhledu |
 | 1 | Mirror Lake | kamera, plavání ven | pád do jezera; pak síť a tma (scéna, žádný boj) |
 | 2 | vůz lovců | rozhlížení, interakce | klec, Nell a Haruto mluví; hráč ohmatá zámek |
-| 3 | les u cesty | lehký útok, pohyb v boji | goblini přepadnou vůz, hráč vezme Rusty Dagger, dva goblini |
+| 3 | les u cesty | lehký útok, pohyb v boji | goblini přepadnou vůz u ruin, hráč vezme dřevěný meč po mrtvé lovkyni, dva goblini |
 | 4 | cesta | sbírání kořisti | mrtví lovci: chléb, lektvar, klíč od Nell |
 | 5 | Slime Fields | těžký útok, červené značky, uhýbání, dash | slimáci na cestě; Nell radí („they jump where the ground glows") |
 | 6 | Slime Fields | Mark, úroveň, krystal | první zabití rozsvítí rozhraní; Nell couvne |

@@ -1,0 +1,45 @@
+{
+  "id": "prologue_5_pip",
+  "trigger": {
+    "when": {
+      "all": [
+        {
+          "flag": "prologue.free"
+        },
+        {
+          "notFlag": "prologue.slept"
+        }
+      ]
+    },
+    "near": [
+      30,
+      34
+    ],
+    "radius": 9
+  },
+  "steps": [
+    {
+      "place": {
+        "actor": "pip",
+        "at": [
+          27.5,
+          32
+        ],
+        "yaw": 60
+      }
+    },
+    {
+      "lockInput": true
+    },
+    {
+      "talk": {
+        "actor": "pip",
+        "node": "night",
+        "approach": true
+      }
+    },
+    {
+      "unlockInput": true
+    }
+  ]
+}

@@ -1,0 +1,219 @@
+{
+  "id": "prologue_1_intro",
+  "trigger": {
+    "when": {
+      "all": [
+        {
+          "flag": "prologue.new"
+        },
+        {
+          "notFlag": "prologue.started"
+        }
+      ]
+    }
+  },
+  "steps": [
+    {
+      "effects": [
+        {
+          "setFlag": "prologue.started"
+        },
+        {
+          "quest": {
+            "start": "prologue_fallen"
+          }
+        }
+      ]
+    },
+    {
+      "lockInput": true
+    },
+    {
+      "fade": {
+        "to": "out",
+        "seconds": 0.01
+      }
+    },
+    {
+      "slides": {
+        "images": [
+          "intro_1",
+          "intro_2",
+          "intro_3",
+          "intro_4",
+          "intro_5",
+          "intro_6",
+          "intro_7"
+        ],
+        "seconds": 3.5
+      }
+    },
+    {
+      "time": {
+        "day": 1,
+        "hour": 9
+      }
+    },
+    {
+      "teleport": {
+        "to": [
+          71,
+          113
+        ]
+      }
+    },
+    {
+      "fade": {
+        "to": "in",
+        "seconds": 0.8
+      }
+    },
+    {
+      "waitFor": {
+        "flag": "look.chosen"
+      }
+    },
+    {
+      "fade": {
+        "to": "out",
+        "seconds": 0.6
+      }
+    },
+    {
+      "teleport": {
+        "to": [
+          72.5,
+          113
+        ]
+      }
+    },
+    {
+      "spawn": {
+        "actor": "vosk",
+        "at": [
+          70,
+          108
+        ],
+        "yaw": 180
+      }
+    },
+    {
+      "spawn": {
+        "actor": "gil",
+        "at": [
+          68.6,
+          108.4
+        ],
+        "yaw": 165
+      }
+    },
+    {
+      "spawn": {
+        "actor": "hanne",
+        "at": [
+          71.6,
+          108.6
+        ],
+        "yaw": 195
+      }
+    },
+    {
+      "spawn": {
+        "actor": "corb",
+        "at": [
+          73,
+          107.8
+        ],
+        "yaw": 205
+      }
+    },
+    {
+      "camera": {
+        "from": [
+          73,
+          14,
+          122
+        ],
+        "to": [
+          72,
+          0,
+          112
+        ]
+      }
+    },
+    {
+      "fade": {
+        "to": "in",
+        "seconds": 1.5
+      }
+    },
+    {
+      "wait": 1.5
+    },
+    {
+      "playerCamera": {}
+    },
+    {
+      "unlockInput": true
+    },
+    {
+      "waitFor": {
+        "at": {
+          "x": 70,
+          "z": 108,
+          "r": 3.5
+        }
+      }
+    },
+    {
+      "lockInput": true
+    },
+    {
+      "say": {
+        "actor": "gil",
+        "text": "Told you. Saw the light come down over the ridge."
+      }
+    },
+    {
+      "talk": {
+        "actor": "vosk",
+        "node": "shore"
+      }
+    },
+    {
+      "say": {
+        "actor": "vosk",
+        "text": "Gil. The net.",
+        "face": "smirk"
+      }
+    },
+    {
+      "fade": {
+        "to": "out",
+        "seconds": 0.5
+      }
+    },
+    {
+      "despawn": "vosk"
+    },
+    {
+      "despawn": "gil"
+    },
+    {
+      "despawn": "hanne"
+    },
+    {
+      "despawn": "corb"
+    },
+    {
+      "effects": [
+        {
+          "setFlag": "prologue.captured"
+        }
+      ]
+    },
+    {
+      "scene": "prologue_2_cage"
+    }
+  ]
+}

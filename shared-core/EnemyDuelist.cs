@@ -35,7 +35,7 @@ public sealed partial class Enemy
             _dodgeCooldown--;
         }
 
-        if (Role != "duelist" || _dodgeCooldown > 0 || Action is not (EnemyAction.Idle or EnemyAction.Walk or EnemyAction.Strike)
+        if (Role != "duelist" || TrialRound is 1 or 2 || _dodgeCooldown > 0 || Action is not (EnemyAction.Idle or EnemyAction.Walk or EnemyAction.Strike)
             || FindTarget(targets) is not { Attacking: true } attacker)
         {
             return false;
@@ -88,7 +88,7 @@ public sealed partial class Enemy
     /// <summary>After its own blow, a duelist sometimes springs back out of reach.</summary>
     private bool SpringBack(Random random, Target target)
     {
-        if (Role != "duelist" || _dodgeCooldown > 0 || random.Next(100) >= 45)
+        if (Role != "duelist" || TrialRound is 1 or 2 || _dodgeCooldown > 0 || random.Next(100) >= 45)
         {
             return false;
         }

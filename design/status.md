@@ -22,6 +22,7 @@ Hra už je hratelný prototyp akční části. Zdroj pravdy je kód a `CLAUDE.md
 | NPC | 13 postav, každá jedna statická replika (Mira, Hollis a tabule mají větvení podle ranku) |
 | Ostatní | menu a nastavení, zvuky, foto studio, boti pro živé testy, síťový simulátor |
 | Postava (etapa 2) | mimika (12 výrazů z dat), živý portrét v dialogu, pohyb úst, výrazy v boji, úprava vzhledu (11 voleb, 10 účesů, 6 vousů), výchozí výrazy NPC |
+| Prolog (etapa 3) | úvodní obrázky, pád, lovci, klec, přepadení u ruin, cesta s Nell, Pip, Elda, Bram, Guilda, Anchor Stone, zkouška ve třech kolech; herci, scény, podmíněné rekvizity; bot `prologue` projde celý |
 | Základy příběhu (etapa 1) | kalendář s dnem a nocí, spánek, stav světa, questy a dialogy z dat, plány frakcí (engine), ukládání každé ráno, smrt stojí 10 % krystalů, deník (L) |
 
 ## 2. Navrženo, ale neexistuje
@@ -34,7 +35,6 @@ Hra už je hratelný prototyp akční části. Zdroj pravdy je kód a `CLAUDE.md
 | Vyšetřování | `systems.md` 4 | |
 | Fáze bossů | `systems.md` 11 | dnes jen vzácní nepřátelé se schopnostmi |
 | Dungeony | `systems.md` 12 | interiéry na platformách už fungují, dungeon ne |
-| Scény (úvodní video, pád, klec) | `systems.md` 1 | ve hře není žádný systém scén |
 | Ranky F až S, zkoušky ranků | `systems.md` 2 | dnes jen Newcomer, InTrial, Adventurer |
 | Růst vesnice | `systems.md` 6 | |
 | Společníci | `systems.md` 7 | až po aktu I |
@@ -69,6 +69,8 @@ Hra už je hratelný prototyp akční části. Zdroj pravdy je kód a `CLAUDE.md
 
 ## 4. Další krok
 
-Etapy 0 až 2 jsou hotové. Další je **etapa 3** (prolog „Fallen“).
+Etapy 0 až 3 jsou hotové. Další je **etapa 4** (živá vesnice, `design/stage-4.md`).
+
+Z etapy 3 zůstalo stranou: cesta vozem se neukazuje (stmívačka), lovci s hráčem nebojují, Haruto zmizí bez efektu světla, úvodní obrázky jsou malované skriptem (ne v Pixelwrightu).
 
 Z etapy 2 zůstalo stranou: ruce (dnešní dlaň s palcem stačí), barber ve vesnici (etapa 4), NPC zatím drží své vlastní vzhledy v `NpcLooks` místo voleb z `appearance.json` (stačí, až budou nové postavy v etapě 3).

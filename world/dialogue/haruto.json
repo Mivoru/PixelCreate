@@ -1,0 +1,49 @@
+{
+  "npc": "haruto",
+  "entries": [
+    {
+      "node": "cage"
+    }
+  ],
+  "nodes": {
+    "cage": {
+      "text": "...the nine o'clock train... I have to call the office... the presentation...",
+      "face": "tired",
+      "options": [
+        {
+          "text": "Hey. Are you all right?",
+          "next": "awake",
+          "effects": [
+            {
+              "setFlag": "prologue.haruto_talked"
+            }
+          ]
+        },
+        {
+          "text": "[Leave him be.]"
+        }
+      ]
+    },
+    "awake": {
+      "text": "You too? You died too? ...Then where is this? Where IS this?",
+      "face": "afraid",
+      "options": [
+        {
+          "text": "I don't know. But we'll find out.",
+          "tone": "compassionate",
+          "effects": [
+            {
+              "trust": {
+                "haruto": 5
+              }
+            }
+          ]
+        },
+        {
+          "text": "Keep your voice down.",
+          "tone": "pragmatic"
+        }
+      ]
+    }
+  }
+}

@@ -469,6 +469,9 @@ public sealed class World
     public IReadOnlyList<Portal> Portals { get; init; } = Array.Empty<Portal>();
     public IReadOnlyList<Npc> Npcs { get; init; } = Array.Empty<Npc>();
 
+    /// <summary>The middle line of each road, for people who walk along them.</summary>
+    public IReadOnlyList<Vector2[]> Roads { get; init; } = Array.Empty<Vector2[]>();
+
     /// <summary>Where a trial takes place, and where the examiner waits.</summary>
     public Vector3 TrialGround { get; init; }
 

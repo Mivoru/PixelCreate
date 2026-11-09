@@ -13,6 +13,72 @@
           "text": "Goodbye"
         }
       ]
+    },
+    "prologue": {
+      "text": "You have a strange look, stranger.",
+      "options": [
+        {
+          "text": "I fell from the sky. Do you know what that means?",
+          "next": "prologue_knew",
+          "effects": [
+            {
+              "trust": {
+                "elder": 3
+              }
+            }
+          ]
+        },
+        {
+          "text": "Who's asking?",
+          "tone": "hard",
+          "next": "prologue_seen"
+        },
+        {
+          "text": "Just passing through.",
+          "tone": "pragmatic",
+          "next": "prologue_through"
+        }
+      ]
+    },
+    "prologue_knew": {
+      "text": "I know what it meant once.",
+      "options": [
+        {
+          "text": "...",
+          "next": "prologue_warn"
+        }
+      ]
+    },
+    "prologue_seen": {
+      "text": "An old man who's seen your kind before.",
+      "options": [
+        {
+          "text": "...",
+          "next": "prologue_warn"
+        }
+      ]
+    },
+    "prologue_through": {
+      "text": "Nobody passes through Hearthmere. They fall into it.",
+      "options": [
+        {
+          "text": "...",
+          "next": "prologue_warn"
+        }
+      ]
+    },
+    "prologue_warn": {
+      "text": "Register at the Guild before sundown, boy. Before they find you again. And leave the girl with Mira. Not with me. Not with anyone the Company knows.",
+      "options": [
+        {
+          "text": "I will.",
+          "effects": [
+            {
+              "setFlag": "prologue.bram"
+            }
+          ]
+        }
+      ]
     }
   }
 }

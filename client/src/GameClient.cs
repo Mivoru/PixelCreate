@@ -214,7 +214,7 @@ public partial class GameClient : Node
                 _stage.View.AddChild(rig.Root);
                 _npcs.Add(actor.Id, rig);
             }
-            else if (actor.Role == "storage")
+            else if (actor.Role is "storage" or "anchor_stone")
             {
                 // Things you can use, like the Guild chest, carry a floating sign so players see them.
                 _hud.Signs.Add((ToGodot(actor.Home) + Vector3.Up * 1.25f, actor.Name));
@@ -431,7 +431,12 @@ public partial class GameClient : Node
             return;
         }
 
-        if (!_creatorOffered && (!Appearance.IsChosen(snapshot.Appearance) || OS.GetEnvironment("PIXEL_BOT") == "creator"))
+        // In the prologue the creator waits for its moment after the intro; elsewhere it opens at once.
+        var scene = snapshot.Scene != Snapshot.NoScene && snapshot.Scene < Story.Scenes.Count ? Story.Scenes[snapshot.Scene] : null;
+        var moment = scene is null
+            ? !_client.Story.Has("prologue.new") && _client.Tick > 90
+            : scene.Steps[Math.Min(snapshot.SceneStep, scene.Steps.Length - 1)] is { Kind: "waitFor" } wait && wait.When.References().Any(r => r.Name == "look.chosen");
+        if (!_creatorOffered && ((!Appearance.IsChosen(snapshot.Appearance) && moment) || OS.GetEnvironment("PIXEL_BOT") == "creator"))
         {
             _creatorOffered = true;
             _hud.OpenCreator();
@@ -451,6 +456,134 @@ public partial class GameClient : Node
         _stage.View.AddChild(rig.Root);
         _player.Root.QueueFree();
         _player = rig;
+    }
+
+    private (int Scene, int Step) _sceneShown = (-1, -1);
+    private Vector3[]? _sceneCamera;
+    private bool _sceneLocked;
+
+    /// <summary>The speaker a scene's line waits for the player to meet, or null.</summary>
+    private Actor? _sceneApart;
+    private readonly Dictionary<string, Texture2D?> _slides = new();
+
+    /// <summary>
+    /// Shows the scene the server plays: a line in the dialogue box, a talk, the camera, a fade, the
+    /// intro's slides. Everything is worked out from the steps up to the current one, so a lost
+    /// snapshot changes nothing.
+    /// </summary>
+    private void UpdateScene()
+    {
+        var snapshot = _client.Latest;
+        if (snapshot is null || snapshot.Scene == Snapshot.NoScene || snapshot.Scene >= Story.Scenes.Count)
+        {
+            if (_sceneShown.Scene >= 0 && _hud.DialogOpen && _hud.SceneDialog)
+            {
+                _hud.CloseDialog();
+            }
+
+            _sceneShown = (-1, -1);
+            _sceneCamera = null;
+            _sceneLocked = false;
+            _sceneApart = null;
+            _hud.Fade = 0f;
+            _hud.SlideShown = false;
+            return;
+        }
+
+        var scene = Story.Scenes[snapshot.Scene];
+        var index = Math.Min((int)snapshot.SceneStep, scene.Steps.Length - 1);
+        var step = scene.Steps[index];
+        var elapsed = Math.Max(0, (long)snapshot.ServerTick - snapshot.SceneStepTick) * Tuning.TickSeconds;
+
+        _sceneCamera = null;
+        _sceneLocked = false;
+        _hud.Fade = 0f;
+        for (var i = 0; i <= index; i++)
+        {
+            var past = scene.Steps[i];
+            switch (past.Kind)
+            {
+                case "camera":
+                    _sceneCamera = new[] { ToGodot(past.From), ToGodot(past.To) };
+                    break;
+                case "playerCamera":
+                    _sceneCamera = null;
+                    break;
+                case "lockInput":
+                    _sceneLocked = true;
+                    break;
+                case "unlockInput":
+                    _sceneLocked = false;
+                    break;
+                case "fade":
+                    var progress = i == index ? Mathf.Clamp(elapsed / Mathf.Max(past.Seconds, 0.01f), 0f, 1f) : 1f;
+                    _hud.Fade = past.Out ? progress : 1f - progress;
+                    break;
+            }
+        }
+
+        _hud.SlideShown = step.Kind == "slides";
+        if (_hud.SlideShown)
+        {
+            var slide = Math.Min(Math.Max(snapshot.SceneSlide, (int)(elapsed / Mathf.Max(step.Seconds, 0.1f))), step.Slides.Length - 1);
+            _hud.Slide = SlideTexture(step.Slides[slide]);
+            _hud.SlideCaption = slide == step.Slides.Length - 1 ? step.Text : "";
+        }
+
+        var actor = _actors.FirstOrDefault(a => a.Id == step.Actor);
+        var showing = _hud.DialogOpen && _hud.SceneDialog && _sceneShown == (snapshot.Scene, index);
+        if (actor is not null && _actorPresent[actor.Index] && !showing &&
+            SceneData.Apart(step, FromGodot(_actorAt[actor.Index]), _client.State.Position))
+        {
+            // People speak face to face: until the two meet, the player walks freely and no words show.
+            if (_hud.DialogOpen && _hud.SceneDialog)
+            {
+                _hud.CloseDialog();
+            }
+
+            _sceneLocked = false;
+            _sceneApart = actor;
+            return;
+        }
+
+        _sceneApart = null;
+        var fresh = _sceneShown != (snapshot.Scene, index);
+        _sceneShown = (snapshot.Scene, index);
+        if (step.Kind == "say" && step.Bark && fresh)
+        {
+            // Called out while the player plays: a banner, not a dialogue box.
+            _hud.ShowBanner($"{actor?.Name ?? step.Name}: {step.Text}", new Color("f4f0e6"));
+        }
+        else if (step.Kind == "say" && fresh)
+        {
+            _hud.ShowDialog(actor?.Name ?? step.Name, step.Text, new[] { new DialogChoice("Continue", Command.SceneNext, (ushort)index, null, true) });
+            _hud.DialogRole = actor is null ? "" : Dialogues.Title(actor.Role);
+            _hud.Speaker = step.Actor;
+            _hud.DialogFace = step.Face;
+            _hud.SceneDialog = true;
+        }
+        else if (step.Kind == "talk" && actor is not null && (fresh || !_hud.DialogOpen))
+        {
+            var npc = new Npc(actor.Id, actor.Name, actor.Role, FromGodot(_actorAt[actor.Index]), actor.HomeYaw);
+            Dialogues.OpenNode(_hud, npc, step.Node, new ClientStory(_client, _hud.Items), snapshot);
+            _hud.SceneDialog = true;
+        }
+        else if (fresh && _hud.SceneDialog && (step.Kind is not ("say" or "talk") || step.Bark))
+        {
+            _hud.CloseDialog();
+        }
+    }
+
+    private Texture2D? SlideTexture(string name)
+    {
+        if (!_slides.TryGetValue(name, out var texture))
+        {
+            var path = $"res://assets/intro/{name}.png";
+            texture = ResourceLoader.Exists(path) ? GD.Load<Texture2D>(path) : null;
+            _slides[name] = texture;
+        }
+
+        return texture;
     }
 
     private List<Actor> _actors = null!;
@@ -483,7 +616,7 @@ public partial class GameClient : Node
             var fate = _client.Story.Fate(actor.Id);
             var (active, target, yaw, pose) = views.TryGetValue(index, out var v)
                 ? (v.Active, ToGodot(v.Position), v.Yaw, v.Pose)
-                : (actor.Resident, ToGodot(actor.Home), actor.HomeYaw, ActorPose.Stand);
+                : Resting(actor);
             var present = active && fate is NpcFate.Alive or NpcFate.Moved;
             var before = _actorAt[index];
             var appeared = present && !_actorPresent[index];
@@ -518,6 +651,15 @@ public partial class GameClient : Node
         }
     }
 
+    /// <summary>Where someone the server does not send is: resting by their day, which both sides work out alike.</summary>
+    private (bool Active, Vector3 Target, float Yaw, ActorPose Pose) Resting(Actor actor)
+    {
+        var spot = Schedules.RestOf(actor, _restStory ??= new ClientStory(_client, _hud.Items), _client.Story.Time.Hour, _world);
+        return (spot.Present, ToGodot(spot.At), spot.Yaw, spot.Pose);
+    }
+
+    private ClientStory? _restStory;
+
     private SubViewport _portrait = null!;
     private Camera3D _portraitCamera = null!;
     private PlayerRig? _speaking;
@@ -551,8 +693,14 @@ public partial class GameClient : Node
     private void UpdateNpcs(Vector3 shown, float delta)
     {
         UpdateLook();
-        UpdateSpeaker();
+        foreach (var (node, flag, unless) in ZoneView.Conditional)
+        {
+            node.Visible = (flag is null || _client.Story.Has(flag)) && (unless is null || !_client.Story.Has(unless));
+        }
+
         UpdateActors(delta);
+        UpdateScene();
+        UpdateSpeaker();
         Npc? nearest = null;
         var best = Guild.TalkRange;
         foreach (var actor in _actors)
@@ -577,10 +725,12 @@ public partial class GameClient : Node
             }
         }
 
-        var door = _world.Portals.Any(p => new Vector2(p.From.X - shown.X, p.From.Z - shown.Z).Length() < Guild.DoorRange);
-        _hud.Prompt = nearest is { Role: "storage" } chest ? $"[E] Open the {chest.Name}"
-            : nearest is { } target ? $"[E] Talk to {target.Name}" : door ? "[E] Use door" : "";
-        if (_hud.DialogOpen && nearest is null)
+        var doorAt = DoorDistance(shown);
+        var door = doorAt < Guild.DoorRange;
+        _hud.Prompt = door && (nearest is null || doorAt < best) ? "[E] Use door"
+            : nearest is { Role: "storage" } chest ? $"[E] Open the {chest.Name}"
+            : nearest is { } target ? $"[E] Talk to {target.Name}" : "";
+        if (_hud.DialogOpen && nearest is null && !_hud.SceneDialog)
         {
             _hud.CloseDialog();
         }
@@ -608,6 +758,7 @@ public partial class GameClient : Node
 
         _hud.Objective = Objective(snapshot, shown);
         _hud.Story = new ClientStory(_client, _hud.Items);
+        _hud.MarkAwake = !_client.Story.Has("prologue.started") || _client.Story.Has("hud.mark") || _client.Story.Has("prologue.done");
     }
 
     private string Objective(Snapshot? snapshot, Vector3 shown)
@@ -615,6 +766,18 @@ public partial class GameClient : Node
         if (snapshot is null)
         {
             return "";
+        }
+
+        if (_sceneApart is { } speaker)
+        {
+            return $"Go to {speaker.Name}";
+        }
+
+        // The prologue tells its own way; the Guild's hints begin once it is over.
+        if (snapshot.Rank != GuildRank.InTrial && _client.Story.Quest("prologue_fallen") is { Status: QuestStatus.Active } fallen &&
+            Story.Quests.FirstOrDefault(q => q.Id == "prologue_fallen") is { } prologue)
+        {
+            return prologue.Steps[Math.Min(fallen.Step, prologue.Steps.Length - 1)].Text;
         }
 
         if (snapshot.Rank == GuildRank.Newcomer)
@@ -650,6 +813,13 @@ public partial class GameClient : Node
     /// <summary>E talks to whoever is close, or goes through a door.</summary>
     private void Interact()
     {
+        if (_hud.DialogOpen && _hud.SceneDialog && _hud.DialogLabels.FirstOrDefault() == "Continue")
+        {
+            // E moves a scene's line on, as a click on Continue would.
+            (_pendingCommand, _pendingArg) = _hud.Choose(0);
+            return;
+        }
+
         if (_hud.DialogOpen)
         {
             _hud.CloseDialog();
@@ -662,7 +832,9 @@ public partial class GameClient : Node
             .Where(p => new Vector2(p.At.X - position.X, p.At.Z - position.Z).Length() < Guild.TalkRange)
             .OrderBy(p => new Vector2(p.At.X - position.X, p.At.Z - position.Z).Length())
             .Select(p => (Npc?)new Npc(p.Actor.Id, p.Actor.Name, p.Actor.Role, FromGodot(p.At), p.Actor.HomeYaw)).FirstOrDefault();
-        if (npc is { } target)
+        // A door closer than anyone standing by wins: someone who walks along must not stand in its way.
+        var doorAt = DoorDistance(position);
+        if (npc is { } target && !(doorAt < Guild.DoorRange && doorAt < new Vector2(target.Position.X - position.X, target.Position.Z - position.Z).Length()))
         {
             Dialogues.Open(_hud, target, new ClientStory(_client, _hud.Items), _client.Latest);
             return;
@@ -670,6 +842,9 @@ public partial class GameClient : Node
 
         _pendingCommand = Command.UseDoor;
     }
+
+    private float DoorDistance(Vector3 position) => _world.Portals.Count == 0 ? float.MaxValue
+        : _world.Portals.Min(p => new Vector2(p.From.X - position.X, p.From.Z - position.Z).Length());
 
     /// <summary>Turns changes in the player state into sounds and effects.</summary>
     private void PlayerEvents(Vector3 shown, float delta)
@@ -999,6 +1174,11 @@ public partial class GameClient : Node
             return (0, 0, _hud.DialogOpen || _hud.MenuOpen || _hud.CreatorOpen ? Buttons.Reading : Buttons.None);
         }
 
+        if (_sceneLocked)
+        {
+            return (0, 0, Buttons.None);
+        }
+
         var side = (Input.IsKeyPressed(Key.D) ? 1f : 0f) - (Input.IsKeyPressed(Key.A) ? 1f : 0f);
         var forward = (Input.IsKeyPressed(Key.W) ? 1f : 0f) - (Input.IsKeyPressed(Key.S) ? 1f : 0f);
         var buttons = Buttons.None;
@@ -1037,6 +1217,11 @@ public partial class GameClient : Node
         if (mode is "club" or "staff")
         {
             return MeleeBot(mode);
+        }
+
+        if (mode == "prologue")
+        {
+            return PrologueBot();
         }
 
         if (mode == "creator")
@@ -1380,6 +1565,155 @@ public partial class GameClient : Node
         BotStage($"hunt {EnemyDef.All[target.Type].Id}");
         var at = ToGodot(target.Position);
         return BotWalk(at, 1.5f, at.DistanceTo(position) < 2.2f && _client.Tick % 18 == 0 ? Buttons.Light : Buttons.None);
+    }
+
+    /// <summary>
+    /// Plays the prologue through the real interface: picks a look, reads every line, takes the first
+    /// choice of every talk, fights what the scenes send, and walks to where the next scene begins.
+    /// Start a new game for it (no save, not test mode); PIXEL_FRAIL=1 skips the trial's lessons.
+    /// </summary>
+    private (int Scene, int Step) _botScene = (-2, 0);
+    private int _botLeg;
+    private static readonly Vector3[] GuildRoad = { new(-9, 0, 6), new(-18, 0, 2.5f), new(-24, 0, 9), new(-24, 0, 27), new(-36, 0, 27) };
+
+    private (sbyte X, sbyte Z, Buttons Buttons) PrologueBot()
+    {
+        var snapshot = _client.Latest;
+        if (snapshot is null || _client.Tick < 60)
+        {
+            return (0, 0, Buttons.None);
+        }
+
+        var story = _client.Story;
+        var sceneNow = (snapshot.Scene == Snapshot.NoScene ? -1 : snapshot.Scene, (int)snapshot.SceneStep);
+        if (sceneNow != _botScene)
+        {
+            // Each scene step in the log shows where a stuck run stopped.
+            _botScene = sceneNow;
+            var at = _client.State.Position;
+            GD.Print(sceneNow.Item1 < 0 ? $"BOT scene none at tick {_client.Tick}"
+                : $"BOT scene {Story.Scenes[sceneNow.Item1].Id} step {sceneNow.Item2} {Story.Scenes[sceneNow.Item1].Steps[Math.Min(sceneNow.Item2, Story.Scenes[sceneNow.Item1].Steps.Length - 1)].Kind} at tick {_client.Tick}, player {at.X:0.0},{at.Z:0.0}, dialog {_hud.DialogOpen}, locked {_sceneLocked}");
+        }
+
+        if (_hud.CreatorOpen)
+        {
+            BotStage("pick a look");
+            if (++_botWait == 40)
+            {
+                _hud.RandomLook();
+            }
+            else if (_botWait > 90)
+            {
+                _hud.ConfirmLook();
+            }
+
+            return (0, 0, Buttons.None);
+        }
+
+        if (_hud.SlideShown)
+        {
+            BotStage("watch the intro");
+            return (0, 0, Buttons.None);
+        }
+
+        if (_hud.DialogOpen)
+        {
+            if (++_botWait > BotDialogTicks)
+            {
+                (_pendingCommand, _pendingArg) = _hud.Choose(0);
+                _botWait = 0;
+            }
+
+            return (0, 0, Buttons.None);
+        }
+
+        if (_sceneLocked)
+        {
+            return (0, 0, Buttons.None);
+        }
+
+        if (_sceneApart is { } speaker)
+        {
+            BotStage($"walk up to {speaker.Name}");
+            return BotWalk(_actorAt[speaker.Index], 2.4f, Buttons.None);
+        }
+
+        // Things on the ground come first: the dagger by the cage is the only weapon there is.
+        var position = ToGodot(_client.State.Position);
+        if (snapshot.Drops.Where(d => ToGodot(d.Position).DistanceTo(position) < 9f).OrderBy(d => ToGodot(d.Position).DistanceTo(position)).Cast<LootView?>().FirstOrDefault() is { } drop)
+        {
+            BotStage("pick up what lies there");
+            return BotWalk(ToGodot(drop.Position), 0.3f, Buttons.None);
+        }
+
+        // Fight anything the scenes sent, close by.
+        var foe = snapshot.Enemies.Where(e => e.Health > 0 && EnemyDef.All[e.Type].Kind != "animal" && ToGodot(e.Position).DistanceTo(position) < (snapshot.Rank == GuildRank.InTrial ? 40f : 10f))
+            .OrderBy(e => ToGodot(e.Position).DistanceTo(position)).Cast<EnemyView?>().FirstOrDefault();
+        if (foe is { } enemy)
+        {
+            BotStage(snapshot.Rank == GuildRank.InTrial ? "fight the examiner" : $"fight {EnemyDef.All[enemy.Type].Id}");
+            var at = ToGodot(enemy.Position);
+            return BotWalk(at, 1.6f, at.DistanceTo(position) < 2.4f && _client.Tick % 16 == 0 ? Buttons.Light : Buttons.None);
+        }
+
+        // A scene waiting for the player to come to a place.
+        if (snapshot.Scene != Snapshot.NoScene && snapshot.Scene < Story.Scenes.Count)
+        {
+            var step = Story.Scenes[snapshot.Scene].Steps[Math.Min(snapshot.SceneStep, Story.Scenes[snapshot.Scene].Steps.Length - 1)];
+            if (step.Kind == "waitFor" && Story.Scenes[snapshot.Scene].Id == "prologue_1_intro")
+            {
+                BotStage("walk to the finders");
+                return BotWalk(new Vector3(70, 0, 108), 2f, Buttons.None);
+            }
+        }
+
+        (string Stage, Vector3 Goal)? next =
+            !story.Has("prologue.started") ? null
+            : !story.Has("prologue.free") ? null
+            : !story.Has("scene.prologue_4_road") ? ("walk the road", new Vector3(52, 0, 44))
+            : !story.Has("scene.prologue_5_pip") ? ("meet Pip", new Vector3(30, 0, 34))
+            : !story.Has("prologue.slept") ? ("reach the bakery", new Vector3(18, 0, 5.5f))
+            : !story.Has("prologue.bram") ? ("meet Bram", new Vector3(-2, 0, 12.5f))
+            : !story.Has("prologue.met_mira") && position.X < 300 ? ("go to the Guild door", new Vector3(-36, 0, 23.5f))
+            : !story.Has("prologue.met_mira") ? ("meet Mira", new Vector3(420, 0, -3))
+            : !story.Has("anchor.bound") ? ("touch the stone", new Vector3(428.2f, 0, 6.6f))
+            : !story.Has("guild.registered") && snapshot.Rank != GuildRank.InTrial ? ("wait for the trial", position)
+            : position.X > 450 ? ("leave the arena", ToGodot(_world.Portals.First(p => p.From.X > 450).From))
+            : !story.Has("prologue.done") ? ("get the badge", new Vector3(420, 0, -3))
+            : null;
+        if (next is not { } goal)
+        {
+            return story.Has("prologue.done") ? BotDone() : ((sbyte)0, (sbyte)0, Buttons.None);
+        }
+
+        BotStage(goal.Stage);
+        if (_client.Tick % 300 == 0)
+        {
+            GD.Print($"BOT at {position.X:0.0},{position.Z:0.0} leg {_botLeg} tick {_client.Tick}");
+        }
+
+        if (goal.Stage == "go to the Guild door" && _botLeg < GuildRoad.Length)
+        {
+            // Along the village road and round the hall to its door, as a person would walk it.
+            if (GuildRoad[_botLeg].DistanceTo(position with { Y = 0 }) < 1.5f)
+            {
+                _botLeg++;
+            }
+
+            if (_botLeg < GuildRoad.Length)
+            {
+                return BotWalk(GuildRoad[_botLeg], 0.5f, Buttons.None);
+            }
+        }
+
+        var use = goal.Stage is "go to the Guild door" or "leave the arena" or "touch the stone";
+        var walk = BotWalk(goal.Goal, use ? 2.2f : 1.2f, Buttons.None);
+        if (walk == (0, 0, Buttons.None) && _client.Tick % 45 == 0 && use)
+        {
+            Interact();
+        }
+
+        return walk;
     }
 
     private (sbyte X, sbyte Z, Buttons Buttons) BotDone()
@@ -2183,6 +2517,13 @@ public partial class GameClient : Node
     /// </summary>
     private void PlaceCamera(Vector3 shown, float delta)
     {
+        if (_sceneCamera is { } shot)
+        {
+            _stage.Camera.Fov = BaseFov;
+            _stage.Camera.LookAtFromPosition(shot[0], shot[1]);
+            return;
+        }
+
         if (_hud.CreatorOpen && _player.FaceAnchor is { } face)
         {
             // The creator looks the player in the face, a little from the right, with the panel on the left.

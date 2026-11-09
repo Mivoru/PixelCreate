@@ -176,6 +176,29 @@ Rules:
   `Command.Quit` (the client sends it when quitting or closing the window), keeping `<slot>.bak.json`. `PIXEL_SLOT`
   picks the slot (default `main`), `PIXEL_SAVE` the folder; test mode neither loads nor saves. A death after
   registering costs a tenth of the unsold crystals and is written down for the act III echoes.
+- Actors (`Actors.cs`): every NPC of the zone plus the people of `world/actors.json` (away until a scene brings them).
+  The server moves them and sends only those not at rest (`ActorView`); the client works out where the rest stand.
+- Scenes (`Scenes.cs`, `world/scenes/*.json`, run in `GameServer.StepScene`): steps in order (lockInput, spawn, place,
+  move, follow, pose, camera, fade, slides, say, talk, teleport, time, effects, wait, waitFor, spawnEnemies with
+  `health`, waitForKills, drop, checkpoint, scene). A `trigger` starts one by condition and place, `until` ends it early
+  (the trial's lines stop when the trial does), and `scene.<id>` is set when it has played. The client shows a scene
+  from the step in the snapshot (`GameClient.UpdateScene`). Rules found by playing:
+  - People speak face to face: a line or a talk waits until speaker and player are within `SceneData.SpeakRange`.
+    Until then the player walks freely and the objective reads "Go to <name>"; a follower or a speaker with
+    `approach` comes over. A `bark` carries any distance and never holds the controls.
+  - A player a scene holds still is no target for enemies. A scene that follows another must lock input itself:
+    the client works the lock out from the steps of the scene playing.
+  - A `checkpoint` is where a player not yet bound to the Anchor Stone wakes after dying. Without one, a lost
+    fight in a scene wakes them in the village while the scene waits for kills for ever.
+  - A talk's follow-up node keeps `Hud.SceneDialog`: without it the dialogue closed and reopened at its root.
+  - A door nearer than the nearest person wins the E key: a follower once stood between the player and the Guild.
+- The prologue (`design/stage-3.md`) is scenes `prologue_1_intro` to `prologue_10_badge`; a new game starts with it
+  (`ServerOptions.Prologue`, `PIXEL_SKIP_PROLOGUE=1` skips it, test mode never plays it). `scripts/prologue.ps1`
+  plays it with `PIXEL_BOT=prologue` against a throwaway save and passes when it prints `BOT done`; `-Steps`
+  prints every scene step, `-Flags` and `-Spawn` start partway (`PIXEL_FLAGS` sets story flags on a new game).
+  The intro's pictures are painted by `python asset-pipeline/generate_intro.py` (then Godot's `--import`).
+  Keep the ruins camp and patrol away from the ambush on the road at (71.5, 72): level 4 goblins joined the first fight.
+- A weapon picked up with empty hands is worn at once (the prologue's player has none until the wooden sword).
 - Interiors live outside the map on platforms (the guild at x 420, the trial ground at x 480). Doors are portals.
 - Character models come from Blender (`anime_*`) and use `toon.gdshader`, which also bends hair and cloth.
 - Faces (`FaceRig.cs`): eyes, lids, lashes, brows, nose, mouth shapes, blush, tear and sweat are small flat discs

@@ -73,6 +73,8 @@ internal sealed class FakeStory : IStoryActions
 
     public bool Near(string role) => true;
 
+    public System.Numerics.Vector3 Position { get; set; }
+
     public void AddGold(int amount) => Gold += amount;
 
     public void GiveItem(string item, int count) => Items[item] = ItemCount(item) + count;
