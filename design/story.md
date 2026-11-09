@@ -62,8 +62,14 @@ složí znovu. Stojí to krystaly a pár minut. Domorodci umírají navždy. To 
 příběhový kontrast: hráč riskuje málo, lidé kolem něj všechno. Smrt důležitého NPC je trvalá
 a mění svět.
 
-Později v příběhu: každé složení ubere kousek vzpomínek na původní svět. Hráč najde deníky
-starších Skyfallen, kteří si už nepamatují vlastní jméno. Otázka „chci domů?" dostává cenu.
+### 2.2a Hráčova postava (rozhodnuto)
+
+Vlastní jméno, hráč vybírá odpovědi v dialozích. Minulost je jen krátká: úvodní video, kde
+postavu na přechodu srazí náklaďák, když zachrání dítě. Další vzpomínky na původní svět nebudou.
+
+Z toho plyne motiv: hráč v původním světě **zemřel**, takže nemá kam se vrátit. Sora a někteří
+další byli staženi živí a domov mají. Hráčova otázka proto není „jak se dostat domů", ale
+„komu tady patřím".
 
 ### 2.3 Skyfallen, které hráč potká
 
@@ -213,8 +219,9 @@ Konce podle rozhodnutí a pověstí:
    spojencem (orkové, Moonfell, karavany), rozhodne, jestli to zvládne.
 3. **Seize**: převzít síť. Hráč (nebo jeho kandidát na trůn) ovládne Skyfallen i krystaly.
    Temný konec, možný jen s vysokou pověstí u společnosti nebo církve.
-4. **Return** (tajný): s pomocí Sory a Brama otevřít cestu zpět. Jen pro Skyfallen, kteří si
-   uchovali vzpomínky (málo smrtí, nalezené deníky). Hráč odejde a svět pokračuje bez něj.
+4. **Return** (tajný): s pomocí Brama otevřít cestu zpět pro Skyfallen, kteří byli staženi
+   živí (Sora, Kaředští vojáci). Hráč sám zemřel, jít nemůže: zůstane a pošle ostatní domů.
+   Jen když hráč splnil Sořinu linku a našel auréjské nápisy.
 
 ---
 
@@ -247,6 +254,7 @@ Technicky:
 Cíl: naučit všechny základy za 20 až 30 minut tak, aby každý krok měl příběhový důvod.
 Žádná okna s textem navíc: učí lidé a události, rozhraní se „probouzí" postupně (Mark).
 
+0. **Úvodní video.** Přechod, dítě, náklaďák, tma. Pak zadání jména.
 1. **Pád.** Krátký záběr: hráč padá z nebe do Mirror Lake. Vyplave. Rozhraní je zatím vypnuté,
    jen kříž a zdraví. Pohyb a kamera.
 2. **Pip a ovce.** Na Harrow Farm utekla ovce. Pip prosí, ať ji hráč zažene zpátky pomalu
@@ -407,10 +415,11 @@ studia jen u toho, co se změnilo.
 
 ---
 
-## 13. Otevřené otázky
+## 13. Rozhodnutí a otevřené otázky
 
-- Multiplayer: potvrdit doporučení z kapitoly 11.
-- Hráčova postava: tichý hrdina s volbami odpovědí, nebo hlas a osobnost? Návrh: volby odpovědí,
-  vlastní jméno, krátké vzpomínky na původní svět jako vedlejší linka.
+Rozhodnuto 2026-11-09:
+- Multiplayer: hra pro jednoho hráče, lokální server zůstává, co-op možná později (kapitola 11).
+- Hráčova postava: vlastní jméno, volby odpovědí, minulost jen úvodní video s náklaďákem.
+
+Otevřené:
 - Jméno vesnice a světa (návrh Hearthmere a Velmora).
-- Smrt a ztráta vzpomínek: jen příběh, nebo i herní mechanika (vliv na tajný konec)?

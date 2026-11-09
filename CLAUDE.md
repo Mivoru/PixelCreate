@@ -13,13 +13,16 @@ Workspace for pixel art and experiments around it.
 
 ## The game
 
-A fast 3D action RPG with a pixel art look, built code-first. The long-term goal is an MMORPG, but
-the MMO parts wait. Work now on the world, mechanics, movement, abilities and enemies. Do not tune
-difficulty or balance yet. PvE comes first, PvP later. Accounts, databases and matchmaking wait until
-the game is fun. Godot 4.7 with C#; the server does not use Godot.
+A fast 3D action RPG with a pixel art look, built code-first: a single-player story game (an isekai:
+the player is hit by a truck saving a child and falls into the world). The MMORPG goal is dropped
+(decided 2026-11-09); co-op for 2 to 4 players may come later. Story, world, factions, the tutorial
+and the roadmap live in `design/story.md`: read it before story, quest, dialogue or zone work.
+Work now on the world, story, mechanics, movement, abilities and enemies. Do not tune difficulty or
+balance yet. Godot 4.7 with C#; the server does not use Godot.
 
-Keep the MMORPG path open: the server stays authoritative, abilities and enemies are data rather
-than special code, and the world is built from zones that one server process can run.
+The game still runs as a local server plus a client, which keeps co-op possible: the server stays
+authoritative and owns the save (player and world state), abilities, enemies, quests and dialogue are
+data rather than special code, and choices change the world through world state flags.
 
 - `shared-core/`: movement, collision, protocol, server and client prediction. No engine and no
   packages. Keep it that way: anything here must run in `dotnet test`.
