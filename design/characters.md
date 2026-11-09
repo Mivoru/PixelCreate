@@ -27,7 +27,7 @@ Postavy s † mohou zemřít trvale. Postavy, které ve hře už existují, jsou
 - **Skrývá:** pochází z Moonfellu. V den kletby byla jako osmiletá u tety v Hearthmere. Otec Odo a sestra
   Lisbet jsou vlkodlaci Redclaw a Moonleaper. Neví to jistě, jen tuší. Každý měsíc nosí na
   hranici Moonfellu chleba.
-- **Oblouk:** kapitola 3 je její. Hráč rozhodne o její rodině.
+- **Oblouk:** oblouk F (Moonfell) je její. Hráč rozhodne o její rodině.
 - **Konce:** léčba: rodina se vrátí, Mira odejde do obnoveného Moonfellu (Guildu vede Corwin).
   Očista: Mira zůstane, zlomená, a začne pít jako Corwin. Zabití barona: rodina umře jako lidé
   v jejím náručí, Mira hráči odpustí, nebo ne (podle toho, jestli jí řekl pravdu předem).
@@ -37,7 +37,7 @@ Postavy s † mohou zemřít trvale. Postavy, které ve hře už existují, jsou
 ### Hollis (ve hře, odhadce) †
 - **Ukazuje:** bručoun, poctivý odkupník kůží.
 - **Skrývá:** dvacet let byl písařem společnosti. Pozná jejich značky na železe.
-- **Oblouk:** v kapitole 1 pozná značku East Watch na goblinském šrotu a řekne to hráči.
+- **Oblouk:** v oblouku A (Teeth and Iron) pozná značku East Watch na goblinském šrotu a řekne to hráči.
   **Druhý den ráno ho najdou mrtvého ve skladu Guildy.** Jeho vražda spouští vyšetřování.
 - Obchod převezme jeho učeň **Tam** (15). Platí zprvu méně, bojí se, a pokud hráč vraždu objasní,
   dá mu Hollisův sešit se seznamem všech, kdo se společností obchodují.
@@ -46,7 +46,7 @@ Postavy s † mohou zemřít trvale. Postavy, které ve hře už existují, jsou
 - **Ukazuje:** přísná učitelka meče, bývalá královská gardistka.
 - **Skrývá:** před šestnácti lety velela eskortě inkvizitora Morrowa do Moonfellu. Viděla, co se
   stalo, a mlčela. Proto odešla z gardy.
-- **Oblouk:** v kapitole 3 se přizná. V aktu II je spojka do paláce (zná gardisty a tajné chodby).
+- **Oblouk:** v oblouku F (Moonfell) se přizná. V aktu II je spojka do paláce (zná gardisty a tajné chodby).
 - **Konce:** může svědčit proti Morrowovi (a být za to upálena, pokud hráč nezajistí ochranu),
   nebo zemřít v souboji s Sister Vey, nebo přežít jako velitelka gardy nového panovníka.
 
@@ -57,13 +57,14 @@ Postavy s † mohou zemřít trvale. Postavy, které ve hře už existují, jsou
   Sunken Archive, a umí trochu číst auréjsky.
 - **Oblouk:** mentor. Pomalu hráči odkrývá pravdu, ale jen když se hráč ptá. Na konci aktu I
   hráče zavede do archivu.
-- **Konec:** **zemře ve finále aktu I**, když drží dveře archivu proti inkvizici a Dexovi.
-  Jediná varianta, kdy přežije: hráč předtím vyhnal Dexe z Marche a zničil Holtovy záznamy,
-  takže nikdo neví, kam jdou. I tehdy zemře na stáří v epilogu aktu II.
+- **Konec:** bez hráče ho inkvizice umučí (den 52), protože ví o archivu. S hráčem zemře, když
+  drží dveře archivu proti inkvizici a Dexovi. Přežije, jen když hráč předem zlomil informační
+  řetěz (Vosk, Holtovy záznamy, Garrick), takže nikdo neví, kam jdou. I tehdy zemře na stáří
+  v epilogu aktu II.
 
 ### Branch Master Corwin Hale (nový)
 - Bývalý dobrodruh ranku A, přišel o nohu v Greyfangu. Pije. Mira za něj dělá všechno.
-- Probudí se, když jde o jeho lidi (kapitola 1 při vyšetřování, kapitola 2 při obraně farmy).
+- Probudí se, když jde o jeho lidi (oblouk A (Teeth and Iron) při vyšetřování, oblouk E (Wolf Winter) při obraně farmy).
 - Může se stát velitelem Hearthmere v aktu III, nebo zemřít při jeho obraně.
 
 ### Tess (ve hře, kovářka)
@@ -77,7 +78,7 @@ Postavy s † mohou zemřít trvale. Postavy, které ve hře už existují, jsou
 - **Ukazuje:** veselá trhovkyně s ovocem a moukou.
 - **Skrývá:** dluží společnosti a splácí to informacemi. Udala Orrina (Tessina muže), když nemohl
   platit. Prodává faktorovi jména dlužníků.
-- **Oblouk:** v kapitole 1 hráč zjistí, že Lina je informátorka. Volby: říct Tess (Tess ji
+- **Oblouk:** v oblouku A (Teeth and Iron) hráč zjistí, že Lina je informátorka. Volby: říct Tess (Tess ji
   zmlátí, vesnice Linu vyžene, obchod zavře), vydírat Linu (stane se hráčovou informátorkou
   proti společnosti), mlčet a zaplatit její dluh (Lina se kaje, obchod se zlepší, Tess se to
   stejně jednou dozví).
@@ -85,7 +86,7 @@ Postavy s † mohou zemřít trvale. Postavy, které ve hře už existují, jsou
 ### Wren (ve hře, alchymistka)
 - **Skrývá:** bývalá bylinkářka církve, utekla po Moonfellu. Církev ji hledá jako dezertérku.
   Vaří i jedy a prodává je každému, kdo zaplatí, i lovcům.
-- **Oblouk:** podezřelá z Hollisovy vraždy (jed v jeho čaji je od ní). V kapitole 3 je jediná,
+- **Oblouk:** podezřelá z Hollisovy vraždy (jed v jeho čaji je od ní). V oblouku F (Moonfell) je jediná,
   kdo umí uvařit lék na kletbu. Inkvizice ji chce oběsit.
 
 ### Garrick (ve hře, strážný) †
@@ -96,13 +97,13 @@ Postavy s † mohou zemřít trvale. Postavy, které ve hře už existují, jsou
 
 ### Elda (ve hře, pekařka)
 - Dobrosrdečná. Její syn **Jory** (19) odešel do markraběnčiných odvodů.
-- V kapitole 4 Jory zemře v bitvě s orky, pokud dojde k válce a hráč ho předtím nevzal z první
+- V oblouku G (Iron and Honor) Jory zemře v bitvě s orky, pokud dojde k válce a hráč ho předtím nevzal z první
   linie (malý quest, kde ho hráč může přeložit). Elda pak přestane péct na tři dny ve hře a
   pak peče dál, tišší.
 
 ### Pip (ve hře, farmář)
 - Bojí se Skyfallen. Před rokem mu **Dex** při „questu" spálil stodolu a v ní jeho psa.
-- V kapitole 2 vlci napadnou Harrow Farm. Pokud hráč nepřijde včas, Pipův otec **Hamm** zemře.
+- V oblouku E (Wolf Winter) vlci napadnou Harrow Farm. Pokud hráč nepřijde včas, Pipův otec **Hamm** zemře.
 
 ### Sora (ve hře, mág, Skyfallen) †
 - Přivolaná **živá** (studentka, byla v knihovně, když ji světlo vzalo). Pamatuje si domov a chce
@@ -114,9 +115,9 @@ Postavy s † mohou zemřít trvale. Postavy, které ve hře už existují, jsou
 
 ### Kai (ve hře, šermíř, Skyfallen) †
 - Zemřel u počítače po dvou dnech hraní. Velmoru bere jako hru: grind, sázky, smích.
-- **Oblouk:** v kapitole 2 při rvačce v hospodě zabije vesnického mládence (Brenna, Pipova bratrance)
+- **Oblouk:** v oblouku E (Wolf Winter) při rvačce v hospodě zabije vesnického mládence (Brenna, Pipova bratrance)
   a nechápe, proč je to problém, protože „he'll respawn, right?". Nerespawne. Kai se láme.
-  Už v kapitole 1 je při vyšetřování Hollisovy vraždy hlavní podezřelý a dav ho chce oběsit. Oběšení ho nezabije
+  Už v oblouku A (Teeth and Iron) je při vyšetřování Hollisovy vraždy hlavní podezřelý a dav ho chce oběsit. Oběšení ho nezabije
   (vrátí se u Anchor Stone), a vesnice v hrůze pochopí, co Skyfallen jsou.
 - V aktu II je obviněn z vraždy krále. Kareth ho chce jako Hollowed.
 - **Konce:** vykoupí se (zemře, nebo přežije a vrátí se do Hearthmere pomáhat), stane se
@@ -124,8 +125,8 @@ Postavy s † mohou zemřít trvale. Postavy, které ve hře už existují, jsou
   spolčí s Dexem.
 
 ### Nell (nová, dívka z klece)
-- 13 let, domorodka z Westwoodu. Otec ji prodal za dluh společnosti. Sedí s hráčem v kleci.
-- Po útěku je podle zákona **majetek společnosti** a Vosk si pro ni přijde (kapitola 1).
+- 13 let, domorodka z Westwoodu. Nikdy romance. Otec ji prodal za dluh společnosti. Sedí s hráčem v kleci.
+- Po útěku je podle zákona **majetek společnosti** a Vosk si pro ni přijde (oblouk A (Teeth and Iron)).
 - **Volby:** vydat ji (zákon, klid, Nell skončí v Saltmere: v aktu II ji hráč najde na trhu,
   nebo mrtvou v dolech), koupit její smlouvu za 15 korun (drahé na začátku, Nell se stane
   učnicí v Guildě nebo u Wren), ukrýt ji (zločin, Vosk vypálí Linin sklad jako výstrahu,
@@ -136,7 +137,7 @@ Postavy s † mohou zemřít trvale. Postavy, které ve hře už existují, jsou
 - Japonský úředník, zemřel na přepracování. Nevázaný. V kleci blouzní.
 - Při přepadení vozu goblinem zemře a vrátí se na Mirror Lake, kde ho Vosk chytí znovu.
 - **Vedlejší quest „The Second One":** osvobodit ho a dovést k Anchor Stone. Když se to nepovede
-  do kapitoly 2, Vosk ho prodá do Karethu. V aktu III se objeví jako Hollowed.
+  do oblouk E (Wolf Winter), Vosk ho prodá do Karethu. V aktu III se objeví jako Hollowed.
 
 ### Partička Brightwater Four (nová, domorodí dobrodruzi)
 - Čtyři mladí domorodci z Hearthmere: **Edwin** (vůdce, meč), **Moss** (lukostřelec),
@@ -148,20 +149,36 @@ Postavy s † mohou zemřít trvale. Postavy, které ve hře už existují, jsou
 
 ---
 
+### Kapitánka Bryn Halloway (nová, Ashen Banner)
+- Veteránka, tvrdá, férová podle žoldnéřských pravidel. Nikomu nevěří, ale kontrakt dodrží.
+- **Skrývá:** v karethské válce vypálila vesnici na rozkaz. Od té doby nebere kontrakty na děti.
+- **Oblouk:** podle hráčovy cesty: šéfka, spojenkyně, nepřítelkyně na druhé straně bitvy, romance.
+- **Konce:** padne v bitvě o Ironjaw, předá rotu hráči, nebo odejde na jih s kořistí.
+
+### Herold Aurel (nový, Skyfallen)
+- Mladý Skyfallen, kterého církev vydává za posla Sky Mother. Loutka, bojí se.
+- **Konce:** zhroutí se po odhalení, uteče s hráčovou pomocí, nebo skončí v aktu II jako první
+  oběť Harvestu („the Herald returns to the Mother").
+
+### Maddy a Tobias (noví, unesení z Harrow Farm)
+- Maddy (17), Pipova sestřenice, a čeledín Tobias (30). Unesou je goblini v den 5.
+- Bez hráče skončí prodaní přes Holta. Zachránění se vrátí na farmu. Maddy pak hráči dluží a je
+  jedním z hlasů pro rychtáře.
+
 ## 3. Protivníci
 
 ### Dex (nový, Skyfallen, rival)
 - Zemřel jako mladý kluk při střelbě, kterou sám spáchal (hráč se to dozví až v aktu II).
   Ve Velmoře zjistil, že smrt pro něj nic neznamená, a nic neznamená ani pro ostatní.
 - Vymahač společnosti, sběrač dluhů, nejlepší lovec Skyfallen. Spálil Pipovu stodolu.
-- Opakovaný souboj (kapitola 1, kapitola 4, finále aktu I, akt II). Nejde ho zabít navždy.
+- Opakovaný souboj (oblouk A (Teeth and Iron), oblouk G (Iron and Honor), finále aktu I, akt II). Nejde ho zabít navždy.
 - **Konce:** hráč ho odřízne od sítě (zničí jeho Anchor Stone v souboji: Dex poprvé umře
   doopravdy), přesvědčí ho (vzácné, potřeba odhalit jeho minulost a dát mu volbu), nebo ho Dex
   dostane do Lanterny on sám (jako Morrowův sluha).
 
 ### Factor Merrin Holt (nový) †
 - Prodává železo goblinům, kupuje zajatce. Zapisuje si všechno. Jeho účetní kniha je klíčový
-  důkaz kapitoly 1.
+  důkaz oblouk A (Teeth and Iron).
 - Konec podle volby: oběšen markraběnkou, zavražděn karavanami, nebo povýšen (pokud hráč
   společnosti pomůže).
 
@@ -171,10 +188,10 @@ Postavy s † mohou zemřít trvale. Postavy, které ve hře už existují, jsou
   než společnost). Vosk je nájemník, ne fanatik.
 
 ### Sir Aldric Varn (nový) †
-- V kapitole 1 zabije sedláka **Wilta** kvůli zablácenému koni. Zákon: pokuta 10 korun.
+- V oblouku A (Teeth and Iron) zabije sedláka **Wilta** kvůli zablácenému koni. Zákon: pokuta 10 korun.
 - Hráč může: přijmout to (zákon), vyzvat Aldrica na souboj (markraběnka se urazí, ale lid hráče
   miluje), sehnat důkazy o dalších jeho zločinech a donutit matku, aby ho poslala do kláštera,
-  nebo ho nechat zabít karavanami (Isolde to nikdy nezapomene). V kapitole 4 může Aldric zmasakrovat
+  nebo ho nechat zabít karavanami (Isolde to nikdy nezapomene). V oblouku G (Iron and Honor) může Aldric zmasakrovat
   orčí tábor během míru.
 
 ### Inkvizitor Morrow, královna Ysolde, Undying Emperor, the Rootmother

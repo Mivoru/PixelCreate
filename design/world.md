@@ -18,9 +18,10 @@ Tohle je pravda, kterou hráč odkrývá celou hru. Na začátku ji nezná nikdo
 - **The Lattice** (Aurenové jí říkali Great Weave) je síť kouzel napnutá přes svět. Uzly sítě
   jsou **Lanterny**, vysoké auréjské věže. Některé stojí, jiné jsou zbořené nebo pohřbené.
 - Síť dělá tři věci:
-  1. **Loví duše umírajících z jiných světů.** Hledá duše, které umírají násilně a s velkou vůlí
-     (oběť, boj, zoufalství). Proto hráče srazí náklaďák, když zachraňuje dítě: přesně taková
-     smrt síť přitahuje. Duše dostane nové tělo, složené ze světla, a dopadne z nebe.
+  1. **Loví duše umírajících z jiných světů.** Hledá **náhlé smrti s nedokončenou vůlí**: duše,
+     které odcházejí uprostřed něčeho (oběť, boj, rozdělaný život). Hráče srazí náklaďák, když
+     zachraňuje dítě. Kaiovi selže srdce uprostřed hry. Bram padl v bitvě. Duše dostane nové tělo,
+     složené ze světla, a dopadne z nebe.
   2. **Váže je.** Skyfallen vidí svět přes **the Mark** (rozhraní hry: úrovně, atributy, zdraví).
      Mark je smlouva se sítí. Síť dává růst a po smrti tělo složí znovu u **Anchor Stone**.
   3. **Chytá i domácí duše.** Tohle je skrytá cena. Síť pije duše všech, kdo ve Velmoře zemřou,
@@ -40,7 +41,22 @@ Tohle je pravda, kterou hráč odkrývá celou hru. Na začátku ji nezná nikdo
 - Kdo dlouho žije v Blightu, chytá **blight-rot**: šedé skvrny na kůži, horečky, nakonec šílenství.
   V dolech na krystaly umírají otroci na blight-rot do pěti let.
 - Hluboko v Blightmarch se zbytky slepily v něco velkého: **the Rootmother**, kořenovou bytost
-  z milionů zbytků, mezi nimi i z Aurenů samotných. Finální hrozba.
+  z milionů zbytků, mezi nimi i z Aurenů samotných. Největší část jsou ale **zbytky Undying
+  Emperora**: čtyři sta let jeho smrtí. Finální hrozba.
+
+### 1.3a Zkušenosti jsou duše
+- Mark roste tím, že pohlcuje úlomky duší ze zabitých monster. Úroveň je doslova snědená cizí duše.
+  Proto monstra dávají zkušenosti a krystaly a obyčejná zvířata skoro nic.
+- Domorodci rostou výcvikem a zkušeností, pomalu. Jejich „úroveň", kterou hráč vidí nad hlavou,
+  je jen to, jak je Mark hodnotí jako hrozbu.
+- Domorodci to tuší („they eat what they kill, and not the meat"). Hráč to zjistí v aktu I
+  (Stone Circle nebo archiv). Hratelnost se nezmění, změní se pohled na ni.
+
+### 1.3b Ozvěny
+- Každé složení u Anchor Stone nechá v Hlubině zbytek předchozího těla. Zbytky Skyfallen nehnijí
+  jako ostatní: drží tvar a zbraň, kterou měl Skyfallen, když zemřel.
+- V Blightu hráč potká **vlastní ozvěny**. Hra si pamatuje místo, úroveň a výbavu každé hráčovy
+  smrti. Kdo umíral často, potká víc ozvěn. Dex jich má celou armádu.
 
 ### 1.4 Pravidla pro hru
 - Monstra = posedlá zvířata nebo bytosti. Zvířata bez Blightu (krávy, ovce, jeleni) krystaly
@@ -185,6 +201,9 @@ pro šok, ale jako normální svět, se kterým se hráč musí nějak vyrovnat.
 - Ve hře jen „gold". Ve světě: měďáky (bits), stříbro (marks), zlaté koruny. Hra mluví o zlatě.
 - Krystaly: monopol koruny pronajatý společnosti. Guilda smí krystaly vykupovat jen pro
   společnost. Prodat je jinam je pašování.
+- **Směnky kryté krystaly:** společnost vydává papírové směnky (Halveth notes), které platí v celém
+  království a jsou kryté krystaly v jejích sklepích. Obchod na nich stojí. Kdo zničí síť, zničí
+  hodnotu krystalů, a tím i směnek. Obchodní cesta má v konci hry skutečnou sázku.
 - Ceny pro představu: bochník 1 bit, meč 2 koruny, dlužní smlouva na dítě 15 korun, na dospělého
   40 korun, beastkin na trhu 25 až 60 korun.
 

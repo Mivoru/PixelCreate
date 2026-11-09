@@ -27,7 +27,7 @@ Hra už je hratelný prototyp akční části. Zdroj pravdy je kód a `CLAUDE.md
 | Věc | Kde je návrh | Poznámka |
 |---|---|---|
 | Ukládání hry | `systems.md` 5 | dnes stav žije jen v paměti serveru; po restartu je pryč |
-| Stav světa (flagy, pověsti, beat, osudy NPC) | `systems.md` 5 | základ všech následků |
+| Stav světa (flagy, pověsti, kalendář, plány frakcí, osudy NPC) | `systems.md` 5 | základ všech následků |
 | Questy z dat, víc kroků, termíny | `systems.md` 3 | dnes pevné pole v `Guild.cs` |
 | Dialogy z dat, volby odpovědí, kontrola atributů | `systems.md` 3 | dnes `switch` v `Dialogues.cs` |
 | Deník (journal) | `systems.md` 3 | |
@@ -49,36 +49,19 @@ Hra už je hratelný prototyp akční části. Zdroj pravdy je kód a `CLAUDE.md
 
 | # | Rozhodnutí | Blokuje | Můj návrh |
 |---|---|---|---|
-| 1 | Co je první hratelný příběhový úsek | všechno další | prolog + první polovina kapitoly 1 (viz níže) |
-| 2 | Jména vesnice a světa | texty, minimapa | Hearthmere, Velmora |
+| 1 | Jména vesnice a světa | texty, minimapa | Hearthmere, Velmora |
+| 2 | Pohlaví a vzhled hráčovy postavy | prolog, dialogy, romance | jednoduchá volba na začátku (dvě těla anime rigu, vlasy, barvy); romance otevřené pro obě |
 | 3 | Úvodní video: 2D obrázky nebo 3D scéna | prolog | 2D pixel art obrázky, levné a ve stylu |
 | 4 | Jak dělat scény (pád, klec, přepadení) | prolog | jednoduchý skriptovaný systém: kamera, repliky, pohyb NPC, bez střihu |
-| 5 | Ukládání: kdy a kolik slotů | základy | auto na beatech a při odchodu, jedna záloha |
-| 6 | Beastkin v aktu I, nebo až v aktu II | modely | až v aktu II, v aktu I jen zmínky a jeden kurýr na šibenici |
-| 7 | Jak dlouhý má být akt I | rozsah | 6 až 10 hodin |
-| 8 | Romantické linky | dialogy | zatím ne |
+| 5 | Kalendář: kolik dní má akt I a jak rychle běží čas | základy | 70 dní, čas jen spánkem, cestou a joby |
+| 6 | Ukládání: kdy a kolik slotů | základy | auto každé ráno a při odchodu, jedna záloha |
+| 7 | Beastkin v aktu I, nebo až v aktu II | modely | až v aktu II, v aktu I jen zmínky a kurýr na šibenici |
+| 8 | Smrt hráče: co stojí | balanc | malá ztráta krystalů nebo zlata, ozvěna se zapíše |
 
-## 4. První hratelný příběhový úsek (návrh)
+Rozhodnuto: hra pro jednoho hráče (lokální server zůstává), hráčova postava s volbami odpovědí,
+hráč není vyvolený, žádná ideální linie, cesty přes frakce, sólo i nicnedělání jsou platné, romance
+volitelné a vypínatelné (2026-11-09).
 
-Ověří příběh, atmosféru, souboj, architekturu i tempo najednou. Odhad 45 až 60 minut hraní.
+## 4. Další krok
 
-1. **Příchod:** úvodní obrázky, pád do Mirror Lake, síť lovců, klec na voze (Nell, Haruto, Vosk).
-2. **Prostředí:** přepadení goblinů, útěk přes Slime Fields, Hearthmere (Pip, Elda, Bram).
-3. **Důležité NPC:** Nell (osud visí na hráči) a Mira (registrace, Anchor Stone).
-4. **Hlavní quest:** zkouška u Rhey, pak „Teeth and Iron": stopovat únosce z Harrow Farm do Goblin
-   Hollow, najít železo se značkou, Hollis značku pozná.
-5. **Vedlejší úkol:** „The Second One", osvobodit Haruta od lovců u Mirror Lake.
-6. **Boss:** Warlord Grub v Goblin Warren (dvě fáze), zachránit zajatce, najít Holtovu knihu.
-7. **Odměna a důvod pokračovat:** rank E, Vosk přichází pro Nell (první velká volba), Hollis večer
-   říká, že ví, čí je to značka. Ráno je mrtvý. Konec úseku.
-
-Co úsek potřebuje technicky (jen tolik, kolik úsek žádá, ne celé systémy z návrhu):
-- ukládání hráče a malého stavu světa (flagy, osudy NPC),
-- questy s kroky a dialogy s volbami z dat, v rozsahu, který úsek použije,
-- jednoduché scény (kamera, repliky, pohyb NPC),
-- deník jen se seznamem úkolů,
-- fáze bosse,
-- nové modely: vůz s klecí, tábor lovců, Goblin Warren, Nell, Vosk, lovci.
-
-Co se nedělá: vyšetřování (další úsek), ranky nad E, příběhové hodiny s termíny (stačí flagy),
-růst vesnice, společníci, akt II.
+Etapa 0 podle `design/stages.md`: rozhodnout body 1 až 6 a napsat detailní návrh etap 1 a 2.

@@ -94,7 +94,7 @@ otrava krále.
   do Lanteren nalijí **duše Skyfallen** (jedna duše Skyfallen hoří jako tisíc krystalů). Tomu
   říká **Harvest**. Moonfell byl jeho první pokus s domácími dušemi a selhal. Není sadista: je to
   účetní apokalypsy, který spočítal, že tisíc Skyfallen za milion lidí je dobrý obchod.
-- **Sister Vey**: Morrowova pravá ruka v terénu, vede očistu Moonfellu (kapitola 3).
+- **Sister Vey**: Morrowova pravá ruka v terénu, vede očistu Moonfellu (oblouk F (Moonfell)).
 - **Otec Anselm** (mrtvý): kněz z Moonfellu, jehož deník je klíčový důkaz.
 
 ---
@@ -116,7 +116,7 @@ otrava krále.
 
 - **Markraběnka Isolde Varn** (48): tvrdá, praktická, zadlužená u společnosti. Věší bandity
   každý týden, ale svůj kraj drží pohromadě. Mezi Caiem a Seraphine balancuje, dokud může.
-- **Sir Aldric Varn** (22): její syn, rytíř. Arogantní, krutý k poddaným. V kapitole 1
+- **Sir Aldric Varn** (22): její syn, rytíř. Arogantní, krutý k poddaným. V oblouku A (Teeth and Iron)
   zabije v hádce vesničana (viz plot). Šlechtice zákon nesoudí.
 
 ---
@@ -132,7 +132,7 @@ otrava krále.
 - **Vashra** (ve hře Orc Spearcaller): Gor Ashkova dcera, šamanka, která volá kopí duchů.
   Ví, že předkové mlčí. Může se stát společnicí.
 - **Bruk** (ve hře Orc Stormaxe): mladý vůdce válečné strany. Když dojde k míru, pokusí se ho
-  zničit (vražda vyslance, kapitola 4).
+  zničit (vražda vyslance, oblouk G (Iron and Honor)).
 - Orkové nejsou oběti ani monstra. Mír s nimi stojí něco i hráče: vydat orčí zajatce z dolů
   společnosti a odpustit vypálené farmy.
 
@@ -140,7 +140,7 @@ otrava krále.
 
 ## 8. Moonfell
 
-- Bývalá vesnice, dnes vlkodlaci. Viz `design/plot.md`, kapitola 3.
+- Bývalá vesnice, dnes vlkodlaci. Viz `design/plot.md`, oblouk F.
 - **Baron Gerhard Moonfell** (Moon-Eaten Lord): dovolil církvi pokus, aby zachránil umírající
   ženu. Je zdroj kletby.
 - **Odo** (ve hře Redclaw): vesnický kovář. **Lisbet** (ve hře Moonleaper): jeho mladší dcera.
@@ -168,6 +168,34 @@ otrava krále.
 - Kareth je zrcadlo: takhle dopadne Aldermark, pokud vyhraje Morrow nebo Seize konec.
 
 ---
+
+## 10a. Ashen Banner (žoldnéřská rota)
+
+**Chce:** peníze a přežít. **Zločin:** dělá cokoli za cenu.
+
+- Asi čtyřicet mužů a žen, tři z nich Skyfallen. Táboří u East Watch, čeká na Caiovo tažení.
+- **Kapitánka Bryn Halloway** (35): domorodka, veteránka karethské války. Drží rotu pohromadě
+  tvrdými pravidly: kontrakt se splní, kořist se dělí, zraněný se nenechá.
+- **Sergeant Odd** (Skyfallen): umřel už čtyřicetkrát a směje se tomu. Pro rotu je zbraň i problém.
+- Rota bere kontrakty od markraběnky, společnosti, Caia, karavan, i od orků, když se zaplatí.
+- Plán bez hráče: dostat Caiův kontrakt na Ironjaw, vydrancovat tábor, odejít s kořistí na jih.
+
+## 10b. Obecní rada Hearthmere
+
+- Vesnice má radu (pět hlav rodin) a **rychtáře**. Starý rychtář umřel v zimě. Volba je v den 30.
+- Rychtář rozhoduje o desátku, o pronájmu obecní půdy, o tom, koho vesnice přijme (uprchlíci,
+  beastkin, orkové), a jestli bude spolupracovat se společností, nebo s markraběnkou.
+- Kandidáti bez hráče: **Lina** (peníze společnosti, sliby levného obilí), **Bram** (nechce),
+  **Corwin** (opilý). Hráč může podpořit jiného (Elda, Tess, Edwin) nebo Brama přemluvit.
+- Hlasy se získávají činy pro rodiny v radě (mlynář, Hamm z Harrow Farm, Elda, kovář Tess, Lina).
+
+## 10c. Herold Sky Mother
+
+- Církev v den 20 vyhlásí v East Watch, že Sky Mother poslala **Herolda**: Skyfallen jménem **Aurel**,
+  krásného a výmluvného mladíka. Aurel je loutka: nic neumí, řekne, co mu napíšou. Bojí se.
+- Herold je nástroj, aby lidé přijali, že Skyfallen patří církvi (a později do Lanterny).
+- Hráč může lež podpořit (církev, peníze), odhalit (Aurel se zhroutí, církev zuří) nebo Aurela
+  osvobodit (Aurel uteče s hráčovou pomocí; církev si najde jiného).
 
 ## 11. Vztahy mezi frakcemi (začátek hry)
 

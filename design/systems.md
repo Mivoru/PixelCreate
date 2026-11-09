@@ -63,10 +63,10 @@ komentuje). **Doporučení:** pád, klec, útěk. Silný začátek a hned ukáž
 - Quest má kroky. Krok má cíl, podmínky a výsledky.
 - **Cíle:** zabij (id nebo prefix), přines předmět, mluv s NPC, dojdi na místo, vyber volbu
   v dialogu, přežij do času (obrana), doprovoď NPC.
-- **Podmínky:** flag, rank, kapitola, beat, pověst, předmět, atribut, NPC naživu.
-- **Výsledky:** nastav flag, změň pověst, posuň beat, dej nebo vezmi předmět a zlato, změň osud
+- **Podmínky:** flag, rank, den a denní doba, pověst, hodnost ve frakci, důvěra postavy, předmět, atribut, NPC naživu.
+- **Výsledky:** nastav flag, změň pověst, důvěru nebo podezření, posuň čas, dej nebo vezmi předmět a zlato, změň osud
   NPC (živý, mrtvý, odešel, přesunul se), spusť událost.
-- **Termíny:** krok může mít `deadlineBeat` a `onExpire` (výsledky, když hráč nestihne).
+- **Termíny:** krok může mít `deadlineDay` a `onExpire` (výsledky, když hráč nestihne).
 - Současné joby z `Guild.Quests` se převedou do nového formátu. Příkazy `AcceptSlimeQuest` a
   `AcceptGoblinQuest` zmizí ve prospěch `QuestCommands`.
 
@@ -82,7 +82,7 @@ komentuje). **Doporučení:** pád, klec, útěk. Silný začátek a hned ukáž
 
 ## 4. Vyšetřování
 
-Hollisova vražda (kapitola 1) a smrt krále (akt II) používají stejný systém.
+Hollisova vražda (oblouk A (Teeth and Iron)) a smrt krále (akt II) používají stejný systém.
 
 - **Stopy** jsou předměty nebo fakta v deníku: „Poison bought from Wren", „Soldier's boot prints",
   „Garrick took coin".
@@ -100,7 +100,8 @@ Hollisova vražda (kapitola 1) a smrt krále (akt II) používají stejný syst�
   - **flagy** (`ch1.ledger.margravine`, `npc.hollis.dead`),
   - **pověsti** (Crown, Seraphine, Caius, Isolde, Company, Caravans, Church, Guild, Ironjaw,
     Moonfell, Hearthmere),
-  - **beat** (příběhové hodiny) a **kapitola**,
+  - **kalendář** (den, denní doba, roční doba) a **plány frakcí** (který krok proběhl, který byl překažen),
+  - **členství** (frakce, hodnost, podezření) a **důvěra** důležitých postav,
   - **osudy NPC** (živý, mrtvý, odešel, jinde),
   - **růst vesnice** (kdo se přistěhoval).
 - Zóna JSON dostane u táborů, NPC, rekvizit a budov `requires` / `forbids` (podmínky jako v questech).
@@ -108,14 +109,31 @@ Hollisova vražda (kapitola 1) a smrt krále (akt II) používají stejný syst�
 - Server posílá stav světa klientovi zvlášť spolehlivou zprávou při změně, ne v každém snapshotu
   (snapshot se musí vejít do jednoho UDP paketu).
 - **Uložení:** server ukládá hráče a stav světa do souboru (`user saves/<slot>.json`). Automaticky
-  při každém beatu a při odchodu. Ruční ukládání ne: volby mají být závazné. Jeden slot na postavu,
-  plus automatická záloha z předchozího beatu (pro pády a chyby, ne pro „zkusit to znovu").
+  každé ráno a při odchodu. Ruční ukládání ne: volby mají být závazné. Jeden slot na postavu,
+  plus automatická záloha z předchozího rána (pro pády a chyby, ne pro „zkusit to znovu").
 
 **Varianty:** volné ukládání kdykoli (pohodlné, ale hráči by zkoušeli všechny volby a ztratilo by
-se napětí), žádné ukládání mimo beaty (čisté, ale bolí při pádu hry). **Doporučení:** auto-save
-na beatech a při odchodu, jedna záloha.
+se napětí), žádné ukládání mimo rána (čisté, ale bolí při pádu hry). **Doporučení:** auto-save
+každé ráno a při odchodu, jedna záloha.
 
 ---
+
+## 5a. Kalendář a plány frakcí
+
+- Server drží kalendář (den, denní doba). Čas posouvá spánek, cestování, joby a čekání.
+  Boj a rozhovory ne. Denní doba mění světlo, NPC rozvrhy (kdo kde stojí) a nepřátele (noc: vlci).
+- Plány frakcí jsou data (`world/agendas.json`): kroky s dnem, podmínkou a výsledky, stejný formát
+  jako questy. Server je vyhodnotí při každé změně času. Výchozí osa je v `design/timeline.md`.
+- Zprávy a drby (`world/rumors.json`): text s podmínkou, šíří se tabulí, hospodou a NPC.
+- Testy: simulovat 70 dní bez hráče a ověřit výchozí konec aktu I (podle `timeline.md` oblouk F (Moonfell)).
+
+## 5b. Členství, podezření a důvěra
+
+- Členství: frakce, hodnost (0 až 3), podezření (0 až 100). Při přetečení podezření se spustí
+  quest prověrky nebo vyhazov.
+- Důvěra postav (−100 až 100) a jejich hodnoty (co se jim líbí a nelíbí) jsou data u postavy.
+- Kontrakty (Ashen Banner) jsou questy s druhem `contract` a zadavatelem; přijetí kontraktu proti
+  frakci zvedne podezření u ní.
 
 ## 6. Růst Hearthmere
 
@@ -145,10 +163,10 @@ na beatech a při odchodu, jedna záloha.
 | Část | Úroveň | Oblasti | Rank |
 |---|---|---|---|
 | Prolog | 1–3 | Mirror Lake, Slime Fields, Hearthmere, aréna | F |
-| Kapitola 1 | 3–8 | Goblin Hollow, Goblin Warren, Westwood, East Watch | E |
-| Kapitola 2 | 7–11 | Harrow Farm, Greyfang, Stone Circle | D |
-| Kapitola 3 | 10–14 | Moonfell, krypta | D |
-| Kapitola 4 | 13–17 | Ironjaw, Southern Wilds, East Watch | C |
+| oblouk A (Teeth and Iron) | 3–8 | Goblin Hollow, Goblin Warren, Westwood, East Watch | E |
+| oblouk E (Wolf Winter) | 7–11 | Harrow Farm, Greyfang, Stone Circle | D |
+| oblouk F (Moonfell) | 10–14 | Moonfell, krypta | D |
+| oblouk G (Iron and Honor) | 13–17 | Ironjaw, Southern Wilds, East Watch | C |
 | Finále aktu I | 16–18 | Silver Falls, Sunken Archive | C |
 | Akt II | 18–30 | Varn's Crossing, Marshes of Ell, Saltmere, Saltdeeps, Highcrest | B–A |
 | Akt III | 30–40 | Marche v Blightu, Kareth, Blightmarch, Heart Lantern | A |
@@ -230,28 +248,15 @@ Pravidla:
 ### Co je jisté (rozhodnuto)
 Hra pro jednoho hráče, lokální server a klient zůstávají, co-op možná později.
 
-### Fáze
-Každá fáze končí hratelnou a otestovanou verzí. **Akt I je celá hra sama o sobě**: má začátek,
-konec, volby a bossy. Akty II a III jsou skica, dokud akt I není hotový a zábavný.
-
-1. **Základy** (bez nového obsahu):
-   uložení hry, `WorldState`, questy z dat, dialogy z dat, deník (klávesa L), podmínky v zónách.
-   Testy v `net-tests` (quest projde, flag změní zónu, uložení a načtení vrátí stejný stav).
-2. **Prolog:** úvodní video (jednoduché, 2D obrázky v pixel artu stačí), pád, klec, útěk, nová
-   Hearthmere (přejmenování), zkouška ve třech kolech, bot `prologue`.
-3. **Kapitola 1:** vyšetřování, Goblin Warren, Grub, kniha a tři cesty, Nell, nové postavy (Vosk,
-   Holt, Corwin, Nell, Tam, Brightwater Four), East Watch se šibenicí.
-4. **Kapitola 2 a 3:** příběhové hodiny s termíny, obrana farmy, Greymaw, Moonfell a krypta, inkvizice.
-5. **Kapitola 4:** bitva (vlny), mír a souboj s Urzogem, orčí osada jako podmíněný obsah.
-6. **Finále aktu I:** Sunken Archive, Warden, Bramova smrt, epilog.
-7. **Akt II** (víc zón na serveru, cestování, město, společníci).
-8. **Akt III.**
+### Etapy
+Pořadí výroby je v `design/stages.md`.
 
 ### Rizika
-- **Množství textu.** Akt I má odhadem 40 až 60 tisíc slov dialogů. Psát po kapitolách, hned do dat,
+- **Množství textu.** Akt I má odhadem 40 až 60 tisíc slov dialogů. Psát po etapách, hned do dat,
   a hned testovat botem.
-- **Kombinatorika voleb.** Každá velká volba zdvojnásobí obsah. Proto tři velké volby za kapitolu,
-  ne víc, a následky přes flagy, které mění malé věci (repliky, NPC, tábory), ne celé zóny.
+- **Kombinatorika voleb.** Každá velká volba zdvojnásobí obsah. Proto cesty jako sady nástrojů na
+  stejné situace (ne oddělené příběhy), málo velkých situací na oblouk, a následky přes flagy, které
+  mění malé věci (repliky, NPC, tábory), ne celé zóny.
 - **Nové modely.** Klec, vůz, šibenice, hřbitov, nové postavy, beastkin (uši a ocas na anime rig).
-  Seznam na začátku každé fáze.
+  Seznam na začátku každé etapy.
 - **Velikost snapshotu** se nezmění, stav světa jde zvlášť.
