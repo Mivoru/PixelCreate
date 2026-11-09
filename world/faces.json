@@ -1,0 +1,15 @@
+{
+  "neutral":   { "browRaise": 0,    "browTilt": 0,    "lidUpper": 0,    "lidLower": 0,   "mouth": "line" },
+  "smile":     { "browRaise": 0.3,  "browTilt": 0.1,  "lidUpper": 0,    "lidLower": 0.35, "mouth": "smile" },
+  "laugh":     { "browRaise": 0.6,  "browTilt": 0.2,  "lidUpper": 0,    "lidLower": 0,   "mouth": "grin", "happyEyes": true },
+  "angry":     { "browRaise": -0.6, "browTilt": -1,   "lidUpper": 0.3,  "lidLower": 0.2, "mouth": "frown" },
+  "sad":       { "browRaise": 0.2,  "browTilt": 1,    "lidUpper": 0.3,  "lidLower": 0,   "mouth": "frown", "tear": true },
+  "surprised": { "browRaise": 1,    "browTilt": 0.2,  "lidUpper": 0,    "lidLower": 0,   "mouth": "o", "wide": true },
+  "afraid":    { "browRaise": 0.8,  "browTilt": 0.9,  "lidUpper": 0,    "lidLower": 0,   "mouth": "teeth", "wide": true },
+  "pain":      { "browRaise": -0.3, "browTilt": 0.8,  "lidUpper": 0.85, "lidLower": 0.4, "mouth": "teeth" },
+  "effort":    { "browRaise": -0.7, "browTilt": -0.8, "lidUpper": 0.45, "lidLower": 0.3, "mouth": "teeth" },
+  "tired":     { "browRaise": -0.1, "browTilt": 0.5,  "lidUpper": 0.55, "lidLower": 0,   "mouth": "open", "sweat": true },
+  "smirk":     { "browRaise": 0.2,  "browTilt": -0.3, "lidUpper": 0.25, "lidLower": 0.2, "mouth": "smirk" },
+  "asleep":    { "browRaise": 0,    "browTilt": 0.2,  "lidUpper": 1,    "lidLower": 0,   "mouth": "line" },
+  "blush":     { "browRaise": 0.3,  "browTilt": 0.6,  "lidUpper": 0.2,  "lidLower": 0.2, "mouth": "smile", "blush": true }
+}

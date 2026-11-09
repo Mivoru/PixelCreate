@@ -156,8 +156,12 @@ public sealed class PlayerRig
     private readonly System.Collections.Generic.List<ClothChain> _cloth = new();
     private readonly Node3D _hairRoot = new();
     private readonly Node3D _cape = new();
-    private readonly System.Collections.Generic.List<Node3D> _eyes = new();
-    private float _blinkClock = 3f;
+
+    /// <summary>The face of a human figure: expressions, blinking and talking. Goblins, orcs and werewolves have none.</summary>
+    public FaceRig? Face { get; private set; }
+
+    /// <summary>The head model the face sits on: the portrait camera looks at it.</summary>
+    public Node3D? FaceAnchor { get; private set; }
     private float _clasp;
     private float _hipHeight = 0.92f;
     private float _phase;
@@ -341,7 +345,8 @@ public sealed class PlayerRig
         _head.AddChild(_hairRoot);
         _hairRoot.Position = head.Position;
         BuildHair();
-        BuildEyes(head);
+        Face = new FaceRig(head, _look.Skin, _look.Eyes, _look.Brows, _look.Feminine);
+        FaceAnchor = head;
 
         if (_look.Cloak)
         {
@@ -399,49 +404,6 @@ public sealed class PlayerRig
     private Node3D Cloth(string name, ClothChain chain, float top, float length)
     {
         return Model(name, chain.Materials, top, length);
-    }
-
-    /// <summary>Large eyes with a dark lash, a coloured iris and a highlight, and a small mouth and nose.</summary>
-    private void BuildEyes(Node3D head)
-    {
-        var skinShade = new Color("e0a890");
-        foreach (var side in new[] { -1f, 1f })
-        {
-            var eye = new Node3D { Position = new Vector3(side * 0.057f, -0.018f, -0.118f) };
-            eye.Rotation = new Vector3(0, side * -0.32f, 0);
-            eye.AddChild(Flat(new Vector3(0.03f, 0.031f, 0.006f), new Color("f8f4ee"), Vector3.Zero));
-            eye.AddChild(Flat(new Vector3(0.024f, 0.03f, 0.006f), _look.Eyes, new Vector3(side * -0.002f, -0.002f, -0.005f)));
-            eye.AddChild(Flat(new Vector3(0.024f, 0.012f, 0.0055f), _look.Eyes.Darkened(0.4f), new Vector3(side * -0.002f, 0.014f, -0.0065f)));
-            eye.AddChild(Flat(new Vector3(0.012f, 0.017f, 0.005f), new Color("15202c"), new Vector3(side * -0.002f, 0.001f, -0.009f)));
-            eye.AddChild(Flat(new Vector3(0.0085f, 0.0085f, 0.004f), Colors.White, new Vector3(side * 0.008f, 0.012f, -0.0125f)));
-            eye.AddChild(Flat(new Vector3(0.0045f, 0.0045f, 0.003f), Colors.White, new Vector3(side * -0.009f, -0.014f, -0.0125f)));
-
-            // The lash lifts at the outer end, which reads as awake and friendly.
-            var lash = Flat(new Vector3(0.037f, 0.0075f, 0.008f), new Color("1c1a24"), new Vector3(side * 0.002f, 0.031f, -0.006f));
-            lash.Rotation = new Vector3(0, 0, side * 0.07f);
-            eye.AddChild(lash);
-            if (_look.Feminine)
-            {
-                var wing = Flat(new Vector3(0.012f, 0.004f, 0.006f), new Color("1c1a24"), new Vector3(side * 0.037f, 0.031f, -0.003f));
-                wing.Rotation = new Vector3(0, 0, side * 0.6f);
-                eye.AddChild(wing);
-                head.AddChild(Flat(new Vector3(0.026f, 0.012f, 0.004f), new Color("f4b0a8"), new Vector3(side * 0.07f, -0.062f, -0.106f)));
-            }
-
-            head.AddChild(eye);
-            _eyes.Add(eye);
-            var brow = Flat(new Vector3(0.03f, _look.Feminine ? 0.0035f : 0.0055f, 0.004f), _look.Brows, new Vector3(side * 0.06f, 0.056f, -0.122f));
-            brow.Rotation = new Vector3(0, side * -0.3f, side * -0.08f);
-            head.AddChild(brow);
-        }
-
-        head.AddChild(Flat(new Vector3(0.0065f, 0.004f, 0.005f), skinShade, new Vector3(0, -0.058f, -0.14f)));
-        var mouth = Flat(new Vector3(0.017f, 0.0035f, 0.004f), new Color("b05a58"), new Vector3(0, -0.098f, -0.116f));
-        head.AddChild(mouth);
-        if (_look.Feminine)
-        {
-            head.AddChild(Flat(new Vector3(0.008f, 0.003f, 0.004f), new Color("d88078"), new Vector3(0, -0.103f, -0.115f)));
-        }
     }
 
     private static MeshInstance3D Flat(Vector3 radius, Color color, Vector3 position)
@@ -588,16 +550,7 @@ public sealed class PlayerRig
             cloth.Step(velocity, delta);
         }
 
-        _blinkClock -= delta;
-        if (_blinkClock < -0.12f)
-        {
-            _blinkClock = (float)GD.RandRange(2.0, 5.0);
-        }
-
-        foreach (var eye in _eyes)
-        {
-            eye.Scale = new Vector3(1f, _blinkClock < 0f ? 0.1f : 1f, 1f);
-        }
+        Face?.Step(delta);
     }
 
     private static MeshInstance3D Rounded(Vector3 radius, Color color, Vector3 position)

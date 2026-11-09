@@ -306,6 +306,17 @@ public class DialogueDataTests
     }
 
     [Fact]
+    public void DialogueFaces_AreExpressionsThatExist()
+    {
+        foreach (var node in Story.Dialogues.Values.SelectMany(d => d.Nodes.Values).Where(n => n.Face is not null))
+        {
+            Assert.True(Faces.All.ContainsKey(node.Face!), $"node {node.Id} asks for the unknown face {node.Face}");
+        }
+
+        Assert.All(Faces.All.Values, f => Assert.Contains(f.Mouth, Faces.Mouths));
+    }
+
+    [Fact]
     public void EveryPersonInTheValley_HasSomethingToSay()
     {
         foreach (var npc in Valley.World.Npcs.Where(n => n.Role != "storage"))

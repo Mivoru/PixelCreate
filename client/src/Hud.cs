@@ -258,6 +258,20 @@ public partial class Hud : Control
 
     public bool DialogOpen => _dialogName.Length > 0;
 
+    /// <summary>The speaker's face, rendered live by the game; shown while <see cref="PortraitShown"/> is set.</summary>
+    public Texture2D? Portrait { get; set; }
+
+    public bool PortraitShown { get; set; }
+
+    /// <summary>The id of the NPC speaking, or empty for lines without a person behind them.</summary>
+    public string Speaker { get; set; } = "";
+
+    /// <summary>The expression the current line asks of the speaker, from the dialogue data.</summary>
+    public string? DialogFace { get; set; }
+
+    /// <summary>True while the words of the line are still appearing: the speaker's mouth moves.</summary>
+    public bool DialogTyping { get; private set; }
+
     /// <summary>Opens a conversation. Options are chosen with the number keys or the mouse.</summary>
     public void ShowDialog(string name, string text, params (string Label, Command Command)[] options) =>
         ShowDialog(name, text, options.Select(o => new DialogChoice(o.Label, o.Command)).ToArray());
@@ -275,6 +289,8 @@ public partial class Hud : Control
     public void CloseDialog()
     {
         _dialogName = "";
+        Speaker = "";
+        DialogFace = null;
         DialogRole = "";
         if (!WindowOpen && Camera is not null)
         {
@@ -1385,7 +1401,13 @@ public partial class Hud : Control
         const float width = 900f;
         const int size = 21;
         const float pad = 36f;
-        var textHeight = _font.GetMultilineStringSize(_dialogText, HorizontalAlignment.Left, width - pad * 2, size).Y;
+
+        // A live portrait of the speaker sits at the left; the words make room for it.
+        const float portraitSize = 150f;
+        var portrait = Portrait is not null && PortraitShown;
+        var indent = portrait ? portraitSize + 22f : 0f;
+        var textHeight = Mathf.Max(_font.GetMultilineStringSize(_dialogText, HorizontalAlignment.Left, width - pad * 2 - indent, size).Y,
+            portrait ? portraitSize - 40f : 0f);
         const float row = 48f;
         var height = 88f + textHeight + 22f + _dialogOptions.Length * row + 18f;
         var rise = (1f - Mathf.Clamp(_dialogAge * 6f, 0f, 1f)) * 20f;
@@ -1404,7 +1426,15 @@ public partial class Hud : Control
 
         // Words appear one at a time, so a line never jumps when a long word wraps.
         var shown = Typed(_dialogText, _dialogAge * 70f);
-        DrawMultilineString(_font, box.Position + new Vector2(pad, 62), shown, HorizontalAlignment.Left, width - pad * 2, size, -1, Text);
+        DialogTyping = shown.Length < _dialogText.Length;
+        if (portrait)
+        {
+            var frame = new Rect2(box.Position + new Vector2(pad - 6, 34), portraitSize, portraitSize);
+            Rounded(frame.Grow(3), 14, Accent with { A = 0.55f }, Colors.Transparent, 0);
+            DrawTextureRect(Portrait!, frame, false);
+        }
+
+        DrawMultilineString(_font, box.Position + new Vector2(pad + indent, 62), shown, HorizontalAlignment.Left, width - pad * 2 - indent, size, -1, Text);
 
         var top = box.Position.Y + 62 + textHeight + 6;
         DrawLine(new Vector2(box.Position.X + pad, top), new Vector2(box.End.X - pad, top), Rim, 1f);

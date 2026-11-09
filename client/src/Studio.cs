@@ -59,6 +59,7 @@ public partial class Studio : Node
                 await (job switch
                 {
                     "people" => People(),
+                    "faces" => FacesJob(),
                     "animals" => Animals(),
                     "monsters" => Monsters(),
                     "motion" => Motion(),
@@ -84,7 +85,7 @@ public partial class Studio : Node
     /// <summary>Removes the old pictures of a job, so a renamed shot cannot linger and mislead.</summary>
     private void Forget(string job)
     {
-        var prefix = job switch { "animals" => "animal_", "monsters" => "monster_", "people" => "person_", "motion" => "motion_", "attacks" => "attack_", "weapons" => "weapon_", "models" => "model_", "world" => "world_", "hitboxes" => "box_", _ => "map_" };
+        var prefix = job switch { "animals" => "animal_", "monsters" => "monster_", "people" => "person_", "faces" => "face_", "motion" => "motion_", "attacks" => "attack_", "weapons" => "weapon_", "models" => "model_", "world" => "world_", "hitboxes" => "box_", _ => "map_" };
         foreach (var file in System.IO.Directory.GetFiles(_folder, prefix + "*.png"))
         {
             System.IO.File.Delete(file);
@@ -188,6 +189,38 @@ public partial class Studio : Node
             _stage.Camera.LookAtFromPosition(new Vector3(0, head + 0.05f, -4.2f), new Vector3(0, head, 0));
             await Wait(8);
             Save($"person_{name}_face");
+            Dismiss(rig);
+        }
+    }
+
+    /// <summary>
+    /// Every expression in world/faces.json on the hero and three people, close up from the front
+    /// and at three quarters, plus the mouth moving in speech. Read face_* after changing the face rig.
+    /// </summary>
+    private async Task FacesJob()
+    {
+        Floor();
+        var looks = new[] { ("hero", RigLook.Player) }.Concat(NpcLooks.All.Where(l => l.Name is "mira" or "rhea" or "bram")).ToArray();
+        foreach (var (name, look) in looks)
+        {
+            var rig = Rig(look, Vector3.Zero, 0f);
+            await Wait(10);
+            _stage.Camera.Fov = 9;
+            var head = look.Scale * 1.68f;
+            foreach (var expression in Faces.All.Keys.Append("talking"))
+            {
+                rig.Face!.Blinks = false;
+                rig.Face.Expression = expression == "talking" ? "neutral" : expression;
+                rig.Face.Talking = expression == "talking";
+                foreach (var (side, yaw) in new[] { ("front", 0f), ("three", 0.55f) })
+                {
+                    rig.Root.Rotation = new Vector3(0, yaw, 0);
+                    _stage.Camera.LookAtFromPosition(new Vector3(0, head + 0.04f, -4.2f), new Vector3(0, head, 0));
+                    await Wait(expression == "talking" ? 3 : 14);
+                    Save($"face_{name}_{expression}_{side}");
+                }
+            }
+
             Dismiss(rig);
         }
     }

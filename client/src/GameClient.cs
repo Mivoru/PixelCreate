@@ -189,6 +189,14 @@ public partial class GameClient : Node
 
         _hud = new Hud { Camera = _stage.Camera };
         AddChild(_hud);
+
+        // The dialogue portrait: a second camera in the same world, close on the speaker's face.
+        _portrait = new SubViewport { Size = new Vector2I(256, 256), World3D = _stage.View.FindWorld3D(), RenderTargetUpdateMode = SubViewport.UpdateMode.Always };
+        _portraitCamera = new Camera3D { Fov = 14f, Near = 0.05f, Far = 40f };
+        _portrait.AddChild(_portraitCamera);
+        AddChild(_portrait);
+        _portraitCamera.Current = true;
+        _hud.Portrait = _portrait.GetTexture();
         _minimap = new Minimap(zone);
         _hud.AddChild(_minimap);
         foreach (var npc in _world.Npcs)
@@ -405,8 +413,39 @@ public partial class GameClient : Node
         _hud.Snapshot = _client.Latest;
     }
 
+    private SubViewport _portrait = null!;
+    private Camera3D _portraitCamera = null!;
+    private PlayerRig? _speaking;
+
+    /// <summary>
+    /// Points the portrait camera at whoever speaks, sets their expression from the line and moves
+    /// their mouth while the words appear. Everyone else goes back to a calm face.
+    /// </summary>
+    private void UpdateSpeaker()
+    {
+        var rig = _hud.DialogOpen && _npcs.TryGetValue(_hud.Speaker, out var found) ? found : null;
+        if (_speaking is not null && _speaking != rig && _speaking.Face is { } old)
+        {
+            old.Talking = false;
+            old.Expression = "neutral";
+        }
+
+        _speaking = rig;
+        _hud.PortraitShown = rig?.FaceAnchor is not null;
+        if (rig?.FaceAnchor is not { } head || rig.Face is not { } face)
+        {
+            return;
+        }
+
+        face.Expression = _hud.DialogFace ?? "neutral";
+        face.Talking = _hud.DialogTyping;
+        var eye = head.ToGlobal(new Vector3(0.12f, 0.02f, -2.4f));
+        _portraitCamera.LookAtFromPosition(eye, head.ToGlobal(new Vector3(0, -0.02f, 0)));
+    }
+
     private void UpdateNpcs(Vector3 shown, float delta)
     {
+        UpdateSpeaker();
         Npc? nearest = null;
         var best = Guild.TalkRange;
         foreach (var npc in _world.Npcs)
@@ -565,6 +604,16 @@ public partial class GameClient : Node
         else if (now.Attack != AttackKind.None && now.AttackTick < _last.AttackTick | now.Attack != _last.Attack)
         {
             _sfx.Play(now.Attack is AttackKind.Heavy or AttackKind.DaggerLeap ? "swing_heavy" : "swing_light", chest);
+            if (now.Attack is AttackKind.Heavy or AttackKind.DaggerLeap or AttackKind.ClubSpin)
+            {
+                _player.Face?.Flash("effort", 0.5f);
+            }
+        }
+
+        // The face shows how the fight goes: worn out with little stamina left, calm otherwise.
+        if (_player.Face is { } face)
+        {
+            face.Expression = now.Stamina < Attributes.MaxStamina(now) * 0.25f ? "tired" : "neutral";
         }
 
         // The second stab of a flurry has its own swish; a leap ends in a thump and a ring of dust.
@@ -627,6 +676,7 @@ public partial class GameClient : Node
         if (now.Health < _last.Health && _last.Health > 0)
         {
             _sfx.Play("hurt", chest);
+            _player.Face?.Flash("pain", 0.45f);
             _hud.AddFloating($"-{_last.Health - now.Health}", chest + Vector3.Up, new Color("e43b44"));
         }
         else if (now.Health > _last.Health + 3 && _last.Health > 0)
@@ -904,7 +954,7 @@ public partial class GameClient : Node
             return (0, 0, Buttons.None);
         }
 
-        if (mode is "talk" or "trial" && _client.Tick == 60)
+        if ((mode == "trial" && _client.Tick == 60) || (mode == "talk" && _client.Tick % 60 == 0 && !_hud.DialogOpen))
         {
             Interact();
         }

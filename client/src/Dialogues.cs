@@ -329,6 +329,8 @@ public static class Dialogues
         }
 
         hud.ShowDialog(npc.Name, Fill(node.Text, context, snapshot), choices.ToArray());
+        hud.DialogFace = node.Face;
+        hud.Speaker = npc.Id;
     }
 
     /// <summary>Fills the {names} in a line: gold, crystal worth, sale value, the cost of an attribute reset.</summary>
