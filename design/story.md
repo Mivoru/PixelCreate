@@ -14,6 +14,7 @@ Hlavní dokument designu. Jména ve hře anglicky (pravidlo projektu), popis če
 | `design/plot.md` | hlavní proudy a podlinie, situace aktu I, osnova aktů II a III, skládané konce |
 | `design/systems.md` | tutoriál, Guilda, questy a dialogy z dat, vyšetřování, stav světa, monstra, bossové, dungeony |
 | `design/stages.md` | **etapy výroby**: co se staví v jakém pořadí a jak se každá etapa ověří |
+| `design/stage-1.md` až `stage-3.md` | detailní návrhy etap: základy (data, kalendář, ukládání), postava a mimika, prolog s replikami |
 | `design/status.md` | co ve hře běží a co je jen návrh, otevřená rozhodnutí |
 
 Rozhodnuto: hra pro jednoho hráče s příběhem, lokální server a klient zůstávají (co-op možná

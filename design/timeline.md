@@ -9,13 +9,9 @@ odbočka od této osy. Plány frakcí běží samy, hráč je může zdržet, p�
 
 - Akt I trvá **70 dní**, od jara do začátku zimy. Rok 1104 AS.
   - Jaro (Thaw): dny 1 až 20. Léto (Highsun): 21 až 40. Podzim (Harvest): 41 až 58. Zima (Frost): 59 až 70.
-- **Čas běží akcí, ne reálně.** Den má ráno, odpoledne, večer a noc. Posouvá ho:
-  - spánek (do rána),
-  - cestování mezi oblastmi (hodiny podle vzdálenosti; chůze po údolí zabere čas jen symbolicky),
-  - joby a kontrakty (každý má délku: půl dne, den, dva),
-  - čekání (u ohně, v hospodě).
-  Boj, rozhovory a pobíhání po vesnici čas neposouvají. Průměrný hráč prožije den asi za
-  6 až 10 minut. Akt I je tak 8 až 12 hodin.
+- **Čas běží plynule, když hráč hraje** (upraveno v `design/stage-1.md`): 1 herní hodina = 26 s.
+  Den od 6:00 do 22:00 trvá asi 7 minut, noc asi 3,5 minuty. **Spánek** přeskočí na 6:00. V menu a
+  v dialogu čas stojí. 70 dní ≈ 9 až 12 hodin hraní.
 - **Termíny jsou velkorysé a ohlášené.** Drby, tabule, dopisy a deník dávají náznaky („The
   inquisition is said to be two days from East Watch"). Přesný den hra neříká, ale hráč nikdy
   není překvapený bez varování.

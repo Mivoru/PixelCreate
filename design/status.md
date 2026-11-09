@@ -49,9 +49,8 @@ Hra už je hratelný prototyp akční části. Zdroj pravdy je kód a `CLAUDE.md
 
 | # | Rozhodnutí | Blokuje | Můj návrh |
 |---|---|---|---|
-| 1 | Jak dělat scény (pád, klec, přepadení) | prolog | jednoduchý skriptovaný systém: kamera, repliky, pohyb NPC, bez střihu |
-| 2 | Beastkin v aktu I, nebo až v aktu II | modely | až v aktu II, v aktu I jen zmínky a kurýr na šibenici |
-| 3 | Smrt hráče: co stojí | balanc | malá ztráta krystalů nebo zlata, ozvěna se zapíše |
+| 1 | Název hry (pracovně PixelCreate) | úvod, menu | rozhodnout před etapou 3 |
+| 2 | Vzhled gearu na postavě (helma, zbroj podle nošených předmětů) | nic teď | až po aktu I |
 
 ## 3a. Rozhodnuto
 
@@ -62,6 +61,12 @@ Hra už je hratelný prototyp akční části. Zdroj pravdy je kód a `CLAUDE.md
   upraví; postava, mimika a vlasy se zlepší (etapa 2) a poslouží i NPC. Úvodní video jako **2D pixel
   art obrázky**. Akt I trvá **70 dní**. Ukládání **automaticky každé ráno** a při odchodu, jedna záloha.
 
+- 2026-11-09 (podle návrhu): scény jednoduchým skriptovaným systémem (kamera, repliky, pohyb NPC,
+  bez střihu); beastkin až v aktu II; smrt hráče stojí 10 % neprodaných krystalů a zapíše ozvěnu.
+- 2026-11-09: čas běží plynule při hraní (1 herní hodina = 26 s), spánek přeskočí noc
+  (úprava oproti „čas jen akcí", viz `design/stage-1.md`). Dialog má živý portrét mluvčího.
+
 ## 4. Další krok
 
-Etapa 0 podle `design/stages.md`: napsat detailní návrh etap 1 až 3.
+Etapa 0 je hotová: detailní návrhy `design/stage-1.md`, `stage-2.md` a `stage-3.md`. Další je
+**etapa 1** (základy živého světa).
