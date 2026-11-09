@@ -1,0 +1,9 @@
+[
+  { "id": "nell", "name": "Nell", "role": "captive" },
+  { "id": "haruto", "name": "Haruto", "role": "lost" },
+  { "id": "vosk", "name": "Brann Vosk", "role": "finder_captain" },
+  { "id": "gil", "name": "Gil", "role": "finder" },
+  { "id": "hanne", "name": "Hanne", "role": "finder" },
+  { "id": "corb", "name": "Corb", "role": "finder" },
+  { "id": "cage_bars", "name": "Cage", "role": "object" }
+]

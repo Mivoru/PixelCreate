@@ -52,6 +52,9 @@ public enum Command : byte
 
     /// <summary>Changes one part of the player's look: the high byte names the <see cref="AppearanceField"/>, the low byte the choice.</summary>
     SetAppearance = 213,
+
+    /// <summary>Moves a scene past a line or a slide the player has read; the argument is the step, so a late repeat skips nothing.</summary>
+    SceneNext = 214,
 }
 
 /// <summary>A newcomer must beat the guild examiner to become an adventurer.</summary>

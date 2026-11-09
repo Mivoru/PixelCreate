@@ -118,6 +118,16 @@ public sealed class Snapshot
 
     /// <summary>Part of the story state, sent like the bag: changed entries first, then a rotating slice of all of them.</summary>
     public StoryEntry[] Story = Array.Empty<StoryEntry>();
+
+    /// <summary>The scene playing: its place in <see cref="Core.Story.Scenes"/> (<see cref="NoScene"/> for none), the step, the tick it began and the slide shown.</summary>
+    public ushort Scene = NoScene;
+    public ushort SceneStep;
+    public uint SceneStepTick;
+    public byte SceneSlide;
+    public const ushort NoScene = ushort.MaxValue;
+
+    /// <summary>Nearby actors away from their resting state: moved, posed, or scene actors in the world.</summary>
+    public ActorView[] Actors = Array.Empty<ActorView>();
 }
 
 /// <summary>
@@ -310,6 +320,19 @@ public static class Protocol
 
         WriteGear(writer, snapshot.StoredGear);
 
+        writer.Write(snapshot.Scene);
+        writer.Write(snapshot.SceneStep);
+        writer.Write(snapshot.SceneStepTick);
+        writer.Write(snapshot.SceneSlide);
+        writer.Write((byte)snapshot.Actors.Length);
+        foreach (var actor in snapshot.Actors)
+        {
+            writer.Write(actor.Index);
+            WriteVector(writer, actor.Position);
+            writer.Write(actor.Yaw);
+            writer.Write((byte)((byte)actor.Pose | (actor.Active ? 0x80 : 0)));
+        }
+
         writer.Write((byte)snapshot.Story.Length);
         foreach (var entry in snapshot.Story)
         {
@@ -426,6 +449,20 @@ public static class Protocol
         }
 
         snapshot.StoredGear = ReadGear(reader);
+
+        snapshot.Scene = reader.ReadUInt16();
+        snapshot.SceneStep = reader.ReadUInt16();
+        snapshot.SceneStepTick = reader.ReadUInt32();
+        snapshot.SceneSlide = reader.ReadByte();
+        snapshot.Actors = new ActorView[reader.ReadByte()];
+        for (var i = 0; i < snapshot.Actors.Length; i++)
+        {
+            var index = reader.ReadUInt16();
+            var position = ReadVector(reader);
+            var yaw = reader.ReadSingle();
+            var flags = reader.ReadByte();
+            snapshot.Actors[i] = new ActorView(index, position, yaw, (ActorPose)(flags & 0x7f), (flags & 0x80) != 0);
+        }
 
         snapshot.Story = new StoryEntry[reader.ReadByte()];
         for (var i = 0; i < snapshot.Story.Length; i++)

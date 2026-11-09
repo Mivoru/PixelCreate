@@ -199,21 +199,25 @@ public partial class GameClient : Node
         _hud.Portrait = _portrait.GetTexture();
         _minimap = new Minimap(zone);
         _hud.AddChild(_minimap);
-        foreach (var npc in _world.Npcs)
+        _actors = Actors.For(_world);
+        _actorAt = _actors.Select(a => ToGodot(a.Home)).ToArray();
+        _actorPresent = _actors.Select(a => a.Resident).ToArray();
+        foreach (var actor in _actors)
         {
-            if (NpcLooks.For(npc.Role) is { } look)
+            if (NpcLooks.For(actor.Role) is { } look)
             {
                 var rig = new PlayerRig(new Color("0099db"), look);
-                rig.Root.Position = ToGodot(npc.Position);
-                rig.Root.Rotation = new Vector3(0, npc.Yaw, 0);
+                rig.Root.Position = ToGodot(actor.Home);
+                rig.Root.Rotation = new Vector3(0, actor.HomeYaw, 0);
+                rig.Root.Visible = actor.Resident;
                 PixelStage.Limit(rig.Root, FigureRange);
                 _stage.View.AddChild(rig.Root);
-                _npcs.Add(npc.Id, rig);
+                _npcs.Add(actor.Id, rig);
             }
-            else if (npc.Role == "storage")
+            else if (actor.Role == "storage")
             {
                 // Things you can use, like the Guild chest, carry a floating sign so players see them.
-                _hud.Signs.Add((ToGodot(npc.Position) + Vector3.Up * 1.25f, npc.Name));
+                _hud.Signs.Add((ToGodot(actor.Home) + Vector3.Up * 1.25f, actor.Name));
             }
         }
 
@@ -449,6 +453,71 @@ public partial class GameClient : Node
         _player = rig;
     }
 
+    private List<Actor> _actors = null!;
+    private Vector3[] _actorAt = null!;
+    private bool[] _actorPresent = null!;
+    private bool[] _actorWalking = Array.Empty<bool>();
+    private ActorPose[] _actorPose = Array.Empty<ActorPose>();
+
+    /// <summary>
+    /// Places everyone from the server's actor views: those it sends stand where it says; the rest
+    /// rest at home (the zone's NPCs) or are away (scene actors). The dead and the gone are hidden.
+    /// </summary>
+    private void UpdateActors(float delta)
+    {
+        if (_actorWalking.Length != _actors.Count)
+        {
+            _actorWalking = new bool[_actors.Count];
+            _actorPose = new ActorPose[_actors.Count];
+        }
+
+        var views = new Dictionary<ushort, ActorView>();
+        foreach (var view in _client.Latest?.Actors ?? Array.Empty<ActorView>())
+        {
+            views[view.Index] = view;
+        }
+
+        foreach (var actor in _actors)
+        {
+            var index = actor.Index;
+            var fate = _client.Story.Fate(actor.Id);
+            var (active, target, yaw, pose) = views.TryGetValue(index, out var v)
+                ? (v.Active, ToGodot(v.Position), v.Yaw, v.Pose)
+                : (actor.Resident, ToGodot(actor.Home), actor.HomeYaw, ActorPose.Stand);
+            var present = active && fate is NpcFate.Alive or NpcFate.Moved;
+            var before = _actorAt[index];
+            var appeared = present && !_actorPresent[index];
+            _actorAt[index] = appeared || before.DistanceTo(target) > 8f ? target : before.Lerp(target, 1f - Mathf.Exp(-delta * 14f));
+            var speed = before.DistanceTo(_actorAt[index]) / Mathf.Max(delta, 0.001f);
+            _actorWalking[index] = speed > 0.4f;
+            _actorPresent[index] = present;
+            _actorPose[index] = pose;
+            if (!_npcs.TryGetValue(actor.Id, out var rig))
+            {
+                continue;
+            }
+
+            rig.Root.Visible = present;
+            if (!present)
+            {
+                continue;
+            }
+
+            rig.Root.Position = _actorAt[index];
+            if (_actorWalking[index] || views.ContainsKey(index))
+            {
+                rig.Root.Rotation = new Vector3(pose == ActorPose.Fallen ? -Mathf.Pi / 2f : 0f, LerpFacing(rig.Root.Rotation.Y, yaw, 10f * delta), 0);
+            }
+
+            if (pose == ActorPose.Fallen)
+            {
+                rig.Root.Position += Vector3.Up * 0.15f;
+            }
+
+            rig.Animate(new MotionState(_actorWalking[index] ? Mathf.Min(speed, Tuning.MoveSpeed) : 0f, true, 0f, false, AttackKind.None, 0), delta);
+        }
+    }
+
     private SubViewport _portrait = null!;
     private Camera3D _portraitCamera = null!;
     private PlayerRig? _speaking;
@@ -483,19 +552,22 @@ public partial class GameClient : Node
     {
         UpdateLook();
         UpdateSpeaker();
+        UpdateActors(delta);
         Npc? nearest = null;
         var best = Guild.TalkRange;
-        foreach (var npc in _world.Npcs)
+        foreach (var actor in _actors)
         {
-            var position = ToGodot(npc.Position);
-            var distance = new Vector2(position.X - shown.X, position.Z - shown.Z).Length();
-            if (_npcs.TryGetValue(npc.Id, out var rig))
+            if (!_actorPresent[actor.Index])
             {
-                rig.Animate(new MotionState(0f, true, 0f, false, AttackKind.None, 0), delta);
-                if (distance < 6f)
-                {
-                    rig.Root.Rotation = new Vector3(0, LerpFacing(rig.Root.Rotation.Y, Mathf.Atan2(position.X - shown.X, position.Z - shown.Z), 6f * delta), 0);
-                }
+                continue;
+            }
+
+            var position = _actorAt[actor.Index];
+            var npc = new Npc(actor.Id, actor.Name, actor.Role, FromGodot(position), actor.HomeYaw);
+            var distance = new Vector2(position.X - shown.X, position.Z - shown.Z).Length();
+            if (_npcs.TryGetValue(actor.Id, out var rig) && distance < 6f && !_actorWalking[actor.Index] && _actorPose[actor.Index] == ActorPose.Stand)
+            {
+                rig.Root.Rotation = new Vector3(0, LerpFacing(rig.Root.Rotation.Y, Mathf.Atan2(position.X - shown.X, position.Z - shown.Z), 6f * delta), 0);
             }
 
             if (distance < best)
@@ -585,8 +657,11 @@ public partial class GameClient : Node
         }
 
         var position = ToGodot(_client.State.Position);
-        var npc = _world.Npcs.Where(n => new Vector2(n.Position.X - position.X, n.Position.Z - position.Z).Length() < Guild.TalkRange)
-            .OrderBy(n => new Vector2(n.Position.X - position.X, n.Position.Z - position.Z).Length()).Cast<Npc?>().FirstOrDefault();
+        var npc = _actors.Where(a => _actorPresent[a.Index])
+            .Select(a => (Actor: a, At: _actorAt[a.Index]))
+            .Where(p => new Vector2(p.At.X - position.X, p.At.Z - position.Z).Length() < Guild.TalkRange)
+            .OrderBy(p => new Vector2(p.At.X - position.X, p.At.Z - position.Z).Length())
+            .Select(p => (Npc?)new Npc(p.Actor.Id, p.Actor.Name, p.Actor.Role, FromGodot(p.At), p.Actor.HomeYaw)).FirstOrDefault();
         if (npc is { } target)
         {
             Dialogues.Open(_hud, target, new ClientStory(_client, _hud.Items), _client.Latest);
@@ -2280,4 +2355,6 @@ public partial class GameClient : Node
     }
 
     private static Vector3 ToGodot(System.Numerics.Vector3 value) => new(value.X, value.Y, value.Z);
+
+    private static System.Numerics.Vector3 FromGodot(Vector3 value) => new(value.X, value.Y, value.Z);
 }

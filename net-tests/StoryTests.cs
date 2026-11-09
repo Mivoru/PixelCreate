@@ -236,7 +236,7 @@ public class DialogueDataTests
     [Fact]
     public void StoryData_RefersOnlyToThingsThatExist()
     {
-        var npcs = Valley.World.Npcs.Select(n => n.Id).ToHashSet();
+        var npcs = Valley.World.Npcs.Select(n => n.Id).Concat(Actors.Defs.Select(a => a.Id)).ToHashSet();
         var enemies = EnemyDef.All.Select(e => e.Id).ToArray();
         var regions = Valley.Places.Select(r => r.Name).ToHashSet();
         var problems = new List<string>();
@@ -249,7 +249,8 @@ public class DialogueDataTests
                 "enemy" => name.EndsWith('*') ? enemies.Any(e => e.StartsWith(name[..^1], StringComparison.Ordinal)) : enemies.Contains(name),
                 "region" => regions.Contains(name),
                 "quest" => Story.Quest(name) is not null,
-                "action" => Effect.Actions.Contains(name),
+                "action" => Effect.IsAction(name),
+                "scene" => Story.Scene(name) is not null,
                 "attribute" => Enum.TryParse<PlayerAttribute>(name, true, out _),
                 _ => true,
             };

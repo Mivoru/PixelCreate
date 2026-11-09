@@ -426,12 +426,58 @@ public sealed class GameServer : IEnemyEvents
     private readonly WorldState _story = new();
     private readonly Calendar _calendar = new();
 
+    // The scene playing, played for the first player (the game is for one; co-op later).
+    private SceneDef? _scene;
+    private int _sceneStep;
+    private uint _sceneStepTick;
+    private int _sceneSlide;
+    private int _sceneRead = -1;
+    private bool _sceneTalked;
+    private bool _sceneLocked;
+    private bool _sceneEntered;
+    private readonly Dictionary<int, string> _enemyTags = new();
+
+    /// <summary>The scene playing and its step, for tests.</summary>
+    public (string? Scene, int Step) SceneState => (_scene?.Id, _sceneStep);
+
+    /// <summary>Starts a scene at once. For tests and tools; scenes also start from triggers and effects.</summary>
+    public void StartScene(string id)
+    {
+        if (Story.Scene(id) is { } scene)
+        {
+            StartScene(scene);
+        }
+    }
+
+    /// <summary>Starts a scene that need not be in the data, for tests.</summary>
+    public void StartScene(SceneDef scene)
+    {
+        {
+            _scene = scene;
+            _sceneStep = 0;
+            _sceneStepTick = Tick;
+            _sceneSlide = 0;
+            _sceneTalked = false;
+            _sceneEntered = false;
+        }
+    }
+
+    private readonly List<Actor> _actors;
+    private readonly Dictionary<string, Actor> _actorById;
+
+    /// <summary>Everyone who can move: the zone's NPCs and the scene actors. For scenes and tests.</summary>
+    public IReadOnlyList<Actor> Actors => _actors;
+
+    public Actor Actor(string id) => _actorById[id];
+
     public GameServer(ITransport transport, World world, ServerOptions options)
     {
         _transport = transport;
         _world = world;
         _options = options;
         _random = new Random(options.Seed);
+        _actors = Core.Actors.For(world);
+        _actorById = _actors.ToDictionary(a => a.Id);
         if (options.Save is { } save)
         {
             save.World.Into(_story);
@@ -582,6 +628,8 @@ public sealed class GameServer : IEnemyEvents
         StepLoot();
         StepBleeding();
         StepCalendar();
+        StepActors();
+        StepScene();
         foreach (var finished in _finishedTrials)
         {
             _enemies.Remove(finished);
@@ -758,6 +806,14 @@ public sealed class GameServer : IEnemyEvents
 
         player.NextTick++;
         player.Reading = command.Buttons.HasFlag(Buttons.Reading);
+        if (_sceneLocked)
+        {
+            // A scene holds the player still; the client holds its prediction still the same way.
+            command.MoveX = 0;
+            command.MoveZ = 0;
+            command.Buttons &= Buttons.Reading;
+        }
+
         var drawing = player.State.DrawTicks > 0;
         var landed = Movement.Step(ref player.State, command, _world);
         if ((drawing && player.State.DrawTicks == 0) ||
@@ -1154,6 +1210,17 @@ public sealed class GameServer : IEnemyEvents
             case Command.Choose:
                 Choose(player, arg);
                 break;
+            case Command.SceneNext when _scene is not null && arg == _sceneStep:
+                if (_scene.Steps[_sceneStep].Kind == "slides")
+                {
+                    _sceneSlide++;
+                }
+                else
+                {
+                    _sceneRead = _sceneStep;
+                }
+
+                break;
             case Command.Quit:
                 Autosave?.Invoke(Export());
                 break;
@@ -1332,13 +1399,23 @@ public sealed class GameServer : IEnemyEvents
 
         var option = Story.Options[index];
         var context = new StoryActions(this, player);
-        if (!NearNpc(player, option.Npc) || !option.When.Holds(context) ||
-            !Story.Dialogues.TryGetValue(option.Npc, out var dialogue) || !dialogue.Reachable(context, option.Node))
+        var talk = _scene is not null && _scene.Steps[_sceneStep] is { Kind: "talk" } step && step.Actor == option.Npc ? _scene.Steps[_sceneStep] : null;
+        if (!NearNpc(player, option.Npc) && talk is null)
+        {
+            return;
+        }
+
+        if (!option.When.Holds(context) || !Story.Dialogues.TryGetValue(option.Npc, out var dialogue) ||
+            !(dialogue.Reachable(context, option.Node) || (talk is not null && dialogue.Reachable(context, option.Node, talk.Node))))
         {
             return;
         }
 
         Effect.ApplyAll(option.Effects, context);
+        if (talk is not null && option.Next is null)
+        {
+            _sceneTalked = true;
+        }
     }
 
     /// <summary>The server actions that story data can name. Each checks what it needs by itself.</summary>
@@ -1369,6 +1446,9 @@ public sealed class GameServer : IEnemyEvents
             case "resetAttributes":
                 Obey(player, Command.ResetAttributes);
                 break;
+            case var start when start.StartsWith("scene:", StringComparison.Ordinal) && _scene is null:
+                StartScene(start[6..]);
+                break;
             case "sleep" when _calendar.Now.CanSleep:
                 _calendar.Now = _calendar.Now.AfterSleep();
                 _story.Time = _calendar.Now;
@@ -1382,8 +1462,215 @@ public sealed class GameServer : IEnemyEvents
     private static int SaleValue(Player player) =>
         player.Bag.Where(p => p.Value > 0 && ItemDef.All[p.Key].Sellable).Sum(p => p.Value * ItemDef.All[p.Key].Price);
 
-    private bool NearNpc(Player player, string id) => _world.Npcs.Any(n => n.Id == id &&
-        Vector3.Distance(n.Position with { Y = 0 }, player.State.Position with { Y = 0 }) < Guild.TalkRange + 1f);
+    private bool NearNpc(Player player, string id) => _actorById.TryGetValue(id, out var actor) && Present(actor) &&
+        Vector3.Distance(actor.Position with { Y = 0 }, player.State.Position with { Y = 0 }) < Guild.TalkRange + 1f;
+
+    /// <summary>Whether an actor is in the world to be spoken to: brought in, and neither dead nor gone.</summary>
+    private bool Present(Actor actor) => actor.Active && _story.Fate(actor.Id) is NpcFate.Alive or NpcFate.Moved;
+
+    /// <summary>
+    /// Runs the scene playing: steps that happen at once run in a row, until one that waits. With no
+    /// scene playing, looks for one whose trigger holds, now and then.
+    /// </summary>
+    private void StepScene()
+    {
+        if (_players.Values.OrderBy(p => p.Id).FirstOrDefault() is not { } player)
+        {
+            return;
+        }
+
+        var context = new StoryActions(this, player);
+        if (_scene is null)
+        {
+            if (Tick % 15 != 0)
+            {
+                return;
+            }
+
+            foreach (var candidate in Story.Scenes)
+            {
+                if (candidate.Trigger is { } trigger && !_story.Has(candidate.DoneFlag) && trigger.When.Holds(context) &&
+                    (trigger.Near is not { } near || Vector3.Distance(near with { Y = 0 }, player.State.Position with { Y = 0 }) < trigger.Radius))
+                {
+                    StartScene(candidate.Id);
+                    break;
+                }
+            }
+
+            if (_scene is null)
+            {
+                return;
+            }
+        }
+
+        for (var guard = 0; guard < 64 && _scene is not null; guard++)
+        {
+            if (_sceneStep >= _scene.Steps.Length)
+            {
+                _story.SetFlag(_scene.DoneFlag);
+                _scene = null;
+                _sceneLocked = false;
+                return;
+            }
+
+            var step = _scene.Steps[_sceneStep];
+            if (SceneData.Holds(step) && step.Kind == "move" && !_sceneEntered)
+            {
+                // A walk that holds the scene starts when the scene reaches it.
+                _sceneEntered = true;
+                RunStep(step, player, context);
+            }
+
+            if (SceneData.Holds(step) ? !StepDone(step, context) : !RunStep(step, player, context))
+            {
+                return;
+            }
+
+            _sceneStep++;
+            _sceneStepTick = Tick;
+            _sceneSlide = 0;
+            _sceneTalked = false;
+            _sceneEntered = false;
+        }
+    }
+
+    private bool StepDone(SceneStep step, IStoryActions context)
+    {
+        var elapsed = (Tick - _sceneStepTick) * Tuning.TickSeconds;
+        return step.Kind switch
+        {
+            "fade" or "wait" => elapsed >= step.Seconds,
+            "slides" => _sceneSlide >= step.Slides.Length || elapsed >= step.Seconds * step.Slides.Length,
+            "say" => _sceneRead == _sceneStep || elapsed >= step.ReadSeconds * 1.6f,
+            "talk" => _sceneTalked,
+            "waitFor" => step.When.Holds(context),
+            "waitForKills" => !_enemies.Any(e => e.Alive && _enemyTags.TryGetValue(e.Id, out var tag) && tag == step.Tag),
+            "move" => !_actorById.TryGetValue(step.Actor, out var mover) || mover.Path.Count == 0,
+            _ => true,
+        };
+    }
+
+    /// <summary>Runs a step that happens at once. Returns false when the scene changed under it.</summary>
+    private bool RunStep(SceneStep step, Player player, IStoryActions context)
+    {
+        var actor = step.Actor.Length > 0 && _actorById.TryGetValue(step.Actor, out var found) ? found : null;
+        Vector3 Ground(Vector3 point) => point with { Y = _world.GroundHeight(point.X, point.Z) };
+        switch (step.Kind)
+        {
+            case "lockInput":
+                _sceneLocked = true;
+                break;
+            case "unlockInput":
+                _sceneLocked = false;
+                break;
+            case "spawn" or "place" when actor is not null:
+                actor.Path.Clear();
+                actor.Position = Ground(step.Points[0]);
+                actor.Yaw = step.Yaw;
+                actor.Active = true;
+                break;
+            case "despawn" when actor is not null:
+                actor.Rest();
+                break;
+            case "move" when actor is not null:
+                actor.Speed = step.Speed;
+                foreach (var point in step.Points)
+                {
+                    actor.Path.Enqueue(Ground(point));
+                }
+
+                break;
+            case "follow" when actor is not null:
+                actor.Follows = player.Id;
+                break;
+            case "unfollow" when actor is not null:
+                actor.Follows = -1;
+                break;
+            case "pose" when actor is not null:
+                actor.Pose = step.Pose;
+                break;
+            case "teleport":
+                Move(player, step.Points[0]);
+                break;
+            case "time":
+                _calendar.Now = new GameTime(step.Day, step.Hour * 60);
+                _story.Time = _calendar.Now;
+                break;
+            case "effects":
+                var before = _scene;
+                Effect.ApplyAll(step.Effects, context);
+                return _scene == before;
+            case "spawnEnemies":
+                SpawnTagged(step, player);
+                break;
+            case "drop":
+                DropAt(player, step.Item, step.Points[0], step.Count);
+                break;
+            case "scene":
+                _story.SetFlag(_scene!.DoneFlag);
+                StartScene(step.Scene);
+                return false;
+        }
+
+        return true;
+    }
+
+    private void SpawnTagged(SceneStep step, Player player)
+    {
+        var type = (byte)EnemyDef.All.ToList().FindIndex(d => d.Id == step.Item);
+        for (var i = 0; i < step.Count; i++)
+        {
+            var angle = i * MathF.Tau / Math.Max(1, step.Count);
+            var at = step.Points[0] + new Vector3(MathF.Cos(angle) * 1.5f, 0, MathF.Sin(angle) * 1.5f);
+            at.Y = _world.GroundHeight(at.X, at.Z);
+            var enemy = new Enemy
+            {
+                Id = _nextEnemyId++,
+                Type = type,
+                Home = new EnemySpawn(at, 3f, 1, step.Level, step.Level, int.MaxValue, false, new[] { step.Item }),
+            };
+            enemy.Reset(_random, _world);
+            enemy.Position = at;
+            enemy.TargetId = player.Id;
+            _enemyTags[enemy.Id] = step.Tag;
+            _enemies.Add(enemy);
+        }
+    }
+
+    private void DropAt(Player player, string id, Vector3 at, int count)
+    {
+        if (!ItemDef.TryIndex(id, out var item))
+        {
+            return;
+        }
+
+        for (var i = 0; i < count; i++)
+        {
+            var spot = at + new Vector3(i * 0.5f, 0, 0);
+            spot.Y = _world.GroundHeight(spot.X, spot.Z);
+            var loot = new Loot { Id = _nextId++, Item = item, Owner = player.Id, Position = spot, Life = int.MaxValue / 2 };
+            if (ItemDef.All[item].IsEquipment)
+            {
+                loot.Gear = new GearPiece(item, Rarity.Common, 1, Array.Empty<AffixRoll>());
+            }
+
+            _loot.Add(loot);
+        }
+    }
+
+    private void StepActors()
+    {
+        foreach (var actor in _actors.Where(a => a.Active))
+        {
+            Vector3? leader = actor.Follows >= 0 && _players.TryGetValue(actor.Follows, out var followed) ? followed.State.Position : null;
+            actor.Step(_world, leader);
+        }
+    }
+
+    private ActorView[] ActorSlice(Vector3 origin) => _actors
+        .Where(a => a.Away && Vector3.Distance((a.Active ? a.Position : a.Home) with { Y = 0 }, origin with { Y = 0 }) < InterestRange)
+        .OrderBy(a => Vector3.DistanceSquared(a.Position, origin)).Take(10)
+        .Select(a => new ActorView(a.Index, a.Position, a.Yaw, a.Pose, a.Active)).ToArray();
 
     /// <summary>Moves the calendar on, and runs the faction plans once an hour.</summary>
     private void StepCalendar()
@@ -1494,8 +1781,8 @@ public sealed class GameServer : IEnemyEvents
         }
     }
 
-    private bool Near(Player player, string role) => _world.Npcs.Any(n => n.Role == role &&
-        Vector3.Distance(n.Position with { Y = 0 }, player.State.Position with { Y = 0 }) < Guild.TalkRange + 1f);
+    private bool Near(Player player, string role) => _actors.Any(a => a.Role == role && Present(a) &&
+        Vector3.Distance(a.Position with { Y = 0 }, player.State.Position with { Y = 0 }) < Guild.TalkRange + 1f);
 
     private void Move(Player player, Vector3 to)
     {
@@ -3205,6 +3492,11 @@ public sealed class GameServer : IEnemyEvents
                 Rank = player.Rank,
                 Gold = player.Gold,
                 Appearance = player.Appearance,
+                Actors = ActorSlice(origin),
+                Scene = _scene is null ? Snapshot.NoScene : (ushort)_scene.Index,
+                SceneStep = (ushort)_sceneStep,
+                SceneStepTick = _sceneStepTick,
+                SceneSlide = (byte)Math.Min(_sceneSlide, 255),
                 Day = (ushort)_calendar.Now.Day,
                 Minute = (ushort)_calendar.Now.Minute,
                 Story = StoryMirror.Slice(_story, player.StoryChanged, ref player.StoryCursor),
@@ -3246,6 +3538,10 @@ public sealed class GameServer : IEnemyEvents
             else if (snapshot.Drops.Length > 0)
             {
                 snapshot.Drops = snapshot.Drops[..(snapshot.Drops.Length / 2)];
+            }
+            else if (snapshot.Actors.Length > 4)
+            {
+                snapshot.Actors = snapshot.Actors[..4];
             }
             else if (snapshot.Enemies.Length > 0)
             {

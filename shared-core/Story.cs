@@ -42,9 +42,10 @@ public sealed record DialogueDef(string Npc, DialogueEntry[] Entries, Dictionary
     /// Whether a node can be reached now: it opens the conversation, or an option that holds leads to
     /// it from there. The server uses it so that a choice from a closed node cannot be sent.
     /// </summary>
-    public bool Reachable(IStoryContext context, string node)
+    public bool Reachable(IStoryContext context, string node, string? from = null)
     {
-        if (Opening(context) is not { } start)
+        var start = from is not null && Nodes.TryGetValue(from, out var given) ? given : Opening(context);
+        if (start is null)
         {
             return false;
         }
@@ -99,6 +100,11 @@ public static class Story
 
     public static IReadOnlyList<Rumor> Rumors { get; }
 
+    /// <summary>Scenes from world/scenes, numbered in file order for the snapshot's scene cue.</summary>
+    public static IReadOnlyList<SceneDef> Scenes { get; }
+
+    public static SceneDef? Scene(string id) => Scenes.FirstOrDefault(s => s.Id == id);
+
     /// <summary>Journal notes: a line for each flag the player can learn.</summary>
     public static IReadOnlyDictionary<string, string> Notes { get; }
 
@@ -117,6 +123,7 @@ public static class Story
         Options = options;
         Agendas = LoadAgendas();
         Rumors = LoadRumors();
+        Scenes = LoadScenes();
         Notes = Load("journal") is { } journal
             ? journal.RootElement.EnumerateObject().ToDictionary(p => p.Name, p => p.Value.GetString()!)
             : new Dictionary<string, string>();
@@ -185,6 +192,43 @@ public static class Story
             foreach (var r in rumor.When.References())
             {
                 yield return (r.Kind, r.Name, $"rumor {rumor.Id}");
+            }
+        }
+
+        foreach (var scene in Scenes)
+        {
+            var where = $"scene {scene.Id}";
+            foreach (var r in scene.Trigger?.When.References() ?? Array.Empty<(string, string)>())
+            {
+                yield return (r.Kind, r.Name, where);
+            }
+
+            foreach (var step in scene.Steps)
+            {
+                foreach (var r in step.When.References().Concat(step.Effects.SelectMany(e => e.References())))
+                {
+                    yield return (r.Kind, r.Name, where);
+                }
+
+                if (step.Actor.Length > 0)
+                {
+                    yield return ("npc", step.Actor, where);
+                }
+
+                if (step.Kind == "drop")
+                {
+                    yield return ("item", step.Item, where);
+                }
+
+                if (step.Kind == "spawnEnemies")
+                {
+                    yield return ("enemy", step.Item, where);
+                }
+
+                if (step.Kind == "scene")
+                {
+                    yield return ("scene", step.Scene, where);
+                }
             }
         }
     }
@@ -342,7 +386,7 @@ public static class Story
     private static Dictionary<StoryKind, string[]> BuildKeys()
     {
         var sets = Enum.GetValues<StoryKind>().ToDictionary(k => k, _ => new SortedSet<string>(StringComparer.Ordinal));
-        foreach (var flag in CodeFlags.Concat(Notes.Keys))
+        foreach (var flag in CodeFlags.Concat(Notes.Keys).Concat(Scenes.Select(s => s.DoneFlag)))
         {
             sets[StoryKind.Flag].Add(flag);
         }
@@ -481,6 +525,20 @@ public static class Story
 
     private static List<AgendaStep> LoadAgendas() =>
         Load("agendas") is { } doc ? ParseAgendas(doc.RootElement) : new List<AgendaStep>();
+
+    private static List<SceneDef> LoadScenes()
+    {
+        var scenes = new List<SceneDef>();
+        var names = Assembly.GetExecutingAssembly().GetManifestResourceNames()
+            .Where(n => n.StartsWith("scene.", StringComparison.Ordinal)).OrderBy(n => n, StringComparer.Ordinal);
+        foreach (var name in names)
+        {
+            using var doc = Load(name)!;
+            scenes.Add(SceneData.Parse(doc.RootElement, scenes.Count));
+        }
+
+        return scenes;
+    }
 
     private static List<Rumor> LoadRumors()
     {
