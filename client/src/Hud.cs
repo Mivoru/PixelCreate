@@ -1511,6 +1511,13 @@ public partial class Hud : Control
         DrawCircle(centre, 2.5f, shadow);
         DrawCircle(centre, 1.5f, colour);
 
+        // Staff cooldowns: two short arcs under the crosshair refill, fireball on the left, wall on the right.
+        if (Player.Weapon == Weapons.Staff)
+        {
+            StaffArc(centre, Mathf.Pi * 0.55f, Mathf.Pi * 0.95f, 1f - Player.BoltCooldown / (float)Tuning.StaffBoltCooldownTicks, shadow);
+            StaffArc(centre, Mathf.Pi * 0.45f, Mathf.Pi * 0.05f, 1f - Player.WallCooldown / (float)Tuning.StaffWallCooldownTicks, shadow);
+        }
+
         // Bow mastery Rain of Arrows: held past a full draw, a blue ring fills round the crosshair.
         if (Player.DrawTicks > Tuning.FullDraw)
         {
@@ -1523,6 +1530,18 @@ public partial class Hud : Control
                 const string label = "Rain of Arrows";
                 Label(label, centre + new Vector2(-Width(label, 15, _bold) / 2f, 58), 15, rain, _bold, true);
             }
+        }
+    }
+
+    /// <summary>A staff cooldown arc round the crosshair: a dim track that fills from its start, gold once ready.</summary>
+    private void StaffArc(Vector2 centre, float start, float end, float ready, Color shadow)
+    {
+        ready = Mathf.Clamp(ready, 0f, 1f);
+        var fill = ready >= 1f ? Accent with { A = 0.8f * Aiming } : new Color(1, 1, 1, 0.85f * Aiming);
+        DrawArc(centre, 30f, start, end, 16, shadow, 5f);
+        if (ready > 0f)
+        {
+            DrawArc(centre, 30f, start, Mathf.Lerp(start, end, ready), 16, fill, 3f);
         }
     }
 

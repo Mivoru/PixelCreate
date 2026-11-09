@@ -490,6 +490,8 @@ public static class Protocol
         WriteVector(writer, state.SlideDirection);
         writer.Write(state.Moves);
         writer.Write(state.MoveCooldown);
+        writer.Write(state.BoltCooldown);
+        writer.Write(state.WallCooldown);
     }
 
     private static PlayerState ReadState(BinaryReader reader) => new()
@@ -518,5 +520,7 @@ public static class Protocol
         SlideDirection = ReadVector(reader),
         Moves = reader.ReadByte(),
         MoveCooldown = reader.ReadByte(),
+        BoltCooldown = reader.ReadByte(),
+        WallCooldown = reader.ReadByte(),
     };
 }

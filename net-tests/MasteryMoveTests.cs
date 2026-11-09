@@ -7,12 +7,15 @@ namespace PixelCreate.NetTests;
 /// <summary>The moves at the ends of the weapon mastery branches, each with and without the move taken.</summary>
 public class MasteryMoveTests
 {
-    private static (GameServer Server, ClientPrediction Client, SimNetwork Network) Start(string weapon, string? unlock, params Vector3[] foes)
+    private static (GameServer Server, ClientPrediction Client, SimNetwork Network) Start(string weapon, string? unlock, params Vector3[] foes) =>
+        Start(weapon, unlock, Array.Empty<Aabb>(), foes);
+
+    private static (GameServer Server, ClientPrediction Client, SimNetwork Network) Start(string weapon, string? unlock, Aabb[] walls, params Vector3[] foes)
     {
         var network = new SimNetwork(1, 0, 0, 0);
         var types = foes.Select(_ => "goblin_brute").ToArray();
         var camp = new EnemySpawn(new Vector3(0, 0, -60), 1f, foes.Length, Types: types);
-        var world = new World(Array.Empty<Aabb>(), null, Vector3.Zero, new[] { camp });
+        var world = new World(walls, null, Vector3.Zero, new[] { camp });
         var server = new GameServer(network.Connect(0), world, new ServerOptions { Seed = 4 });
         var client = new ClientPrediction(network.Connect(1), world);
         Run(server, client, network, 10, Buttons.None);
@@ -289,6 +292,68 @@ public class MasteryMoveTests
         Run(server, client, network, 6, Buttons.None);
         var player = server.GetPlayer(1)!.Value.Position;
         Assert.Equal(taken, player.Z < foe.Position.Z);
+    }
+
+    [Theory]
+    [InlineData(Buttons.Light, AttackKind.StaffBolt, Tuning.StaffBoltCooldownTicks)]
+    [InlineData(Buttons.Heavy, AttackKind.StaffWall, Tuning.StaffWallCooldownTicks)]
+    public void StaffSpells_WaitForTheirCooldown(Buttons button, AttackKind kind, int cooldown)
+    {
+        // Held for ten seconds with endless stamina: casts come no faster than the cooldown allows.
+        var state = PlayerState.Spawn(Vector3.Zero);
+        state.Weapon = Weapons.Staff;
+        var casts = 0;
+        const int ticks = Tuning.TickRate * 10;
+        for (var i = 0; i < ticks; i++)
+        {
+            state.Stamina = 100f;
+            if (Tick(ref state, button) == kind)
+            {
+                casts++;
+            }
+        }
+
+        Assert.InRange(casts, 1, ticks / cooldown + 1);
+    }
+
+    private static void JumpAndStep(GameServer server, ClientPrediction client, SimNetwork network)
+    {
+        Run(server, client, network, 1, Buttons.Jump);
+        Run(server, client, network, 14, Buttons.None);
+        Run(server, client, network, 1, Buttons.Heavy);
+        Run(server, client, network, 6, Buttons.None);
+    }
+
+    [Fact]
+    public void ShadowStep_NeverPassesThroughAWall()
+    {
+        // The player stands at the world origin (the spawn); a wall stands between them and the foe.
+        var wall = new Aabb(new Vector3(-3, 0, -3.5f), new Vector3(3, 4, -3f));
+        var (server, client, network) = Start("twin_daggers", "shadow_step", new[] { wall }, new Vector3(0, 0, -6));
+        var before = server.GetPlayer(1)!.Value.Position;
+        Assert.True(before.Z > -3f, "The wall must lie between the player and the foe.");
+        JumpAndStep(server, client, network);
+        Assert.True(server.GetPlayer(1)!.Value.Position.Z > -3f, "Shadow Step must not carry the player through a wall.");
+    }
+
+    [Fact]
+    public void ShadowStep_ReachesAtMostTwoEnemiesInARow()
+    {
+        // Three foes in a line ahead: each step lands behind the next one, until the run is spent.
+        var (server, client, network) = Start("twin_daggers", "shadow_step", new Vector3(0, 0, -5), new Vector3(0, 0, -11), new Vector3(0, 0, -17));
+        var steps = 0;
+        for (var i = 0; i < 3; i++)
+        {
+            var before = server.GetPlayer(1)!.Value.Position.Z;
+            JumpAndStep(server, client, network);
+            Run(server, client, network, Tuning.MasteryMoveCooldownTicks, Buttons.None);
+            if (server.GetPlayer(1)!.Value.Position.Z < before - 3f)
+            {
+                steps++;
+            }
+        }
+
+        Assert.Equal(Tuning.ShadowStepChain, steps);
     }
 
     [Theory]

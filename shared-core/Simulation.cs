@@ -93,6 +93,13 @@ public static class Tuning
     /// <summary>Dagger mastery Shadow Step (heavy in the air): how far ahead an enemy can be to step behind it.</summary>
     public const float ShadowStepRange = 10f;
 
+    /// <summary>
+    /// Shadow Step reaches at most this many enemies in a row; the run ends once this many ticks
+    /// pass without a step, so the player cannot hop from foe to foe without end.
+    /// </summary>
+    public const int ShadowStepChain = 2;
+    public const int ShadowStepChainTicks = 240;
+
     /// <summary>Dagger mastery Fan of Knives: knives thrown in a ring when the leap lands, their speed, reach and share of the leap's damage.</summary>
     public const int FanKnives = 8;
     public const float KnifeSpeed = 20f;
@@ -247,6 +254,10 @@ public static class Tuning
     private static readonly AttackDef ShadowStep = new(36, 14, 40, 1.7f, 0.2f, 28f, 0.2f);
 
     /// <summary>How fast a staff's fireball flies, how far, and how wide it bursts.</summary>
+    /// <summary>Ticks from one fireball, or one wall of fire, to the next: stamina alone let them be spammed.</summary>
+    public const byte StaffBoltCooldownTicks = 90;
+    public const byte StaffWallCooldownTicks = 240;
+
     public const float StaffBoltSpeed = 20f;
     public const float StaffBoltRange = 30f;
     public const float StaffBoltSplash = 1.6f;
@@ -419,6 +430,10 @@ public struct PlayerState
 
     /// <summary>Ticks before the next mastery move may start.</summary>
     public byte MoveCooldown;
+
+    /// <summary>Ticks before the staff may cast the next fireball, and the next wall of fire.</summary>
+    public byte BoltCooldown;
+    public byte WallCooldown;
 
     public static PlayerState Spawn(Vector3 position, short health = Tuning.PlayerHealth) => new()
     {
@@ -636,6 +651,8 @@ public static class Movement
         if (state.SlideCooldown > 0) state.SlideCooldown--;
         if (state.SlowTicks > 0) state.SlowTicks--;
         if (state.MoveCooldown > 0) state.MoveCooldown--;
+        if (state.BoltCooldown > 0) state.BoltCooldown--;
+        if (state.WallCooldown > 0) state.WallCooldown--;
         if (state.StaminaDelay > 0) state.StaminaDelay--;
 
         var high = state.Position.Y - world.GroundHeight(state.Position.X, state.Position.Z) >= Tuning.AirMoveHeight;
@@ -833,6 +850,10 @@ public static class Movement
                 _ => wanted,
             };
             wanted = Variant(state, wanted, high);
+            if ((wanted == AttackKind.StaffBolt && state.BoltCooldown > 0) || (wanted == AttackKind.StaffWall && state.WallCooldown > 0))
+            {
+                wanted = AttackKind.None;
+            }
         }
         if (wanted == AttackKind.None || !CanStartAttack(state))
         {
@@ -854,6 +875,15 @@ public static class Movement
             if (wanted is AttackKind.RisingSlash or AttackKind.Whirlwind or AttackKind.GroundPound or AttackKind.BladeDance or AttackKind.ShadowStep)
             {
                 state.MoveCooldown = Tuning.MasteryMoveCooldownTicks;
+            }
+
+            if (wanted == AttackKind.StaffBolt)
+            {
+                state.BoltCooldown = Tuning.StaffBoltCooldownTicks;
+            }
+            else if (wanted == AttackKind.StaffWall)
+            {
+                state.WallCooldown = Tuning.StaffWallCooldownTicks;
             }
         }
 

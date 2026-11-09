@@ -73,6 +73,10 @@ Rules:
   health, refills when unhurt, `Snapshot.Barrier`). The studio's attacks job films the new player attacks.
   Air moves need the feet `Tuning.AirMoveHeight` above the ground (running over bumps leaves the ground for a tick,
   which once let a held heavy chain ground pounds), and every predicted mastery move sets `PlayerState.MoveCooldown`.
+  Shadow Step needs an open way (`GameServer.Open`: no solid box and no ground across the line at waist height) to
+  the enemy and round it, and reaches at most `Tuning.ShadowStepChain` enemies in a row. Staff fireballs and walls of
+  fire have their own predicted cooldowns (`PlayerState.BoltCooldown`/`WallCooldown`), shown as two arcs under the
+  crosshair.
 - Attack reaches in `Tuning` are the weapon tip's reach at the blow plus about half a metre; the enemy's half size is
   added in `GameServer.Strike`. The studio's attacks job saves `attack_reach_all` (each blow from above with its area:
   red the reach and arc, yellow the reach to a goblin's middle) and `attack_carry_all` (each weapon idle, walking,

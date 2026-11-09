@@ -247,6 +247,10 @@ public sealed class GameServer : IEnemyEvents
         public int Xp;
         public uint LastHurtTick;
 
+        /// <summary>Dagger mastery Shadow Step: steps in the current run, and the tick of the last.</summary>
+        public int ShadowSteps;
+        public uint LastShadowTick;
+
         /// <summary>The tick from which the next potion may be drunk.</summary>
         public uint PotionReady;
         public byte Dodges;
@@ -1324,32 +1328,64 @@ public sealed class GameServer : IEnemyEvents
     }
 
     /// <summary>
-    /// Dagger mastery Shadow Step: the nearest enemy ahead, in reach, finds the player suddenly at
-    /// its back, facing it. With nobody there the stab simply falls where the player is.
+    /// Dagger mastery Shadow Step: the nearest enemy ahead, in reach and in plain sight, finds the
+    /// player suddenly at its back, facing it. With nobody there, or after
+    /// <see cref="Tuning.ShadowStepChain"/> steps in a row, the stab simply falls where the player is.
     /// </summary>
     private void ShadowStep(Player player)
     {
+        if (Tick - player.LastShadowTick > Tuning.ShadowStepChainTicks)
+        {
+            player.ShadowSteps = 0;
+        }
+
+        if (player.ShadowSteps >= Tuning.ShadowStepChain)
+        {
+            return;
+        }
+
         var feet = player.State.Position;
         var forward = Movement.AimDirection(player.State.AttackAim);
-        var mark = _enemies.Where(e => e.Alive && !e.InShadow)
+        var marks = _enemies.Where(e => e.Alive && !e.InShadow)
             .Select(e => (Enemy: e, Offset: (e.Position - feet) with { Y = 0 }))
             .Where(m => m.Offset.Length() is > 0.1f and < Tuning.ShadowStepRange && Vector3.Dot(Vector3.Normalize(m.Offset), forward) > 0.3f)
-            .OrderBy(m => m.Offset.Length()).Select(m => m.Enemy).FirstOrDefault();
-        if (mark is null)
+            .OrderBy(m => m.Offset.Length()).Select(m => m.Enemy);
+        foreach (var mark in marks)
         {
+            var through = Vector3.Normalize((mark.Position - feet) with { Y = 0 });
+            var spot = mark.Position + through * (mark.Def.Size * 0.5f + 1.1f);
+            spot.Y = _world.GroundHeight(spot.X, spot.Z);
+            // No stepping through walls, rocks or hills: the way to the enemy and on round it must be open.
+            if (!Open(feet, mark.Position) || !Open(mark.Position, spot))
+            {
+                continue;
+            }
+
+            Move(player, spot);
+            player.ShadowSteps++;
+            player.LastShadowTick = Tick;
+            var back = -through;
+            player.State.AttackAim = (byte)((int)MathF.Round(MathF.Atan2(-back.X, -back.Z) / MathF.Tau * 256f) & 0xFF);
             return;
         }
+    }
 
-        var through = Vector3.Normalize((mark.Position - feet) with { Y = 0 });
-        var spot = mark.Position + through * (mark.Def.Size * 0.5f + 1.1f);
-        if (_world.IsBlocked(spot with { Y = _world.GroundHeight(spot.X, spot.Z) + 1f }))
+    /// <summary>Whether a body could pass in a straight line between two spots on the ground: nothing solid and no ground rising across the way at waist height.</summary>
+    private bool Open(Vector3 start, Vector3 end)
+    {
+        var low = start with { Y = start.Y + 1f };
+        var high = end with { Y = end.Y + 1f };
+        var length = Vector3.Distance(low, high);
+        for (var along = 0f; along <= length; along += 0.25f)
         {
-            return;
+            var point = Vector3.Lerp(low, high, length < 0.01f ? 1f : along / length);
+            if (_world.IsBlocked(point) || _world.GroundHeight(point.X, point.Z) > point.Y - 0.3f)
+            {
+                return false;
+            }
         }
 
-        Move(player, spot);
-        var back = -through;
-        player.State.AttackAim = (byte)((int)MathF.Round(MathF.Atan2(-back.X, -back.Z) / MathF.Tau * 256f) & 0xFF);
+        return true;
     }
 
     /// <summary>Staff mastery Arcane Barrier: while a staff is in hand, the barrier refills once the player is left alone a while.</summary>
