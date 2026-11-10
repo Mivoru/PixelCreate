@@ -470,6 +470,12 @@ public static class ZoneView
 
         // A real fire burns in the guild hearth.
         root.AddChild(BuildCampFlames(new Vector3(430.55f, 0.15f, 3f)));
+
+        // The Sunken Archive glows only where its runes still burn.
+        foreach (var (x, z) in new[] { (543f, -6f), (551f, 6f), (569f, -6f), (577f, 6f), (560f, -15f), (580f, -7f) })
+        {
+            root.AddChild(new OmniLight3D { Position = new Vector3(x, 3.2f, z), LightColor = new Color("2ce8f5"), LightEnergy = 1.6f, OmniRange = 11f });
+        }
     }
 
     /// <summary>Swaps the flat Blender materials for the textured prop shader.</summary>

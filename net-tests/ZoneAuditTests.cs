@@ -21,6 +21,17 @@ public class ZoneAuditTests
         open.Enqueue(first);
         while (open.TryDequeue(out var cell))
         {
+            // A door within reach takes the walker through to its other side.
+            foreach (var portal in world.Portals)
+            {
+                var through = CellOf(portal.To);
+                if (Vector2.Distance(new Vector2(cell.X * Cell, cell.Z * Cell), new Vector2(portal.From.X, portal.From.Z)) < Guild.DoorRange &&
+                    seen.Add(through))
+                {
+                    open.Enqueue(through);
+                }
+            }
+
             var height = world.GroundHeight(cell.X * Cell, cell.Z * Cell);
             foreach (var (dx, dz) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) })
             {

@@ -113,6 +113,15 @@ public sealed class PixelStage
         _sun.LightColor = new Color("fff0d8").Lerp(new Color("a8b8e8"), g).Lerp(new Color("ffb070"), _dusk * (1f - _night));
         _sun.LightEnergy = Mathf.Lerp(1.2f, 0.5f, g) * Mathf.Lerp(1f, 0.35f, _night);
         _environment.AmbientLightEnergy *= Mathf.Lerp(1f, 0.62f, _night);
+        if (Underground > 0f)
+        {
+            // Below ground the sun barely reaches: dim light, a dark blue haze, the runes do the rest.
+            _sun.LightEnergy *= 1f - 0.85f * Underground;
+            _environment.AmbientLightEnergy *= 1f - 0.55f * Underground;
+            _environment.AmbientLightColor = _environment.AmbientLightColor.Lerp(new Color("7088b0"), Underground);
+            _environment.FogLightColor = _environment.FogLightColor.Lerp(new Color("1a2236"), Underground);
+            _environment.FogDensity = Mathf.Lerp(_environment.FogDensity, 0.02f, Underground);
+        }
         _sun.RotationDegrees = new Vector3(Mathf.Lerp(-38f, -14f, Mathf.Max(_dusk, _night)), -50f + _sunTurn, 0);
         if (_environment.Sky?.SkyMaterial is ShaderMaterial sky)
         {
@@ -128,6 +137,9 @@ public sealed class PixelStage
         _moon.Visible = moon > 0.02f;
         _moonMaterial.SetShaderParameter("strength", moon);
     }
+
+    /// <summary>0 in the open, 1 deep underground (the Sunken Archive). Takes effect at the next <see cref="SetGloom"/>.</summary>
+    public float Underground;
 
     private float _night;
     private float _dusk;

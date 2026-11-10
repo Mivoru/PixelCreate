@@ -137,6 +137,21 @@
           }
         },
         {
+          "text": "Fire in the Archive (Wren): kill the goblin shaman in the Sunken Archive. 300 gold",
+          "effects": [
+            {
+              "quest": {
+                "start": "archive_shaman"
+              }
+            }
+          ],
+          "when": {
+            "level": {
+              "min": 6
+            }
+          }
+        },
+        {
           "text": "Leave"
         }
       ]

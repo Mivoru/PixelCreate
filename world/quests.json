@@ -244,5 +244,38 @@
         "route": false
       }
     ]
+  },
+  {
+    "id": "archive_shaman",
+    "name": "Fire in the Archive",
+    "kind": "job",
+    "giver": "board",
+    "repeatable": true,
+    "brief": "kill the goblin shaman",
+    "gold": 300,
+    "xp": 480,
+    "poster": "Wren, alchemist",
+    "place": "the Sunken Archive behind Silver Falls",
+    "journal": "Wren's notice: goblins have dug into an old Auren library in a cave beside Silver Falls, and their shaman is burning the books for warmth. Stop him before nothing is left.",
+    "steps": [
+      {
+        "text": "Enter the cave beside Silver Falls and kill the goblin shaman in the Sunken Archive.",
+        "goal": {
+          "kill": "goblin_shaman",
+          "count": 1
+        },
+        "at": [
+          578,
+          -3
+        ]
+      },
+      {
+        "text": "Return to the Guild and report to Mira.",
+        "goal": {
+          "talk": "mira"
+        },
+        "route": false
+      }
+    ]
   }
 ]

@@ -58,6 +58,7 @@ public partial class GameClient : Node
     private const float FigureRange = 60f;
     private const float GuildInteriorX = 400f;
     private const float ArenaX = 450f;
+    private const float ArchiveX = 530f;
     private const float MinPitch = -1.1f;
     private const float MaxPitch = 0.35f;
 
@@ -502,6 +503,7 @@ public partial class GameClient : Node
             _stage.SetTime(now.Minute);
         }
 
+        _stage.Underground = shown.X > ArchiveX ? 1f : 0f;
         _stage.SetGloom(_gloom);
         _stage.PlaceMoon();
         // A staff shows the crosshair all the time, as its fireballs fly to whatever lies under it.
@@ -1130,7 +1132,7 @@ public partial class GameClient : Node
 
         if (snapshot.Rank == GuildRank.Newcomer)
         {
-            return shown.X > GuildInteriorX ? "Talk to Mira at the counter" : "Find the Adventurers Guild in the west";
+            return shown.X > GuildInteriorX && shown.X < ArenaX ? "Talk to Mira at the counter" : "Find the Adventurers Guild in the west";
         }
 
         if (snapshot.Rank == GuildRank.InTrial)
@@ -1148,6 +1150,11 @@ public partial class GameClient : Node
 
             var (done, needed) = Story.StepProgress(story, quest.Id);
             return needed > 0 ? $"{quest.Name}: {done} / {needed}" : $"{quest.Name}: {quest.Steps[_client.Story.Quest(quest.Id).Step].Text}";
+        }
+
+        if (shown.X > ArchiveX)
+        {
+            return "Explore the Sunken Archive, or leave by the cave mouth";
         }
 
         if (shown.X > ArenaX)
@@ -1739,7 +1746,7 @@ public partial class GameClient : Node
         if (position.X > ArenaX)
         {
             BotStage("leave the arena");
-            var gate = _world.Portals.First(p => p.From.X > ArenaX).From;
+            var gate = _world.Portals.OrderBy(p => System.Numerics.Vector3.DistanceSquared(p.From, position)).First().From;
             var walk = BotWalk(new Vector3(gate.X, 0, gate.Z), 1f, Buttons.None);
             if (walk == (0, 0, Buttons.None) && _client.Tick % 60 == 0)
             {
