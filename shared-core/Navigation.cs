@@ -3,7 +3,7 @@ using System.Numerics;
 namespace PixelCreate.Core;
 
 /// <summary>A place to be led to, with what to call it on the map. <paramref name="Radius"/> above 0 makes it an area (where monsters live): inside it the way ends.</summary>
-public readonly record struct NavTarget(Vector3 At, string Label, float Radius = 0f);
+public readonly record struct NavTarget(Vector3 At, string Label, float Radius = 0f, int Camp = -1);
 
 /// <summary>
 /// Where the player should go: the place the active quest step points to (the person to talk to,
@@ -28,8 +28,12 @@ public static class Navigation
         return null;
     }
 
-    /// <summary>The place the tracked quest step leads to, or null when it leads nowhere to walk.</summary>
-    public static NavTarget? QuestTarget(IStoryContext context, World world)
+    /// <summary>
+    /// The place the tracked quest step leads to, or null when it leads nowhere to walk. Camps the
+    /// player has found empty (<paramref name="cleared"/>, by their place in <see cref="World.EnemySpawns"/>)
+    /// are passed over for the next nearest one where the creatures still live.
+    /// </summary>
+    public static NavTarget? QuestTarget(IStoryContext context, World world, Func<int, bool>? cleared = null)
     {
         if (Tracked(context) is not { } tracked || !tracked.Step.Route)
         {
@@ -51,12 +55,12 @@ public static class Navigation
                 // Everything is in the bag: the objective says to return to the Guild; no way is drawn.
                 return null;
             case "bring":
-                return NearestCampArea(world, context.Position, def => def.Loot?.Any(l => l.Item == goal.Target) == true) is { } source
-                    ? new NavTarget(source.Center, ItemDef.TryIndex(goal.Target, out var item) ? ItemDef.All[item].Name : goal.Target, source.Radius)
+                return NearestCampArea(world, context.Position, def => def.Loot?.Any(l => l.Item == goal.Target) == true, cleared) is { } source
+                    ? new NavTarget(source.Center, ItemDef.TryIndex(goal.Target, out var item) ? ItemDef.All[item].Name : goal.Target, source.Radius, source.Index)
                     : null;
             case "kill":
-                return NearestCampArea(world, context.Position, def => goal.MatchesKill(def.Id)) is { } camp
-                    ? new NavTarget(camp.Center, quest.Name, camp.Radius)
+                return NearestCampArea(world, context.Position, def => goal.MatchesKill(def.Id), cleared) is { } camp
+                    ? new NavTarget(camp.Center, quest.Name, camp.Radius, camp.Index)
                     : null;
             default:
                 return null;
@@ -69,16 +73,31 @@ public static class Navigation
     /// <summary>The middle of the nearest camp where an enemy of the kind lives.</summary>
     public static Vector3? NearestCamp(World world, Vector3 from, Func<EnemyDef, bool> kind) => NearestCampArea(world, from, kind)?.Center;
 
+    /// <summary>What the tracked step hunts, to tell whether a camp still holds any: the kill target, or the creatures that drop the item.</summary>
+    public static Func<EnemyDef, bool>? Hunted(IStoryContext context) =>
+        Tracked(context) is { Step.Goal: var goal } ? goal.Kind switch
+        {
+            "kill" => def => goal.MatchesKill(def.Id),
+            "bring" => def => def.Loot?.Any(l => l.Item == goal.Target) == true,
+            _ => null,
+        } : null;
+
     /// <summary>How far round a camp's middle its creatures roam: the area the map marks for a hunt.</summary>
     public const float CampAreaMargin = 10f;
 
     /// <summary>The nearest camp of the kind as an area: its middle and the radius its creatures roam in.</summary>
-    public static (Vector3 Center, float Radius)? NearestCampArea(World world, Vector3 from, Func<EnemyDef, bool> kind)
+    public static (Vector3 Center, float Radius, int Index)? NearestCampArea(World world, Vector3 from, Func<EnemyDef, bool> kind, Func<int, bool>? cleared = null)
     {
-        (Vector3, float)? best = null;
+        (Vector3, float, int)? best = null;
         var bestDistance = float.MaxValue;
-        foreach (var spawn in world.EnemySpawns)
+        for (var index = 0; index < world.EnemySpawns.Count; index++)
         {
+            var spawn = world.EnemySpawns[index];
+            if (cleared?.Invoke(index) == true)
+            {
+                continue;
+            }
+
             var types = spawn.Types ?? new[] { EnemyDef.All[0].Id };
             if (!types.Any(t => EnemyDef.All.FirstOrDefault(d => d.Id == t) is { } def && kind(def)))
             {
@@ -89,7 +108,7 @@ public static class Navigation
             if (distance < bestDistance)
             {
                 bestDistance = distance;
-                best = (spawn.Center, spawn.Radius + CampAreaMargin);
+                best = (spawn.Center, spawn.Radius + CampAreaMargin, index);
             }
         }
 

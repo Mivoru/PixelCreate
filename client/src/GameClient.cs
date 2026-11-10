@@ -1434,7 +1434,10 @@ public partial class GameClient : Node
         _minimap.Yaw = _yaw;
 
         // Where the player is led: the own mark or the quest's target, by the roads, on both maps and on the ground.
-        _navigator.Update(delta, _client.State.Position, new ClientStory(_client, _hud.Items));
+        var seen = _client.Latest is { } shownNow
+            ? shownNow.Enemies.Where(e => e.Health > 0).Select(e => (EnemyDef.All[e.Type], e.Position)).ToList()
+            : null;
+        _navigator.Update(delta, _client.State.Position, new ClientStory(_client, _hud.Items), seen);
         _minimap.Route = _navigator.Route;
         _minimap.Target = _navigator.Target;
         _worldMap.Player = new Vector2(shown.X, shown.Z);

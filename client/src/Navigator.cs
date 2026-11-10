@@ -134,8 +134,50 @@ public sealed class Navigator
     }
 
     /// <summary>Works out target and way for this frame and lays the trail ahead of the player.</summary>
-    public void Update(double delta, Num.Vector3 player, IStoryContext story)
+    // Camps found empty, by their place in World.EnemySpawns, and when their creatures are back (seconds).
+    private readonly Dictionary<int, double> _cleared = new();
+
+    /// <summary>
+    /// Notes a hunt's camp as empty while the player stands in it and sees none of the hunted alive
+    /// there (<paramref name="seen"/>: the creatures the snapshot shows, alive). It stays passed over
+    /// until its creatures come back, so the target moves on to the nearest camp where they still live.
+    /// </summary>
+    private void NoteCleared(Num.Vector3 player, IStoryContext story, IEnumerable<(EnemyDef Def, Num.Vector3 At)> seen)
     {
+        var now = Time.GetTicksMsec() / 1000.0;
+        foreach (var (camp, until) in _cleared.ToList())
+        {
+            if (now >= until)
+            {
+                _cleared.Remove(camp);
+            }
+        }
+
+        if (Target is not { Own: false, Radius: > 0f } target || Navigation.Hunted(story) is not { } hunted)
+        {
+            return;
+        }
+
+        var middle = new Num.Vector2(target.At.X, target.At.Y);
+        if (Num.Vector2.Distance(new Num.Vector2(player.X, player.Z), middle) > target.Radius * 0.6f)
+        {
+            return;
+        }
+
+        if (!seen.Any(e => hunted(e.Def) && Num.Vector2.Distance(new Num.Vector2(e.At.X, e.At.Z), middle) < target.Radius + 4f))
+        {
+            var camp = _world.EnemySpawns.Select((s, i) => (s, i)).OrderBy(x => Num.Vector2.Distance(new Num.Vector2(x.s.Center.X, x.s.Center.Z), middle)).First();
+            _cleared[camp.i] = now + Mathf.Max(30, camp.s.RespawnTicks / (float)Tuning.TickRate);
+        }
+    }
+
+    public void Update(double delta, Num.Vector3 player, IStoryContext story, IEnumerable<(EnemyDef Def, Num.Vector3 At)>? seen = null)
+    {
+        if (seen is not null)
+        {
+            NoteCleared(player, story, seen);
+        }
+
         if (Waypoint is { } own && new Vector2(player.X - own.X, player.Z - own.Y).Length() < 4f)
         {
             // Arrived: the point has done its job.
@@ -143,7 +185,7 @@ public sealed class Navigator
         }
 
         Target = Waypoint is { } point ? (point, "Your mark", true, 0f)
-            : Navigation.QuestTarget(story, _world) is { } quest ? (new Vector2(quest.At.X, quest.At.Z), quest.Label, false, quest.Radius)
+            : Navigation.QuestTarget(story, _world, camp => _cleared.ContainsKey(camp)) is { } quest ? (new Vector2(quest.At.X, quest.At.Z), quest.Label, false, quest.Radius)
             : null;
 
         if (Target is not { } target)

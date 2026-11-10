@@ -101,6 +101,20 @@ public class NavigationTests
         Assert.Null(Navigation.QuestTarget(done, Valley.World));
     }
 
+    [Fact]
+    public void ACampFoundEmpty_IsPassedOver_ForTheNextWhereTheyStillLive()
+    {
+        var hunting = new Playing(Road);
+        hunting.World.SetQuest("slime_cull", new QuestState { Status = QuestStatus.Active, Step = 0 });
+        var first = Navigation.QuestTarget(hunting, Valley.World)!.Value;
+        Assert.True(first.Camp >= 0);
+
+        var next = Navigation.QuestTarget(hunting, Valley.World, camp => camp == first.Camp);
+        Assert.NotNull(next);
+        Assert.NotEqual(first.Camp, next!.Value.Camp);
+        Assert.True(Vector3.Distance(first.At, next.Value.At) > 1f);
+    }
+
     private static readonly World Open = new(Array.Empty<Aabb>());
 
     // A way that bends: 40 m east, then 40 m north.
