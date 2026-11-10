@@ -59,9 +59,12 @@ Greyfang a Moonfell opravit v dokumentech. Jejich polohu neměnit, navazují na 
 
 **Voda:** Alder pramení pod Ridges, teče jezerem Greywater, městem Varn's Crossing a bažinou do moře
 u Saltmere. Je to páteř světa: lodní doprava, mlýny, mosty, brody. Přítoky: Calder Stream z Lake Calder
-a Westbrook z Thornwoodu. **Mirrorrun** odtéká z údolí přes Silver Falls na jih k moři u Gull's Rest.
-**Ironwash** teče z Ironjaw Highlands soutěskou (Ironwash Gorge) do údolí. Jezera: Mirror Lake
-(místo dopadu Skyfallen), Lake Calder, Blackmere, Moonfell Tarn, Greywater.
+a Westbrook. Voda v údolí odpovídá postavené zóně: **Ironwash** teče z Ironjaw Highlands soutěskou
+(Ironwash Gorge) východním sedlem do údolí a ústí do Mirror Lake. Z jezera odtéká potok k úpatí
+Silver Falls, kde začíná **Silverbrook**; ten teče údolím na sever a západním sedlem ven, odtud jako
+**Westbrook** Thornwoodem do Alder. **Mirrorrun** pramení za jižním okrajem údolí (nad Silver Falls)
+a teče na jih k moři u Gull's Rest. Jezera: Mirror Lake (místo dopadu Skyfallen), Lake Calder,
+Blackmere, Moonfell Tarn, Greywater.
 
 **Cesty:**
 - **King's Road** (hlavní silnice, dlážděná, s milníky): Highcrest, Varn's Crossing, Brindle,
@@ -80,7 +83,9 @@ Každá silnice dostane svůj vzhled (dlažba, štěrk, hlína, prkna), aby hrá
 ## 3. Cestování
 
 - **Waystones**: auréjské kameny (bílý kámen, azurové runy, stejné jako Anchor Stone). Dotykem se
-  odemknou. Z velké mapy (M) se cestuje mezi odemčenými kameny, za drobný poplatek v krystalech.
+  odemknou. Cestuje se **jen od kamene ke kameni**: hráč stojí u odemčeného kamene a z jeho mapy
+  vybere jiný odemčený kámen, za drobný poplatek v krystalech. Z libovolného místa mapy se cestovat
+  nedá, aby cesta krajinou zůstala hrou a ne čekáním na načtení.
   Jeden kámen v každém městě a vesnici a jeden u každého velkého dungeonu, celkem 14
   (`layout.json` → `waystones`).
 - **Lodě:** říční člun z Varn's Crossing do Saltmere (vyhlídková plavba po Alder, přeskočitelná)
@@ -356,9 +361,78 @@ nástěnce místní Guildy nebo hostince, a každá budova zblízka v kvalitě v
 
 ---
 
-## 8. Co plán zatím neřeší
+## 8. Biomy, atmosféra, logika sídel a opuštěná místa
+
+Doplněno z druhého návrhu (ChatGPT, 2026-11-10), převzaté jen to, co sedí na zóny a dnešní techniku.
+
+### 8.1 Biomy podle výšky, sklonu a vody
+
+Povrch a vegetaci určí pravidla, ne ruční malování. `Zone.Scatter` dostane biom z výšky nad dnem
+zóny, sklonu a vzdálenosti k vodě; zóna smí pravidla přepsat oblastmi (`grounds`).
+
+| Biom | Kde | Povrch | Vegetace | Zvířata |
+|---|---|---|---|---|
+| Louka | rovina, sklon pod 8°, dál než 12 m od vody | tráva, polní kvítí | trsy trávy, keře osamoceně, solitérní dub | ovce, krávy, jeleni |
+| Lužní les | do 20 m od řeky nebo jezera, nízko | vlhká tráva, bahno u břehu | vrby, olše, rákos, orobinec | kachny, žáby (zvuk) |
+| Okraj lesa | pás 10 až 15 m kolem lesa | tráva přechází v hrabanku | keře, mladé stromky, kapradí | srnci, divočáci |
+| Listnatý les | střední výšky, sklon pod 20° | hrabanka, mech | duby, buky, břízy, kapradí | divočáci, vlci |
+| Jehličnatý les | vyšší polohy, Greyfang | jehličí, kameny | borovice, smrky, brusinky | vlci |
+| Vřesoviště | holé návrší, Moonfell | vřes, krátká tráva, kameny | vřes, jalovec, osamělá bříza | havrani, vlkodlaci v noci |
+| Skalnatý svah | sklon nad 30° | skála, suť | trs trávy ve škvírách, kosodřevina | kozy (návrh) |
+| Pole a pastviny | u statků, ručně | pole v pásech, cesty | žádné stromy, ploty, kupky | ovce, krávy |
+| Zpustošená zem | tábory goblinů a orků | udupaná hlína, popel | pahýly, suché keře | nic |
+
+Přechody jsou měkké: pravděpodobnost rostliny se mění plynule s výškou a sklonem, žádná ostrá hranice.
+
+### 8.2 Atmosféra regionů
+
+Každý region má vlastní mlhu, barvu oblohy, světlo a zvukovou kulisu. Na hranici zóny i uvnitř
+zóny (Greyfang, Moonfell, Ironjaw) se nastavení prolíná na **40 m**, aby změna nebyla skok.
+
+| Region | Mlha | Obloha a světlo | Zvuk |
+|---|---|---|---|
+| Meadow Valley | slabá, ranní u jezera | jasně modrá, teplé slunce | ptáci, vítr v trávě, potok |
+| Greyfang | modrošedá v údolíčkách | studenější, nižší slunce | vítr v jehličí, vytí v dálce |
+| Moonfell | hustá, nízká, v noci stříbrná | fialová soumrak, velký měsíc | havrani, tiché zvony kaple |
+| Ironjaw | prach, kouř z ohňů | do oranžova | bubny, kovadliny, vítr |
+| Thornwood | zelená, paprsky světla | stíněné, skvrnité světlo | datel, praskání větví, cvrčci |
+
+### 8.3 Logika sídel
+
+- **Voda:** studny a pitná voda proti proudu, koželuhové, jatka a stoka po proudu. Ve městech je
+  stoka malý dungeon (Tanner's Drop, Undercanals).
+- **Tři šířky ulic:** hlavní silnice (vůz a chodci, 6 až 8 m), ulice (3 až 4 m), ulička a průchod
+  (do 2 m). Hlavní silnice vede k trhu a bráně.
+- **Lucerny** svítí od 19 do 6 h; u bran a na mostech celou noc.
+- **Ukazatele** na každé křižovatce silnic, se jmény míst (anglicky), aby hráč věděl bez mapy.
+- Řemesla podle surovin: mlýn u vody, kovárna u silnice, pila u lesa, rybáři u vody.
+
+### 8.4 Konstrukční standard domů
+
+Každý dům, který hráč uvidí zblízka, má: podezdívku (dům nestojí na trávě), viditelné nosné trámy
+nebo kámen v rozích, dveře se zárubní a prahem, okna s rámem a okenicemi, střechu s přesahem
+a okapem, komín u domů s ohništěm, a aspoň dva detaily u vchodu (sud, bedna, lavice, truhlík,
+nářadí). Kolize vždy z modelu. Dům na svahu má podezdívku dorovnanou ke svahu, ne zapuštěnou.
+
+### 8.5 Opuštěná místa a nová zajímavá místa
+
+Svět působí starší, když v něm jsou místa, kde něco skončilo. Bez textu, jen tím, co tam leží.
+
+- **Meadow Valley:** vypálený statek u západního sedla (černé trámy, rozbitý vůz, goblinské stopy),
+  **jeskyně za Silver Falls** (vstup do Sunken Archive), opuštěný tábor lovců u Greyfangu, starý
+  brod se zborceným mostem na Silverbrooku.
+- **Thornwood:** zarostlé kruhové domy Vel, pila zničená bouří, oběšencův dub.
+- **Greyspine:** **teplé prameny** v sedle (pára, modrá voda, místo k odpočinku), opuštěný důl.
+- **Riverlands:** zatopená vesnice u Alder (střechy nad vodou), bojiště s rezavými zbraněmi.
+- **Pobřeží:** vrak lodi na pláži, maják bez strážce.
+
+Každé místo dostane snímek ve studiu a značku na mapě až po objevení.
+
+---
+
+## 9. Co plán zatím neřeší
 
 - Přesné rozvržení ulic měst (bude dokument pro každé město při jeho stavbě).
 - Interiéry (kolik domů má vnitřek: návrh jen služby a hostince).
 - Počasí a roční období po regionech.
-- Hudba a zvukové prostředí regionů.
+- Hudba regionů (zvukové kulisy viz 8.2).
