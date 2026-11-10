@@ -705,7 +705,8 @@ public partial class GameClient : Node
         var best = Guild.TalkRange;
         foreach (var actor in _actors)
         {
-            if (!_actorPresent[actor.Index])
+            // The fallen are not spoken to.
+            if (!_actorPresent[actor.Index] || _actorPose[actor.Index] == ActorPose.Fallen)
             {
                 continue;
             }
@@ -793,7 +794,7 @@ public partial class GameClient : Node
         var story = new ClientStory(_client, _hud.Items);
         foreach (var quest in Story.Quests.Where(q => _client.Story.Quest(q.Id).Status == QuestStatus.Active))
         {
-            if (Story.QuestStatusName(story, quest.Id) == "ready")
+            if (quest.Kind == "job" && Story.QuestStatusName(story, quest.Id) == "ready")
             {
                 return $"{quest.Name}: report to Mira";
             }
@@ -827,7 +828,7 @@ public partial class GameClient : Node
         }
 
         var position = ToGodot(_client.State.Position);
-        var npc = _actors.Where(a => _actorPresent[a.Index])
+        var npc = _actors.Where(a => _actorPresent[a.Index] && _actorPose[a.Index] != ActorPose.Fallen)
             .Select(a => (Actor: a, At: _actorAt[a.Index]))
             .Where(p => new Vector2(p.At.X - position.X, p.At.Z - position.Z).Length() < Guild.TalkRange)
             .OrderBy(p => new Vector2(p.At.X - position.X, p.At.Z - position.Z).Length())
@@ -1080,6 +1081,8 @@ public partial class GameClient : Node
 
         _minimap.Size = new Vector2(Hud.MinimapSize, Hud.MinimapSize);
         _minimap.Position = new Vector2(_hud.Size.X - Hud.MinimapSize - 28f, 28f);
+        // Nothing of the world shows over a slide or a full fade, the map included.
+        _minimap.Visible = !_hud.SlideShown && _hud.Fade < 0.95f;
         _minimap.Player = new Vector2(shown.X, shown.Z);
         _minimap.Yaw = _yaw;
 
@@ -1573,8 +1576,47 @@ public partial class GameClient : Node
     /// Start a new game for it (no save, not test mode); PIXEL_FRAIL=1 skips the trial's lessons.
     /// </summary>
     private (int Scene, int Step) _botScene = (-2, 0);
+    private RoadMap? _botRoads;
+    private List<System.Numerics.Vector3> _botRoute = new();
+    private Vector3 _botRouteGoal = new(float.MaxValue, 0, 0);
     private int _botLeg;
-    private static readonly Vector3[] GuildRoad = { new(-9, 0, 6), new(-18, 0, 2.5f), new(-24, 0, 9), new(-24, 0, 27), new(-36, 0, 27) };
+    private Vector3 _botStuckAt;
+    private uint _botStuckTick;
+
+    /// <summary>
+    /// Walks to a place the way people do: along the roads and round what stands in between
+    /// (<see cref="RoadMap.Route"/>), not in a straight line into a wall. A bot that has not moved for a
+    /// second and a half jumps and plans again from where it stands.
+    /// </summary>
+    private (sbyte X, sbyte Z, Buttons Buttons) BotGo(Vector3 goal, float reach, Buttons buttons)
+    {
+        var position = ToGodot(_client.State.Position);
+        _botRoads ??= new RoadMap(_world.Roads);
+        var stuck = false;
+        if (_client.Tick - _botStuckTick >= 90)
+        {
+            stuck = position.DistanceTo(_botStuckAt) < 0.5f && new Vector2(goal.X - position.X, goal.Z - position.Z).Length() > reach;
+            _botStuckAt = position;
+            _botStuckTick = _client.Tick;
+        }
+
+        if (stuck || _botRouteGoal.DistanceTo(goal) > 1.5f)
+        {
+            _botRoute = _botRoads.Route(_client.State.Position, FromGodot(goal), _world);
+            _botRouteGoal = goal;
+            _botLeg = 0;
+        }
+
+        while (_botLeg < _botRoute.Count - 1 &&
+               new Vector2(_botRoute[_botLeg].X - position.X, _botRoute[_botLeg].Z - position.Z).Length() < 1.3f)
+        {
+            _botLeg++;
+        }
+
+        var last = _botLeg >= _botRoute.Count - 1;
+        var walk = BotWalk(last ? goal : ToGodot(_botRoute[_botLeg]), last ? reach : 0.2f, buttons);
+        return stuck ? (walk.X, walk.Z, walk.Buttons | Buttons.Jump) : walk;
+    }
 
     private (sbyte X, sbyte Z, Buttons Buttons) PrologueBot()
     {
@@ -1635,7 +1677,7 @@ public partial class GameClient : Node
         if (_sceneApart is { } speaker)
         {
             BotStage($"walk up to {speaker.Name}");
-            return BotWalk(_actorAt[speaker.Index], 2.4f, Buttons.None);
+            return BotGo(_actorAt[speaker.Index], 2.4f, Buttons.None);
         }
 
         // Things on the ground come first: the dagger by the cage is the only weapon there is.
@@ -1663,7 +1705,7 @@ public partial class GameClient : Node
             if (step.Kind == "waitFor" && Story.Scenes[snapshot.Scene].Id == "prologue_1_intro")
             {
                 BotStage("walk to the finders");
-                return BotWalk(new Vector3(70, 0, 108), 2f, Buttons.None);
+                return BotGo(new Vector3(70, 0, 108), 2f, Buttons.None);
             }
         }
 
@@ -1692,22 +1734,8 @@ public partial class GameClient : Node
             GD.Print($"BOT at {position.X:0.0},{position.Z:0.0} leg {_botLeg} tick {_client.Tick}");
         }
 
-        if (goal.Stage == "go to the Guild door" && _botLeg < GuildRoad.Length)
-        {
-            // Along the village road and round the hall to its door, as a person would walk it.
-            if (GuildRoad[_botLeg].DistanceTo(position with { Y = 0 }) < 1.5f)
-            {
-                _botLeg++;
-            }
-
-            if (_botLeg < GuildRoad.Length)
-            {
-                return BotWalk(GuildRoad[_botLeg], 0.5f, Buttons.None);
-            }
-        }
-
         var use = goal.Stage is "go to the Guild door" or "leave the arena" or "touch the stone";
-        var walk = BotWalk(goal.Goal, use ? 2.2f : 1.2f, Buttons.None);
+        var walk = BotGo(goal.Goal, use ? 2.2f : 1.2f, Buttons.None);
         if (walk == (0, 0, Buttons.None) && _client.Tick % 45 == 0 && use)
         {
             Interact();

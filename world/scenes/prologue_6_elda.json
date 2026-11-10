@@ -40,6 +40,12 @@
       "despawn": "pip"
     },
     {
+      "despawn": "hanne"
+    },
+    {
+      "despawn": "corb"
+    },
+    {
       "time": {
         "day": 2,
         "hour": 6

@@ -130,7 +130,7 @@
     { "id": "elda", "name": "Elda", "role": "baker", "x": 18, "z": 3.5, "yaw": -1.2 },
     { "id": "pip", "name": "Pip", "role": "farmer", "x": 30, "z": -33, "yaw": 0.4 },
     { "id": "sora", "name": "Sora", "role": "adventurer_a", "x": 416, "z": 0.6, "yaw": 0.6 },
-    { "id": "kai", "name": "Kai", "role": "adventurer_b", "x": 424.2, "z": 2.4, "yaw": -0.8 },
+    { "id": "kai", "name": "Kai", "role": "adventurer_b", "x": 422.2, "z": 3.6, "yaw": -0.8 },
     { "id": "chest", "name": "Guild Chest", "role": "storage", "x": 411.5, "z": 5.4, "yaw": 1.5708 },
     { "id": "hollis", "name": "Hollis", "role": "appraiser", "x": 429.7, "z": -1, "yaw": 1.5708 }
   ],

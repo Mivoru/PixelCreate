@@ -198,6 +198,13 @@ Rules:
   prints every scene step, `-Flags` and `-Spawn` start partway (`PIXEL_FLAGS` sets story flags on a new game).
   The intro's pictures are painted by `python asset-pipeline/generate_intro.py` (then Godot's `--import`).
   Keep the ruins camp and patrol away from the ambush on the road at (71.5, 72): level 4 goblins joined the first fight.
+- Roads are the highways of everyone who walks by themselves (`RoadMap` in `Schedules.cs`, built from the zone's
+  `paths` in `World.Roads`): `Route` goes straight when the line is clear and short, else onto a road by a clear line,
+  along the roads and off again, so nobody walks into a wall. NPCs on their day (`world/schedules.json`,
+  `Schedules.RestOf`, `GameServer.ApplySchedules`) and the bots (`GameClient.BotGo`, which also jumps and plans again
+  when it has not moved for 90 ticks) both use it. Where no road lies within 30 m (indoors, the wilds) the walk is
+  straight: a fallback to the nearest road anywhere once sent the bot out of the Guild hall into a wall.
+  `net-tests/RoadTests.cs` walks real routes in the zone. New places people go to need a road near them.
 - A weapon picked up with empty hands is worn at once (the prologue's player has none until the wooden sword).
 - Interiors live outside the map on platforms (the guild at x 420, the trial ground at x 480). Doors are portals.
 - Character models come from Blender (`anime_*`) and use `toon.gdshader`, which also bends hair and cloth.

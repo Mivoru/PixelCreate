@@ -198,75 +198,45 @@ public sealed class RoadMap
         _edges[b].Add((a, cost));
     }
 
+    /// <summary>How far off a road someone may step onto it or leave it.</summary>
+    private const float ReachRange = 30f;
+
     /// <summary>
-    /// The way from one place to another: straight when they are close or no road is near, else to the
-    /// nearest road, along the roads, and off again. The last point is the goal itself.
+    /// The way from one place to another, round what stands in between. Straight when the line is
+    /// clear and short (or the roads would be a long way round); otherwise onto a road by a clear
+    /// line, along the roads, and off again by a clear line. The last point is the goal itself.
     /// </summary>
     public List<Vector3> Route(Vector3 from, Vector3 to, World world)
     {
         var start = new Vector2(from.X, from.Z);
         var goal = new Vector2(to.X, to.Z);
-        var way = new List<Vector3>();
+        var end = to with { Y = world.GroundHeight(to.X, to.Z) };
         var direct = Vector2.Distance(start, goal);
-        var first = Nearest(start);
-        var last = Nearest(goal);
-        if (direct > 10f && first >= 0 && last >= 0 && first != last &&
-            Vector2.Distance(start, _nodes[first]) < 14f && Vector2.Distance(goal, _nodes[last]) < 14f)
+        var open = Clear(start, goal, world);
+        if (open && direct <= 12f)
         {
-            var path = Shortest(first, last);
-            // Skip road points that only lead back: begin at the first one that brings the walker nearer the goal's road.
-            while (path.Count > 1 && Vector2.Distance(start, _nodes[path[1]]) < Vector2.Distance(_nodes[path[0]], _nodes[path[1]]))
-            {
-                path.RemoveAt(0);
-            }
-
-            while (path.Count > 1 && Vector2.Distance(goal, _nodes[path[^2]]) < Vector2.Distance(_nodes[path[^1]], _nodes[path[^2]]))
-            {
-                path.RemoveAt(path.Count - 1);
-            }
-
-            foreach (var node in path)
-            {
-                var point = _nodes[node];
-                way.Add(new Vector3(point.X, world.GroundHeight(point.X, point.Y), point.Y));
-            }
+            return new List<Vector3> { end };
         }
 
-        way.Add(to with { Y = world.GroundHeight(to.X, to.Z) });
-        return way;
-    }
-
-    private int Nearest(Vector2 point)
-    {
-        var best = -1;
-        var nearest = float.MaxValue;
-        for (var i = 0; i < _nodes.Count; i++)
+        // Every road point that can be walked to in a straight line is a way on; the same for ways off.
+        var on = Reachable(start, world);
+        var off = Reachable(goal, world);
+        if (on.Count == 0 || off.Count == 0)
         {
-            var distance = Vector2.DistanceSquared(point, _nodes[i]);
-            if (distance < nearest)
-            {
-                nearest = distance;
-                best = i;
-            }
+            return new List<Vector3> { end };
         }
 
-        return best;
-    }
-
-    private List<int> Shortest(int from, int to)
-    {
         var cost = Enumerable.Repeat(float.MaxValue, _nodes.Count).ToArray();
         var before = Enumerable.Repeat(-1, _nodes.Count).ToArray();
-        var open = new PriorityQueue<int, float>();
-        cost[from] = 0;
-        open.Enqueue(from, 0);
-        while (open.TryDequeue(out var node, out var reached))
+        var queue = new PriorityQueue<int, float>();
+        foreach (var (node, walk) in on)
         {
-            if (node == to)
-            {
-                break;
-            }
+            cost[node] = walk;
+            queue.Enqueue(node, walk);
+        }
 
+        while (queue.TryDequeue(out var node, out var reached))
+        {
             if (reached > cost[node])
             {
                 continue;
@@ -278,23 +248,78 @@ public sealed class RoadMap
                 {
                     cost[next] = cost[node] + step;
                     before[next] = node;
-                    open.Enqueue(next, cost[next]);
+                    queue.Enqueue(next, cost[next]);
                 }
             }
         }
 
-        var path = new List<int>();
-        if (cost[to] == float.MaxValue)
+        var last = -1;
+        var total = float.MaxValue;
+        foreach (var (node, walk) in off)
         {
-            return path;
+            if (cost[node] < float.MaxValue && cost[node] + walk < total)
+            {
+                total = cost[node] + walk;
+                last = node;
+            }
         }
 
-        for (var node = to; node >= 0; node = before[node])
+        // Across open ground people cut the corner when the roads are much the longer way.
+        if (last < 0 || (open && total > direct * 1.7f))
         {
-            path.Add(node);
+            return new List<Vector3> { end };
         }
 
-        path.Reverse();
-        return path;
+        var way = new List<Vector3>();
+        for (var node = last; node >= 0; node = before[node])
+        {
+            var point = _nodes[node];
+            way.Add(new Vector3(point.X, world.GroundHeight(point.X, point.Y), point.Y));
+        }
+
+        way.Reverse();
+        way.Add(end);
+        return way;
+    }
+
+    /// <summary>Road points near a place with nothing solid on the line to them, with the walk to each.</summary>
+    private List<(int Node, float Walk)> Reachable(Vector2 place, World world)
+    {
+        var near = new List<(int Node, float Walk)>();
+        for (var i = 0; i < _nodes.Count; i++)
+        {
+            var walk = Vector2.Distance(place, _nodes[i]);
+            if (walk < ReachRange)
+            {
+                near.Add((i, walk));
+            }
+        }
+
+        var clear = near.OrderBy(n => n.Walk).Where(n => Clear(place, _nodes[n.Node], world)).Take(6).ToList();
+        if (clear.Count > 0)
+        {
+            return clear;
+        }
+
+        // Nothing clear: the nearest road point within reach stands in. With no road near at all (indoors,
+        // the wilds) there is no way on, and the walk is straight.
+        return near.OrderBy(n => n.Walk).Take(1).Select(n => (n.Node, n.Walk * 3f)).ToList();
+    }
+
+    /// <summary>Whether someone can walk the straight line between two places: nothing solid stands on it.</summary>
+    public static bool Clear(Vector2 a, Vector2 b, World world)
+    {
+        var length = Vector2.Distance(a, b);
+        var steps = Math.Max(1, (int)(length / 0.4f));
+        for (var i = 1; i < steps; i++)
+        {
+            var point = Vector2.Lerp(a, b, i / (float)steps);
+            if (world.OverlapsPlayer(new Vector3(point.X, world.GroundHeight(point.X, point.Y) + 0.1f, point.Y)))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 }
