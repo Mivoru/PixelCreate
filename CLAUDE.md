@@ -263,8 +263,8 @@ Rules:
   rig when it changes. A new game opens the creator (`Hud.OpenCreator`, `PIXEL_BOT=creator`); test runs and
   `PIXEL_LOOK=default` start with the default look. Studio job `creator` photographs every choice.
 - Sound effects come from ElevenLabs: `python asset-pipeline/generate_sounds.py` (cached, keys stay outside the repo).
-- Voices (trial: Bram, Mira, Corwin): a person with a `voice` in `world/people.json` (ElevenLabs voice id and settings)
-  speaks. `python asset-pipeline/generate_voices.py` records their dialogue nodes, `about` lines and barks to
+- Voices: Mira, Rhea and the finders (Vosk, Gil, Hanne, Corb) speak. A person with a `voice` in `world/people.json` (ElevenLabs voice id and settings)
+  speaks. `python asset-pipeline/generate_voices.py` records their dialogue nodes, barks, `fight` shouts, `death` words and scene lines (`say` by actor or name) to
   `client/assets/voices/<npc>/<first 16 hex of the text's SHA-1>.mp3` (not in git; `--dry` counts characters, `--voices`
   lists voices; only new or changed lines are paid for). `Voices.cs` finds a line by the same hash: dialogue lines play
   flat, barks from the speaker's place, a line without a file stays silent. Lines with `{gold}`-style fills and stage
@@ -301,6 +301,14 @@ Rules:
 - Minimap (`Minimap.cs`, top right, north = -Z up): the studio's `map` job renders `client/assets/ui/minimap.png`;
   run it again after changing terrain, roads or buildings. Buildings are marked by model (`Minimap.Landmarks`), and
   places appear once found (`Settings.Discovered`, saved in `user://settings.cfg`).
+- Rhea's training (`Tutorial.cs`, `HudTutorial.cs`, scene `tutorial`): offered by Mira after signing up ("Later."
+  defers it; her default node keeps "Train with Rhea"). Five lessons (light, heavy, block, dash, slide), each counted on
+  the server and flagged `tutorial.<lesson>`; Rhea cannot be hurt, stands still in the striking and sliding lessons,
+  her blows stop at `Tutorial.MaxBlow` and never kill. Backspace (`Command.SkipTutorial`) skips. Bots skip it except
+  `PIXEL_BOT=tutorial`. `TutorialTests`. Fighting actors (`fight` step) shout `fight` lines and say `death` words from
+  `people.json`, with the voice when recorded, else a generic shout or cry; goblins shriek or cackle as they strike.
+- The dialogue portrait renders only the speaker: their meshes join `PortraitLayer` while they talk and the portrait
+  camera culls everything else, framed from the body's front on an eased head position.
 - Navigation: `Navigation` (shared) gives the target of the tracked quest step (the prologue first, then jobs): a
   person's place for `talk`, the nearest camp for `kill`, where the item drops for `bring` (then Mira once the bag
   holds enough), or the step's `at`; `"route": false` shows nothing (in the cage, in the fight). A place behind a door

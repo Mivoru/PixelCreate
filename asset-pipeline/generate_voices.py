@@ -43,8 +43,17 @@ def lines_of(npc, person):
     if dialogue.exists():
         nodes = json.loads(dialogue.read_text(encoding="utf-8"))["nodes"]
         lines += [node["text"] for node in nodes.values()]
-    lines += list(person.get("about", {}).values())
+    # "about" lines are no longer asked for (the game is not a story game since 2026-11-10).
     lines += [bark["text"] for bark in person.get("barks", [])]
+    lines += person.get("fight", [])
+    if person.get("death"):
+        lines.append(person["death"])
+    # Lines said in scenes: by their actor id, or by a speaker's name (Rhea in the yard).
+    for scene in sorted((ROOT / "world" / "scenes").glob("*.json")):
+        for step in json.loads(scene.read_text(encoding="utf-8"))["steps"]:
+            say = step.get("say")
+            if say and (say.get("actor") == npc or say.get("name", "").lower() == npc):
+                lines.append(say["text"])
     # Rumours: their own telling of it, or the common one when they are named as a teller.
     for rumor in json.loads((ROOT / "world" / "rumors.json").read_text(encoding="utf-8")):
         if npc in rumor.get("by", {}):
