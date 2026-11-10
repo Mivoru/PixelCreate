@@ -66,7 +66,15 @@ Hra už je hratelný prototyp akční části. Zdroj pravdy je kód a `CLAUDE.md
 - 2026-11-09: čas běží plynule při hraní (1 herní hodina = 26 s), spánek přeskočí noc
   (úprava oproti „čas jen akcí", viz `design/stage-1.md`). Dialog má živý portrét mluvčího.
 
+- 2026-11-10: po prvním hraní autorem: zajetí lovci u jezera je **nevyhnutelné** (síť, když hráč utíká nebo
+  otálí); větev útěku se nestaví. Nahrávky hlasů zůstávají **mimo git**. Platí pravidla „Done means" v `CLAUDE.md`.
+  Úvodní obrázky nahradí dvě videa z Gemini. Přibude velká mapa (M), vlastní body a cesta vyznačená ve světě.
+
 ## 4. Další krok
+
+**Nejdřív `design/repair-plan.md`** (fáze R1 až R6: prolog drží pohromadě, vedení hráče a mapa, pohled na mluvčího,
+přepsání rozhovorů, lovci, úvodní video). Nový obsah etapy 4 je do schválení R1 až R4 zastavený.
+Předávka mezi sessions: `design/handoff.md`.
 
 Etapy 0 až 3 jsou hotové. Běží **etapa 4** (živá vesnice, `design/stage-4.md`).
 

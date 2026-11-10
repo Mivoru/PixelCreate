@@ -19,7 +19,7 @@ the player is hit by a truck saving a child and falls into the world). The MMORP
 (decided 2026-11-09); co-op for 2 to 4 players may come later. Story, world, factions, the tutorial
 and the roadmap live in `design/` (start with `design/story.md`): read it before story, quest, dialogue or zone work.
 Work now on the world, story, mechanics, movement, abilities and enemies. Do not tune difficulty or
-balance yet. Godot 4.7 with C#; the server does not use Godot.
+balance yet. Current priority: `design/repair-plan.md` (see "Done means" below); start a session with `design/handoff.md`. Godot 4.7 with C#; the server does not use Godot.
 
 The game still runs as a local server plus a client, which keeps co-op possible: the server stays
 authoritative and owns the save (player and world state), abilities, enemies, quests and dialogue are
@@ -316,6 +316,39 @@ Rules:
 - Hair and cloth are `ClothChain` grids; the toon shader bends meshes along them. Rig looks live in `Dialogues.cs`.
 - The server waits for a late input instead of skipping it. Catching up spends only ticks missed while stalled,
   so no client can run faster than real time: extra inputs are thrown away.
+
+## Done means (story, quests, dialogue, guidance)
+
+The author's first playthrough (2026-11-10) found the prologue and village broken for a person while
+every test and bot passed. These rules decide when story work is done. The repair work they came from
+is `design/repair-plan.md` (it comes before new content); the state of the last session is
+`design/handoff.md`.
+
+- **One slice to quality, then the next.** No new content on a slice the author has not played and
+  approved. End each slice with a short list of what he should try.
+- **Play it as a contrary player.** Before story work is done, run it as someone who walks away, talks
+  to nobody, or arrives in another order. The obedient bot goes exactly where a scene waits, so it
+  proves nothing about this. Every step of a scene that waits while the player has the controls needs
+  a `timeout` or an `until`.
+- **A flag says what happened.** Set it at the moment of the event it names, not at the start of the
+  scene. `prologue.started` was set in the intro, and Mira greeted a Nell who was not there.
+- **A line may mention a person or an event only under a condition that proves it.** Mira says "Nell"
+  only while Nell is with the player.
+- **Every conversation has a purpose.** Before writing, note what the person wants, what they know
+  about the player and about what just happened, and what the player takes away. A conversation
+  without a purpose is not written. A line that can be cut without loss is cut.
+- **People react to the world.** The opening line differs by what has happened: first meeting, known,
+  after an event that touches them, after something the player did for or to them. Nobody gossips
+  about their neighbours to a stranger: "What do you make of...?" is for people they are close to or
+  at odds with, and only once they know the player.
+- **Plain English.** No dialect spellings ("da" for dad read as a typo). Read every conversation
+  through as one talk, not node by node, and run the proofreader over all game text.
+- **The player always knows what to do.** Every quest step has an objective that names a place and a
+  target the map can mark. A test fails when a step has neither.
+- **Check with eyes.** A portrait shot for each talk of a scene: the face is visible, nothing stands
+  in the way, nothing jerks. Read the frames of the player's actual path, not only studio sheets.
+- **Report what was not checked.** A passing test is not a played game: say which of the above was
+  done and which was not.
 
 ## Which tool to draw with
 
