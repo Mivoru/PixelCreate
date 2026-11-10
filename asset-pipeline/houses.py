@@ -248,6 +248,123 @@ def cottage_b():
             round_log("log", (x0 + 0.35, y, z), (x1 - 0.35, y, z), 0.13)
 
 
+def chapel():
+    """The village chapel: a stone nave on a footing with buttresses, pointed windows down both
+    sides, an arched door and a round window in the front gable, a steep roof and a small timbered
+    bell turret on the ridge with its bell. Built with the nave along x, then turned so the door
+    faces -y like every other building."""
+    import bpy
+
+    length, width, height = 9.0, 5.4, 4.2
+    l, w = length / 2, width / 2
+    base = 0.4
+    top = base + height
+    box("footing", (0, 0, -0.3), (length + 0.4, width + 0.4, 1.4), "stone_dark")
+    box("walls", (0, 0, base + height / 2), (length, width, height), "stone")
+    # Quoins: darker dressed stones up every corner.
+    for x in (-l, l):
+        for y in (-w, w):
+            for k in range(5):
+                z = base + 0.35 + k * 0.85
+                long = k % 2 == 0
+                box("quoin", (x - (0.25 if long else 0.1) * (1 if x > 0 else -1) + (0.04 if x > 0 else -0.04), y + (0.04 if y > 0 else -0.04),
+                              z), (0.6 if long else 0.3, 0.3 if long else 0.6, 0.38), "stone_dark")
+    # Buttresses between the windows, stepping in near the top.
+    for x in (-1.5, 1.5):
+        for side in (-1, 1):
+            box("buttress", (x, side * (w + 0.3), base + 1.3), (0.55, 0.6, 2.6), "stone_dark")
+            box("buttress_top", (x, side * (w + 0.18), base + 3.0), (0.5, 0.36, 1.0), "stone_dark")
+    # Pointed windows: glass, a stone surround and a sill, three a side.
+    for x in (-3.0, 0.0, 3.0):
+        for side in (-1, 1):
+            y = side * (w + 0.02)
+            bottom, shoulder, peak = base + 1.6, base + 3.0, base + 3.6
+            verts = [(x - 0.4, y, bottom), (x + 0.4, y, bottom), (x + 0.4, y, shoulder), (x, y, peak), (x - 0.4, y, shoulder)]
+            add_object("glass", mesh_from("glass", verts, [(0, 1, 2, 3, 4) if side < 0 else (4, 3, 2, 1, 0)]), "pane")
+            for a, b in ((verts[0], verts[4]), (verts[1], verts[2]), (verts[2], verts[3]), (verts[4], verts[3])):
+                timber("surround", (a[0], y + side * 0.04, a[2]), (b[0], y + side * 0.04, b[2]), 0.14, "stone_dark")
+            timber("mullion", (x, y + side * 0.03, bottom), (x, y + side * 0.03, peak - 0.1), 0.06, "stone_dark")
+            box("sill", (x, y + side * 0.1, bottom - 0.08), (1.1, 0.24, 0.12), "stone_dark")
+    # Gable ends of stone up to the roof.
+    rise = width * 0.8
+    overhang = 0.4
+    roof_top = roof_base(top, width, rise, overhang)
+    for x, out in ((-l, -1), (l, 1)):
+        verts = [(x, -w, top), (x, w, top), (x, w, roof_top), (x, 0, roof_top + rise), (x, -w, roof_top)]
+        add_object("gable", mesh_from("gable", verts, [(0, 1, 2, 3, 4) if out > 0 else (4, 3, 2, 1, 0)]), "stone")
+    gabled_roof(top, length, width, rise, overhang, "roof_slate", 0.22)
+    # The front (-x) gable: an arched door of boards with iron straps, a stone step, a round window.
+    fx = -l - 0.03
+    box("door", (fx, 0, base + 1.1), (0.06, 1.3, 2.2), "wood")
+    for z in (0.6, 1.7):
+        box("strap", (fx - 0.04, 0, base + z), (0.03, 1.1, 0.08), "iron")
+    box("ring", (fx - 0.06, 0.4, base + 1.1), (0.04, 0.1, 0.1), "iron")
+    for k in range(9):
+        a = math.pi * k / 8
+        blob(f"arch{k}", (fx - 0.06, math.cos(a) * 0.82, base + 2.2 + math.sin(a) * 0.62), 0.17, "stone_dark", 300 + k, 1.0, 1)
+    for side in (-1, 1):
+        box("jamb", (fx - 0.06, side * 0.82, base + 1.1), (0.16, 0.24, 2.2), "stone_dark")
+    box("step", (-l - 0.7, 0, 0.16), (1.0, 1.9, 0.32), "stone")
+    box("step2", (-l - 1.3, 0, 0.05), (0.6, 2.2, 0.12), "stone")
+    rose_z = top + 1.0
+    add_object("rose", mesh_from("rose", [(fx - 0.01, math.cos(a) * 0.5, rose_z + math.sin(a) * 0.5) for a in
+                                          [i * math.tau / 12 for i in range(12)]], [tuple(range(11, -1, -1))]), "pane")
+    for i in range(12):
+        a, b = i * math.tau / 12, (i + 1) * math.tau / 12
+        timber("rose_ring", (fx - 0.05, math.cos(a) * 0.56, rose_z + math.sin(a) * 0.56), (fx - 0.05, math.cos(b) * 0.56, rose_z + math.sin(b) * 0.56), 0.1, "stone_dark")
+    for i in range(3):
+        a = i * math.pi / 3
+        timber("rose_bar", (fx - 0.04, math.cos(a) * 0.5, rose_z + math.sin(a) * 0.5), (fx - 0.04, -math.cos(a) * 0.5, rose_z - math.sin(a) * 0.5), 0.05, "stone_dark")
+    # The bell turret over the front gable: four posts on the ridge, open sides, a pyramid roof, the bell.
+    tx, peak = -l + 0.9, roof_top + rise
+    for dx in (-0.45, 0.45):
+        for dy in (-0.45, 0.45):
+            timber("turret_post", (tx + dx, dy, peak - 0.6), (tx + dx, dy, peak + 1.4), 0.12, "wood_dark")
+    for z in (peak + 0.05, peak + 1.4):
+        for dy in (-0.45, 0.45):
+            timber("turret_rail", (tx - 0.5, dy, z), (tx + 0.5, dy, z), 0.1, "wood_dark")
+        for dx in (-0.45, 0.45):
+            timber("turret_rail", (tx + dx, -0.5, z), (tx + dx, 0.5, z), 0.1, "wood_dark")
+    box("turret_floor", (tx, 0, peak), (1.0, 1.0, 0.12), "wood")
+    pyramid = [(tx - 0.75, -0.75, peak + 1.45), (tx + 0.75, -0.75, peak + 1.45), (tx + 0.75, 0.75, peak + 1.45), (tx - 0.75, 0.75, peak + 1.45), (tx, 0, peak + 2.6)]
+    add_object("turret_roof", mesh_from("turret_roof", pyramid, [(0, 1, 4), (1, 2, 4), (2, 3, 4), (3, 0, 4), (3, 2, 1, 0)]), "roof_slate")
+    timber("bell_beam", (tx, -0.45, peak + 1.25), (tx, 0.45, peak + 1.25), 0.08, "wood_dark")
+    blob("bell", (tx, 0, peak + 0.85), 0.3, "gold", 320, 1.25, 2)
+    timber("cross", (tx, 0, peak + 2.55), (tx, 0, peak + 3.3), 0.08, "iron")
+    timber("cross_arm", (tx, -0.22, peak + 3.05), (tx, 0.22, peak + 3.05), 0.07, "iron")
+    # A stone cross on the back gable.
+    timber("back_cross", (l + 0.1, 0, roof_top + rise + 0.1), (l + 0.1, 0, roof_top + rise + 0.9), 0.16, "stone_dark")
+    timber("back_arm", (l + 0.1, -0.28, roof_top + rise + 0.62), (l + 0.1, 0.28, roof_top + rise + 0.62), 0.14, "stone_dark")
+    # Turn the door to face -y.
+    bpy.context.view_layer.update()  # fresh objects carry stale matrices until then
+    turn = mathutils.Matrix.Rotation(math.radians(90), 4, "Z")
+    for obj in bpy.context.scene.objects:
+        obj.matrix_world = turn @ obj.matrix_world
+
+
+def village_graves():
+    """A tended row of graves in the churchyard: upright headstones and wooden crosses, each with a
+    low kerb of stones, and flowers laid on a few."""
+    import random
+    rng = random.Random(71)
+    for i in range(5):
+        x = -3.2 + i * 1.6
+        if i in (1, 4):
+            timber(f"cross{i}", (x, 0, 0), (x, 0, 1.2), 0.1, "wood_dark")
+            timber(f"arm{i}", (x - 0.32, 0, 0.88), (x + 0.32, 0, 0.88), 0.08, "wood_dark")
+        else:
+            height = rng.uniform(0.75, 1.0)
+            box(f"stone{i}", (x, 0, height / 2), (0.62, 0.14, height), "stone" if i % 2 else "stone_dark")
+            blob(f"top{i}", (x, 0, height), 0.31, "stone" if i % 2 else "stone_dark", 400 + i, 0.45, 1)
+        for side in (-1, 1):
+            box(f"kerb{i}", (x + side * 0.4, -0.95, 0.06), (0.1, 1.6, 0.12), "stone_dark")
+        box(f"kerb_end{i}", (x, -1.75, 0.06), (0.9, 0.1, 0.12), "stone_dark")
+        box(f"bed{i}", (x, -0.95, 0.05), (0.7, 1.5, 0.1), "dirt_dark")
+        if rng.random() < 0.6:
+            for k in range(3):
+                blob(f"bloom{i}{k}", (x - 0.15 + k * 0.15, -0.4 - rng.uniform(0, 0.3), 0.14), 0.09, "flower" if k % 2 else "flower_b", 410 + i * 3 + k, 0.8, 1)
+
+
 def tavern():
     house(9.2, 6, 4.6, "wall", "roof", 0.0, 2)
     # The sign hangs between the ground floor window and the corner, below the upper windows.

@@ -71,6 +71,7 @@ public sealed partial class Minimap : Control
                 "tavern" => ("inn", "Tavern"),
                 "windmill" => ("mill", "Mill"),
                 "watchtower" => ("tower", ""),
+                "chapel" => ("chapel", "Chapel"),
                 _ => ("", ""),
             };
             if (mark.Item1.Length > 0)
@@ -344,6 +345,11 @@ public sealed partial class Minimap : Control
             case "inn":
                 DrawRect(new Rect2(at + new Vector2(-3, -4), 6, 8), ink);
                 DrawRect(new Rect2(at + new Vector2(3, -2), 2, 4), ink);
+                break;
+            case "chapel":
+                // A cross.
+                DrawRect(new Rect2(at + new Vector2(-1.2f, -5), 2.4f, 10), ink);
+                DrawRect(new Rect2(at + new Vector2(-4, -2.5f), 8, 2.4f), ink);
                 break;
             default:
                 DrawCircle(at, 2.5f, ink);

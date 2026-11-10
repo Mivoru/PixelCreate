@@ -27,7 +27,7 @@ import collision  # noqa: E402
 
 COLORS = {
     "grass": "3E8948", "grass_dark": "265C42", "leaf": "63C74D", "path": "D77643",
-    "wall": "E8D4B0", "wall_b": "D8C2A0", "roof": "B04A32", "thatch": "B8924E", "wood": "8A5A3C", "wood_dark": "4A3028",
+    "wall": "E8D4B0", "wall_b": "D8C2A0", "roof": "B04A32", "roof_slate": "4A5468", "thatch": "B8924E", "wood": "8A5A3C", "wood_dark": "4A3028",
     "stone": "9A9CA8", "stone_dark": "6A6C78", "window": "FEE761", "tunic": "0099DB", "shutter": "3E6A7A",
     "skin": "E0AC8C", "hat": "E4A672", "hair": "5A3A28", "gold": "D8A23C", "water": "2F6F9F",
     "flower": "E8506A", "flower_b": "F0C040", "hay": "D8B85A", "sack": "C8B48C", "cloth_red": "B84040",
@@ -991,6 +991,7 @@ def timber(name, start, end, size, material="wood"):
 
 houses.bind({"box": box, "timber": timber, "blob": blob, "add_object": add_object, "mesh_from": mesh_from})
 cottage, cottage_b, tavern = houses.cottage, houses.cottage_b, houses.tavern
+chapel, village_graves = houses.chapel, houses.village_graves
 landmarks.bind({"box": box, "timber": timber, "blob": blob, "loft": loft, "add_object": add_object, "mesh_from": mesh_from})
 houses.bind({"round_log": lambda *a: round_log(*a)})
 windmill, watchtower, well, stall = landmarks.windmill, landmarks.watchtower, landmarks.well, landmarks.stall
@@ -1932,6 +1933,8 @@ def palisade():
 
 MODELS = {
     "cottage": cottage,
+    "chapel": chapel,
+    "village_graves": village_graves,
     "tree_a": oak,
     "tree_b": oak_b,
     "birch": birch,
