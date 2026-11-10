@@ -76,8 +76,34 @@ public sealed record DialogueDef(string Npc, DialogueEntry[] Entries, Dictionary
 /// <summary>One step of a faction's plan, from world/agendas.json. It runs once, on its day, when its condition holds.</summary>
 public sealed record AgendaStep(string Id, string Faction, int Day, int Minute, Condition When, Effect[] Effects, Condition? FoiledBy, string? Rumor);
 
-/// <summary>Talk of the world, from world/rumors.json: heard on the board, in the tavern and from people.</summary>
-public sealed record Rumor(string Id, string Text, Condition When, int FromDay, int ToDay, string[] Where);
+/// <summary>
+/// Talk of the world, from world/rumors.json. People tell it for some days while its condition holds:
+/// those named in <paramref name="From"/>, anyone sitting at the tavern if it names "tavern", and the
+/// Guild's board if it names "board". The same news sounds different from different mouths.
+/// </summary>
+/// <param name="Text">How most people tell it.</param>
+/// <param name="By">How a given person tells it instead: Lina's version is not Pip's.</param>
+/// <param name="Note">What the journal keeps once the player has heard it.</param>
+public sealed record Rumor(int Index, string Id, string Text, IReadOnlyDictionary<string, string> By, Condition When, int FromDay, int ToDay, string[] From, string Note)
+{
+    /// <summary>The flag set when the player has heard this rumour from anyone.</summary>
+    public string HeardFlag => $"heard.{Id}";
+
+    public string TextFor(string npc) => By.GetValueOrDefault(npc, Text);
+
+    /// <summary>Whether this person would tell it now: it is still talked of, and it is theirs to tell.</summary>
+    public bool ToldBy(string npc, IStoryContext context)
+    {
+        var day = context.World.Time.Day;
+        if (day < FromDay || day > ToDay || !When.Holds(context))
+        {
+            return false;
+        }
+
+        return From.Contains(npc) || By.ContainsKey(npc) ||
+            (From.Contains("tavern") && Schedules.Now(npc, context, context.World.Time.Hour)?.Place == "tavern");
+    }
+}
 
 /// <summary>
 /// The story data: quests, dialogues, faction plans, rumours and journal notes, loaded once from
@@ -127,9 +153,16 @@ public static class Story
         Agendas = LoadAgendas();
         Rumors = LoadRumors();
         Scenes = LoadScenes();
-        Notes = Load("journal") is { } journal
+        var notes = Load("journal") is { } journal
             ? journal.RootElement.EnumerateObject().ToDictionary(p => p.Name, p => p.Value.GetString()!)
             : new Dictionary<string, string>();
+        // A rumour heard is a note kept.
+        foreach (var rumor in Rumors)
+        {
+            notes[rumor.HeardFlag] = rumor.Note;
+        }
+
+        Notes = notes;
         Keys = BuildKeys();
         foreach (var (kind, names) in Keys)
         {
@@ -141,6 +174,11 @@ public static class Story
     }
 
     public static StoryQuest? Quest(string id) => QuestById.GetValueOrDefault(id);
+
+    /// <summary>What someone has to tell now that the player has not heard, the newest first.</summary>
+    public static IEnumerable<Rumor> NewsFrom(string npc, IStoryContext context) => Rumors
+        .Where(r => !context.World.Has(r.HeardFlag) && r.ToldBy(npc, context))
+        .OrderByDescending(r => r.FromDay);
 
     public static bool TryKey(StoryKind kind, string name, out ushort index) => KeyIndex.TryGetValue((kind, name), out index);
 
@@ -195,6 +233,11 @@ public static class Story
             foreach (var r in rumor.When.References())
             {
                 yield return (r.Kind, r.Name, $"rumor {rumor.Id}");
+            }
+
+            foreach (var teller in rumor.From.Where(f => f != "tavern").Concat(rumor.By.Keys))
+            {
+                yield return ("npc", teller, $"rumor {rumor.Id}");
             }
         }
 
@@ -559,8 +602,13 @@ public static class Story
 
         foreach (var r in doc.RootElement.EnumerateArray())
         {
-            list.Add(new Rumor(Str(r, "id"), Str(r, "text"), Condition.Parse(Opt(r, "when")), Int(r, "fromDay", 1), Int(r, "toDay", 999),
-                r.TryGetProperty("where", out var where) ? where.EnumerateArray().Select(w => w.GetString()!).ToArray() : new[] { "tavern" }));
+            var from = Int(r, "fromDay", 1);
+            var by = r.TryGetProperty("by", out var tellers)
+                ? tellers.EnumerateObject().ToDictionary(t => t.Name, t => t.Value.GetString()!)
+                : new Dictionary<string, string>();
+            list.Add(new Rumor(list.Count, Str(r, "id"), Str(r, "text"), by, Condition.Parse(Opt(r, "when")), from, from + Int(r, "days", 7) - 1,
+                r.TryGetProperty("from", out var where) ? where.EnumerateArray().Select(w => w.GetString()!).ToArray() : new[] { "tavern" },
+                Str(r, "note", Str(r, "text"))));
         }
 
         return list;

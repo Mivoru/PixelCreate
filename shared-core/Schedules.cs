@@ -16,6 +16,9 @@ public sealed record ScheduleBlock(int FromHour, Vector3? At, float Yaw, Vector3
 {
     /// <summary>Points walked last on the way in and first on the way out: round the table to the far bench, round the end of a fence.</summary>
     public Vector3[] By { get; init; } = Array.Empty<Vector3>();
+
+    /// <summary>What kind of place this is, when that matters: at the "tavern" people pass on what they have heard.</summary>
+    public string Place { get; init; } = "";
 }
 
 /// <summary>Where someone rests now: the place, the facing, the pose, and whether they are in the world at all.</summary>
@@ -141,6 +144,7 @@ public static class Schedules
         {
             By = b.TryGetProperty("by", out var by)
                 ? by.EnumerateArray().Select(p => new Vector3(p[0].GetSingle(), 0, p[1].GetSingle())).ToArray() : Array.Empty<Vector3>(),
+            Place = b.TryGetProperty("place", out var place) ? place.GetString()! : "",
         };
     }
 }

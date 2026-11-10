@@ -1236,6 +1236,9 @@ public sealed class GameServer : IEnemyEvents
             case Command.Choose:
                 Choose(player, arg);
                 break;
+            case Command.HearRumor:
+                HearRumor(player, arg);
+                break;
             case Command.SceneNext when _scene is not null && arg == _sceneStep:
                 if (_scene.Steps[_sceneStep].Kind == "slides")
                 {
@@ -1452,6 +1455,22 @@ public sealed class GameServer : IEnemyEvents
         if (talk is not null && option.Next is null)
         {
             _sceneTalked = true;
+        }
+    }
+
+    /// <summary>The player has heard a rumour, if someone near them is telling it.</summary>
+    private void HearRumor(Player player, ushort index)
+    {
+        if (index >= Story.Rumors.Count)
+        {
+            return;
+        }
+
+        var rumor = Story.Rumors[index];
+        var context = new StoryActions(this, player);
+        if (_actors.Any(a => NearNpc(player, a.Id) && rumor.ToldBy(a.Id, context)))
+        {
+            _story.SetFlag(rumor.HeardFlag);
         }
     }
 

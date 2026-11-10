@@ -30,7 +30,6 @@ Hra už je hratelný prototyp akční části. Zdroj pravdy je kód a `CLAUDE.md
 | Věc | Kde je návrh | Poznámka |
 |---|---|---|
 | Podmíněný obsah zón (`requires` / `forbids`) | `systems.md` 5 | přesunuto do etapy 4 (až bude co podmiňovat) |
-| Šíření drbů (hospoda, tabule) | `stage-1.md` 7 | formát a načítání hotové, šíření v etapě 4 |
 | Termíny questů (`deadline`) | `stage-1.md` 5 | formát se načítá, vyhodnocení až s prvním questem, který termín má |
 | Vyšetřování | `systems.md` 4 | |
 | Fáze bossů | `systems.md` 11 | dnes jen vzácní nepřátelé se schopnostmi |
@@ -72,11 +71,13 @@ Hra už je hratelný prototyp akční části. Zdroj pravdy je kód a `CLAUDE.md
 Etapy 0 až 3 jsou hotové. Běží **etapa 4** (živá vesnice, `design/stage-4.md`).
 
 Z etapy 4 hotovo: mapa cest pro chodce, rozvrhy dne (20 lidí), dvorek hospody se třemi stoly, povahy (tóny, soudy,
-pouta, nálady, hlášky), 11 nových lidí s rozhovory a vzhledem.
+pouta, nálady, hlášky), 11 nových lidí s rozhovory a vzhledem, drby („Heard anything?", znění podle mluvčího, poznámka
+do deníku), události dnů 3 až 10 s reakcemi lidí (rozvrhy po nájezdu, hlášky, rozhovory Pipa a Hamma), test dnů 3 až 10,
+zkouška hlasů (Bram, Mira, Corwin přes ElevenLabs; nahrávky mimo git).
 
-Z etapy 4 zbývá: drby („Heard anything?", dvě znění podle mluvčího), události dnů 3 až 10 (`agendas.json`), ranky F a E
-s body a dvěma novými joby, Memorial Wall, tři osobní questy (Elda, Tess, Corwin), důvěra slovem v deníku, podmíněné
-bloky rozvrhu po událostech, bot `village` a test dnů 3 až 10.
+Z etapy 4 zbývá: ranky F a E s body a dvěma novými joby, Memorial Wall, tři osobní questy (Elda, Tess, Corwin), důvěra
+slovem v deníku, bot `village` (pět dní), spálený plot po nájezdu (skrytá rekvizita si drží kolizi, chce to model),
+Rookova obvázaná ruka, Lina obcházející domy v den 8, hlasy pro ostatní postavy (po rozhodnutí o zkoušce).
 
 Z etapy 3 zůstalo stranou: cesta vozem se neukazuje (stmívačka), lovci s hráčem nebojují, Haruto zmizí bez efektu světla, úvodní obrázky jsou malované skriptem (ne v Pixelwrightu).
 

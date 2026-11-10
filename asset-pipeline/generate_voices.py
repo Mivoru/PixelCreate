@@ -3,7 +3,8 @@
 Usage: python asset-pipeline/generate_voices.py [--dry] [--force] [--voices] [--model <id>] [npc ...]
 
 A person speaks once world/people.json gives them a "voice": { "id": "<ElevenLabs voice id>", ... }.
-Their lines are the texts of their dialogue nodes, what they say about others, and their passing lines.
+Their lines are the texts of their dialogue nodes, what they say about others, their passing lines, and
+the rumours they tell.
 Each line becomes client/assets/voices/<npc>/<hash of the text>.mp3, which the client finds by the same
 hash, so a line that changes simply has no recording until this runs again. Existing files are kept: a
 run only pays for lines that are new, changed, or whose voice or model changed (see manifest.json).
@@ -44,6 +45,12 @@ def lines_of(npc, person):
         lines += [node["text"] for node in nodes.values()]
     lines += list(person.get("about", {}).values())
     lines += [bark["text"] for bark in person.get("barks", [])]
+    # Rumours: their own telling of it, or the common one when they are named as a teller.
+    for rumor in json.loads((ROOT / "world" / "rumors.json").read_text(encoding="utf-8")):
+        if npc in rumor.get("by", {}):
+            lines.append(rumor["by"][npc])
+        elif npc in rumor.get("from", []):
+            lines.append(rumor["text"])
     seen = set()
     return [line for line in lines if spoken(line) and not (line in seen or seen.add(line))]
 

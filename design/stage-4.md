@@ -55,6 +55,9 @@ mlynář Osric, Anwen, Hamm, Maddy, Tobias, Kai, Sora, Nell (po prologu ve sklad
   "days": 6, "note": "rumor.harrow_raid" }
 ```
 
+- **Postaveno (2026-11-10):** pole jsou `fromDay` a `days` (pevné dny, ne „od chvíle, kdy začal platit"), `from`,
+  `by` (znění podle mluvčího; kdo má vlastní znění, ten drb říká) a `note`. Kdo sedí u hospody, pozná se podle
+  `"place": "tavern"` v bloku rozvrhu.
 - Drb má text, podmínku, kdo ho říká (`from`: id postav, nebo `tavern` = kdokoli večer u hospody,
   `board` = tabule v Guildě), jak dlouho se o něm mluví (`days` od chvíle, kdy začal platit) a
   poznámku do deníku.

@@ -2,6 +2,12 @@
   "npc": "pip",
   "entries": [
     {
+      "when": {
+        "flag": "harrow.raided"
+      },
+      "node": "raided"
+    },
+    {
       "node": "default"
     }
   ],
@@ -87,6 +93,52 @@
     },
     "night_hard": {
       "text": "Then the cows'll trample you, and good riddance.",
+      "face": "angry",
+      "options": [
+        {
+          "text": "Goodbye"
+        }
+      ]
+    },
+    "raided": {
+      "text": "They came over the far fence. Maddy and Tobias are gone, and I stood behind the door with the latch in my hand. Don't tell me it wasn't my fault.",
+      "face": "sad",
+      "options": [
+        {
+          "text": "You'd have been taken with them.",
+          "tone": "compassionate",
+          "next": "raided_kind"
+        },
+        {
+          "text": "Which way did they go?",
+          "tone": "pragmatic",
+          "next": "raided_plain"
+        },
+        {
+          "text": "Then don't stand behind the door next time.",
+          "tone": "hard",
+          "next": "raided_hard"
+        }
+      ]
+    },
+    "raided_kind": {
+      "text": "Maybe. Maddy wouldn't have stayed behind a door for me. That's the part I can't put down.",
+      "options": [
+        {
+          "text": "Goodbye"
+        }
+      ]
+    },
+    "raided_plain": {
+      "text": "South-east. The Hollow. The cows wouldn't settle till noon; they smelled it.",
+      "options": [
+        {
+          "text": "Goodbye"
+        }
+      ]
+    },
+    "raided_hard": {
+      "text": "...No. I won't.",
       "face": "angry",
       "options": [
         {

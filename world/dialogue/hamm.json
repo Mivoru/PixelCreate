@@ -2,6 +2,12 @@
   "npc": "hamm",
   "entries": [
     {
+      "when": {
+        "flag": "harrow.raided"
+      },
+      "node": "raided"
+    },
+    {
       "node": "default"
     }
   ],
@@ -73,6 +79,52 @@
     },
     "farm_hard": {
       "text": "And eat what, till harvest? Advice comes cheap from a man who can't starve.",
+      "face": "angry",
+      "options": [
+        {
+          "text": "Goodbye"
+        }
+      ]
+    },
+    "raided": {
+      "text": "They took my brother's girl and my hired man out of my own yard. It's posted at the Guild. Nobody's taken the notice down.",
+      "face": "sad",
+      "options": [
+        {
+          "text": "I'm sorry, Hamm.",
+          "tone": "compassionate",
+          "next": "raided_kind"
+        },
+        {
+          "text": "Which way did they take them?",
+          "tone": "pragmatic",
+          "next": "raided_plain"
+        },
+        {
+          "text": "You should have kept a watch.",
+          "tone": "hard",
+          "next": "raided_hard"
+        }
+      ]
+    },
+    "raided_kind": {
+      "text": "Sorry feeds nobody. But you came and said it to my face. That's more than the Company's man did.",
+      "options": [
+        {
+          "text": "Goodbye"
+        }
+      ]
+    },
+    "raided_plain": {
+      "text": "South-east, to the Hollow. New blades, Tobias would have told you, if he were here to tell.",
+      "options": [
+        {
+          "text": "Goodbye"
+        }
+      ]
+    },
+    "raided_hard": {
+      "text": "I kept a farm. I thought that was enough.",
       "face": "angry",
       "options": [
         {

@@ -55,6 +55,9 @@ public enum Command : byte
 
     /// <summary>Moves a scene past a line or a slide the player has read; the argument is the step, so a late repeat skips nothing.</summary>
     SceneNext = 214,
+
+    /// <summary>The player listens to a rumour; the argument is its place in <see cref="Story.Rumors"/>. The server checks someone near tells it.</summary>
+    HearRumor = 215,
 }
 
 /// <summary>A newcomer must beat the guild examiner to become an adventurer.</summary>

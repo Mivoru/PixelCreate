@@ -1,1 +1,65 @@
-[]
+[
+  {
+    "id": "company.iron",
+    "faction": "company",
+    "day": 3,
+    "effects": [
+      {
+        "setFlag": "world.goblin_iron"
+      }
+    ]
+  },
+  {
+    "id": "company.raid_harrow",
+    "faction": "company",
+    "day": 5,
+    "minute": 180,
+    "effects": [
+      {
+        "fate": {
+          "maddy": "gone"
+        }
+      },
+      {
+        "fate": {
+          "tobias": "gone"
+        }
+      },
+      {
+        "setFlag": "harrow.raided"
+      }
+    ]
+  },
+  {
+    "id": "brightwater.first_job",
+    "faction": "guild",
+    "day": 6,
+    "minute": 1020,
+    "effects": [
+      {
+        "setFlag": "brightwater.first_job"
+      }
+    ]
+  },
+  {
+    "id": "village.council",
+    "faction": "hearthmere",
+    "day": 8,
+    "minute": 720,
+    "effects": [
+      {
+        "setFlag": "council.met"
+      }
+    ]
+  },
+  {
+    "id": "news.saltmere",
+    "faction": "company",
+    "day": 10,
+    "effects": [
+      {
+        "setFlag": "news.saltmere"
+      }
+    ]
+  }
+]

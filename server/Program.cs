@@ -31,6 +31,12 @@ if (save is null && int.TryParse(Environment.GetEnvironmentVariable("PIXEL_TIME"
     server.Calendar.Now = new GameTime(1, Math.Clamp(hour, 0, 23) * 60);
 }
 
+// PIXEL_DAY=6 starts a new game on that day, a minute before the hour, so the plans of the days before run at once.
+if (save is null && int.TryParse(Environment.GetEnvironmentVariable("PIXEL_DAY"), out var day))
+{
+    server.Calendar.Now = new GameTime(Math.Max(1, day), server.Calendar.Now.Minute).AddMinutes(-1);
+}
+
 // PIXEL_FLAGS=prologue.started,prologue.free sets story flags on a new game, to start a check partway through the story.
 if (save is null && Environment.GetEnvironmentVariable("PIXEL_FLAGS") is { Length: > 0 } flags)
 {

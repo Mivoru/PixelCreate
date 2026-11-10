@@ -62,6 +62,7 @@
       { "when": { "time": { "from": 1140, "to": 1320 } }, "face": "sad" }
     ],
     "barks": [
+      { "when": { "flag": "news.saltmere" }, "text": "Saltmere. He's at Saltmere." },
       { "when": { "time": { "from": 360, "to": 1140 } }, "text": "Iron's dear this year. Ask the goblins where it all goes." },
       { "when": { "time": { "from": 1140, "to": 1320 } }, "text": "..." }
     ]
@@ -83,6 +84,7 @@
       { "when": { "time": { "from": 420, "to": 1140 } }, "face": "smirk" }
     ],
     "barks": [
+      { "when": { "flag": "council.met" }, "text": "A reeve who can read a contract. That's all I say." },
       { "when": { "time": { "from": 420, "to": 1140 } }, "text": "Company goods, Company prices. Fresh off the East Watch road." }
     ]
   },
@@ -120,6 +122,7 @@
       { "when": { "time": { "from": 1200, "to": 1380 } }, "face": "smile" }
     ],
     "barks": [
+      { "when": { "flag": "harrow.raided" }, "text": "Boars. I told him boars." },
       { "when": { "time": { "from": 360, "to": 1200 } }, "text": "Road's quiet. I like it quiet." },
       { "when": { "time": { "from": 1380, "to": 1439 } }, "text": "Nights are long at this gate." }
     ]
@@ -137,6 +140,7 @@
     },
     "moods": [],
     "barks": [
+      { "when": { "flag": "harrow.raided" }, "text": "I heard her shout. I heard her." },
       { "when": { "time": { "from": 360, "to": 1140 } }, "text": "Walk past the sheep, don't run. They bolt." }
     ]
   },
@@ -332,6 +336,7 @@
       { "when": { "time": { "from": 1080, "to": 1320 } }, "face": "laugh" }
     ],
     "barks": [
+      { "when": { "all": [{ "flag": "brightwater.first_job" }, { "time": { "from": 1080, "to": 1320 } }] }, "text": "It BIT me. A slime! Look at it!" },
       { "when": { "time": { "from": 360, "to": 720 } }, "text": "Is that bread? I smell bread." },
       { "when": { "time": { "from": 1080, "to": 1320 } }, "text": "And then it hit the shield. BANG. Like that." }
     ]
@@ -390,6 +395,7 @@
     },
     "moods": [],
     "barks": [
+      { "when": { "flag": "harrow.raided" }, "text": "Two of mine. Out of my own yard." },
       { "when": { "time": { "from": 360, "to": 720 } }, "text": "Far fence is down again." },
       { "when": { "time": { "from": 720, "to": 1080 } }, "text": "Rain by week's end, or we carry water." }
     ]

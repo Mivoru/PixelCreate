@@ -227,6 +227,17 @@ Rules:
   Give every new person an entry: it is how one villager differs from the next (a test fails without one). `PeopleTests`.
   A new person also needs a role with a look and a title (`NpcLooks.For`, `NpcLooks.All`, `Dialogues.Title`), a dialogue
   file with one answer in each tone, and a day in `schedules.json`.
+- Rumours (`world/rumors.json`, `Rumor` in `Story.cs`): news people tell from `fromDay` for `days` while `when` holds.
+  Tellers are the ids in `from`, everyone with their own wording in `by` (Pip and Lina tell the raid differently; `board`
+  is the Guild board), and with `tavern` in `from` anyone whose schedule block has `"place": "tavern"` at that hour.
+  The client adds "Heard anything?" to an opening node (`Dialogues.ShowRumor`, newest first), sends
+  `Command.HearRumor` (arg = place in `Story.Rumors`); the server checks a teller is near and sets `heard.<id>`, whose
+  `note` shows in the journal. `PIXEL_BOT=rumor` asks whoever is nearest for all their news.
+- Days 3 to 10 run by themselves (`world/agendas.json`): the goblins' iron (3), the raid on Harrow Farm in the night
+  (5: Maddy and Tobias gone, `harrow.raided`; Hamm goes to Garrick, Pip keeps watch), the Brightwater Four's first job
+  (6), the council (8), news from Saltmere (10). A schedule block with a `when` goes before the plain block of the same
+  hour: the first that holds wins. `PIXEL_DAY=6` starts a new game on that day (earlier plans run at once).
+  `net-tests/VillageTests.cs` lives those days. A hidden conditional prop keeps its collision, so do not hide fences.
 - On the prologue's first night (until `prologue.slept`) only what a scene sends comes for the player; the wild
   leaves them be unless struck first. An unbound Lightborn (role `lost`) who vanishes goes out in rising light.
 - A weapon picked up with empty hands is worn at once (the prologue's player has none until the wooden sword).

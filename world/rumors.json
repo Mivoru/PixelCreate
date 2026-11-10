@@ -1,1 +1,106 @@
-[]
+[
+  {
+    "id": "goblin_iron",
+    "fromDay": 3,
+    "days": 6,
+    "when": {
+      "agenda": {
+        "company.iron": "done"
+      }
+    },
+    "from": [
+      "tavern",
+      "moss"
+    ],
+    "text": "Moss says the goblins by the Hollow carry new blades. Not rust: forge iron, all of one make.",
+    "by": {
+      "moss": "New blades on the goblins by the Hollow. Same make, every one. Somebody sold them, or somebody lost a cart.",
+      "corwin": "Goblins with matching steel. In my day they fought with what they dug up. Somebody is feeding that Hollow."
+    },
+    "note": "The goblins near Goblin Hollow carry new forge iron, all of one make."
+  },
+  {
+    "id": "harrow_raid",
+    "fromDay": 5,
+    "days": 6,
+    "when": {
+      "agenda": {
+        "company.raid_harrow": "done"
+      }
+    },
+    "from": [
+      "tavern"
+    ],
+    "text": "Goblins hit Harrow Farm in the night. They took two of Hamm's people: the girl Maddy and the hired man.",
+    "by": {
+      "pip": "They came over the far fence in the dark. Maddy and Tobias are gone. I heard her shout and I... I didn't go out. I didn't go out.",
+      "hamm": "They took my brother's girl and my man out of my own yard. It's on the Guild board. Nobody's taken it down.",
+      "garrick": "Goblins, at Harrow. Two taken. Tobias told me about that fence and I said boars. Write that on my stone.",
+      "lina": "A sad business at Harrow. The Company has written to East Watch; it will see the roads made safe. Hamm's note falls due all the same, of course.",
+      "board": "POSTED: Two taken from Harrow Farm by goblins, a girl of seventeen and a man of thirty. Twelve crowns for word of them. Hamm Harrow. (Nobody has taken the notice.)"
+    },
+    "note": "Goblins raided Harrow Farm on the fifth night and took Maddy and Tobias. Pip says who is missing; Lina says the Company will see the roads safe."
+  },
+  {
+    "id": "brightwater_job",
+    "fromDay": 6,
+    "days": 4,
+    "when": {
+      "agenda": {
+        "brightwater.first_job": "done"
+      }
+    },
+    "from": [
+      "tavern"
+    ],
+    "text": "The Brightwater Four took their first job. Slimes on the south road. All four came back.",
+    "by": {
+      "edwin": "First job done! Six slimes on the south road. Tomorrow, something with legs.",
+      "rook": "Six slimes! One of them bit me. Do slimes bite? This one bit. Look at the arm.",
+      "fen": "Four stitches in Rook and a burn on Edwin's hand. For slimes. I've started a second list.",
+      "moss": "Six slimes. Edwin counted seven. One was a rock.",
+      "corwin": "First job. Four out, four back. I counted. That's all a branch master is for."
+    },
+    "note": "The Brightwater Four finished their first job and all came back."
+  },
+  {
+    "id": "council",
+    "fromDay": 8,
+    "days": 5,
+    "when": {
+      "agenda": {
+        "village.council": "done"
+      }
+    },
+    "from": [
+      "tavern"
+    ],
+    "text": "The council met about choosing a reeve. Nothing's settled, but Lina has been at every door since.",
+    "by": {
+      "lina": "The village needs a reeve who can read a contract. I only say what everyone is thinking.",
+      "elder": "They want a reeve. Lina wants to be asked. I want my bench. One of us will be disappointed.",
+      "osric": "A reeve costs a tithe. I asked who pays it. Nobody on the council would look at me."
+    },
+    "note": "The village council wants to choose a reeve. Lina is asking for votes door to door."
+  },
+  {
+    "id": "saltmere",
+    "fromDay": 10,
+    "days": 8,
+    "when": {
+      "agenda": {
+        "news.saltmere": "done"
+      }
+    },
+    "from": [
+      "tavern"
+    ],
+    "text": "They say the bonded rose in the Saltmere pits. Hundreds of them. They say the Company hanged one in ten.",
+    "by": {
+      "board": "NOTICE, by order of the Margrave: a disturbance at the Saltmere works has been put down. Trade continues. Rumours to the contrary are idle and will be answered.",
+      "lina": "A little trouble at Saltmere, and it's over. Salt will cost more for a month. I'd buy now.",
+      "smith": "Saltmere. That's where they sent my Orrin. You read it on the board? What else did it say? ...Nothing. It never does."
+    },
+    "note": "The bonded workers rose at Saltmere. The board calls it a disturbance put down; the tavern says one in ten were hanged."
+  }
+]

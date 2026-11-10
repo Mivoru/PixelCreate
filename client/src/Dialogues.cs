@@ -713,6 +713,31 @@ public static class Dialogues
         hud.Speaker = npc.Id;
     }
 
+    /// <summary>Rumours heard in this run of the game, before the server's word of it has come back.</summary>
+    private static readonly HashSet<string> Heard = new();
+
+    private static Rumor? News(Npc npc, IStoryContext context) => Story.NewsFrom(npc.Id, context).FirstOrDefault(r => !Heard.Contains(r.Id));
+
+    /// <summary>
+    /// "Heard anything?": the newest thing this person has to tell that the player has not heard, in
+    /// their own words. The server is told, checks they do tell it, and the journal keeps a note.
+    /// </summary>
+    private static void ShowRumor(Hud hud, Npc npc, Rumor rumor, System.Action back, IStoryContext context)
+    {
+        var role = hud.DialogRole;
+        Heard.Add(rumor.Id);
+        var choices = new List<DialogChoice>();
+        if (News(npc, context) is { } more)
+        {
+            choices.Add(new DialogChoice("Anything else?", Command.HearRumor, (ushort)more.Index, () => ShowRumor(hud, npc, more, back, context)));
+        }
+
+        choices.Add(new DialogChoice("I see.", Command.None, 0, back, Muted: true));
+        hud.ShowDialog(npc.Name, rumor.TextFor(npc.Id), choices.ToArray());
+        hud.DialogRole = role;
+        hud.Speaker = npc.Id;
+    }
+
     /// <summary>Opens a given node of someone's dialogue, as a scene asks.</summary>
     public static void OpenNode(Hud hud, Npc npc, string node, IStoryContext context, Snapshot? snapshot)
     {
@@ -744,6 +769,15 @@ public static class Dialogues
                 ? () => Show(hud, npc, dialogue, nextNode, context, snapshot)
                 : null;
             choices.Add(new DialogChoice(Fill(option.Text, context, snapshot), command, (ushort)option.Index, then, Muted: option.Effects.Length == 0 && option.Next is null));
+        }
+
+        if (opening && News(npc, context) is { } rumor)
+        {
+            // Asked at the start of a talk, before the goodbye: what is being said in the village.
+            var ask = new DialogChoice(npc.Role == "quest_board" ? "Read the notices." : "Heard anything?", Command.HearRumor, (ushort)rumor.Index,
+                () => ShowRumor(hud, npc, rumor, () => Show(hud, npc, dialogue, node, context, snapshot, true), context));
+            var goodbye = choices.FindLastIndex(c => c.Muted);
+            choices.Insert(goodbye < 0 ? choices.Count : goodbye, ask);
         }
 
         if (opening && People.Of(npc.Id) is { About.Count: > 0 } person)

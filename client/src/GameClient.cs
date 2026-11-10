@@ -1367,9 +1367,17 @@ public partial class GameClient : Node
             return (0, 0, Buttons.None);
         }
 
-        if ((mode == "trial" && _client.Tick == 60) || (mode == "talk" && _client.Tick % 60 == 0 && !_hud.DialogOpen))
+        if ((mode == "trial" && _client.Tick == 60) || (mode is "talk" or "rumor" && _client.Tick % 60 == 0 && !_hud.DialogOpen))
         {
             Interact();
+        }
+
+        // The rumor bot asks whoever it talks to for news, and for more while there is any.
+        if (mode == "rumor" && _client.Tick % 60 == 40 && _hud.DialogOpen &&
+            _hud.DialogLabels.FirstOrDefault(l => l is "Heard anything?" or "Read the notices." or "Anything else?") is { } ask)
+        {
+            (_pendingCommand, _pendingArg) = _hud.ChooseLabel(ask);
+            GD.Print($"BOT rumor: {_hud.DialogText}");
         }
 
         if (mode == "trial" && _client.Tick == 90)
@@ -1382,7 +1390,7 @@ public partial class GameClient : Node
             return (0, 0, _client.Tick % 40 == 0 ? Buttons.Light : Buttons.None);
         }
 
-        if (mode is "idle" or "talk" or "trial")
+        if (mode is "idle" or "talk" or "trial" or "rumor")
         {
             return (0, 0, Buttons.None);
         }
