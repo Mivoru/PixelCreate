@@ -1,0 +1,34 @@
+{
+  "id": "prologue_8b_ready",
+  "trigger": {
+    "when": {
+      "all": [
+        {
+          "flag": "prologue.started"
+        },
+        {
+          "flag": "prologue.met_mira"
+        },
+        {
+          "flag": "anchor.bound"
+        },
+        {
+          "notFlag": "guild.registered"
+        }
+      ]
+    },
+    "near": [
+      422,
+      0
+    ],
+    "radius": 16
+  },
+  "steps": [
+    {
+      "talk": {
+        "actor": "mira",
+        "node": "prologue_trial"
+      }
+    }
+  ]
+}

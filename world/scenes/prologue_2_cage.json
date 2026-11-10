@@ -88,6 +88,15 @@
       "lockInput": true
     },
     {
+      "effects": [
+        {
+          "quest": {
+            "start": "prologue_fallen"
+          }
+        }
+      ]
+    },
+    {
       "fade": {
         "to": "in",
         "seconds": 1.5

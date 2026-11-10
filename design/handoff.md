@@ -28,8 +28,11 @@ hráč nevěděl, kam jít.
 
 ## Co dělat jako první
 
-**Fáze R1 z `design/repair-plan.md`** (prolog drží pohromadě). Nic jiného před ní. Na konci fáze
-commit, push a seznam, co si má autor zahrát. Nový obsah etapy 4 je zastavený.
+**R1 je postavená (2026-11-10), čeká na zahrání autorem.** Bot `prologue` i všechny čtyři
+`-Contrary` běhy došly do `BOT done`; testy 314 zelených. Neověřeno očima: snímky sítě, Eldy, která
+jde k hráči, a cedule u Guildy. Další fáze (R2 mapa, R3 kamera, R5 lovci) až po autorově odpovědi
+na R1. Nový obsah etapy 4 je zastavený. Videa úvodu: v `refs/` je zatím jedno
+(`isekai_inkprint_v1.mp4`), R6 chce dvě.
 
 Neřešeno a čeká na autora:
 - Poslechl si hlasy? Rozšířit na další postavy až po přepsání textů (R4).

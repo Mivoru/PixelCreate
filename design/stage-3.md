@@ -302,3 +302,49 @@ přijde v etapě 5 (osvobození Haruta). Tím se prolog zjednoduší.
 - Bot `prologue` a `PrologueTests` projdou, prolog trvá 25 až 35 minut.
 - Každá volba v prologu se projeví (důvěra, flag, replika později).
 - Studio ukáže nové modely a místa. Ty si prolog zahraješ a texty upravíme podle toho.
+
+---
+
+## 7. Flagy prologu: kdy se nastaví a co tvrdí (oprava R1, 2026-11-10)
+
+Pravidlo: flag říká, co se stalo, a nastaví se ve chvíli té události. Repliky se smí opírat jen o to,
+co flag opravdu tvrdí.
+
+| Flag | Kde se nastaví | Co tvrdí |
+|---|---|---|
+| `prologue.new` | server, nová hra s prologem | hra začala prologem |
+| `prologue.started` | úvod, první krok | prolog běží; nic víc (ne že hráč někoho potkal) |
+| `look.chosen` | kód, potvrzení vzhledu | hráč si vybral vzhled |
+| `prologue.netted` | úvod, po čekání u břehu, když hráč nebyl u lovců | hráč utíkal nebo otálel a lovci po něm hodili síť |
+| `prologue.captured` | úvod, po síti a zatmění | hráč je zajatý |
+| `prologue.bar_seen` | rozhovor s mřížemi klece | hráč si všiml nalomené mříže |
+| `prologue.nell_asked` | Nell v kleci, otázka „Who are you?" | hráč zná Nellino jméno a příběh |
+| `prologue.moved` | klec, Vosk dal povel k odjezdu | vůz s klecí odjel z tábora |
+| `prologue.cage_broken` | přepadení, Corb padl | klec je rozbitá |
+| `prologue.free` | přepadení, po Nellině „We can't stay" | hráč a Nell jsou volní a jdou do Hearthmere |
+| `with.nell` | server, krok `follow nell`; maže `unfollow` a `despawn` | Nell teď jde s hráčem |
+| `prologue.slept` | u Eldy, po přespání | hráč přespal v pekárně, je ráno dne 2 |
+| `prologue.bram` | Bram, poslední volba | Bram hráče varoval, ať schová Nell u Miry |
+| `prologue.met_mira` | Mira, poslední volba uvítání | Mira hráče zná a poslala ho k Anchor Stone |
+| `nell.hidden` | Guilda, když Nell došla ke skladu | Nell je schovaná ve skladu Guildy |
+| `anchor.bound` | Anchor Stone | hráč se po smrti probudí v Guildě |
+| `guild.registered` | kód, vyhraná zkouška | hráč je adventurer ranku F |
+| `prologue.done` | Mira, odznak | prolog skončil |
+
+## 8. Pořadí míst: co když hráč přijde jinam (oprava R1)
+
+| Scéna | Spouštěč | Hráč udělá něco jiného |
+|---|---|---|
+| 1 úvod | nová hra | uteče nebo otálí: čekání končí u lovců, 14 m od břehu nebo po 25 s; pak síť (`prologue.netted`), stažení k lovcům a jiná poslední věta Voska |
+| 3 přepadení | z klece | uteče před goblíny: `waitForKills` po 120 s skončí a scéna jde dál |
+| 4 cesta, 5 Pip | `free`, na cestě | jde mimo cestu: scény se nespustí, nic na nich nezávisí; Pip chce `with.nell` |
+| `prologue_guild_shut` | `free` a ne `slept`, u dveří Guildy | jde v noci rovnou do Guildy: dveře jsou zavřené (server je neotevře), cedule a Nell pošlou hráče do pekárny |
+| 6 Elda | `free` a ne `slept`, 12 m od pekárny | Elda přijde sama (`approach`); noc se zastaví v 5:00, dokud hráč nedojde, takže Elda vždy peče před svítáním a čas nejde zpátky |
+| 7 Bram | `slept` a `with.nell`, u Brama | Brama vynechá: nic na něm nezávisí; kdo jde nejdřív do Guildy, Brama ve scéně nepotká (jeho věta o Nell by už nebyla pravda) |
+| 8 Guilda | `slept`, u Miry | Mira vítá Nell jen s `with.nell`, jinak uzel `prologue_arrive_alone` |
+| 8b připravený | Anchor Stone, kdekoli v hale | Mira hráče zavolá ke zkoušce; kdo se jí vyhne, má uzel `prologue_trial` i v běžném rozhovoru |
+| 10 odznak | registrace, u Miry | věty o Nell jen s `nell.hidden` |
+
+Kontroly: `StoryRulesTests` (každé čekání s volným ovládáním má `timeout` nebo `until`; žádná věta
+nejmenuje Nell bez `with.nell` nebo `nell.hidden`; podmínky kroků, které klient přehrává, nečtou polohu)
+a `scripts/prologue.ps1 -Contrary` (útěk, Guilda první, bez Brama, bez cesty a Pipa).

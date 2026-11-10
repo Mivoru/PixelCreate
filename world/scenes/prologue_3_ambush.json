@@ -276,7 +276,8 @@
       }
     },
     {
-      "waitForKills": "ambush"
+      "waitForKills": "ambush",
+      "timeout": 120
     },
     {
       "despawn": "vosk"

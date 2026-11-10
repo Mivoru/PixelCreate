@@ -28,12 +28,27 @@
       "talk": {
         "actor": "mira",
         "node": "prologue_badge"
+      },
+      "if": {
+        "flag": "nell.hidden"
+      }
+    },
+    {
+      "talk": {
+        "actor": "mira",
+        "node": "prologue_badge_alone"
+      },
+      "if": {
+        "notFlag": "nell.hidden"
       }
     },
     {
       "say": {
         "name": "Nell",
         "text": "The man in the cage. When they vanish like that... where do they go?"
+      },
+      "if": {
+        "flag": "nell.hidden"
       }
     },
     {
@@ -41,6 +56,9 @@
         "actor": "mira",
         "text": "Unbound ones wake where they fell. At the lake. Where the finders wait.",
         "face": "sad"
+      },
+      "if": {
+        "flag": "nell.hidden"
       }
     },
     {

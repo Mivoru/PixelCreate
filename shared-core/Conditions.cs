@@ -42,6 +42,15 @@ public abstract class Condition
     /// <summary>Every name the condition refers to, by kind, so tests can check them against the data.</summary>
     public virtual IEnumerable<(string Kind, string Name)> References() => Array.Empty<(string, string)>();
 
+    /// <summary>
+    /// Whether the answer depends on where the player stands or whom they stand by. The client cannot
+    /// replay such a test later, so a scene step the client shows may only be guarded by story state.
+    /// </summary>
+    public virtual bool ReadsPlace => false;
+
+    /// <summary>Whether the condition can only hold while this flag is set. For tests that check what a line may claim.</summary>
+    public virtual bool Requires(string flag) => false;
+
     public static Condition Parse(JsonElement? element) => element is { } e && e.ValueKind != JsonValueKind.Null ? Parse(e) : Always;
 
     public static Condition Parse(JsonElement element)
@@ -109,6 +118,10 @@ public abstract class Condition
         public override bool Holds(IStoryContext context) => parts.All(p => p.Holds(context));
 
         public override IEnumerable<(string, string)> References() => parts.SelectMany(p => p.References());
+
+        public override bool ReadsPlace => parts.Any(p => p.ReadsPlace);
+
+        public override bool Requires(string flag) => parts.Any(p => p.Requires(flag));
     }
 
     private sealed class AnyOf(Condition[] parts) : Condition
@@ -116,6 +129,10 @@ public abstract class Condition
         public override bool Holds(IStoryContext context) => parts.Any(p => p.Holds(context));
 
         public override IEnumerable<(string, string)> References() => parts.SelectMany(p => p.References());
+
+        public override bool ReadsPlace => parts.Any(p => p.ReadsPlace);
+
+        public override bool Requires(string flag) => parts.Length > 0 && parts.All(p => p.Requires(flag));
     }
 
     private sealed class Not(Condition inner) : Condition
@@ -123,11 +140,15 @@ public abstract class Condition
         public override bool Holds(IStoryContext context) => !inner.Holds(context);
 
         public override IEnumerable<(string, string)> References() => inner.References();
+
+        public override bool ReadsPlace => inner.ReadsPlace;
     }
 
     private sealed class FlagIs(string flag, bool set) : Condition
     {
         public override bool Holds(IStoryContext context) => context.World.Has(flag) == set;
+
+        public override bool Requires(string other) => set && other == flag;
 
         public override IEnumerable<(string, string)> References() => new[] { ("flag", flag) };
     }
@@ -182,10 +203,14 @@ public abstract class Condition
     {
         public override bool Holds(IStoryContext context) =>
             System.Numerics.Vector3.Distance(context.Position with { Y = 0 }, place) < radius;
+
+        public override bool ReadsPlace => true;
     }
 
     private sealed class NearRole(string role) : Condition
     {
         public override bool Holds(IStoryContext context) => context.Near(role);
+
+        public override bool ReadsPlace => true;
     }
 }

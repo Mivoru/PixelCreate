@@ -11,6 +11,9 @@
             "notFlag": "prologue.met_mira"
           },
           {
+            "flag": "with.nell"
+          },
+          {
             "rank": {
               "max": 0
             }
@@ -18,6 +21,24 @@
         ]
       },
       "node": "prologue_arrive"
+    },
+    {
+      "when": {
+        "all": [
+          {
+            "flag": "prologue.started"
+          },
+          {
+            "notFlag": "prologue.met_mira"
+          },
+          {
+            "rank": {
+              "max": 0
+            }
+          }
+        ]
+      },
+      "node": "prologue_arrive_alone"
     },
     {
       "when": {
@@ -356,6 +377,22 @@
         }
       ]
     },
+    "prologue_arrive_alone": {
+      "text": "Welcome to the Adventurers Guild! ...Oh. You're Lightborn. You came down at the lake, didn't you? And walked out past the finders.",
+      "face": "surprised",
+      "options": [
+        {
+          "text": "They had me in a cage. Goblins broke it.",
+          "tone": "pragmatic",
+          "next": "prologue_law"
+        },
+        {
+          "text": "Is that a problem?",
+          "tone": "hard",
+          "next": "prologue_law"
+        }
+      ]
+    },
     "prologue_hide_unsure": {
       "text": "Nobody here knows what to do about the Company. But not today. Storeroom, Nell.",
       "options": [
@@ -387,6 +424,20 @@
           "effects": [
             {
               "action": "beginTrial"
+            }
+          ]
+        }
+      ]
+    },
+    "prologue_badge_alone": {
+      "text": "Adventurer, rank F. Welcome. Finders can't touch you now. Don't give them a reason to try.",
+      "face": "smile",
+      "options": [
+        {
+          "text": "I won't.",
+          "effects": [
+            {
+              "setFlag": "prologue.done"
             }
           ]
         }

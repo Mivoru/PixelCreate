@@ -74,6 +74,9 @@ public static class Guild
     public const float TalkRange = 3.6f;
     public const float DoorRange = 3f;
 
+    /// <summary>Interiors stand on platforms east of this line (the Guild hall at x 420, the trial ground at x 480).</summary>
+    public const float InteriorX = 400f;
+
     public static readonly int[] CrystalPrices = { 5, 30, 150, 800 };
 
 }

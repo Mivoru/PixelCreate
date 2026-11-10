@@ -90,3 +90,5 @@ Rookova obvázaná ruka, Lina obcházející domy v den 8, hlasy pro ostatní po
 Z etapy 3 zůstalo stranou: cesta vozem se neukazuje (stmívačka), lovci s hráčem nebojují, Haruto zmizí bez efektu světla, úvodní obrázky jsou malované skriptem (ne v Pixelwrightu).
 
 Z etapy 2 zůstalo stranou: ruce (dnešní dlaň s palcem stačí), barber ve vesnici (etapa 4), NPC zatím drží své vlastní vzhledy v `NpcLooks` místo voleb z `appearance.json` (stačí, až budou nové postavy v etapě 3).
+
+Oprava R1 (2026-11-10, čeká na zahrání autorem): zajetí u jezera je nevyhnutelné (čekání s `timeout`, síť), kroky scén s `if`, flag `with.<id>` pro společníky, Guilda zavřená a noc zastavená do přespání u Eldy, Mira a Bram mluví o Nell jen s důkazem, `StoryRulesTests`, `scripts/prologue.ps1 -Contrary`.

@@ -17,11 +17,6 @@
       "effects": [
         {
           "setFlag": "prologue.started"
-        },
-        {
-          "quest": {
-            "start": "prologue_fallen"
-          }
         }
       ]
     },
@@ -158,15 +153,84 @@
     },
     {
       "waitFor": {
-        "at": {
-          "x": 70,
-          "z": 108,
-          "r": 3.5
+        "any": [
+          {
+            "at": {
+              "x": 70,
+              "z": 108,
+              "r": 3.5
+            }
+          },
+          {
+            "not": {
+              "at": {
+                "x": 71.5,
+                "z": 111,
+                "r": 14
+              }
+            }
+          }
+        ]
+      },
+      "timeout": 25
+    },
+    {
+      "lockInput": true
+    },
+    {
+      "effects": [
+        {
+          "setFlag": "prologue.netted"
+        }
+      ],
+      "if": {
+        "not": {
+          "at": {
+            "x": 70,
+            "z": 108,
+            "r": 4.5
+          }
         }
       }
     },
     {
-      "lockInput": true
+      "say": {
+        "actor": "gil",
+        "text": "Don't let it get away! Corb, the net!",
+        "bark": true
+      },
+      "if": {
+        "flag": "prologue.netted"
+      }
+    },
+    {
+      "fade": {
+        "to": "out",
+        "seconds": 0.4
+      },
+      "if": {
+        "flag": "prologue.netted"
+      }
+    },
+    {
+      "teleport": {
+        "to": [
+          70.5,
+          110.8
+        ]
+      },
+      "if": {
+        "flag": "prologue.netted"
+      }
+    },
+    {
+      "fade": {
+        "to": "in",
+        "seconds": 0.8
+      },
+      "if": {
+        "flag": "prologue.netted"
+      }
     },
     {
       "say": {
@@ -185,6 +249,19 @@
         "actor": "vosk",
         "text": "Gil. The net.",
         "face": "smirk"
+      },
+      "if": {
+        "notFlag": "prologue.netted"
+      }
+    },
+    {
+      "say": {
+        "actor": "vosk",
+        "text": "Tie it tight. They always run.",
+        "face": "smirk"
+      },
+      "if": {
+        "flag": "prologue.netted"
       }
     },
     {

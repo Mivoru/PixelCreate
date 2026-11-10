@@ -81,6 +81,47 @@ public class SceneTests
         Assert.Null(server.SceneState.Scene);
     }
 
+    private const string Guarded = """
+    {
+      "id": "test_guarded",
+      "steps": [
+        { "waitFor": { "flag": "test.never" }, "timeout": 1 },
+        { "effects": [ { "setFlag": "test.skipped" } ], "if": { "flag": "test.never" } },
+        { "effects": [ { "setFlag": "test.ran" } ], "if": { "notFlag": "test.never" } },
+        { "spawn": { "actor": "nell", "at": [3, 0] } },
+        { "follow": "nell" },
+        { "waitFor": { "flag": "test.go" } },
+        { "despawn": "nell" }
+      ]
+    }
+    """;
+
+    [Fact]
+    public void Wait_GivesUpAfterItsTimeout_AndGuardedStepsRunOnlyWhenTheirConditionHolds()
+    {
+        var (server, client, network) = Start();
+        server.StartScene(SceneData.Parse(JsonDocument.Parse(Guarded).RootElement, 999));
+        Run(server, client, network, Tuning.TickRate / 2);
+        Assert.Equal(0, server.SceneState.Step);
+
+        Run(server, client, network, Tuning.TickRate);
+        Assert.False(server.StoryState.Has("test.skipped"));
+        Assert.True(server.StoryState.Has("test.ran"));
+    }
+
+    [Fact]
+    public void Follow_SaysWhoWalksWithThePlayer_UntilTheyAreGone()
+    {
+        var (server, client, network) = Start();
+        server.StartScene(SceneData.Parse(JsonDocument.Parse(Guarded).RootElement, 999));
+        Run(server, client, network, Tuning.TickRate * 2);
+        Assert.True(server.StoryState.Has(GameServer.WithFlag("nell")));
+
+        server.StoryState.SetFlag("test.go");
+        Run(server, client, network, 5);
+        Assert.False(server.StoryState.Has(GameServer.WithFlag("nell")));
+    }
+
     [Fact]
     public void ActorsAwayFromHome_ReachTheClient()
     {

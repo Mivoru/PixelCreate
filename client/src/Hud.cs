@@ -2100,6 +2100,12 @@ public partial class Hud : Control
 
             // Spoken words: a soft dark plate with a small tail, cream letters. No key beside it: it is not an offer.
             var point = ToHud(at);
+            if (!float.IsFinite(point.X) || !float.IsFinite(point.Y) || alpha <= 0f)
+            {
+                // A point at the edge of the view projects to nothing usable: the tail cannot be drawn.
+                continue;
+            }
+
             var width = Width(text, 17, _font);
             var plate = new Rect2(point.X - width / 2f - 14, point.Y - 34, width + 28, 30);
             Rounded(plate, 10, new Color(0.06f, 0.05f, 0.09f, 0.78f * alpha), new Color(1, 1, 1, 0.1f * alpha));

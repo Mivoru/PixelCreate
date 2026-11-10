@@ -472,6 +472,28 @@ public sealed class GameServer : IEnemyEvents
         }
     }
 
+    /// <summary>
+    /// The flag that says someone walks with the player, set and cleared with the scene's follow,
+    /// unfollow and despawn. Lines that mention a companion are guarded by it.
+    /// </summary>
+    public static string WithFlag(string actor) => $"with.{actor}";
+
+    /// <summary>A loaded game brings back whoever walked with the player: the save keeps the flag, not the actor.</summary>
+    private void RestoreFollowers(Player player)
+    {
+        var side = 0;
+        foreach (var actor in _actors.Where(a => _story.Has(WithFlag(a.Id))))
+        {
+            var spot = player.State.Position + new Vector3(side++ % 2 == 0 ? 1.5f : -1.5f, 0, 1.2f);
+            spot.Y = _world.GroundHeight(spot.X, spot.Z);
+            actor.Take();
+            actor.Path.Clear();
+            actor.Position = spot;
+            actor.Active = true;
+            actor.Follows = player.Id;
+        }
+    }
+
     private readonly List<Actor> _actors;
     private readonly Dictionary<string, Actor> _actorById;
 
@@ -729,6 +751,7 @@ public sealed class GameServer : IEnemyEvents
             if (_options.Save?.Player is { } saved && _players.Count == 1)
             {
                 Restore(player, saved);
+                RestoreFollowers(player);
             }
             else if (_options.Prologue && _players.Count == 1)
             {
@@ -1214,6 +1237,11 @@ public sealed class GameServer : IEnemyEvents
                 {
                     if (Vector3.Distance(portal.From with { Y = 0 }, player.State.Position with { Y = 0 }) < Guild.DoorRange)
                     {
+                        if (GuildShut && portal.From.X < Guild.InteriorX && portal.To.X >= Guild.InteriorX)
+                        {
+                            break;
+                        }
+
                         player.DoorReadyTick = Tick + DoorCooldownTicks;
                         Move(player, portal.To);
                         break;
@@ -1571,6 +1599,12 @@ public sealed class GameServer : IEnemyEvents
             }
 
             var step = _scene.Steps[_sceneStep];
+            if (step.If is { } only && !only.Holds(context))
+            {
+                NextSceneStep();
+                continue;
+            }
+
             if (SceneData.Holds(step) && step.Kind == "move" && !_sceneEntered)
             {
                 // A walk that holds the scene starts when the scene reaches it.
@@ -1603,17 +1637,27 @@ public sealed class GameServer : IEnemyEvents
                 return;
             }
 
-            _sceneStep++;
-            _sceneStepTick = Tick;
-            _sceneSlide = 0;
-            _sceneTalked = false;
-            _sceneEntered = false;
+            NextSceneStep();
         }
+    }
+
+    private void NextSceneStep()
+    {
+        _sceneStep++;
+        _sceneStepTick = Tick;
+        _sceneSlide = 0;
+        _sceneTalked = false;
+        _sceneEntered = false;
     }
 
     private bool StepDone(SceneStep step, IStoryActions context)
     {
         var elapsed = (Tick - _sceneStepTick) * Tuning.TickSeconds;
+        if (step.Timeout > 0 && elapsed >= step.Timeout)
+        {
+            return true;
+        }
+
         return step.Kind switch
         {
             "fade" or "wait" => elapsed >= step.Seconds,
@@ -1649,6 +1693,7 @@ public sealed class GameServer : IEnemyEvents
                 break;
             case "despawn" when actor is not null:
                 actor.Rest();
+                _story.SetFlag(WithFlag(actor.Id), false);
                 break;
             case "move" when actor is not null:
                 actor.Take();
@@ -1662,9 +1707,11 @@ public sealed class GameServer : IEnemyEvents
             case "follow" when actor is not null:
                 actor.Take();
                 actor.Follows = player.Id;
+                _story.SetFlag(WithFlag(actor.Id));
                 break;
             case "unfollow" when actor is not null:
                 actor.Follows = -1;
+                _story.SetFlag(WithFlag(actor.Id), false);
                 break;
             case "pose" when actor is not null:
                 actor.Take();
@@ -1820,10 +1867,27 @@ public sealed class GameServer : IEnemyEvents
         .OrderBy(a => Vector3.DistanceSquared(a.Position, origin)).Take(10)
         .Select(a => new ActorView(a.Index, a.Position, a.Yaw, a.Pose, a.Active)).ToArray();
 
+    /// <summary>The prologue's first night waits for the player an hour before dawn, until Elda takes them in.</summary>
+    public const int FirstNightHoldMinute = 5 * 60;
+
+    /// <summary>
+    /// The prologue's first night does not end on the road: the clock stops an hour before dawn until
+    /// the player has slept at Elda's. The night scenes and their lines (Elda bakes before dawn, the
+    /// Guild is shut) stay true however long the walk takes, and her scene never turns the clock back.
+    /// </summary>
+    private bool HoldsFirstNight => _story.Has("prologue.free") && !_story.Has("prologue.slept") &&
+        _calendar.Now.Minute >= FirstNightHoldMinute && _calendar.Now.Minute < GameTime.DayStartMinute;
+
+    /// <summary>
+    /// The Guild is barred until morning while the prologue's night lasts: the player is sent to the
+    /// bakery (the scene by the door says so), and nobody meets Mira before the story brings them.
+    /// </summary>
+    private bool GuildShut => _story.Has("prologue.free") && !_story.Has("prologue.slept");
+
     /// <summary>Moves the calendar on, and runs the faction plans once an hour.</summary>
     private void StepCalendar()
     {
-        _calendar.Paused = _players.Count > 0 && _players.Values.All(p => p.Reading);
+        _calendar.Paused = _players.Count > 0 && _players.Values.All(p => p.Reading) || HoldsFirstNight;
         if (_calendar.Step() == 0)
         {
             return;

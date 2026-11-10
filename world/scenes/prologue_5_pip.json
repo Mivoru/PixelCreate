@@ -8,6 +8,9 @@
         },
         {
           "notFlag": "prologue.slept"
+        },
+        {
+          "flag": "with.nell"
         }
       ]
     },

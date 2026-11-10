@@ -182,7 +182,13 @@ Rules:
   move, follow, pose, camera, fade, slides, say, talk, teleport, time, effects, wait, waitFor, spawnEnemies with
   `health`, waitForKills, drop, checkpoint, scene). A `trigger` starts one by condition and place, `until` ends it early
   (the trial's lines stop when the trial does), and `scene.<id>` is set when it has played. The client shows a scene
-  from the step in the snapshot (`GameClient.UpdateScene`). Rules found by playing:
+  from the step in the snapshot (`GameClient.UpdateScene`). Any step may carry `"if"` (skipped unless it holds when
+  reached) and a waiting step `"timeout"` in seconds. The client replays the guards of past steps from its story copy,
+  so only an `effects` step may test the player's place; turn such a test into a flag there (`prologue.netted`) and
+  guard the shown steps by the flag. `StoryRulesTests` checks this, a timeout or `until` on every wait while the player
+  has the controls, and that no line names a person without a proving condition (`Proofs`: Nell needs `with.nell` or
+  `nell.hidden`). `follow` sets `with.<id>` (cleared by `unfollow` and `despawn`); a loaded game brings followers back
+  from those flags (`RestoreFollowers`). Rules found by playing:
   - People speak face to face: a line or a talk waits until speaker and player are within `SceneData.SpeakRange`.
     Until then the player walks freely and the objective reads "Go to <name>"; a follower or a speaker with
     `approach` comes over. A `bark` carries any distance and never holds the controls.
@@ -196,6 +202,12 @@ Rules:
   (`ServerOptions.Prologue`, `PIXEL_SKIP_PROLOGUE=1` skips it, test mode never plays it). `scripts/prologue.ps1`
   plays it with `PIXEL_BOT=prologue` against a throwaway save and passes when it prints `BOT done`; `-Steps`
   prints every scene step, `-Flags` and `-Spawn` start partway (`PIXEL_FLAGS` sets story flags on a new game).
+  `-Contrary` plays it four more times as a contrary player (`PIXEL_CONTRARY`: `flee` from the finders,
+  `guild_first`, `skip_bram`, `skip_pip`) and prints a summary. The capture at the lake cannot be escaped (the
+  author's choice): walking off or waiting brings the net. Until the night at Elda's the Guild door stays barred
+  (`GameServer.GuildShut`, scene `prologue_guild_shut` says why) and the clock stops at 5:00 (`HoldsFirstNight`), so
+  the bakery is always the way on. `design/stage-3.md` lists every prologue flag and what each scene does when the
+  player comes another way.
   The intro's pictures are painted by `python asset-pipeline/generate_intro.py` (then Godot's `--import`).
   Keep the ruins camp and patrol away from the ambush on the road at (71.5, 72): level 4 goblins joined the first fight.
 - Roads are the highways of everyone who walks by themselves (`RoadMap` in `Schedules.cs`, built from the zone's

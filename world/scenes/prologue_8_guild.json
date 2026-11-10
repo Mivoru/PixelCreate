@@ -22,9 +22,6 @@
       "lockInput": true
     },
     {
-      "unfollow": "nell"
-    },
-    {
       "place": {
         "actor": "nell",
         "at": [
@@ -32,12 +29,27 @@
           -1.5
         ],
         "yaw": 180
+      },
+      "if": {
+        "flag": "with.nell"
       }
     },
     {
       "talk": {
         "actor": "mira",
         "node": "prologue_arrive"
+      },
+      "if": {
+        "flag": "with.nell"
+      }
+    },
+    {
+      "talk": {
+        "actor": "mira",
+        "node": "prologue_arrive_alone"
+      },
+      "if": {
+        "notFlag": "with.nell"
       }
     },
     {
@@ -55,16 +67,29 @@
         ],
         "speed": 3
       },
-      "wait": true
-    },
-    {
-      "despawn": "nell"
+      "wait": true,
+      "if": {
+        "flag": "with.nell"
+      }
     },
     {
       "effects": [
         {
           "setFlag": "nell.hidden"
-        },
+        }
+      ],
+      "if": {
+        "flag": "with.nell"
+      }
+    },
+    {
+      "despawn": "nell",
+      "if": {
+        "flag": "nell.hidden"
+      }
+    },
+    {
+      "effects": [
         {
           "quest": {
             "step": [
@@ -77,17 +102,6 @@
     },
     {
       "unlockInput": true
-    },
-    {
-      "waitFor": {
-        "flag": "anchor.bound"
-      }
-    },
-    {
-      "talk": {
-        "actor": "mira",
-        "node": "prologue_trial"
-      }
     }
   ]
 }

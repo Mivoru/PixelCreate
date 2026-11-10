@@ -117,6 +117,7 @@ public static class Story
     public static readonly string[] CodeFlags =
     {
         "guild.registered", "prologue.new", "look.chosen", "hud.mark", "trial.round2", "trial.round3",
+        "with.nell",
     };
 
     public static IReadOnlyList<StoryQuest> Quests { get; }

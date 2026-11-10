@@ -509,9 +509,16 @@ public partial class GameClient : Node
         _sceneCamera = null;
         _sceneLocked = false;
         _hud.Fade = 0f;
+        var sceneStory = new ClientStory(_client, _hud.Items);
         for (var i = 0; i <= index; i++)
         {
             var past = scene.Steps[i];
+            if (i < index && past.If is { } only && !only.Holds(sceneStory))
+            {
+                // The server skipped it: its condition reads only story flags, so the copy here agrees.
+                continue;
+            }
+
             switch (past.Kind)
             {
                 case "camera":
@@ -874,6 +881,12 @@ public partial class GameClient : Node
         if (_sceneApart is { } speaker)
         {
             return $"Go to {speaker.Name}";
+        }
+
+        // On the shore, before the net, the only people in sight are the finders.
+        if (_client.Story.Has("prologue.started") && !_client.Story.Has("prologue.captured"))
+        {
+            return "Go to the men by the shore";
         }
 
         // The prologue tells its own way; the Guild's hints begin once it is over.
@@ -1792,6 +1805,11 @@ public partial class GameClient : Node
 
         // Things on the ground come first: the dagger by the cage is the only weapon there is.
         var position = ToGodot(_client.State.Position);
+        if (story.Has("prologue.free") && !story.Has("prologue.slept") && position.X > Guild.InteriorX && _client.Tick % 300 == 0)
+        {
+            GD.Print("BOT ERROR inside the Guild before the night at Elda's");
+        }
+
         if (snapshot.Drops.Where(d => ToGodot(d.Position).DistanceTo(position) < 9f).OrderBy(d => ToGodot(d.Position).DistanceTo(position)).Cast<LootView?>().FirstOrDefault() is { } drop)
         {
             BotStage("pick up what lies there");
@@ -1814,18 +1832,29 @@ public partial class GameClient : Node
             var step = Story.Scenes[snapshot.Scene].Steps[Math.Min(snapshot.SceneStep, Story.Scenes[snapshot.Scene].Steps.Length - 1)];
             if (step.Kind == "waitFor" && Story.Scenes[snapshot.Scene].Id == "prologue_1_intro")
             {
+                // The contrary player runs from the finders instead: the net must still catch them.
+                if (Contrary("flee"))
+                {
+                    BotStage("run from the finders");
+                    return BotGo(new Vector3(90, 0, 118), 1f, Buttons.None);
+                }
+
                 BotStage("walk to the finders");
                 return BotGo(new Vector3(70, 0, 108), 2f, Buttons.None);
             }
         }
 
+        // Contrary runs leave out what an obedient player does, or go to the Guild while it is barred.
+        var skipRoad = Contrary("skip_pip") || Contrary("guild_first");
         (string Stage, Vector3 Goal)? next =
             !story.Has("prologue.started") ? null
             : !story.Has("prologue.free") ? null
-            : !story.Has("scene.prologue_4_road") ? ("walk the road", new Vector3(52, 0, 44))
-            : !story.Has("scene.prologue_5_pip") ? ("meet Pip", new Vector3(30, 0, 34))
+            : Contrary("guild_first") && !story.Has("prologue.slept") && !story.Has("scene.prologue_guild_shut")
+                ? ("try the barred Guild", new Vector3(-36, 0, 23.5f))
+            : !skipRoad && !story.Has("scene.prologue_4_road") ? ("walk the road", new Vector3(52, 0, 44))
+            : !skipRoad && !story.Has("scene.prologue_5_pip") ? ("meet Pip", new Vector3(30, 0, 34))
             : !story.Has("prologue.slept") ? ("reach the bakery", new Vector3(18, 0, 5.5f))
-            : !story.Has("prologue.bram") ? ("meet Bram", new Vector3(-2, 0, 12.5f))
+            : !story.Has("prologue.bram") && !Contrary("skip_bram") && story.Has("with.nell") ? ("meet Bram", new Vector3(-2, 0, 12.5f))
             : !story.Has("prologue.met_mira") && position.X < 300 ? ("go to the Guild door", new Vector3(-36, 0, 23.5f))
             : !story.Has("prologue.met_mira") ? ("meet Mira", new Vector3(420, 0, -3))
             : !story.Has("anchor.bound") ? ("touch the stone", new Vector3(428.2f, 0, 6.6f))
@@ -1844,7 +1873,7 @@ public partial class GameClient : Node
             GD.Print($"BOT at {position.X:0.0},{position.Z:0.0} leg {_botLeg} tick {_client.Tick}");
         }
 
-        var use = goal.Stage is "go to the Guild door" or "leave the arena" or "touch the stone";
+        var use = goal.Stage is "go to the Guild door" or "leave the arena" or "touch the stone" or "try the barred Guild";
         var walk = BotGo(goal.Goal, use ? 2.2f : 1.2f, Buttons.None);
         if (walk == (0, 0, Buttons.None) && _client.Tick % 45 == 0 && use)
         {
@@ -1853,6 +1882,10 @@ public partial class GameClient : Node
 
         return walk;
     }
+
+    /// <summary>Whether the prologue bot plays contrary this way (<c>PIXEL_CONTRARY=flee,guild_first,skip_bram,skip_pip</c>).</summary>
+    private static bool Contrary(string way) =>
+        (OS.GetEnvironment("PIXEL_CONTRARY") ?? "").Split(',', StringSplitOptions.TrimEntries).Contains(way);
 
     private (sbyte X, sbyte Z, Buttons Buttons) BotDone()
     {

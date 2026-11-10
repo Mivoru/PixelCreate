@@ -50,6 +50,16 @@ public sealed record SceneStep(string Kind)
     /// <summary>A line called out while the player keeps playing: shown as a banner, never holding the controls.</summary>
     public bool Bark { get; init; }
 
+    /// <summary>
+    /// Seconds after which a waiting step gives up and the scene goes on (0: never). A wait while the
+    /// player has the controls needs one, or the scene's <c>until</c>: a player who walks away must not
+    /// leave the story stuck.
+    /// </summary>
+    public float Timeout { get; init; }
+
+    /// <summary>The step runs only when this holds as the scene reaches it; otherwise it is skipped.</summary>
+    public Condition? If { get; init; }
+
     /// <summary>How long a line stays when nobody presses on: long enough to read.</summary>
     public float ReadSeconds => 1.6f + Text.Length * 0.055f;
 }
@@ -95,6 +105,16 @@ public static class SceneData
     private static string Str(JsonElement e, string name) => e.TryGetProperty(name, out var v) ? v.GetString()! : "";
 
     private static SceneStep ParseStep(JsonElement element)
+    {
+        var step = ParseKind(element);
+        return step with
+        {
+            Timeout = element.TryGetProperty("timeout", out var t) ? t.GetSingle() : 0f,
+            If = element.TryGetProperty("if", out var c) ? Condition.Parse(c) : null,
+        };
+    }
+
+    private static SceneStep ParseKind(JsonElement element)
     {
         var property = element.EnumerateObject().First();
         var v = property.Value;

@@ -8,6 +8,9 @@
         },
         {
           "notFlag": "prologue.bram"
+        },
+        {
+          "flag": "with.nell"
         }
       ]
     },

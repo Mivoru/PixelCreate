@@ -1,0 +1,39 @@
+{
+  "id": "prologue_guild_shut",
+  "trigger": {
+    "when": {
+      "all": [
+        {
+          "flag": "prologue.free"
+        },
+        {
+          "notFlag": "prologue.slept"
+        }
+      ]
+    },
+    "near": [
+      -36,
+      23.5
+    ],
+    "radius": 5
+  },
+  "steps": [
+    {
+      "say": {
+        "name": "Note on the door",
+        "text": "Shut till morning.",
+        "bark": true
+      }
+    },
+    {
+      "say": {
+        "actor": "nell",
+        "text": "They bar it at night. Elda's oven will be lit by now. The bakery, back east along the road.",
+        "bark": true
+      },
+      "if": {
+        "flag": "with.nell"
+      }
+    }
+  ]
+}
