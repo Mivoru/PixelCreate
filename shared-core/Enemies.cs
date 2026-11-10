@@ -212,6 +212,9 @@ public sealed partial class Enemy
 
     public bool Returning;
 
+    /// <summary>Brought by a scene: it plays its part to the end and never loses heart.</summary>
+    public bool Staged;
+
     /// <summary>Bleeding: ticks left, damage dealt each second, and the player who caused it.</summary>
     public int BleedTicks;
     public short BleedDamage;
@@ -254,6 +257,8 @@ public sealed partial class Enemy
         TargetId = -1;
         TaggedBy = -1;
         Returning = false;
+        Routed = false;
+        RoutTicks = 0;
     }
 
     private EnemyDef Choose(Random random)

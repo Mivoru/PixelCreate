@@ -131,6 +131,9 @@ Rules:
   players can pull one or two away from a group. `behavior` in `enemies.json` picks the role: brute, flanker (works to
   the player's back), skirmisher (falls back after a blow), ranged, support (keeps behind its front line) or pack;
   a `leader` wolf's call rallies its kind and lets two more of the pack strike for 5 s. `net-tests/TacticsTests.cs`.
+  Morale: a goblin (not a brute) below `Enemy.RoutHealth` of its health loses heart once in its life, gives up its
+  turn and runs for its camp for `Enemy.RoutDuration`, then fights again; scene goblins (`Enemy.Staged`) and trial
+  enemies never run, nor do orcs, werewolves and wolves. `net-tests/MoraleTests.cs`; the audit is `design/monster-audit.md`.
 - Goblins and orcs also roam: a camp with a `route` in the zone file is a patrol (`Patrol.cs`) that walks its points
   and back, resting at each, and small wild camps sit in Westwood, the Northern Wilds and north of East Watch. The
   zone audit keeps every patrol point reachable and every hostile camp or point over 50 m from the village. Put camps

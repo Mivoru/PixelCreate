@@ -1928,6 +1928,7 @@ public sealed partial class GameServer : IEnemyEvents
                 enemy.Returning = true;
             }
             _enemyTags[enemy.Id] = step.Tag;
+            enemy.Staged = true;
             _enemies.Add(enemy);
         }
     }

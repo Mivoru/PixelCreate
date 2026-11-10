@@ -31,6 +31,8 @@ public sealed partial class Enemy
             if (_cooldowns[i] > 0) _cooldowns[i]--;
         }
 
+        if (RoutTicks > 0) RoutTicks--;
+
         StepTurn(events, Action == EnemyAction.Strike && _lastGoblinAction != EnemyAction.Strike);
         _lastGoblinAction = Action;
         if (Action != EnemyAction.Stagger && DodgeIfAttacked(random, targets))
@@ -120,6 +122,36 @@ public sealed partial class Enemy
 
     private EnemyAction _lastGoblinAction;
 
+    /// <summary>Ticks left of a goblin's flight after it lost heart; it fights again, cornered, when they run out.</summary>
+    public int RoutTicks;
+
+    /// <summary>Set once a goblin has fled: it runs only once in its life.</summary>
+    public bool Routed;
+
+    /// <summary>A goblin below this share of its health breaks off and runs.</summary>
+    public const float RoutHealth = 0.25f;
+
+    public const int RoutDuration = Tuning.TickRate * 4;
+    private const float RoutSpeed = 1.45f;
+
+    /// <summary>
+    /// A goblin near death loses heart once and runs for its camp, giving up its turn at the player.
+    /// Brutes stand their ground, and so do goblins a scene brings or a trial sets.
+    /// </summary>
+    private bool LosesHeart(Target target, IEnemyEvents events)
+    {
+        if (Routed || Staged || Def.Kind != "goblin" || Def.Behavior == "brute" || TrialOf >= 0 || TargetId >= CreatureBase ||
+            Health > MaxHealth * RoutHealth)
+        {
+            return false;
+        }
+
+        Routed = true;
+        RoutTicks = RoutDuration;
+        EndTurn(events);
+        return true;
+    }
+
     private void DecideGoblin(World world, Random random, IReadOnlyList<Target> targets, IEnemyEvents events)
     {
         var homeDistance = Flat(Home.Center - Position).Length();
@@ -157,6 +189,16 @@ public sealed partial class Enemy
         if (FindTarget(targets) is not { } target)
         {
             Patrol(world, random, homeDistance);
+            return;
+        }
+
+        if (LosesHeart(target, events) || RoutTicks > 0)
+        {
+            // Away from the foe and back towards the camp, at a run.
+            var away = Flat(Position - target.Position);
+            var home = Flat(Home.Center - Position);
+            var way = (away == Vector3.Zero ? Vector3.Zero : Vector3.Normalize(away)) + (home == Vector3.Zero ? Vector3.Zero : Vector3.Normalize(home) * 0.6f);
+            Walk(world, way == Vector3.Zero ? away : way, RoutSpeed);
             return;
         }
 
