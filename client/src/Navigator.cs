@@ -21,9 +21,6 @@ public sealed class Navigator
     private const float TrailMetres = 40f;
     private const float TrailGap = 2.2f;
 
-    /// <summary>How far the player may stray from the way before it is worked out again.</summary>
-    private const float StrayMetres = 6f;
-
     private readonly World _world;
     private readonly RoadMap _roads;
     private readonly MultiMeshInstance3D _trail;
@@ -169,43 +166,55 @@ public sealed class Navigator
         var goal = Navigation.Reachable(_world, player, new Num.Vector3(target.At.X, 0, target.At.Y));
         goal.Y = _world.GroundHeight(goal.X, goal.Z);
         _sinceRoute += delta;
-        if (_routeGoal is not { } last || Num.Vector3.DistanceSquared(last, goal) > 1f || (_sinceRoute > 2.0 && Stray(player) > StrayMetres))
+        if (_routeGoal is not { } last || Num.Vector3.DistanceSquared(last, goal) > 1f)
         {
-            _route.Clear();
-            _route.Add(player);
-            _route.AddRange(_roads.Route(player, goal, _world));
+            // A new target: the whole way to it along the roads, kept while the player walks it.
+            _path.Clear();
+            _path.Add(player);
+            _path.AddRange(_roads.Route(player, goal, _world));
             _routeGoal = goal;
-            _sinceRoute = 0;
+            _sinceRoute = 1.0;
         }
-        else if (_route.Count > 0)
+
+        if (_sinceRoute >= 0.25)
         {
-            // The way starts where the player stands now; points already passed fall away.
-            _route[0] = player;
-            while (_route.Count > 2 && Num.Vector3.Distance(player with { Y = 0 }, _route[1] with { Y = 0 }) < 2.5f)
+            // Wherever the player has wandered, lead them back onto the way where the trip is shortest
+            // from here (usually ahead, or straight to the goal), not back to the last point passed.
+            _sinceRoute = 0;
+            if (Navigation.Rejoin(_path, player, _world) is { } join)
             {
-                _route.RemoveAt(1);
+                _path.RemoveRange(0, join.Leg + 1);
+                _path.Insert(0, join.Point);
+                _path.Insert(0, player);
             }
+            else
+            {
+                // Nothing on the way can be reached straight from here: plan it again from where they stand.
+                _path.Clear();
+                _path.Add(player);
+                _path.AddRange(_roads.Route(player, goal, _world));
+            }
+        }
+
+        _path[0] = player;
+        _route.Clear();
+        _route.Add(player);
+        for (var i = 1; i < _path.Count; i++)
+        {
+            // The join point is dropped once the player stands on it.
+            if (i == 1 && _path.Count > 2 && Num.Vector3.Distance(player with { Y = 0 }, _path[1] with { Y = 0 }) < 1.5f)
+            {
+                continue;
+            }
+
+            _route.Add(_path[i]);
         }
 
         LayTrail((float)delta);
     }
 
-    /// <summary>How far the player stands from the nearest leg of the way.</summary>
-    private float Stray(Num.Vector3 player)
-    {
-        var at = new Vector2(player.X, player.Z);
-        var best = float.MaxValue;
-        for (var i = 1; i < _route.Count; i++)
-        {
-            var a = new Vector2(_route[i - 1].X, _route[i - 1].Z);
-            var b = new Vector2(_route[i].X, _route[i].Z);
-            var along = b - a;
-            var t = along.LengthSquared() < 0.001f ? 0f : Mathf.Clamp((at - a).Dot(along) / along.LengthSquared(), 0f, 1f);
-            best = Mathf.Min(best, at.DistanceTo(a + along * t));
-        }
-
-        return _route.Count < 2 ? 0f : best;
-    }
+    // The whole way to the target, the player first; _route is what is shown of it.
+    private readonly List<Num.Vector3> _path = new();
 
     /// <summary>Marks every gap along the first metres of the way, pointing along it, with a glow that runs forward.</summary>
     private void LayTrail(float delta)

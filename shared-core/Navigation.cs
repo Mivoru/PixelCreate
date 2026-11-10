@@ -97,6 +97,57 @@ public static class Navigation
     }
 
     /// <summary>
+    /// Where a player off the way should rejoin it: the point on the way (or its end) that makes the
+    /// whole trip shortest, the straight walk there plus the rest of the way from there, reachable by a
+    /// clear line. A player who cuts across a bend is led on ahead, never back to a point behind.
+    /// Returns the index of the leg the point lies on (the point leads into path[leg + 1]) and the point,
+    /// or null when no point within reach can be walked to straight (then the way is planned again).
+    /// </summary>
+    public static (int Leg, Vector3 Point)? Rejoin(IReadOnlyList<Vector3> path, Vector3 player, World world, float reach = 60f)
+    {
+        if (path.Count < 2)
+        {
+            return null;
+        }
+
+        // What is left of the way from the end of each leg.
+        var after = new float[path.Count];
+        for (var i = path.Count - 2; i >= 0; i--)
+        {
+            after[i] = after[i + 1] + Flat(path[i], path[i + 1]);
+        }
+
+        var from = new Vector2(player.X, player.Z);
+        (int, Vector3)? best = null;
+        var bestCost = float.MaxValue;
+        for (var leg = 0; leg < path.Count - 1; leg++)
+        {
+            var a = path[leg];
+            var b = path[leg + 1];
+            var length = Flat(a, b);
+            var samples = Math.Max(1, (int)(length / 2f));
+            for (var s = 0; s <= samples; s++)
+            {
+                var t = (float)s / samples;
+                var point = Vector3.Lerp(a, b, t);
+                var straight = Vector2.Distance(from, new Vector2(point.X, point.Z));
+                var cost = straight + (1f - t) * length + after[leg + 1];
+                if (straight > reach || cost >= bestCost || !RoadMap.Clear(from, new Vector2(point.X, point.Z), world))
+                {
+                    continue;
+                }
+
+                bestCost = cost;
+                best = (leg, point);
+            }
+        }
+
+        return best;
+    }
+
+    private static float Flat(Vector3 a, Vector3 b) => Vector2.Distance(new Vector2(a.X, a.Z), new Vector2(b.X, b.Z));
+
+    /// <summary>
     /// Where to walk to reach a place: the place itself, or, when it lies on the other side of a door
     /// (inside a building while the player is out, or the other way round), that door.
     /// </summary>

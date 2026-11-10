@@ -101,6 +101,43 @@ public class NavigationTests
         Assert.Null(Navigation.QuestTarget(done, Valley.World));
     }
 
+    private static readonly World Open = new(Array.Empty<Aabb>());
+
+    // A way that bends: 40 m east, then 40 m north.
+    private static readonly Vector3[] Bend = { new(0, 0, 0), new(40, 0, 0), new(40, 0, 40) };
+
+    [Fact]
+    public void APlayerWhoCutsTheBend_IsLedOnAhead_NotBackToTheRoad()
+    {
+        // Off the way, near the far leg: the join lies on that leg, ahead, not on the first leg behind.
+        var join = Navigation.Rejoin(Bend, new Vector3(30, 0, 25), Open);
+        Assert.NotNull(join);
+        Assert.Equal(1, join!.Value.Leg);
+        Assert.True(join.Value.Point.Z >= 25f, $"joined at {join.Value.Point}");
+    }
+
+    [Fact]
+    public void AClearLineToTheGoal_IsTakenStraight()
+    {
+        // The end of the way is part of the way: with nothing in between, the shortest trip goes straight to it.
+        var join = Navigation.Rejoin(Bend, new Vector3(5, 0, 30), Open);
+        Assert.NotNull(join);
+        var straightToGoal = Vector2.Distance(new Vector2(5, 30), new Vector2(40, 40));
+        var trip = Vector2.Distance(new Vector2(5, 30), new Vector2(join!.Value.Point.X, join.Value.Point.Z))
+                   + Vector2.Distance(new Vector2(join.Value.Point.X, join.Value.Point.Z), new Vector2(40, 40));
+        Assert.True(trip <= straightToGoal + 2.5f, $"trip {trip} against straight {straightToGoal}");
+    }
+
+    [Fact]
+    public void AWallBetween_KeepsThePlayerToTheWay()
+    {
+        // A wall across the straight line to the far leg: the join must be one the player can walk to.
+        var wall = new World(new[] { new Aabb(new Vector3(32, -1, 5), new Vector3(34, 5, 45)) });
+        var join = Navigation.Rejoin(Bend, new Vector3(20, 0, 20), wall);
+        Assert.NotNull(join);
+        Assert.True(join!.Value.Point.X < 32f || join.Value.Point.Z < 5f, $"joined through the wall at {join.Value.Point}");
+    }
+
     [Fact]
     public void TheRouteToTheGuild_RunsAlongTheRoads_AndEndsAtTheDoor()
     {

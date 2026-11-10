@@ -2249,6 +2249,13 @@ public partial class GameClient : Node
                 return (0, 0, Buttons.None);
             }
 
+            if (tick < 300 && _navigator.Target is { } mark)
+            {
+                // First cut straight across country, off the roads: the trail must lead on from there, not back.
+                BotStage("cut across country");
+                return BotWalk(new Vector3(mark.At.X, 0, mark.At.Y), 0.5f, Buttons.None);
+            }
+
             BotStage("follow the trail");
             var next = _navigator.Route[1];
             return BotWalk(new Vector3(next.X, 0, next.Y), 0.5f, Buttons.None);
