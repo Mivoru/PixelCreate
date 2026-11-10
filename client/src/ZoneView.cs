@@ -363,7 +363,9 @@ public static class ZoneView
             list.Add(prop);
         }
 
-        var meshes = new Dictionary<string, Mesh>();
+        // A model's mesh hangs under the glb root with its own offset (Blender keeps the first part's origin):
+        // instances must carry that offset, or batched props sink or slide off their collision.
+        var meshes = new Dictionary<string, (Mesh Mesh, Transform3D Local)>();
         foreach (var ((model, _, _), props) in groups)
         {
             if (PixelStage.Off("batches"))
@@ -371,7 +373,7 @@ public static class ZoneView
                 continue;
             }
 
-            if (!meshes.TryGetValue(model, out var mesh))
+            if (!meshes.TryGetValue(model, out var entry))
             {
                 var source = GD.Load<PackedScene>($"res://assets/{model}.glb").Instantiate<Node3D>();
                 var part = FindMesh(source)!;
@@ -390,15 +392,22 @@ public static class ZoneView
                     }
                 }
 
-                meshes[model] = mesh = copy;
+                var local = Transform3D.Identity;
+                for (Node node = part; node != source && node is Node3D spatial; node = node.GetParent())
+                {
+                    local = spatial.Transform * local;
+                }
+
+                meshes[model] = entry = (copy, local);
                 source.Free();
             }
 
+            var mesh = entry.Mesh;
             var multi = new MultiMesh { TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, Mesh = mesh, InstanceCount = props.Count };
             for (var i = 0; i < props.Count; i++)
             {
                 var p = props[i];
-                multi.SetInstanceTransform(i, new Transform3D(PropBasis(p), new Vector3(p.Position.X, p.Position.Y, p.Position.Z)));
+                multi.SetInstanceTransform(i, new Transform3D(PropBasis(p), new Vector3(p.Position.X, p.Position.Y, p.Position.Z)) * entry.Local);
             }
 
             var small = model is "flowers" or "twigs" or "grass_tuft" or "mushroom" or "rock_c" or "fern" or "reeds" or "stump";
@@ -475,6 +484,12 @@ public static class ZoneView
         foreach (var (x, z) in new[] { (543f, -6f), (551f, 6f), (569f, -6f), (577f, 6f), (560f, -15f), (580f, -7f) })
         {
             root.AddChild(new OmniLight3D { Position = new Vector3(x, 3.2f, z), LightColor = new Color("2ce8f5"), LightEnergy = 1.6f, OmniRange = 11f });
+        }
+
+        // The Goblin Warren's torches, besides its two fires.
+        foreach (var (x, z) in new[] { (625f, -14.6f), (649f, -14.6f), (617.4f, 7f), (662.6f, -7f), (631f, 14.6f) })
+        {
+            root.AddChild(new OmniLight3D { Position = new Vector3(x, 2.8f, z), LightColor = new Color("ff9a48"), LightEnergy = 1.8f, OmniRange = 10f });
         }
     }
 
