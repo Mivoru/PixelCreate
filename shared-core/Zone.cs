@@ -91,10 +91,16 @@ public sealed class Zone
     /// <param name="Unless">Hidden once this story flag is set.</param>
     private sealed record PropData(string Model, float X, float Z, float Yaw = 0f, string? Flag = null, string? Unless = null);
 
-    /// <summary>Blob shapes the area like a wood instead of a rectangle; Clusters above 0 gathers things into groups.</summary>
+    /// <summary>
+    /// Blob shapes the area like a wood instead of a rectangle; Clusters above 0 gathers things into groups.
+    /// Biome rules pick the ground inside the area: MinHeight and MaxHeight above the valley floor, Steep
+    /// for slopes only (rocks on a hillside), Dry for a least distance from water (a meadow oak), Edge for
+    /// the rim of a forest ground (bushes and young trees where a wood meets the meadow).
+    /// </summary>
     private sealed record ScatterData(
         string Model, int Count, float[] Area, float MinScale, float MaxScale, float Spacing, bool Blob = false, float Clusters = 0f,
-        float Waterside = 0f, float MinHeight = -100f, bool InWater = false);
+        float Waterside = 0f, float MinHeight = -100f, bool InWater = false, float MaxHeight = 1000f, bool Steep = false,
+        float Dry = 0f, bool Edge = false);
 
     private sealed record EnemySpawnData(
         float X, float Z, float Radius, int Count, int MinLevel = 1, int MaxLevel = 3, int RespawnTicks = 900,
@@ -668,7 +674,23 @@ public sealed class Zone
     /// <summary>Waterside plants want the bank of a river or lake, others a minimum height.</summary>
     private bool MatchesGround(ScatterData scatter, HeightField terrain, float x, float z)
     {
-        if (terrain.At(x, z) < scatter.MinHeight)
+        var height = terrain.At(x, z);
+        if (height < scatter.MinHeight || height > scatter.MaxHeight)
+        {
+            return false;
+        }
+
+        if (scatter.Steep && Slope(terrain, x, z) < 0.9f)
+        {
+            return false;
+        }
+
+        if (scatter.Dry > 0f && (Rivers.Any(r => PolylineDistance(r.Points, x, z) < r.Width + scatter.Dry) || InLake(x, z, 1f + scatter.Dry / 15f)))
+        {
+            return false;
+        }
+
+        if (scatter.Edge && !_grounds.Any(g => g.Kind == "forest" && MathF.Abs(new Vector2(x - g.X, z - g.Z).Length() - g.Radius - 3f) < 9f))
         {
             return false;
         }
@@ -682,8 +704,11 @@ public sealed class Zone
         return river || InLake(x, z, 1.25f + scatter.Waterside / 15f);
     }
 
-    private static bool TooSteep(HeightField terrain, float x, float z) =>
-        MathF.Abs(terrain.At(x + 1.5f, z) - terrain.At(x - 1.5f, z)) + MathF.Abs(terrain.At(x, z + 1.5f) - terrain.At(x, z - 1.5f)) > 2.4f;
+    /// <summary>The rise over three metres across and along, summed: 2.4 is too steep to plant on.</summary>
+    private static float Slope(HeightField terrain, float x, float z) =>
+        MathF.Abs(terrain.At(x + 1.5f, z) - terrain.At(x - 1.5f, z)) + MathF.Abs(terrain.At(x, z + 1.5f) - terrain.At(x, z - 1.5f));
+
+    private static bool TooSteep(HeightField terrain, float x, float z) => Slope(terrain, x, z) > 2.4f;
 
     private static bool InClearing(ZoneData data, float x, float z) =>
         (data.Clearings ?? Array.Empty<float[]>()).Any(c => new Vector2(x - c[0], z - c[1]).Length() < c[2]);
@@ -706,7 +731,7 @@ public sealed class Zone
             var tree = scatter.Model.Contains("tree") || scatter.Model is "pine" or "pine_b" or "birch" or "willow" or "blossom" or "apple";
             // Cheap tests first; the distance to every placed prop is the slow one.
             if (OutsideShape(scatter, x, z) || InClearing(data, x, z) || (terrain.At(x, z) < -0.3f && !scatter.InWater) ||
-                !MatchesGround(scatter, terrain, x, z) || TooSteep(terrain, x, z) || (NearWater(x, z) && !scatter.InWater) ||
+                !MatchesGround(scatter, terrain, x, z) || (TooSteep(terrain, x, z) && !scatter.Steep) || (NearWater(x, z) && !scatter.InWater) ||
                 PathDistance(x, z) < (tree ? 3.2f : 1.5f) ||
                 props.Any(p => Near(p, x, z, scatter.Spacing, tree && Footprint(p.Model) > 1.2f ? 3f : 0f)))
             {
