@@ -5,7 +5,7 @@ using Godot;
 namespace PixelCreate;
 
 /// <summary>
-/// The menu Esc opens: Resume, Settings and Quit Game. Settings has sliders for the sound effects,
+/// The menu Esc opens: Resume, Settings, Save and Quit to Menu (when the main menu started the game) and Quit Game. Settings has sliders for the sound effects,
 /// the music, the mouse and the mouse while aiming; a change is saved when the page is left.
 /// </summary>
 public partial class Hud
@@ -19,6 +19,9 @@ public partial class Hud
 
     /// <summary>Set when the player chose Quit Game; the game reads it and quits.</summary>
     public bool QuitRequested { get; private set; }
+
+    /// <summary>Set when the player chose to save and go back to the main menu.</summary>
+    public bool MenuRequested { get; private set; }
 
     private static readonly string[] SliderNames = { "Sound effects", "Music", "Mouse sensitivity", "Aim sensitivity (bow)" };
 
@@ -34,6 +37,9 @@ public partial class Hud
             Input.MouseMode = Input.MouseModeEnum.Visible;
         }
     }
+
+    /// <summary>Asks to save and go back to the main menu, as the menu button does; for the menu check.</summary>
+    public void RequestMainMenu() => MenuRequested = true;
 
     /// <summary>Shows a page of the menu, for bots that check it.</summary>
     public void ShowMenuPage(string page)
@@ -82,8 +88,8 @@ public partial class Hud
     {
         0 => $"{Mathf.RoundToInt(Settings.SfxVolume * 100)} %",
         1 => $"{Mathf.RoundToInt(Settings.MusicVolume * 100)} %",
-        2 => $"{Settings.Sensitivity:0.00}x",
-        _ => $"{Settings.AimSensitivity:0.00}x",
+        2 => Settings.Sensitivity.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) + "x",
+        _ => Settings.AimSensitivity.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) + "x",
     };
 
     private void DrawMenu()
@@ -92,7 +98,10 @@ public partial class Hud
         _menuSliders.Clear();
         DrawRect(new Rect2(Vector2.Zero, Size), new Color(0, 0, 0, 0.45f));
         var settings = _menuPage == "settings";
-        var size = settings ? new Vector2(560, 470) : new Vector2(380, 360);
+        var entries = Launch.FromMenu
+            ? new[] { ("Resume", "resume"), ("Settings", "settings"), ("Save and Quit to Menu", "tomenu"), ("Quit Game", "quit") }
+            : new[] { ("Resume", "resume"), ("Settings", "settings"), ("Quit Game", "quit") };
+        var size = settings ? new Vector2(560, 470) : new Vector2(380, 140 + entries.Length * 74);
         var window = new Rect2(((Size - size) / 2f).Round(), size);
         Card(window, 22, GlassDeep, true);
         var title = settings ? "Settings" : "Menu";
@@ -101,7 +110,7 @@ public partial class Hud
         if (!settings)
         {
             var y = 100f;
-            foreach (var (label, action) in new[] { ("Resume", "resume"), ("Settings", "settings"), ("Quit Game", "quit") })
+            foreach (var (label, action) in entries)
             {
                 var rect = new Rect2(window.Position + new Vector2(50, y), size.X - 100, 56);
                 MenuButton(rect, label, action, mouse, action == "quit");
@@ -178,6 +187,7 @@ public partial class Hud
                         case "settings": _menuPage = "settings"; break;
                         case "back": Settings.Save(); _menuPage = "main"; break;
                         case "quit": QuitRequested = true; break;
+                        case "tomenu": MenuRequested = true; break;
                     }
 
                     return true;

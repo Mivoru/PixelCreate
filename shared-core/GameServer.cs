@@ -447,6 +447,9 @@ public sealed class GameServer : IEnemyEvents
     private Vector3? _checkpoint;
     private readonly Dictionary<int, string> _enemyTags = new();
 
+    /// <summary>Set once a player quit (after the save): a server the game started for itself then stops.</summary>
+    public bool QuitRequested { get; private set; }
+
     /// <summary>The scene playing and its step, for tests.</summary>
     public (string? Scene, int Step) SceneState => (_scene?.Id, _sceneStep);
 
@@ -1280,6 +1283,7 @@ public sealed class GameServer : IEnemyEvents
                 break;
             case Command.Quit:
                 Autosave?.Invoke(Export());
+                QuitRequested = true;
                 break;
             case Command.SetAppearance:
                 var field = (AppearanceField)(arg >> 8);
@@ -1662,6 +1666,8 @@ public sealed class GameServer : IEnemyEvents
         {
             "fade" or "wait" => elapsed >= step.Seconds,
             "slides" => _sceneSlide >= step.Slides.Length || elapsed >= step.Seconds * step.Slides.Length,
+            // The client says when its film has played (it keeps the film's own clock); twice the length is a fallback.
+            "video" => _sceneRead == _sceneStep || elapsed >= step.Seconds * 2f,
             "say" => step.Bark ? elapsed >= step.ReadSeconds : _sceneRead == _sceneStep || elapsed >= step.ReadSeconds * 1.6f,
             "talk" => _sceneTalked,
             "waitFor" => step.When.Holds(context),

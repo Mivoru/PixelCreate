@@ -59,12 +59,30 @@ Console.WriteLine(save is null
     ? $"Zone {zone.Name}. New game in slot {slot}. Listening on UDP {port} at {Tuning.TickRate} Hz."
     : $"Zone {zone.Name}. Continuing slot {slot} on {server.Calendar.Now}. Listening on UDP {port} at {Tuning.TickRate} Hz.");
 
+// A server the game's main menu started (PIXEL_PARENT = the game's process id) stops when the player
+// quits, after the save, and when the game is gone, so no server is left running after a crash.
+Process? parent = int.TryParse(Environment.GetEnvironmentVariable("PIXEL_PARENT"), out var parentId)
+    ? Process.GetProcesses().FirstOrDefault(p => p.Id == parentId)
+    : null;
+
 var clock = Stopwatch.StartNew();
 var tickLength = TimeSpan.FromSeconds(Tuning.TickSeconds);
 var nextTick = clock.Elapsed;
 while (true)
 {
     server.Step();
+    if (parent is not null && (server.QuitRequested || server.Tick % (uint)Tuning.TickRate == 0 && parent.HasExited))
+    {
+        if (!server.QuitRequested)
+        {
+            // The game closed without quitting (a crash): keep what was played.
+            server.Autosave?.Invoke(server.Export());
+        }
+
+        Console.WriteLine(server.QuitRequested ? "The player quit; the game is saved. Stopping." : "The game is gone; saved. Stopping.");
+        break;
+    }
+
     if (server.Tick % (uint)(Tuning.TickRate * 10) == 0)
     {
         var stats = server.Stats;

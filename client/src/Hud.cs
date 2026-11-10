@@ -175,6 +175,9 @@ public partial class Hud : Control
         return texture;
     }
 
+    /// <summary>The UI font (Nunito) at a weight, for screens outside the HUD such as the main menu.</summary>
+    public static FontVariation UiFont(int weight) => Weight(GD.Load<FontFile>("res://assets/ui/Nunito.ttf"), weight);
+
     private static FontVariation Weight(FontFile file, int weight)
     {
         var tag = TextServerManager.GetPrimaryInterface().NameToTag("wght");

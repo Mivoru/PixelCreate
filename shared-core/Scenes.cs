@@ -10,7 +10,7 @@ namespace PixelCreate.Core;
 /// </summary>
 /// <param name="Kind">
 /// lockInput, unlockInput, spawn, despawn, place, move, follow, unfollow, pose, camera, playerCamera,
-/// fade, slides, say, talk, teleport, time, effects, wait, waitFor, spawnEnemies, waitForKills, drop, checkpoint, scene.
+/// fade, slides, video, say, talk, teleport, time, effects, wait, waitFor, spawnEnemies, waitForKills, drop, checkpoint, scene.
 /// </param>
 public sealed record SceneStep(string Kind)
 {
@@ -56,6 +56,9 @@ public sealed record SceneStep(string Kind)
     /// leave the story stuck.
     /// </summary>
     public float Timeout { get; init; }
+
+    /// <summary>For a video: the second from which its caption shows.</summary>
+    public float CaptionFrom { get; init; }
 
     /// <summary>The step runs only when this holds as the scene reaches it; otherwise it is skipped.</summary>
     public Condition? If { get; init; }
@@ -142,6 +145,13 @@ public static class SceneData
                 Slides = v.GetProperty("images").EnumerateArray().Select(i => i.GetString()!).ToArray(),
                 Text = Str(v, "caption"), Seconds = v.TryGetProperty("seconds", out var ss) ? ss.GetSingle() : 4f,
             },
+            // A film over everything (client/assets/video/<file>.ogv). It holds for its length or until skipped;
+            // the caption shows over its last seconds.
+            "video" => new SceneStep("video")
+            {
+                Item = Str(v, "file"), Seconds = v.GetProperty("seconds").GetSingle(), Text = Str(v, "caption"),
+                CaptionFrom = v.TryGetProperty("captionFrom", out var cf) ? cf.GetSingle() : 0f,
+            },
             "say" => new SceneStep("say")
             {
                 Actor = Str(v, "actor"), Text = Str(v, "text"), Face = v.TryGetProperty("face", out var f) ? f.GetString() : null,
@@ -180,6 +190,6 @@ public static class SceneData
         Vector3.Distance(speaker with { Y = 0 }, player with { Y = 0 }) > SpeakRange;
 
     /// <summary>Steps that hold the scene until something happens; the rest run at once.</summary>
-    public static bool Holds(SceneStep step) => step.Kind is "fade" or "slides" or "say" or "talk" or "wait" or "waitFor" or "waitForKills"
+    public static bool Holds(SceneStep step) => step.Kind is "fade" or "slides" or "video" or "say" or "talk" or "wait" or "waitFor" or "waitForKills"
         || (step.Kind == "move" && step.Wait);
 }

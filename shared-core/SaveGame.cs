@@ -129,6 +129,9 @@ public sealed class SaveData
     public SavedPlayer? Player { get; set; }
 }
 
+/// <summary>One save as the main menu lists it. <paramref name="Broken"/> when neither the save nor its backup could be read.</summary>
+public sealed record SaveSummary(string Slot, DateTime Saved, int Day, int Minute, int Level, float[] Position, bool PrologueDone, bool Broken);
+
 /// <summary>
 /// Reads and writes saves as JSON. A save is written to a temporary file and then moved into place,
 /// and the previous save is kept as a backup, so a crash in the middle never destroys both.
@@ -167,6 +170,75 @@ public static class SaveFile
         }
 
         File.Move(temporary, path, true);
+    }
+
+    /// <summary>Every save in the folder, newest first: what the main menu lists and Continue picks.</summary>
+    public static List<SaveSummary> List()
+    {
+        var found = new List<SaveSummary>();
+        if (!Directory.Exists(Folder))
+        {
+            return found;
+        }
+
+        foreach (var path in Directory.GetFiles(Folder, "*.json"))
+        {
+            var slot = Path.GetFileNameWithoutExtension(path);
+            if (slot.EndsWith(".bak", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var data = Read(slot);
+            found.Add(new SaveSummary(
+                slot,
+                File.GetLastWriteTime(path),
+                data is null ? 0 : data.World.Day,
+                data is null ? 0 : data.World.Minute,
+                data?.Player?.Level ?? 0,
+                data?.Player?.Position ?? Array.Empty<float>(),
+                data is not null && data.World.Flags.Contains("prologue.done"),
+                data is null));
+        }
+
+        return found.OrderByDescending(s => s.Saved).ToList();
+    }
+
+    /// <summary>Deletes a save and its backup. Cannot be undone; the menu asks first.</summary>
+    public static void Delete(string slot)
+    {
+        foreach (var path in new[] { PathFor(slot), BackupFor(slot), PathFor(slot) + ".tmp" })
+        {
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
+        }
+    }
+
+    /// <summary>
+    /// The slot a name the player typed is saved under: letters, digits, spaces, dashes and underscores,
+    /// trimmed, at most 32 characters. Empty when nothing usable is left.
+    /// </summary>
+    public static string SlotFor(string name)
+    {
+        var kept = new string(name.Where(c => char.IsLetterOrDigit(c) || c is ' ' or '-' or '_').ToArray()).Trim();
+        return kept.Length > 32 ? kept[..32].TrimEnd() : kept;
+    }
+
+    /// <summary>Whether a slot already holds a save (or its backup).</summary>
+    public static bool Exists(string slot) => File.Exists(PathFor(slot)) || File.Exists(BackupFor(slot));
+
+    /// <summary>A free default name for a new game: "Save 1", "Save 2" and so on.</summary>
+    public static string NextFreeName()
+    {
+        for (var i = 1; ; i++)
+        {
+            if (!Exists($"Save {i}"))
+            {
+                return $"Save {i}";
+            }
+        }
     }
 
     /// <summary>Reads a slot, falling back to its backup when the save is missing or broken. Null for a new game.</summary>

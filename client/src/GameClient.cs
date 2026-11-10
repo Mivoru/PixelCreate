@@ -96,6 +96,10 @@ public partial class GameClient : Node
     private readonly Dictionary<int, IGroundHazard> _walls = new();
     private Zone _zone = null!;
     private Minimap _minimap = null!;
+    private IntroVideo _introVideo = null!;
+
+    // The scene step whose film is showing, or -1: Space, Enter or Esc skips it.
+    private int _videoStep = -1;
     private string _region = "";
     private PixelStage _stage = null!;
     private UdpTransport _transport = null!;
@@ -159,9 +163,10 @@ public partial class GameClient : Node
     public override void _Ready()
     {
         GetTree().AutoAcceptQuit = false;
-        var args = OS.GetCmdlineUserArgs();
-        var host = args.ElementAtOrDefault(0) ?? "127.0.0.1";
-        var port = int.Parse(args.ElementAtOrDefault(1) ?? "7777");
+        // The main menu sets where to connect; a host on the command line (scripts, bots) wins over it.
+        var args = Launch.FromMenu ? Array.Empty<string>() : OS.GetCmdlineUserArgs();
+        var host = args.ElementAtOrDefault(0) ?? Launch.Host;
+        var port = int.Parse(args.ElementAtOrDefault(1) ?? Launch.Port.ToString());
         _captureDir = args.ElementAtOrDefault(2);
         _captureFrames = int.Parse(args.ElementAtOrDefault(3) ?? "8");
         _yaw = float.TryParse(OS.GetEnvironment("PIXEL_YAW"), System.Globalization.CultureInfo.InvariantCulture, out var yaw) ? yaw : 0f;
@@ -202,6 +207,8 @@ public partial class GameClient : Node
         _hud.Portrait = _portrait.GetTexture();
         _minimap = new Minimap(zone);
         _hud.AddChild(_minimap);
+        _introVideo = new IntroVideo();
+        _hud.AddChild(_introVideo);
         _actors = Actors.For(_world);
         foreach (var actor in _actors)
         {
@@ -258,6 +265,13 @@ public partial class GameClient : Node
         }
         else if (@event is InputEventKey { Pressed: true, Echo: false } key)
         {
+            if (_videoStep >= 0 && key.Keycode is Key.Escape or Key.Space or Key.Enter or Key.KpEnter)
+            {
+                // A film is skipped, not paused: the scene goes on.
+                (_pendingCommand, _pendingArg) = (Command.SceneNext, (ushort)_videoStep);
+                return;
+            }
+
             if (key.Keycode == Key.Escape)
             {
                 if (_hud.DialogOpen)
@@ -330,6 +344,28 @@ public partial class GameClient : Node
     private ulong _lastSnapshotMs;
     private const ulong SilenceMs = 4000;
 
+    /// <summary>
+    /// Leaves the game after the quit command went out: a server the menu started saves and stops by
+    /// itself (we wait for that), then the game closes or goes back to the main menu.
+    /// </summary>
+    private async System.Threading.Tasks.Task Leave(bool toMenu)
+    {
+        if (Launch.FromMenu)
+        {
+            await LocalServer.StopAfterSave();
+        }
+
+        if (toMenu)
+        {
+            Input.MouseMode = Input.MouseModeEnum.Visible;
+            GetTree().ChangeSceneToFile("res://scenes/menu.tscn");
+        }
+        else
+        {
+            GetTree().Quit();
+        }
+    }
+
     public override void _Process(double delta)
     {
         // Frame times are measured away from the frames that save a picture, which stall on purpose.
@@ -339,7 +375,13 @@ public partial class GameClient : Node
             _measuredFrames++;
         }
 
-        if (_hud.QuitRequested || _closing)
+        if (Launch.FromMenu && OS.GetEnvironment("PIXEL_MENU_CHECK") == "1" && _client.Tick == 900)
+        {
+            // The menu check: play a little, then save and go back to the menu, which looks for the save.
+            _hud.RequestMainMenu();
+        }
+
+        if (_hud.QuitRequested || _hud.MenuRequested || _closing)
         {
             // Tell the server first, so it saves; the command rides in the next few input packets.
             if (_quitFrames == 0)
@@ -349,7 +391,12 @@ public partial class GameClient : Node
 
             if (++_quitFrames > 12 || !_transport.IsConnected)
             {
-                GetTree().Quit();
+                if (_quitFrames < 1000)
+                {
+                    _quitFrames = 1000;
+                    _ = Leave(_hud.MenuRequested && !_closing);
+                }
+
                 return;
             }
         }
@@ -498,6 +545,8 @@ public partial class GameClient : Node
             _sceneApart = null;
             _hud.Fade = 0f;
             _hud.SlideShown = false;
+            _introVideo.Hide();
+            _videoStep = -1;
             return;
         }
 
@@ -538,6 +587,22 @@ public partial class GameClient : Node
                     _hud.Fade = past.Out ? progress : 1f - progress;
                     break;
             }
+        }
+
+        if (step.Kind == "video")
+        {
+            _introVideo.Show(step.Item, step.Seconds, step.Text, step.CaptionFrom, GetProcessDeltaTime());
+            _videoStep = index;
+            if (_introVideo.Done && _pendingCommand == Command.None)
+            {
+                // The film ran on its own clock; the scene goes on when it has played here.
+                (_pendingCommand, _pendingArg) = (Command.SceneNext, (ushort)index);
+            }
+        }
+        else
+        {
+            _introVideo.Hide();
+            _videoStep = -1;
         }
 
         _hud.SlideShown = step.Kind == "slides";
@@ -1770,6 +1835,18 @@ public partial class GameClient : Node
             else if (_botWait > 90)
             {
                 _hud.ConfirmLook();
+            }
+
+            return (0, 0, Buttons.None);
+        }
+
+        if (_videoStep >= 0)
+        {
+            // Watch a little, then skip: the run proves the skip works and saves the rest of the film.
+            BotStage("watch the intro film");
+            if (++_botWait == 120 && OS.GetEnvironment("PIXEL_FILM") != "full")
+            {
+                (_pendingCommand, _pendingArg) = (Command.SceneNext, (ushort)_videoStep);
             }
 
             return (0, 0, Buttons.None);

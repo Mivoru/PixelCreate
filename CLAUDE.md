@@ -208,7 +208,7 @@ Rules:
   (`GameServer.GuildShut`, scene `prologue_guild_shut` says why) and the clock stops at 5:00 (`HoldsFirstNight`), so
   the bakery is always the way on. `design/stage-3.md` lists every prologue flag and what each scene does when the
   player comes another way.
-  The intro's pictures are painted by `python asset-pipeline/generate_intro.py` (then Godot's `--import`).
+  The intro is now the film (see Play below); the old painted slides of `asset-pipeline/generate_intro.py` are unused.
   Keep the ruins camp and patrol away from the ambush on the road at (71.5, 72): level 4 goblins joined the first fight.
 - Roads are the highways of everyone who walks by themselves (`RoadMap` in `Schedules.cs`, built from the zone's
   `paths` in `World.Roads`): `Route` goes straight when the line is clear and short, else onto a road by a clear line,
@@ -287,7 +287,21 @@ Rules:
   Ironjaw Warcamp (south-east). `grounds` paint forest floor, blight or trampled earth on terrain and grass. Props for
   these lands come from `asset-pipeline/lands.py`. The terrain is drawn in 60 m chunks so off-screen ground is culled.
 - Blender: `D:\Program\Blender Foundation\Blender 5.2\blender.exe -b --factory-startup -P <script>`.
-- Play: `powershell -ExecutionPolicy Bypass -File scripts/play.ps1` starts a local server and the client. Add `-Test` for test mode (gear kit). `PIXEL_FRAIL=1` gives the Guild examiner one hit point (the full check sets it).
+- Play: `powershell -ExecutionPolicy Bypass -File scripts/play.ps1` opens the main menu (`MainMenu.cs`, scene
+  `menu.tscn`, the project's main scene): Continue (newest save), New Game (a named slot, `SaveFile.SlotFor`), Load
+  Game (`SaveFile.List`: day, level, place; Delete asks first), Settings, Quit. A choice starts the game's own server
+  for that slot (`LocalServer`, a Release build: the zone takes about 19 s to build there, 34 s in Debug; the slow part
+  is `Zone.Scatter`) with `PIXEL_PARENT`, so the server stops after the quit save or when the game is gone (saving
+  first). Esc in the game then offers Save and Quit to Menu. A host on the command line skips the menu, so `-Test`,
+  `-Capture`, bots and the studio start the server from the script as before (`PIXEL_SLOT` etc.). `-MenuShots
+  <folder>` photographs the menu pages; `PIXEL_MENU_CHECK=1` plays the loop once (new game, back to the menu, the
+  save is there) and prints `MENU check passed`. The background is the studio shot `village_drone`
+  (`client/assets/ui/menu_bg.jpg`). Add `-Test` for test mode (gear kit). `PIXEL_FRAIL=1` gives the Guild examiner one hit point (the full check sets it).
+- The intro is a film (`client/assets/video/intro.ogv`, Ogg Theora at 720p from `refs/isekai_inkprint_v1.mp4`:
+  `ffmpeg -vf scale=1280:720 -c:v libtheora -q:v 6 -c:a libvorbis -q:a 4`), the scene step `video` (`IntroVideo.cs`).
+  The film keeps its own clock and the client moves the scene on when it and the title after it have played (the
+  server waits at most twice the length); Space, Enter or Esc skips it. The bot skips after two seconds unless
+  `PIXEL_FILM=full`. The client's HUD does not lay out its children: size a control from the viewport.
 - Live check: add `-Capture <folder>` to that command. A bot plays, saves frames and prints a `STATS` line.
 - Minimap (`Minimap.cs`, top right, north = -Z up): the studio's `map` job renders `client/assets/ui/minimap.png`;
   run it again after changing terrain, roads or buildings. Buildings are marked by model (`Minimap.Landmarks`), and

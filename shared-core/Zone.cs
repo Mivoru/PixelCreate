@@ -250,6 +250,21 @@ public sealed class Zone
         Waterfall = data.Waterfall is { } w ? new Vector3(w[0], terrain.At(w[0], w[1]), w[1]) : null;
     }
 
+    /// <summary>
+    /// The named places of a zone, read without building it: the main menu names where each save
+    /// stands. The first place whose circle holds a point is the place there, as in <see cref="RegionAt"/>.
+    /// </summary>
+    public static (string Name, float X, float Z, float Radius)[] RegionsOf(string name)
+    {
+        using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream($"zones.{name}")
+            ?? throw new ArgumentException($"There is no zone called {name}.");
+        using var document = JsonDocument.Parse(stream);
+        return document.RootElement.TryGetProperty("regions", out var regions)
+            ? regions.EnumerateArray().Select(r => (r.GetProperty("name").GetString()!, r.GetProperty("x").GetSingle(),
+                r.GetProperty("z").GetSingle(), r.GetProperty("radius").GetSingle())).ToArray()
+            : Array.Empty<(string, float, float, float)>();
+    }
+
     public static Zone Load(string name)
     {
         var assembly = Assembly.GetExecutingAssembly();

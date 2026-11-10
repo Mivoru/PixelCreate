@@ -30,17 +30,11 @@
       }
     },
     {
-      "slides": {
-        "images": [
-          "intro_1",
-          "intro_2",
-          "intro_3",
-          "intro_4",
-          "intro_5",
-          "intro_6",
-          "intro_7"
-        ],
-        "seconds": 3.5
+      "video": {
+        "file": "intro",
+        "seconds": 15.5,
+        "caption": "Forty Crowns",
+        "captionFrom": 12.7
       }
     },
     {

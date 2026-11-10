@@ -137,6 +137,63 @@ public class SaveGameTests
     }
 
     [Fact]
+    public void SaveList_NamesEverySlotNewestFirst_AndDeleteTakesTheBackupToo()
+    {
+        var folder = Path.Combine(Path.GetTempPath(), "pixel-save-" + Guid.NewGuid().ToString("N"));
+        Environment.SetEnvironmentVariable("PIXEL_SAVE", folder);
+        try
+        {
+            Assert.Empty(SaveFile.List());
+            Assert.Equal("Save 1", SaveFile.NextFreeName());
+
+            SaveFile.Write("Save 1", new SaveData { World = new SavedWorld { Day = 2, Flags = new[] { "prologue.done" } }, Player = new SavedPlayer { Level = 3, Position = new[] { 2f, 0f, 4f } } });
+            SaveFile.Write("Save 1", new SaveData { World = new SavedWorld { Day = 3, Flags = new[] { "prologue.done" } }, Player = new SavedPlayer { Level = 4, Position = new[] { 2f, 0f, 4f } } });
+            File.SetLastWriteTime(SaveFile.PathFor("Save 1"), DateTime.Now.AddHours(-1));
+            SaveFile.Write("Mine", new SaveData { World = new SavedWorld { Day = 1 } });
+            File.WriteAllText(SaveFile.PathFor("Torn"), "{ broken");
+            File.SetLastWriteTime(SaveFile.PathFor("Torn"), DateTime.Now.AddHours(-2));
+
+            var saves = SaveFile.List();
+            Assert.Equal(new[] { "Mine", "Save 1", "Torn" }, saves.Select(s => s.Slot));
+            Assert.Equal(3, saves[1].Day);
+            Assert.Equal(4, saves[1].Level);
+            Assert.True(saves[1].PrologueDone);
+            Assert.False(saves[0].PrologueDone);
+            Assert.True(saves[2].Broken);
+            Assert.Equal("Save 2", SaveFile.NextFreeName());
+
+            SaveFile.Delete("Save 1");
+            Assert.False(SaveFile.Exists("Save 1"));
+            Assert.False(File.Exists(SaveFile.BackupFor("Save 1")));
+            Assert.Equal(2, SaveFile.List().Count);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("PIXEL_SAVE", null);
+            if (Directory.Exists(folder))
+            {
+                Directory.Delete(folder, true);
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData("My game", "My game")]
+    [InlineData("  ../../evil\\name:*  ", "evilname")]
+    [InlineData("???", "")]
+    [InlineData("Příběh 2", "Příběh 2")]
+    public void SlotNames_KeepOnlySafeCharacters(string typed, string slot) => Assert.Equal(slot, SaveFile.SlotFor(typed));
+
+    [Fact]
+    public void Quit_IsRemembered_SoAServerTheMenuStartedCanStop()
+    {
+        var (server, client, network) = Start();
+        Assert.False(server.QuitRequested);
+        Run(server, client, network, 12, Command.Quit);
+        Assert.True(server.QuitRequested);
+    }
+
+    [Fact]
     public void Autosave_RunsEachMorningAndOnQuit()
     {
         var (server, client, network) = Start();
