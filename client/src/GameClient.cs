@@ -208,7 +208,19 @@ public partial class GameClient : Node
 
         // The dialogue portrait: a second camera in the same world, close on the speaker's face.
         _portrait = new SubViewport { Size = new Vector2I(256, 256), World3D = _stage.View.FindWorld3D(), RenderTargetUpdateMode = SubViewport.UpdateMode.Always };
-        _portraitCamera = new Camera3D { Fov = 14f, Near = 0.05f, Far = 40f };
+        // It sees only the speaker's layer, against a calm backdrop of its own (no sky, no fog over the face).
+        _portraitCamera = new Camera3D
+        {
+            Fov = 14f, Near = 0.05f, Far = 40f, CullMask = PortraitLayer,
+            Environment = new Godot.Environment
+            {
+                BackgroundMode = Godot.Environment.BGMode.Color,
+                BackgroundColor = new Color("2a2c3a"),
+                AmbientLightSource = Godot.Environment.AmbientSource.Color,
+                AmbientLightColor = new Color("c8c4d8"),
+                AmbientLightEnergy = 0.6f,
+            },
+        };
         _portrait.AddChild(_portraitCamera);
         AddChild(_portrait);
         _portraitCamera.Current = true;
@@ -955,10 +967,22 @@ public partial class GameClient : Node
         }
 
         var rig = _hud.DialogOpen && _npcs.TryGetValue(_hud.Speaker, out var found) ? found : null;
-        if (_speaking is not null && _speaking != rig && _speaking.Face is { } old)
+        if (_speaking is not null && _speaking != rig)
         {
-            old.Talking = false;
-            old.Expression = old.Resting;
+            if (_speaking.Face is { } old)
+            {
+                old.Talking = false;
+                old.Expression = old.Resting;
+            }
+
+            OnPortraitLayer(_speaking.Root, false);
+        }
+
+        if (rig is not null && _speaking != rig)
+        {
+            // The portrait sees only the speaker: nothing in the world (a table, a wall, the player) can stand in the way.
+            OnPortraitLayer(rig.Root, true);
+            _portraitHead = null;
         }
 
         _speaking = rig;
@@ -970,8 +994,34 @@ public partial class GameClient : Node
 
         face.Expression = _hud.DialogFace ?? face.Resting;
         face.Talking = _hud.DialogTyping || _voices.Talking;
-        var eye = head.ToGlobal(new Vector3(0.12f, 0.02f, -2.4f));
-        _portraitCamera.LookAtFromPosition(eye, head.ToGlobal(new Vector3(0, -0.02f, 0)));
+
+        // Framed from the front of the body, on a head position that is eased, so a nod or a breath does not shake it.
+        var target = head.GlobalPosition + Vector3.Down * 0.02f;
+        _portraitHead = _portraitHead is { } eased ? eased.Lerp(target, 1f - Mathf.Exp(-(float)GetProcessDeltaTime() * 6f)) : target;
+        var yaw = rig.Root.GlobalRotation.Y;
+        // A figure's front is -Z at yaw 0.
+        var front = new Vector3(-Mathf.Sin(yaw), 0, -Mathf.Cos(yaw));
+        var eye = _portraitHead.Value + front * 2.4f + Vector3.Up * 0.02f;
+        _portraitCamera.LookAtFromPosition(eye, _portraitHead.Value);
+    }
+
+    /// <summary>The render layer only the portrait camera sees, besides the world's own.</summary>
+    private const uint PortraitLayer = 1u << 19;
+
+    private Vector3? _portraitHead;
+
+    /// <summary>Puts every visible part of a figure on the portrait's layer as well as its own, or takes it off again.</summary>
+    private static void OnPortraitLayer(Node node, bool on)
+    {
+        if (node is VisualInstance3D visual)
+        {
+            visual.Layers = on ? visual.Layers | PortraitLayer : visual.Layers & ~PortraitLayer;
+        }
+
+        foreach (var child in node.GetChildren())
+        {
+            OnPortraitLayer(child, on);
+        }
     }
 
     private void UpdateNpcs(Vector3 shown, float delta)
