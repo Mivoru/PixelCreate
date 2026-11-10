@@ -20,6 +20,16 @@
   "steps": [
     {
       "place": {
+        "actor": "elda",
+        "at": [
+          18,
+          3.5
+        ],
+        "yaw": -69
+      }
+    },
+    {
+      "place": {
         "actor": "pip",
         "at": [
           27.5,

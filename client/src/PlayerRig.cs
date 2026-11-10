@@ -738,6 +738,11 @@ public sealed class PlayerRig
             _footDown |= stride != _lastStride && state.Grounded;
             _lastStride = stride;
         }
+        else if (Sitting)
+        {
+            _phase += delta * 2f;
+            SitPose();
+        }
         else
         {
             _phase += delta * 2f;
@@ -1503,6 +1508,24 @@ public sealed class PlayerRig
                 _target[ShinR] = 0.5f;
                 break;
         }
+    }
+
+    /// <summary>Set for someone on a bench: the hips come down to the seat and the legs fold.</summary>
+    public bool Sitting { get; set; }
+
+    private void SitPose()
+    {
+        var breath = Mathf.Sin(_phase);
+        _target[Bob] = -0.46f + breath * 0.008f;
+        _target[ThighL] = -1.48f;
+        _target[ThighR] = -1.48f;
+        _target[ShinL] = 1.5f;
+        _target[ShinR] = 1.5f;
+        _target[ArmL] = -0.55f;
+        _target[ForearmL] = -0.9f;
+        _target[ArmR] = -0.5f;
+        _target[ForearmR] = -0.85f;
+        _target[Lean] = 0.1f + breath * 0.01f;
     }
 
     private void IdlePose()

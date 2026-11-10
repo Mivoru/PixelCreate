@@ -135,7 +135,7 @@ public sealed class Actor
             }
             else
             {
-                Yaw = MathF.Atan2(offset.X, offset.Z);
+                Yaw = Facing(offset);
             }
         }
 
@@ -161,8 +161,14 @@ public sealed class Actor
         var heading = Vector3.Normalize(to);
         Position += heading * step;
         Position.Y = world.GroundHeight(Position.X, Position.Z);
-        Yaw = MathF.Atan2(heading.X, heading.Z);
+        Yaw = Facing(heading);
     }
+
+    /// <summary>
+    /// The yaw that looks along a direction. A figure's front is -Z at yaw 0, as for the player's own
+    /// figure: with the signs the other way round everyone walked backwards.
+    /// </summary>
+    public static float Facing(Vector3 direction) => MathF.Atan2(-direction.X, -direction.Z);
 }
 
 public static class Actors

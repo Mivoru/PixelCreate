@@ -11,7 +11,8 @@ namespace PixelCreate.Core;
 /// <param name="At">Where they stand; null with <paramref name="Home"/> set.</param>
 /// <param name="Home">The door they go in by; they are out of the world once there.</param>
 /// <param name="When">A block with a condition is skipped unless it holds, so a day can change after an event.</param>
-public sealed record ScheduleBlock(int FromHour, Vector3? At, float Yaw, Vector3? Home, ActorPose Pose, Condition When);
+/// <param name="Via">Where they come out when they were indoors somewhere far off: the other side of a door.</param>
+public sealed record ScheduleBlock(int FromHour, Vector3? At, float Yaw, Vector3? Home, ActorPose Pose, Condition When, Vector3? Via = null);
 
 /// <summary>Where someone rests now: the place, the facing, the pose, and whether they are in the world at all.</summary>
 public readonly record struct RestSpot(Vector3 At, float Yaw, ActorPose Pose, bool Present);
@@ -99,10 +100,13 @@ public static class Schedules
             e.TryGetProperty(name, out var p) ? new Vector3(p[0].GetSingle(), 0, p[1].GetSingle()) : null;
 
         var pose = b.TryGetProperty("pose", out var po) ? Enum.Parse<ActorPose>(po.GetString()!, true) : ActorPose.Stand;
+        var at = Point(b, "at");
+        // "face" names a place to look at (the table from a bench); "yaw" a direction in degrees.
+        var facing = at is { } stand && Point(b, "face") is { } look ? Actor.Facing(look - stand)
+            : b.TryGetProperty("yaw", out var yaw) ? yaw.GetSingle() * MathF.PI / 180f : 0f;
         return new ScheduleBlock(
-            b.GetProperty("from").GetInt32(), Point(b, "at"),
-            b.TryGetProperty("yaw", out var yaw) ? yaw.GetSingle() * MathF.PI / 180f : 0f,
-            Point(b, "home"), pose, Condition.Parse(b.TryGetProperty("when", out var when) ? when : (JsonElement?)null));
+            b.GetProperty("from").GetInt32(), at, facing,
+            Point(b, "home"), pose, Condition.Parse(b.TryGetProperty("when", out var when) ? when : (JsonElement?)null), Point(b, "via"));
     }
 }
 

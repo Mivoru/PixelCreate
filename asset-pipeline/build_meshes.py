@@ -1083,6 +1083,21 @@ def bench():
         box("leg", (x, 0, 0.24), (0.14, 0.42, 0.48), "wood_dark")
 
 
+def tavern_table():
+    """A trestle table for the tavern yard: a plank top on two trestles, with a jug, mugs and a loaf."""
+    for y in (-0.28, 0.0, 0.28):
+        box("plank", (0, y, 0.8), (2.3, 0.26, 0.07), "wood")
+    for x in (-0.85, 0.85):
+        timber("trestle_a", (x, -0.42, 0), (x, 0.05, 0.77), 0.09, "wood_dark")
+        timber("trestle_b", (x, 0.42, 0), (x, -0.05, 0.77), 0.09, "wood_dark")
+        timber("brace", (x, -0.3, 0.3), (x, 0.3, 0.3), 0.06, "wood_dark")
+    loft("jug", [(0.84, 0.1, 0.1), (0.95, 0.14, 0.14), (1.08, 0.12, 0.12), (1.16, 0.07, 0.07), (1.2, 0.09, 0.09)], "stone_dark", 10, (0.2, 0.05, 0))
+    for mx, my in ((-0.55, -0.2), (-0.3, 0.22), (0.7, -0.15)):
+        loft("mug", [(0.84, 0.065, 0.065), (0.98, 0.07, 0.07)], "wood_dark", 8, (mx, my, 0))
+        loft("hoop", [(0.95, 0.074, 0.074), (0.97, 0.074, 0.074)], "iron", 8, (mx, my, 0))
+    blob("loaf", (-0.75, 0.2, 0.9), 0.14, "hay", 9, 0.55, 2)
+
+
 def lantern_post():
     timber("pole", (0, 0, 0), (0, 0, 2.9), 0.13, "wood_dark")
     timber("arm", (0, 0, 2.75), (0.6, 0, 2.75), 0.08, "wood_dark")
@@ -1967,6 +1982,7 @@ MODELS = {
     "sacks": sacks,
     "cart": cart,
     "bench": bench,
+    "tavern_table": tavern_table,
     "lantern_post": lantern_post,
     "signpost": signpost,
     "hay": hay,

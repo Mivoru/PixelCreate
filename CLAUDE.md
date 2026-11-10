@@ -205,6 +205,14 @@ Rules:
   when it has not moved for 90 ticks) both use it. Where no road lies within 30 m (indoors, the wilds) the walk is
   straight: a fallback to the nearest road anywhere once sent the bot out of the Guild hall into a wall.
   `net-tests/RoadTests.cs` walks real routes in the zone. New places people go to need a road near them.
+- Days (`world/schedules.json`): per person, blocks `from` an hour: `at` a place (with `yaw` in degrees or `face` a
+  point, and a `pose` such as `sit`) or `home` a door, where they are out of the world. `via` is where someone comes
+  out who was indoors far away (the Guild hall's people). Each game hour the server walks everyone to their new place
+  (`Actor.WalkTo`); a jump in time puts them there. The client works the same resting place out by itself, so only
+  walkers are sent. A scene that needs someone outside their hours places them first and despawns them after
+  (Elda waits up in the prologue). A figure's front is -Z at yaw 0 (`Actor.Facing`): the other sign walked backwards.
+  Door points must lie about a metre clear of the house's boxes; `net-tests/ScheduleTests.cs` checks every place.
+  The tavern yard (tables and benches east of the tavern door, footpath from the south road) fills from six.
 - A weapon picked up with empty hands is worn at once (the prologue's player has none until the wooden sword).
 - Interiors live outside the map on platforms (the guild at x 420, the trial ground at x 480). Doors are portals.
 - Character models come from Blender (`anime_*`) and use `toon.gdshader`, which also bends hair and cloth.

@@ -637,7 +637,10 @@ public partial class GameClient : Node
             }
 
             rig.Root.Position = _actorAt[index];
-            if (_actorWalking[index] || views.ContainsKey(index))
+            rig.Sitting = pose == ActorPose.Sit && !_actorWalking[index];
+            // Someone at rest looks the way their day says, unless the player stands by (then they turn to them, below).
+            var alone = new Vector2(_actorAt[index].X - _client.State.Position.X, _actorAt[index].Z - _client.State.Position.Z).Length() > 6f;
+            if (_actorWalking[index] || views.ContainsKey(index) || alone || pose != ActorPose.Stand)
             {
                 rig.Root.Rotation = new Vector3(pose == ActorPose.Fallen ? -Mathf.Pi / 2f : 0f, LerpFacing(rig.Root.Rotation.Y, yaw, 10f * delta), 0);
             }

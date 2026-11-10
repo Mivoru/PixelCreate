@@ -19,6 +19,16 @@
   },
   "steps": [
     {
+      "place": {
+        "actor": "elda",
+        "at": [
+          18,
+          3.5
+        ],
+        "yaw": -69
+      }
+    },
+    {
       "lockInput": true
     },
     {
@@ -50,6 +60,9 @@
         "day": 2,
         "hour": 6
       }
+    },
+    {
+      "despawn": "elda"
     },
     {
       "teleport": {

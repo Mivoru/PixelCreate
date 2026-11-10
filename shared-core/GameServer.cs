@@ -1763,7 +1763,14 @@ public sealed class GameServer : IEnemyEvents
                 continue;
             }
 
-            if (atOnce)
+            if (!atOnce && !actor.Active && Schedules.Now(actor.Id, context, _calendar.Now.Hour)?.Via is { } door)
+            {
+                // Indoors somewhere else (the Guild hall is far off the map): they come out by this door.
+                actor.Position = door with { Y = _world.GroundHeight(door.X, door.Z) };
+            }
+
+            // Someone indoors may turn up anywhere; anyone else walks, unless time jumped or the way is absurd.
+            if (atOnce || Vector3.Distance(actor.Position, spot.At) > 150f)
             {
                 actor.Spot = spot;
                 actor.Rest();
