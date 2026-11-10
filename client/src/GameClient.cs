@@ -256,10 +256,11 @@ public partial class GameClient : Node
                     _propViews.Add(actor.Id, node);
                 }
             }
-            else if (actor.Role is "storage" or "anchor_stone")
+            else if (actor.Role is "storage" or "anchor_stone" or "quest_board")
             {
-                // Things you can use, like the Guild chest, carry a floating sign so players see them.
-                _hud.Signs.Add((ToGodot(actor.Home) + Vector3.Up * 1.25f, actor.Name));
+                // Things you can use, like the Guild chest and the job board, carry a floating sign so players see them.
+                var height = actor.Role == "quest_board" ? 2.7f : 1.25f;
+                _hud.Signs.Add((ToGodot(actor.Home) + Vector3.Up * height, actor.Role == "quest_board" ? "Quest Board: jobs" : actor.Name));
             }
         }
 

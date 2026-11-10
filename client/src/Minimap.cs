@@ -30,7 +30,7 @@ public sealed partial class Minimap : Control
 
     /// <summary>The way being led along (metres, the player first) and its end, from the <see cref="Navigator"/>.</summary>
     public IReadOnlyList<Vector2> Route { get; set; } = System.Array.Empty<Vector2>();
-    public (Vector2 At, string Label, bool Own)? Target { get; set; }
+    public (Vector2 At, string Label, bool Own, float Radius)? Target { get; set; }
 
     /// <summary>The gold of the way and of the quest's target; the player's own point is cyan.</summary>
     public static readonly Color RouteColour = new("ffd25a");
@@ -202,6 +202,42 @@ public sealed partial class Minimap : Control
 
         var colour = target.Own ? OwnColour : RouteColour;
         var inner = radius - 6f;
+        if (target.Radius > 0f)
+        {
+            // A hunt's area: a ring where the monsters live; only the part inside the disc is drawn.
+            var middle = centre + (target.At - Player) * scale;
+            var ring = target.Radius * scale;
+            if (middle.DistanceTo(centre) + ring <= inner)
+            {
+                DrawCircle(middle, ring, colour with { A = 0.16f });
+                DrawArc(middle, ring, 0, Mathf.Tau, 48, colour, 2f, true);
+            }
+            else
+            {
+                var run = new List<Vector2>();
+                for (var i = 0; i <= 64; i++)
+                {
+                    var point = middle + Vector2.FromAngle(i * Mathf.Tau / 64f) * ring;
+                    if (point.DistanceTo(centre) <= inner)
+                    {
+                        run.Add(point);
+                        continue;
+                    }
+
+                    if (run.Count >= 2)
+                    {
+                        DrawPolyline(run.ToArray(), colour, 2f, true);
+                    }
+
+                    run.Clear();
+                }
+
+                if (run.Count >= 2)
+                {
+                    DrawPolyline(run.ToArray(), colour, 2f, true);
+                }
+            }
+        }
         var points = new List<Vector2>();
         for (var i = 0; i < Route.Count; i++)
         {

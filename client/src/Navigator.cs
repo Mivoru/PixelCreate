@@ -36,7 +36,7 @@ public sealed class Navigator
     public Vector2? Waypoint { get; private set; }
 
     /// <summary>The place being led to now (the own point or the quest's), its name, and whether it is the own point.</summary>
-    public (Vector2 At, string Label, bool Own)? Target { get; private set; }
+    public (Vector2 At, string Label, bool Own, float Radius)? Target { get; private set; }
 
     /// <summary>The way from the player to the target, x and z in metres, the player first.</summary>
     public IReadOnlyList<Vector2> Route => _route.Select(p => new Vector2(p.X, p.Z)).ToList();
@@ -145,12 +145,21 @@ public sealed class Navigator
             SetWaypoint(null);
         }
 
-        Target = Waypoint is { } point ? (point, "Your mark", true)
-            : Navigation.QuestTarget(story, _world) is { } quest ? (new Vector2(quest.At.X, quest.At.Z), quest.Label, false)
+        Target = Waypoint is { } point ? (point, "Your mark", true, 0f)
+            : Navigation.QuestTarget(story, _world) is { } quest ? (new Vector2(quest.At.X, quest.At.Z), quest.Label, false, quest.Radius)
             : null;
 
         if (Target is not { } target)
         {
+            _route.Clear();
+            _routeGoal = null;
+            _trail.Multimesh.VisibleInstanceCount = 0;
+            return;
+        }
+
+        if (target.Radius > 0f && new Vector2(player.X - target.At.X, player.Z - target.At.Y).Length() < target.Radius)
+        {
+            // In the area where the monsters live: the way has done its job; the area stays on the maps.
             _route.Clear();
             _routeGoal = null;
             _trail.Multimesh.VisibleInstanceCount = 0;

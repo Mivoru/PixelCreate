@@ -187,6 +187,13 @@ public sealed partial class WorldMap : Control
             }
 
             var at = ToScreen(target.At);
+            if (target.Radius > 0f)
+            {
+                var ring = target.Radius / _metresPerPixel;
+                DrawCircle(at, ring, colour with { A = 0.18f });
+                DrawArc(at, ring, 0, Mathf.Tau, 64, colour, 2.5f, true);
+            }
+
             Diamond(at, 10f, colour);
             Text(target.Label, at + new Vector2(0, -16), 16, colour);
         }

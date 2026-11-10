@@ -46,7 +46,7 @@ public class NavigationTests
     }
 
     [Fact]
-    public void ADeliveryJob_LeadsToWhereTheItemDrops_ThenToMira()
+    public void ADeliveryJob_LeadsToWhereTheItemDrops_ThenOnlySaysReturn()
     {
         var empty = new Playing(Road);
         empty.World.SetQuest("gel_for_alchemist", new QuestState { Status = QuestStatus.Active, Step = 0 });
@@ -56,7 +56,9 @@ public class NavigationTests
 
         var full = new Playing(Road, new Dictionary<string, int> { ["slime_gel"] = 6 });
         full.World.SetQuest("gel_for_alchemist", new QuestState { Status = QuestStatus.Active, Step = 0 });
-        Assert.Equal("Mira", Navigation.QuestTarget(full, Valley.World)!.Value.Label);
+        // With everything in the bag the objective says to return to the Guild; no way is drawn.
+        Assert.Null(Navigation.QuestTarget(full, Valley.World));
+        Assert.True(source.Value.Radius > 0f, "the place where the item drops is an area");
     }
 
     [Fact]
@@ -83,6 +85,20 @@ public class NavigationTests
         }
 
         Assert.True(missing.Count == 0, "Steps with nowhere to lead: " + string.Join(", ", missing));
+    }
+
+    [Fact]
+    public void AHunt_MarksTheArea_AndTheReportStepDrawsNoWay()
+    {
+        var hunting = new Playing(Road);
+        hunting.World.SetQuest("slime_cull", new QuestState { Status = QuestStatus.Active, Step = 0 });
+        var area = Navigation.QuestTarget(hunting, Valley.World);
+        Assert.NotNull(area);
+        Assert.True(area!.Value.Radius >= Navigation.CampAreaMargin);
+
+        var done = new Playing(Road);
+        done.World.SetQuest("slime_cull", new QuestState { Status = QuestStatus.Active, Step = 1 });
+        Assert.Null(Navigation.QuestTarget(done, Valley.World));
     }
 
     [Fact]
