@@ -51,7 +51,11 @@ try {
         $arguments = @("--path", (Join-Path $root "client"))
         if ($MenuShots) { $arguments += @("--", "menu", $MenuShots) }
     } else {
-        $arguments = @("--path", (Join-Path $root "client"), "--", $ServerHost, "7777")
+        $arguments = @("--path", (Join-Path $root "client"))
+        # Bot and capture runs play without sound: a sound device that went away (headphones) once froze the
+        # game in WASAPI, and the run hung with no frames.
+        if ($Capture) { $arguments += @("--audio-driver", "Dummy") }
+        $arguments += @("--", $ServerHost, "7777")
         if ($Capture) { $arguments += @($Capture, $CaptureFrames) }
     }
 

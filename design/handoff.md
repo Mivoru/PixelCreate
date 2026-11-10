@@ -36,6 +36,9 @@ monstra, boj, mechaniky nebo pohyb. Nové joby rovnou s cílem pro navigaci.
   `play.ps1 ... | Select-String -Pattern "BOT|STATS|ERROR"`; přesměrování `*>` do souboru u přímého
   `play.ps1` jednou nechalo hru běžet bez výstupu i snímků.
 - Hra nekreslí poloprůhledné materiály (alpha); efekty používají stipple shader (`Fx.Stipple`).
+- Když zmizí zvukové zařízení (sluchátka), Godot ve WASAPI zamrzne a běh bota visí bez snímků.
+  Proto `play.ps1 -Capture` spouští hru s `--audio-driver Dummy`.
+- Vlastní značka na mapě se ukládá jen ve hře z hlavního menu; boti a testy začínají bez ní.
 - Skripty přes heredoc v Bash nástroji se rozbíjejí; jednorázový Python piš do scratchpadu.
 
 ## Užitečné příkazy

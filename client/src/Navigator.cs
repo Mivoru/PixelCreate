@@ -92,10 +92,16 @@ public sealed class Navigator
         return tool.Commit();
     }
 
-    private static string Slot => Launch.FromMenu ? Launch.Slot : "default";
+    // Only a game started from the main menu keeps its mark; bots and test runs start without one.
+    private static string Slot => Launch.Slot;
 
     private void Load()
     {
+        if (!Launch.FromMenu)
+        {
+            return;
+        }
+
         var file = new ConfigFile();
         if (file.Load(FilePath) == Error.Ok && file.GetValue("waypoints", Slot, "").AsString() is { Length: > 0 } text)
         {
@@ -110,6 +116,11 @@ public sealed class Navigator
 
     private void Save()
     {
+        if (!Launch.FromMenu)
+        {
+            return;
+        }
+
         var file = new ConfigFile();
         file.Load(FilePath);
         var value = Waypoint is { } at ? string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{at.X:0.0},{at.Y:0.0}") : "";
