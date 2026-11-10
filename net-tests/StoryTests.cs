@@ -320,12 +320,16 @@ public class DialogueDataTests
     }
 
     [Fact]
-    public void EveryPersonInTheValley_HasSomethingToSay()
+    public void ThePeopleWhoServe_HaveSomethingToSay_AndOnlyThey()
     {
-        foreach (var npc in Valley.World.Npcs.Where(n => n.Role != "storage"))
+        // The game is not about talk: Mira, the traders, the board and the stone speak; the rest only among themselves.
+        var speakers = new[] { "mira", "hollis", "wren", "board", "anchor" };
+        foreach (var id in speakers)
         {
-            Assert.True(Story.Dialogues.ContainsKey(npc.Id), $"{npc.Id} has no dialogue in world/dialogue");
+            Assert.True(Story.Dialogues.ContainsKey(id), $"{id} has no dialogue in world/dialogue");
         }
+
+        Assert.Empty(Story.Dialogues.Keys.Except(speakers));
     }
 
     [Fact]

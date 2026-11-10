@@ -13,11 +13,11 @@ public class SceneTests
       "id": "test_walk",
       "steps": [
         { "lockInput": true },
-        { "spawn": { "actor": "nell", "at": [10, 0], "yaw": 90 } },
-        { "say": { "actor": "nell", "text": "Hello." } },
-        { "move": { "actor": "nell", "to": [[14, 0]], "speed": 4 }, "wait": true },
+        { "spawn": { "actor": "vosk", "at": [10, 0], "yaw": 90 } },
+        { "say": { "actor": "vosk", "text": "Hello." } },
+        { "move": { "actor": "vosk", "to": [[14, 0]], "speed": 4 }, "wait": true },
         { "unlockInput": true },
-        { "follow": "nell" },
+        { "follow": "vosk" },
         { "waitFor": { "flag": "test.ready" } },
         { "effects": [ { "setFlag": "test.done" } ] }
       ]
@@ -50,8 +50,8 @@ public class SceneTests
         var (server, client, network) = Start();
         server.StartScene(SceneData.Parse(JsonDocument.Parse(Walk).RootElement, 999));
         Run(server, client, network, 5);
-        var nell = server.Actor("nell");
-        Assert.True(nell.Active);
+        var vosk = server.Actor("vosk");
+        Assert.True(vosk.Active);
         Assert.Equal(("test_walk", 2), server.SceneState);
 
         // The line waits until the player has read it.
@@ -66,14 +66,14 @@ public class SceneTests
         // The walk of 4 m at 4 m/s takes a second; halfway the scene still waits for it.
         Run(server, client, network, 20);
         Assert.Equal(3, server.SceneState.Step);
-        Assert.True(nell.Position.X > 10.5f);
+        Assert.True(vosk.Position.X > 10.5f);
         Run(server, client, network, 70);
         Assert.Equal(6, server.SceneState.Step);
-        Assert.Equal(1, nell.Follows);
+        Assert.Equal(1, vosk.Follows);
 
-        // Now the player walks, and Nell comes along.
+        // Now the player walks, and Vosk comes along.
         Run(server, client, network, 120, moveZ: 127);
-        Assert.True(Vector3.Distance(nell.Position, server.GetPlayer(1)!.Value.Position) < 4f);
+        Assert.True(Vector3.Distance(vosk.Position, server.GetPlayer(1)!.Value.Position) < 4f);
 
         server.StoryState.SetFlag("test.ready");
         Run(server, client, network, 5);
@@ -88,10 +88,10 @@ public class SceneTests
         { "waitFor": { "flag": "test.never" }, "timeout": 1 },
         { "effects": [ { "setFlag": "test.skipped" } ], "if": { "flag": "test.never" } },
         { "effects": [ { "setFlag": "test.ran" } ], "if": { "notFlag": "test.never" } },
-        { "spawn": { "actor": "nell", "at": [3, 0] } },
-        { "follow": "nell" },
+        { "spawn": { "actor": "vosk", "at": [3, 0] } },
+        { "follow": "vosk" },
         { "waitFor": { "flag": "test.go" } },
-        { "despawn": "nell" }
+        { "despawn": "vosk" }
       ]
     }
     """;
@@ -115,11 +115,11 @@ public class SceneTests
         var (server, client, network) = Start();
         server.StartScene(SceneData.Parse(JsonDocument.Parse(Guarded).RootElement, 999));
         Run(server, client, network, Tuning.TickRate * 2);
-        Assert.True(server.StoryState.Has(GameServer.WithFlag("nell")));
+        Assert.True(server.StoryState.Has(GameServer.WithFlag("vosk")));
 
         server.StoryState.SetFlag("test.go");
         Run(server, client, network, 5);
-        Assert.False(server.StoryState.Has(GameServer.WithFlag("nell")));
+        Assert.False(server.StoryState.Has(GameServer.WithFlag("vosk")));
     }
 
     private const string Chase = """
@@ -151,7 +151,7 @@ public class SceneTests
         var (server, client, network) = Start();
         server.StartScene(SceneData.Parse(JsonDocument.Parse(Walk).RootElement, 999));
         Run(server, client, network, 10);
-        var index = server.Actor("nell").Index;
+        var index = server.Actor("vosk").Index;
         Assert.Contains(client.Latest!.Actors, a => a.Index == index && a.Active);
     }
 }

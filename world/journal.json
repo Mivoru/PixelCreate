@@ -1,8 +1,4 @@
 {
-  "guild.registered": "I passed Rhea's trial. The Guild knows me as an adventurer now.",
-  "prologue.bar_seen": "One bar of the cage was cracked near the floor.",
-  "prologue.cage_broken": "The goblins that broke the cage carried new iron, not the rust goblins carry.",
-  "pip.told_barn": "Pip hates the Lightborn: one of them burned his barn, and his dog, for a quest.",
-  "prologue.bram": "Old Bram knew what I was before I said a word. He told me to hide Nell from anyone the Company knows.",
-  "anchor.bound": "The Anchor Stone in the Guild knows me. If I fall, I wake there."
+  "guild.registered": "I signed with the Adventurers Guild in Hearthmere. Rank F: the board's jobs are mine.",
+  "rank.e": "I beat Rhea in the yard. Rank E."
 }

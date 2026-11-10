@@ -1,10 +1,7 @@
 [
-  { "id": "nell", "name": "Nell", "role": "captive" },
-  { "id": "haruto", "name": "Haruto", "role": "lost" },
   { "id": "vosk", "name": "Brann Vosk", "role": "finder_captain" },
   { "id": "gil", "name": "Gil", "role": "finder_gil" },
   { "id": "hanne", "name": "Hanne", "role": "finder_hanne" },
   { "id": "corb", "name": "Corb", "role": "finder_corb" },
-  { "id": "cage_bars", "name": "Cage", "role": "object" },
   { "id": "net", "name": "Net", "role": "prop:net_cover" }
 ]

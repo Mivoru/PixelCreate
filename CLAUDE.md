@@ -14,16 +14,19 @@ Workspace for pixel art and experiments around it.
 ## The game
 
 **Forty Crowns** (title decided 2026-11-09; the repository keeps the name PixelCreate): a fast 3D action
-RPG with a pixel art look, built code-first: a single-player story game (an isekai:
-the player is hit by a truck saving a child and falls into the world). The MMORPG goal is dropped
-(decided 2026-11-09); co-op for 2 to 4 players may come later. Story, world, factions, the tutorial
-and the roadmap live in `design/` (start with `design/story.md`): read it before story, quest, dialogue or zone work.
-Work now on the world, story, mechanics, movement, abilities and enemies. Do not tune difficulty or
-balance yet. Current priority: `design/repair-plan.md` (see "Done means" below); start a session with `design/handoff.md`. Godot 4.7 with C#; the server does not use Godot.
+RPG with a pixel art look, built code-first. Since 2026-11-10 it is **not a story game**: the focus is the
+environment, world building, monsters, fighting, mechanics and movement, with levelling by killing monsters and
+simple jobs. Keep: the intro film, the look creator, the capture by the finders and the goblin ambush, then the road
+to Hearthmere and Mira, who signs the player up. No companions, no story quest chains, no dialogue trees: only the
+people who serve (Mira, Hollis, Wren, the job board, the Anchor Stone) can be spoken to; everyone else only talks in
+passing or among themselves. Next big piece: the map on M with click-to-navigate, the route on the minimap and on the
+ground, set by jobs too. The MMORPG goal is dropped; co-op for 2 to 4 players may come later. Do not tune difficulty
+or balance yet. Start a session with `design/handoff.md`. Godot 4.7 with C#; the server does not use Godot.
+The story documents in `design/` (story, factions, stages 1 to 4, repair plan R4) describe the dropped direction.
 
 The game still runs as a local server plus a client, which keeps co-op possible: the server stays
-authoritative and owns the save (player and world state), abilities, enemies, quests and dialogue are
-data rather than special code, and choices change the world through world state flags.
+authoritative and owns the save (player and world state), and abilities, enemies, jobs and the few dialogues are
+data rather than special code.
 
 - `shared-core/`: movement, collision, protocol, server and client prediction. No engine and no
   packages. Keep it that way: anything here must run in `dotnet test`.
@@ -186,8 +189,7 @@ Rules:
   reached) and a waiting step `"timeout"` in seconds. The client replays the guards of past steps from its story copy,
   so only an `effects` step may test the player's place; turn such a test into a flag there (`prologue.netted`) and
   guard the shown steps by the flag. `StoryRulesTests` checks this, a timeout or `until` on every wait while the player
-  has the controls, and that no line names a person without a proving condition (`Proofs`: Nell needs `with.nell` or
-  `nell.hidden`). `follow` sets `with.<id>` (cleared by `unfollow` and `despawn`); a loaded game brings followers back
+  has the controls, and that no line names a person without a proving condition (`Proofs`). `follow` sets `with.<id>` (cleared by `unfollow` and `despawn`); a loaded game brings followers back
   from those flags (`RestoreFollowers`). `follow` takes `{ "actor", "speed" }` for someone who closes in at a walk.
   More steps: `throw` (a prop actor such as `net`, role `prop:net_cover`, flies homing from the thrower to the player
   and holds them where it lands, even while a speaker walks up; `unroot` lets go), `drag` (the held player is pulled
@@ -203,24 +205,21 @@ Rules:
     fight in a scene wakes them in the village while the scene waits for kills for ever.
   - A talk's follow-up node keeps `Hud.SceneDialog`: without it the dialogue closed and reopened at its root.
   - A door nearer than the nearest person wins the E key: a follower once stood between the player and the Guild.
-- The prologue (`design/stage-3.md`) is scenes `prologue_1_intro` to `prologue_10_badge`; a new game starts with it
-  (`ServerOptions.Prologue`, `PIXEL_SKIP_PROLOGUE=1` skips it, test mode never plays it). `scripts/prologue.ps1`
-  plays it with `PIXEL_BOT=prologue` against a throwaway save and passes when it prints `BOT done`; `-Steps`
-  prints every scene step, `-Flags` and `-Spawn` start partway (`PIXEL_FLAGS` sets story flags on a new game).
-  `-Contrary` plays it four more times as a contrary player (`PIXEL_CONTRARY`: `flee` from the finders,
-  `guild_first`, `skip_bram`, `skip_pip`) and prints a summary. The capture at the lake cannot be escaped (the
-  author's choice): walking off or waiting brings the net. Until the night at Elda's the Guild door stays barred
-  (`GameServer.GuildShut`, scene `prologue_guild_shut` says why) and the clock stops at 5:00 (`HoldsFirstNight`), so
-  the bakery is always the way on. `design/stage-3.md` lists every prologue flag and what each scene does when the
-  player comes another way.
-  The intro is now the film (see Play below); the old painted slides of `asset-pipeline/generate_intro.py` are unused.
+- The prologue is scenes `prologue_1_intro`, `prologue_2_cage` and `prologue_3_ambush`; a new game starts with it
+  (`ServerOptions.Prologue`, `PIXEL_SKIP_PROLOGUE=1` skips it, test mode never plays it). Film, look creator, then the
+  finders walk up to the fallen player; one who runs is caught by Gil's thrown net; they drag the player to the solid
+  cage cart at the camp (69.9, 101, turned along the road, on flat ground). On the road the finders take a stand by
+  the cart and fight the goblins from the ruins for real (`fight`); Hanne, Corb and Gil fall, Vosk flees, a goblin
+  breaks the bars, the player jumps out, takes Hanne's Shortsword where she fell (`hannes_shortsword`, the wooden
+  sword's numbers) and finishes the wounded goblins. `prologue.done` is set then; the quest `prologue_fallen` points to
+  Mira, whose "Sign me up." registers the player (action `register`) and completes it. Rhea's trial is the step to rank
+  E from level `GameServer.RankTrialLevel` (5; flag `rank.e`); a lost trial leaves the player registered.
+  `scripts/prologue.ps1` plays it with `PIXEL_BOT=prologue` against a throwaway save and passes on `BOT done`;
+  `-Contrary` plays the flight from the finders (`PIXEL_CONTRARY=flee`). `-Steps` prints every scene step.
   Keep the ruins camp and patrol away from the ambush on the road at (71.5, 72): level 4 goblins joined the first fight.
-  The opening as the author decided it (2026-11-10): the finders walk up to the fallen player; one who runs is caught by
-  Gil's thrown net; they drag the player to the solid cage cart (camp at 67.5, 101). On the road, goblins come out of
-  the ruins, Hanne, Corb and Gil fall, Vosk flees (he must live for day 11), a goblin breaks the bars and the player
-  jumps out by Hanne's Shortsword (`hannes_shortsword`, the wooden sword's numbers). Each finder has a look and weapon
-  of their own (`finder_gil` dagger, `finder_hanne` sword, `finder_corb` club, Vosk a bow); the bodies are cleared at
-  Elda's, where their fates are set. Cage and ambush are shown from fixed side cameras until the player is free.
+  Each finder has a look and weapon of their own (`finder_gil` dagger, `finder_hanne` sword, `finder_corb` club, Vosk
+  a bow). Cage and ambush are shown from fixed side cameras until the player is free. Before moving a prop, measure the
+  ground under its corners and check for water: the cart once sank half into the river bank.
 - Roads are the highways of everyone who walks by themselves (`RoadMap` in `Schedules.cs`, built from the zone's
   `paths` in `World.Roads`): `Route` goes straight when the line is clear and short, else onto a road by a clear line,
   along the roads and off again, so nobody walks into a wall. NPCs on their day (`world/schedules.json`,
@@ -241,30 +240,14 @@ Rules:
   The tavern yard (three tables east of the tavern door, footpath from the south road) fills from six: Corwin keeps
   his bench all day, the Brightwater Four (Edwin, Moss, Fen, Rook) have the south table. Mornings the Four meet by
   the Guild door, Osric and Anwen are at the mill, Hamm, Maddy and Tobias on Harrow Farm, Tam by Hollis's counter.
-- People (`world/people.json`, `People.cs`): what someone is like, apart from what they say. `tones` is the trust an
-  answer's tone earns with them, once per answer (`People.HearTone` in `GameServer.Choose`; a `said.*` flag marks it);
-  `judges` is trust for a flag when it is set (`People.Judge` from `WorldState.SetFlag`, off while a save loads and
-  on the client's mirror); `bonds` what they feel for others; `about` what they say when asked about someone (the
-  client adds "What do you make of...?" to an opening node, nothing goes to the server); `moods` the face they wear
-  while a condition holds; `barks` lines said in passing, drawn over their head (`Hud.Barks`, `GameClient.Temper`).
-  Give every new person an entry: it is how one villager differs from the next (a test fails without one). `PeopleTests`.
-  A new person also needs a role with a look and a title (`NpcLooks.For`, `NpcLooks.All`, `Dialogues.Title`), a dialogue
-  file with one answer in each tone, and a day in `schedules.json`.
-- Rumours (`world/rumors.json`, `Rumor` in `Story.cs`): news people tell from `fromDay` for `days` while `when` holds.
-  Tellers are the ids in `from`, everyone with their own wording in `by` (Pip and Lina tell the raid differently; `board`
-  is the Guild board), and with `tavern` in `from` anyone whose schedule block has `"place": "tavern"` at that hour.
-  The client adds "Heard anything?" to an opening node (`Dialogues.ShowRumor`, newest first), sends
-  `Command.HearRumor` (arg = place in `Story.Rumors`); the server checks a teller is near and sets `heard.<id>`, whose
-  `note` shows in the journal. `PIXEL_BOT=rumor` asks whoever is nearest for all their news.
-- Days 3 to 10 run by themselves (`world/agendas.json`): the goblins' iron (3), the raid on Harrow Farm in the night
-  (5: Maddy and Tobias gone, `harrow.raided`; Hamm goes to Garrick, Pip keeps watch), the Brightwater Four's first job
-  (6), the council (8), news from Saltmere (10). A schedule block with a `when` goes before the plain block of the same
-  hour: the first that holds wins. `PIXEL_DAY=6` starts a new game on that day (earlier plans run at once).
-  `net-tests/VillageTests.cs` lives those days. A conditional prop's collision comes and goes with it (`Aabb.Flag`/`Unless`,
-  `World.HasFlag` fed from the server's world state and the client's copy), so the finders' cage holds the player and
-  its wreck blocks the road only once there.
-- On the prologue's first night (until `prologue.slept`) only what a scene sends comes for the player; the wild
-  leaves them be unless struck first. An unbound Lightborn (role `lost`) who vanishes goes out in rising light.
+- People (`world/people.json`, `People.cs`): `barks` are lines said in passing, drawn over the speaker's head
+  (`Hud.Barks`, `GameClient.Temper`), and `moods` the face they wear. The rest of the file (tones, judgements, bonds,
+  `about`) belonged to the dropped story and is unused. Only people with a file in `world/dialogue` get a "Talk to"
+  prompt (`StoryTests.ThePeopleWhoServe_HaveSomethingToSay_AndOnlyThey` lists them).
+- Rumours, faction plans and the days 3 to 10 events are gone (`world/rumors.json` and `world/agendas.json` are empty);
+  the systems remain in code. A conditional prop's collision comes and goes with it (`Aabb.Flag`/`Unless`,
+  `World.HasFlag` fed from the server's world state and the client's copy), so the finders' cage holds the player.
+- Until `prologue.done` only what a scene sends comes for the player; the wild leaves them be unless struck first.
 - A weapon picked up with empty hands is worn at once (the prologue's player has none until the wooden sword).
 - Interiors live outside the map on platforms (the guild at x 420, the trial ground at x 480). Doors are portals.
 - Character models come from Blender (`anime_*`) and use `toon.gdshader`, which also bends hair and cloth.
@@ -356,38 +339,13 @@ Rules:
 - The server waits for a late input instead of skipping it. Catching up spends only ticks missed while stalled,
   so no client can run faster than real time: extra inputs are thrown away.
 
-## Done means (story, quests, dialogue, guidance)
+## Done means
 
-The author's first playthrough (2026-11-10) found the prologue and village broken for a person while
-every test and bot passed. These rules decide when story work is done. The repair work they came from
-is `design/repair-plan.md` (it comes before new content); the state of the last session is
-`design/handoff.md`.
-
-- **One slice to quality, then the next.** No new content on a slice the author has not played and
-  approved. End each slice with a short list of what he should try.
-- **Play it as a contrary player.** Before story work is done, run it as someone who walks away, talks
-  to nobody, or arrives in another order. The obedient bot goes exactly where a scene waits, so it
-  proves nothing about this. Every step of a scene that waits while the player has the controls needs
-  a `timeout` or an `until`.
-- **A flag says what happened.** Set it at the moment of the event it names, not at the start of the
-  scene. `prologue.started` was set in the intro, and Mira greeted a Nell who was not there.
-- **A line may mention a person or an event only under a condition that proves it.** Mira says "Nell"
-  only while Nell is with the player.
-- **Every conversation has a purpose.** Before writing, note what the person wants, what they know
-  about the player and about what just happened, and what the player takes away. A conversation
-  without a purpose is not written. A line that can be cut without loss is cut.
-- **People react to the world.** The opening line differs by what has happened: first meeting, known,
-  after an event that touches them, after something the player did for or to them. Nobody gossips
-  about their neighbours to a stranger: "What do you make of...?" is for people they are close to or
-  at odds with, and only once they know the player.
-- **Plain English.** No dialect spellings ("da" for dad read as a typo). Read every conversation
-  through as one talk, not node by node, and run the proofreader over all game text.
-- **The player always knows what to do.** Every quest step has an objective that names a place and a
-  target the map can mark. A test fails when a step has neither.
-- **Check with eyes.** A portrait shot for each talk of a scene: the face is visible, nothing stands
-  in the way, nothing jerks. Read the frames of the player's actual path, not only studio sheets.
-- **Report what was not checked.** A passing test is not a played game: say which of the above was
-  done and which was not.
+- **Play it as a contrary player.** Before a scene or a job is done, run it as someone who walks away or arrives in
+  another order. Every step of a scene that waits while the player has the controls needs a `timeout` or an `until`.
+- **The player always knows what to do.** Every quest step has an objective that names a place and a target.
+- **Check with eyes.** Read the frames of the player's actual path, not only studio sheets.
+- **Report what was not checked.** A passing test is not a played game: say what was checked and what was not.
 
 ## Which tool to draw with
 

@@ -37,7 +37,7 @@
     { "unfollow": "vosk" },
     { "unfollow": "gil" },
     { "unfollow": "corb" },
-    { "talk": { "actor": "vosk", "node": "shore", "approach": true } },
+    { "say": { "actor": "vosk", "text": "Easy now, Lightborn. Nobody wants you hurt. Hurt ones sell cheap.", "face": "smirk", "approach": true } },
 
     { "say": { "actor": "vosk", "text": "Gil. The net.", "face": "smirk" }, "if": { "notFlag": "prologue.netted" } },
     { "throw": { "actor": "gil", "prop": "net", "speed": 9 }, "if": { "notFlag": "prologue.netted" } },

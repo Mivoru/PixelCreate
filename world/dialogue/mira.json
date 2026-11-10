@@ -3,63 +3,6 @@
   "entries": [
     {
       "when": {
-        "all": [
-          {
-            "flag": "prologue.started"
-          },
-          {
-            "notFlag": "prologue.met_mira"
-          },
-          {
-            "flag": "with.nell"
-          },
-          {
-            "rank": {
-              "max": 0
-            }
-          }
-        ]
-      },
-      "node": "prologue_arrive"
-    },
-    {
-      "when": {
-        "all": [
-          {
-            "flag": "prologue.started"
-          },
-          {
-            "notFlag": "prologue.met_mira"
-          },
-          {
-            "rank": {
-              "max": 0
-            }
-          }
-        ]
-      },
-      "node": "prologue_arrive_alone"
-    },
-    {
-      "when": {
-        "all": [
-          {
-            "flag": "prologue.started"
-          },
-          {
-            "flag": "anchor.bound"
-          },
-          {
-            "rank": {
-              "max": 0
-            }
-          }
-        ]
-      },
-      "node": "prologue_trial"
-    },
-    {
-      "when": {
         "rank": {
           "max": 0
         }
@@ -107,24 +50,53 @@
       "node": "turn_in_proof_of_hunt"
     },
     {
+      "when": {
+        "all": [
+          {
+            "rank": {
+              "min": 1
+            }
+          },
+          {
+            "level": {
+              "min": 5
+            }
+          },
+          {
+            "notFlag": "rank.e"
+          },
+          {
+            "notFlag": "trial.offered"
+          }
+        ]
+      },
+      "node": "rank_trial"
+    },
+    {
       "node": "default"
     }
   ],
   "nodes": {
     "register": {
-      "text": "Welcome to the Adventurers Guild! To register you must pass a trial against one of our staff.",
+      "text": "Welcome to the Adventurers Guild. Looking for work? Sign here and you're rank F: the board's jobs are yours, and the Guild buys every magic crystal you bring.",
       "face": "smile",
       "options": [
         {
-          "text": "Take the trial",
+          "text": "Sign me up.",
           "effects": [
             {
-              "action": "beginTrial"
+              "action": "register"
+            },
+            {
+              "quest": {
+                "complete": "prologue_fallen"
+              }
             }
-          ]
+          ],
+          "next": "registered"
         },
         {
-          "text": "Not yet"
+          "text": "Not yet."
         }
       ]
     },
@@ -336,122 +308,59 @@
           ]
         },
         {
-          "text": "Goodbye"
-        }
-      ]
-    },
-    "prologue_arrive": {
-      "text": "Welcome to the Adventurers Guild! ...Oh. Oh, you're Lightborn. And you're... Nell? The Company's Nell?",
-      "face": "surprised",
-      "options": [
-        {
-          "text": "She's with me. She needs help.",
-          "tone": "compassionate",
-          "next": "prologue_hide",
-          "effects": [
-            {
-              "trust": {
-                "mira": 5
+          "text": "Take Rhea's trial for rank E",
+          "when": {
+            "all": [
+              {
+                "level": {
+                  "min": 5
+                }
+              },
+              {
+                "notFlag": "rank.e"
               }
-            },
-            {
-              "trust": {
-                "nell": 3
-              }
-            }
-          ]
-        },
-        {
-          "text": "The Company bought her. I don't know what to do.",
-          "tone": "pragmatic",
-          "next": "prologue_hide_unsure"
-        }
-      ]
-    },
-    "prologue_hide": {
-      "text": "Then we'd better be quick and quiet. Into the storeroom, Nell. Nobody goes there but Hollis, and Hollis doesn't talk.",
-      "options": [
-        {
-          "text": "Thank you, Mira.",
-          "next": "prologue_law"
-        }
-      ]
-    },
-    "prologue_arrive_alone": {
-      "text": "Welcome to the Adventurers Guild! ...Oh. You're Lightborn. You came down at the lake, didn't you? And walked out past the finders.",
-      "face": "surprised",
-      "options": [
-        {
-          "text": "They had me in a cage. Goblins broke it.",
-          "tone": "pragmatic",
-          "next": "prologue_law"
-        },
-        {
-          "text": "Is that a problem?",
-          "tone": "hard",
-          "next": "prologue_law"
-        }
-      ]
-    },
-    "prologue_hide_unsure": {
-      "text": "Nobody here knows what to do about the Company. But not today. Storeroom, Nell.",
-      "options": [
-        {
-          "text": "...",
-          "next": "prologue_law"
-        }
-      ]
-    },
-    "prologue_law": {
-      "text": "Registration makes you ours in the eyes of the law. Finders can't touch a registered adventurer. And the Anchor Stone will know you. Touch it, by the door. If you fall, you'll wake here, not at the lake.",
-      "options": [
-        {
-          "text": "I'll touch the stone.",
-          "effects": [
-            {
-              "setFlag": "prologue.met_mira"
-            }
-          ]
-        }
-      ]
-    },
-    "prologue_trial": {
-      "text": "Good. Now the trial. Rhea will test you. Everyone goes through Rhea.",
-      "face": "smile",
-      "options": [
-        {
-          "text": "I'm ready.",
+            ]
+          },
           "effects": [
             {
               "action": "beginTrial"
             }
           ]
+        },
+        {
+          "text": "Goodbye"
         }
       ]
     },
-    "prologue_badge_alone": {
-      "text": "Adventurer, rank F. Welcome. Finders can't touch you now. Don't give them a reason to try.",
+    "registered": {
+      "text": "Done. The board by the wall has the jobs. Touch the Anchor Stone by the door, too: fall out there and you wake here.",
       "face": "smile",
       "options": [
         {
-          "text": "I won't.",
+          "text": "Thanks."
+        }
+      ]
+    },
+    "rank_trial": {
+      "text": "Level five already. Rhea runs the trial for rank E, out in the yard. Beat her and you're E.",
+      "face": "smile",
+      "options": [
+        {
+          "text": "Take the trial.",
           "effects": [
             {
-              "setFlag": "prologue.done"
+              "setFlag": "trial.offered"
+            },
+            {
+              "action": "beginTrial"
             }
           ]
-        }
-      ]
-    },
-    "prologue_badge": {
-      "text": "Adventurer, rank F. Welcome. And now the hard part. Sooner or later the Company will come asking about a girl.",
-      "face": "smile",
-      "options": [
+        },
         {
-          "text": "Then we'll be ready.",
+          "text": "Not yet.",
           "effects": [
             {
-              "setFlag": "prologue.done"
+              "setFlag": "trial.offered"
             }
           ]
         }

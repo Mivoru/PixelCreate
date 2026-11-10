@@ -4,9 +4,9 @@
 # -Flags and -Spawn start partway: story flags to set and where to stand, as PIXEL_FLAGS and PIXEL_SPAWN.
 # -Steps also prints every scene step, to see where a stuck run stopped.
 # -Contrary plays it again as a contrary player, once for each way (PIXEL_CONTRARY): runs from the
-# finders, goes to the barred Guild first, leaves out Bram, leaves out the road and Pip. Each run must
+# finders (the net must still catch them). Each run must
 # reach "BOT done"; the script prints a summary and exits 1 when one did not.
-# -Ways picks which contrary runs to play (default all four); the obedient run is skipped then.
+# -Ways picks which contrary runs to play (default flee); the obedient run is skipped then.
 param(
     [int]$Frames = 60,
     [int]$Every = 300,
@@ -14,7 +14,7 @@ param(
     [string]$Spawn = "",
     [switch]$Steps,
     [switch]$Contrary,
-    [string]$Ways = "flee,guild_first,skip_bram,skip_pip"
+    [string]$Ways = "flee"
 )
 
 $root = Split-Path $PSScriptRoot -Parent

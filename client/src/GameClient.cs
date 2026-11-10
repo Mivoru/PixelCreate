@@ -922,7 +922,9 @@ public partial class GameClient : Node
         foreach (var actor in _actors)
         {
             // The fallen are not spoken to, nor things a scene moves about (the net).
-            if (!_actorPresent[actor.Index] || _actorPose[actor.Index] == ActorPose.Fallen || _propViews.ContainsKey(actor.Id))
+            // Only people with something to say are spoken to: Mira, the traders, the board. The rest only talk among themselves.
+            if (!_actorPresent[actor.Index] || _actorPose[actor.Index] == ActorPose.Fallen || _propViews.ContainsKey(actor.Id) ||
+                (!Story.Dialogues.ContainsKey(actor.Id) && actor.Role != "storage"))
             {
                 continue;
             }
@@ -1537,8 +1539,8 @@ public partial class GameClient : Node
     }
 
     /// <summary>
-    /// Plays the whole Guild story through the real interface: talk to Mira, win the trial, leave
-    /// the arena, take a job at the board and sell crystals. Each stage is printed as BOT.
+    /// Plays the Guild through the real interface: sign with Mira, take a job at the board and sell
+    /// any crystals. (Rhea's trial is the step to rank E from level five.) Each stage is printed as BOT.
     /// </summary>
     private (sbyte X, sbyte Z, Buttons Buttons) GuildBot()
     {
@@ -1552,7 +1554,7 @@ public partial class GameClient : Node
         var board = _world.Npcs.First(n => n.Role == "quest_board").Position;
         if (snapshot.Rank == GuildRank.Newcomer)
         {
-            return BotConverse("talk to Mira", new Vector3(mira.X, 0, mira.Z + 2.6f), "Take the trial");
+            return BotConverse("sign with Mira", new Vector3(mira.X, 0, mira.Z + 2.6f), "Sign me up.");
         }
 
         if (snapshot.Rank == GuildRank.InTrial)
@@ -1963,27 +1965,21 @@ public partial class GameClient : Node
             }
         }
 
-        // Contrary runs leave out what an obedient player does, or go to the Guild while it is barred.
-        var skipRoad = Contrary("skip_pip") || Contrary("guild_first");
+        // After the ambush: the road to Hearthmere, the Guild, and Mira, who signs the player up.
         (string Stage, Vector3 Goal)? next =
-            !story.Has("prologue.started") ? null
-            : !story.Has("prologue.free") ? null
-            : Contrary("guild_first") && !story.Has("prologue.slept") && !story.Has("scene.prologue_guild_shut")
-                ? ("try the barred Guild", new Vector3(-36, 0, 23.5f))
-            : !skipRoad && !story.Has("scene.prologue_4_road") ? ("walk the road", new Vector3(52, 0, 44))
-            : !skipRoad && !story.Has("scene.prologue_5_pip") ? ("meet Pip", new Vector3(30, 0, 34))
-            : !story.Has("prologue.slept") ? ("reach the bakery", new Vector3(18, 0, 5.5f))
-            : !story.Has("prologue.bram") && !Contrary("skip_bram") && story.Has("with.nell") ? ("meet Bram", new Vector3(-2, 0, 12.5f))
-            : !story.Has("prologue.met_mira") && position.X < 300 ? ("go to the Guild door", new Vector3(-36, 0, 23.5f))
-            : !story.Has("prologue.met_mira") ? ("meet Mira", new Vector3(420, 0, -3))
-            : !story.Has("anchor.bound") ? ("touch the stone", new Vector3(428.2f, 0, 6.6f))
-            : !story.Has("guild.registered") && snapshot.Rank != GuildRank.InTrial ? ("wait for the trial", position)
-            : position.X > 450 ? ("leave the arena", ToGodot(_world.Portals.First(p => p.From.X > 450).From))
-            : !story.Has("prologue.done") ? ("get the badge", new Vector3(420, 0, -3))
+            !story.Has("prologue.done") ? null
+            : !story.Has("guild.registered") && position.X < 300 ? ("go to the Guild door", new Vector3(-36, 0, 23.5f))
+            : !story.Has("guild.registered") ? ("register with Mira", new Vector3(420, 0, -4.2f))
             : null;
         if (next is not { } goal)
         {
-            return story.Has("prologue.done") ? BotDone() : ((sbyte)0, (sbyte)0, Buttons.None);
+            return story.Has("guild.registered") ? BotDone() : ((sbyte)0, (sbyte)0, Buttons.None);
+        }
+
+        if (goal.Stage == "register with Mira")
+        {
+            // Up to the counter, within talking range, and sign.
+            return BotConverse(goal.Stage, new Vector3(420, 0, -4.0f), "Sign me up.");
         }
 
         BotStage(goal.Stage);
@@ -1992,7 +1988,7 @@ public partial class GameClient : Node
             GD.Print($"BOT at {position.X:0.0},{position.Z:0.0} leg {_botLeg} tick {_client.Tick}");
         }
 
-        var use = goal.Stage is "go to the Guild door" or "leave the arena" or "touch the stone" or "try the barred Guild";
+        var use = goal.Stage is "go to the Guild door" or "register with Mira";
         var walk = BotGo(goal.Goal, use ? 2.2f : 1.2f, Buttons.None);
         if (walk == (0, 0, Buttons.None) && _client.Tick % 45 == 0 && use)
         {
@@ -2002,7 +1998,7 @@ public partial class GameClient : Node
         return walk;
     }
 
-    /// <summary>Whether the prologue bot plays contrary this way (<c>PIXEL_CONTRARY=flee,guild_first,skip_bram,skip_pip</c>).</summary>
+    /// <summary>Whether the prologue bot plays contrary this way (<c>PIXEL_CONTRARY=flee</c>: runs from the finders).</summary>
     private static bool Contrary(string way) =>
         (OS.GetEnvironment("PIXEL_CONTRARY") ?? "").Split(',', StringSplitOptions.TrimEntries).Contains(way);
 

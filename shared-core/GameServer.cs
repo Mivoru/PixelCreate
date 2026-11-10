@@ -691,7 +691,7 @@ public sealed class GameServer : IEnemyEvents
                 .Concat(ActorTargets()).ToArray();
             // The first night is the story's: from the cage to the morning in Hearthmere only what a scene
             // sends comes for the player. The wild leaves them be unless they strike it first.
-            var firstNight = _story.Has("prologue.started") && !_story.Has("prologue.slept");
+            var firstNight = _story.Has("prologue.started") && !_story.Has("prologue.done");
             var unseen = firstNight ? CreatureTargets().ToArray() : targets;
             foreach (var enemy in _enemies)
             {
@@ -947,7 +947,8 @@ public sealed class GameServer : IEnemyEvents
             if (player.Rank == GuildRank.InTrial)
             {
                 EndTrial(player);
-                player.Rank = GuildRank.Newcomer;
+                // A lost trial for rank E leaves the adventurer as they were (the Guild has them on its books).
+                player.Rank = _story.Has("guild.registered") ? GuildRank.Adventurer : GuildRank.Newcomer;
             }
             else if (player.Rank == GuildRank.Adventurer)
             {
@@ -1254,11 +1255,6 @@ public sealed class GameServer : IEnemyEvents
                 {
                     if (Vector3.Distance(portal.From with { Y = 0 }, player.State.Position with { Y = 0 }) < Guild.DoorRange)
                     {
-                        if (GuildShut && portal.From.X < Guild.InteriorX && portal.To.X >= Guild.InteriorX)
-                        {
-                            break;
-                        }
-
                         player.DoorReadyTick = Tick + DoorCooldownTicks;
                         Move(player, portal.To);
                         break;
@@ -1367,7 +1363,7 @@ public sealed class GameServer : IEnemyEvents
             Level = player.Level,
             Xp = player.Xp,
             Gold = player.Gold,
-            Rank = (byte)(player.Rank == GuildRank.InTrial ? GuildRank.Newcomer : player.Rank),
+            Rank = (byte)(player.Rank == GuildRank.InTrial ? (_story.Has("guild.registered") ? GuildRank.Adventurer : GuildRank.Newcomer) : player.Rank),
             Crystals = player.Crystals.ToArray(),
             Attributes = player.Attributes.ToArray(),
             Skills = player.Skills.Order().ToArray(),
@@ -1525,7 +1521,13 @@ public sealed class GameServer : IEnemyEvents
     {
         switch (action)
         {
-            case "beginTrial" when player.Rank == GuildRank.Newcomer && Near(player, "receptionist"):
+            case "register" when player.Rank == GuildRank.Newcomer && Near(player, "receptionist"):
+                // Signing with the Guild: rank F, the board's jobs, and the crystal counter.
+                player.Rank = GuildRank.Adventurer;
+                _story.SetFlag("guild.registered");
+                break;
+            // Rhea's trial is the step to rank E, from level five.
+            case "beginTrial" when player.Rank == GuildRank.Adventurer && player.Level >= RankTrialLevel && !_story.Has("rank.e") && Near(player, "receptionist"):
                 BeginTrial(player);
                 break;
             case "sellCrystals" when player.Rank == GuildRank.Adventurer && Near(player, "receptionist"):
@@ -2007,27 +2009,13 @@ public sealed class GameServer : IEnemyEvents
         .OrderBy(a => Vector3.DistanceSquared(a.Position, origin)).Take(10)
         .Select(a => new ActorView(a.Index, a.Position, a.Yaw, a.Pose, a.Active)).ToArray();
 
-    /// <summary>The prologue's first night waits for the player an hour before dawn, until Elda takes them in.</summary>
-    public const int FirstNightHoldMinute = 5 * 60;
-
-    /// <summary>
-    /// The prologue's first night does not end on the road: the clock stops an hour before dawn until
-    /// the player has slept at Elda's. The night scenes and their lines (Elda bakes before dawn, the
-    /// Guild is shut) stay true however long the walk takes, and her scene never turns the clock back.
-    /// </summary>
-    private bool HoldsFirstNight => _story.Has("prologue.free") && !_story.Has("prologue.slept") &&
-        _calendar.Now.Minute >= FirstNightHoldMinute && _calendar.Now.Minute < GameTime.DayStartMinute;
-
-    /// <summary>
-    /// The Guild is barred until morning while the prologue's night lasts: the player is sent to the
-    /// bakery (the scene by the door says so), and nobody meets Mira before the story brings them.
-    /// </summary>
-    private bool GuildShut => _story.Has("prologue.free") && !_story.Has("prologue.slept");
+    /// <summary>The level from which Mira offers Rhea's trial for rank E.</summary>
+    public const int RankTrialLevel = 5;
 
     /// <summary>Moves the calendar on, and runs the faction plans once an hour.</summary>
     private void StepCalendar()
     {
-        _calendar.Paused = _players.Count > 0 && _players.Values.All(p => p.Reading) || HoldsFirstNight;
+        _calendar.Paused = _players.Count > 0 && _players.Values.All(p => p.Reading);
         if (_calendar.Step() == 0)
         {
             return;
@@ -2797,10 +2785,11 @@ public sealed class GameServer : IEnemyEvents
 
         if (enemy.TrialOf >= 0)
         {
+            // A registered adventurer who beats Rhea is rank E (the old start, a trial to register, is gone).
+            _story.SetFlag(_story.Has("guild.registered") ? "rank.e" : "guild.registered");
             killer.Rank = GuildRank.Adventurer;
-            _story.SetFlag("guild.registered");
-            killer.Gold += 25;
-            AwardXp(killer.Id, 60);
+            killer.Gold += 60;
+            AwardXp(killer.Id, 150);
             _finishedTrials.Add(enemy);
             return;
         }

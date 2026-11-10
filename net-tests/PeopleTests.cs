@@ -7,32 +7,11 @@ namespace PixelCreate.NetTests;
 public class PeopleTests
 {
     [Fact]
-    public void EveryoneInTheFile_IsSomeoneWhoSpeaks()
-    {
-        foreach (var id in People.All.Keys)
-        {
-            Assert.True(Story.Dialogues.ContainsKey(id), $"people.json describes '{id}', who has no dialogue");
-        }
-    }
-
-    [Fact]
     public void ATone_LandsDifferentlyWithDifferentPeople()
     {
         // Elda warms to kindness and bristles at hardness; Kai is the other way round.
         Assert.True(People.Of("elda")!.Tones["compassionate"] > 0 && People.Of("elda")!.Tones["hard"] < 0);
         Assert.True(People.Of("kai")!.Tones["hard"] > People.Of("kai")!.Tones["compassionate"]);
-    }
-
-    [Fact]
-    public void AnAnswersTone_CountsOnce()
-    {
-        var world = new WorldState();
-        var option = Story.Options.First(o => People.Of(o.Npc) is { } p && p.Tones.GetValueOrDefault(o.Tone) != 0);
-        var change = People.HearTone(world, option);
-        Assert.NotEqual(0, change);
-        Assert.Equal(change, world.TrustOf(option.Npc));
-        Assert.Equal(0, People.HearTone(world, option));
-        Assert.Equal(change, world.TrustOf(option.Npc));
     }
 
     [Fact]

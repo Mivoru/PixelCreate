@@ -964,10 +964,10 @@ public sealed class GuildTests
     }
 
     [Fact]
-    public void BeatingTheExaminer_MakesAnAdventurer()
+    public void BeatingTheExaminer_MakesRankE()
     {
         var (server, client, network, _) = Start();
-        Run(server, client, network, 12, Command.BeginTrial);
+        StartTrial(server, client, network);
         Assert.Equal(GuildRank.InTrial, server.GetRank(1));
         var examiner = server.Enemies.Single(e => e.TrialOf == 1);
         Assert.Equal(Guild.ExaminerId, examiner.Def.Id);
@@ -978,13 +978,14 @@ public sealed class GuildTests
         Assert.Equal(GuildRank.Adventurer, server.GetRank(1));
         Assert.DoesNotContain(server.Enemies, e => e.TrialOf == 1);
         Assert.True(server.GetGold(1) > 0);
+        Assert.True(server.StoryState.Has("rank.e"));
     }
 
     [Fact]
     public void Examiner_IsLevelFiveAtFullHealth()
     {
         var (server, client, network, _) = Start();
-        Run(server, client, network, 12, Command.BeginTrial);
+        StartTrial(server, client, network);
         var examiner = server.Enemies.Single(e => e.TrialOf == 1);
         Assert.Equal(5, examiner.Level);
         Assert.Equal(examiner.MaxHealth, examiner.Health);
@@ -995,7 +996,7 @@ public sealed class GuildTests
     public void Examiner_DashesAsideFromSwings()
     {
         var (server, client, network, _) = Start();
-        Run(server, client, network, 12, Command.BeginTrial);
+        StartTrial(server, client, network);
         var examiner = server.Enemies.Single(e => e.TrialOf == 1);
         var dodges = 0;
         var last = examiner.Action;
@@ -1026,21 +1027,24 @@ public sealed class GuildTests
     public void LosingTheTrial_ResetsTheRank()
     {
         var (server, client, network, _) = Start();
-        Run(server, client, network, 12, Command.BeginTrial);
+        StartTrial(server, client, network);
         var examiner = server.Enemies.Single(e => e.TrialOf == 1);
         Run(server, client, network, 60 * 90);
-        Assert.Equal(GuildRank.Newcomer, server.GetRank(1));
+        Assert.Equal(GuildRank.Adventurer, server.GetRank(1));
+        Assert.False(server.StoryState.Has("rank.e"));
         Assert.DoesNotContain(server.Enemies, e => e.TrialOf == 1);
     }
 
-    private static void Promote(GameServer server, ClientPrediction client, SimNetwork network)
+    /// <summary>Signs with the Guild at Mira's counter: rank F.</summary>
+    private static void Promote(GameServer server, ClientPrediction client, SimNetwork network) =>
+        Run(server, client, network, 12, Command.Choose, Buttons.None, Option("mira", "Sign me up."));
+
+    /// <summary>Rhea's trial is for rank E: a registered adventurer from level five.</summary>
+    private static void StartTrial(GameServer server, ClientPrediction client, SimNetwork network)
     {
+        Promote(server, client, network);
+        server.SetLevel(1, (byte)GameServer.RankTrialLevel);
         Run(server, client, network, 12, Command.BeginTrial);
-        server.EnemiesFrozen = true;
-        var examiner = server.Enemies.Single(e => e.TrialOf == 1);
-        examiner.Health = 1;
-        examiner.Position = server.GetPlayer(1)!.Value.Position + new Vector3(0, 0, -2);
-        Run(server, client, network, 30, Command.None, Buttons.Light);
     }
 
     [Fact]
@@ -1053,6 +1057,7 @@ public sealed class GuildTests
         server.GiveCrystals(1, CrystalRarity.Rare, 1);
 
         // Far from the receptionist nothing happens; after the walk back the sale goes through.
+        WalkTo(server, client, network, new Vector3(0, 0, 12));
         Run(server, client, network, 12, Command.SellCrystals);
         Assert.Equal(start, server.GetGold(1));
         WalkTo(server, client, network, Vector3.Zero);

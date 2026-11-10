@@ -1,94 +1,46 @@
 # Předávka pro další session (stav 2026-11-10 večer)
 
-Čti v tomto pořadí: tento soubor, `design/repair-plan.md`, v `CLAUDE.md` oddíl „Done means".
+## Směr hry se změnil (rozhodnutí autora 2026-11-10)
 
-## Kde jsme
+Forty Crowns už není příběhová hra. Žádná Nell, žádné příběhové questy, žádné stromy rozhovorů.
+Soustředit se na prostředí, world building, monstra, boj, mechaniky a pohyb; postup levelováním
+(zabíjení monster) a jednoduchými joby. Mluví jen ti, kdo slouží: Mira, Hollis, Wren, nástěnka,
+Anchor Stone. Ostatní mají jen hlášky nad hlavou nebo mluví mezi sebou.
 
-- Větev `main`, vše commitnuto a pushnuto. Poslední commity dne:
-  - `4665c9f` 11 nových lidí, třetí stůl na dvorku hospody, body `by` v rozvrzích.
-  - `d676490` zkouška hlasů (Bram, Mira, Corwin), `generate_voices.py`, `Voices.cs`.
-  - `1351a0e` drby („Heard anything?"), události dnů 3 až 10, `VillageTests`.
-  - poslední commit: pravidla „Done means", plán oprav, tato předávka.
-- Testy: `dotnet test net-tests` 309 zelených, `python tests/test_tools.py` OK (stav po `1351a0e`).
+Zůstává: úvodní video, výběr vzhledu, zajetí lovci (síť, klec), přepadení goblinů se skutečným
+bojem, Hannin meč, cesta do Hearthmere k Miře, která hráče jedním rozhovorem zaregistruje (rank F).
+Zkouška s Rheou je postup na rank E od levelu 5.
 
-## Co se stalo
-
-Autor poprvé prošel prolog a vesnici jako hráč a označil začátek za otřesný. Jeho výhrady jsou
-v paměti (`playtest-quality-feedback`) a rozepsané v `design/repair-plan.md`. Podstata: testy a
-poslušný bot procházely, ale hráč, který udělal něco jiného, příběh rozbil; rozhovory byly výplň;
-hráč nevěděl, kam jít.
-
-## Rozhodnutí autora z dneška
-
-- Zajetí lovci u jezera je **nevyhnutelné** (síť, když hráč utíká nebo otálí). Větev útěku se nestaví.
-- Nahrávky hlasů jsou **mimo git** (`client/assets/voices/`, v `.gitignore`).
-- Pravidla „Done means" v `CLAUDE.md` platí.
-- Úvod chce nahradit dvěma videi z Gemini (2 × 10 s). Prompty dostal; videa přijdou do `refs/`.
-- Chce velkou mapu na M, vlastní body a cestu vyznačenou ve světě (jako Witcher 3).
-
-## Rozhodnuto 2026-11-10 odpoledne (po druhém hraní)
-
-Autor: začátek prologu „vypadá otřesně". Pořadí práce: 1) začátek prologu, 2) mapa na M, waypointy a
-cesta na minimapě i na zemi automaticky z questu (R2), 3) kamera a portrét v rozhovoru (R3).
-
-Začátek prologu (rozhodnuto autorem):
-- Po pádu lovci nestojí: jdou k hráči. Kdo utíká, na toho Gil hodí síť jako skutečnou schopnost
-  (letí, dopadne, znehybní). Lovci dojdou, Vosk promluví, Gil a Corb hráče v síti odtáhnou k vozu.
-- Klec je pevná (kolize podmíněných rekvizit se řídí jejich flagem). Cíl v kleci nelže
-  („Talk to Nell. Wait for a chance."), ne „find a way out".
-- Přepadení: goblini přijdou viditelně od ruin, Gil, Hanne a Corb padnou, raněný Vosk uteče
-  (musí přežít kvůli dni 11). Goblin rozbije mříže, hráč vyskočí a goblini jdou po něm a Nell.
-  Žádní goblini z ničeho 5 m od vozu na půl životů.
-- Zbraň: Hannin krátký meč (`hannes_shortsword`, rezavé železo, čísla jako dřevěný meč) leží u
-  padlé Hanne. Dřevěný meč ze vzduchu pryč.
-- Lovci vypadají každý jinak a mají své zbraně: Gil hubený s dýkou a sítí, Hanne žena s mečem,
-  Corb velký s palicí a vousy, Vosk s lukem.
+Smazán obsah, kód zůstal: rozhovory 22 lidí, scény 4 až 10, drby, plány frakcí na dny 3 až 10,
+poznámky deníku, Nell a Haruto. Dokumenty v `design/` o příběhu (story, factions, stage 1 až 4,
+repair-plan R1 a R4) popisují opuštěný směr.
 
 ## Co dělat jako první
 
-**R1 je postavená (2026-11-10), čeká na zahrání autorem.** Bot `prologue` i všechny čtyři
-`-Contrary` běhy došly do `BOT done`; testy 314 zelených. Neověřeno očima: snímky sítě, Eldy, která
-jde k hráči, a cedule u Guildy. Další fáze (R2 mapa, R3 kamera, R5 lovci) až po autorově odpovědi
-na R1. Nový obsah etapy 4 je zastavený. Videa úvodu: v `refs/` je zatím jedno
-(`isekai_inkprint_v1.mp4`), R6 chce dvě.
+**Mapa a navigace** (autor o ni žádal několikrát, nesmí znovu sklouznout):
+1. Velká mapa na klávese M: celá obrazovka, posun a přiblížení myší, objevená místa se jmény, hráč.
+2. Klik na místo položí vlastní bod a zapne navigaci (další klik ho zruší). Bod patří k savu.
+3. Cesta od hráče k cíli přes `RoadMap.Route`: čára na minimapě i velké mapě a ve světě řada značek
+   na zemi před hráčem (prvních zhruba 40 m, přepočet při odbočení).
+4. Questy (krok `prologue_fallen` k Miře, joby z nástěnky) cíl nastaví samy: cíl z `goal` (postava,
+   nepřítel, předmět) nebo z nového `at`.
+5. Měřit `frameMs` se zapnutou a vypnutou cestou.
 
-Neřešeno a čeká na autora:
-- Poslechl si hlasy? Rozšířit na další postavy až po přepsání textů (R4).
-- Videa úvodu (R6) až je dodá.
+Pak podle autora: prostředí, monstra, boj, pohyb.
 
-## Co je ověřené a co ne
+## Na co si dát pozor
 
-Potvrzeno v datech: útěk od lovců, Mira a Nell, Nell jde donekonečna (příčina: scéna 8 chce
-`prologue.slept`), nejasný cíl kroku questu, „da", Bram jen „What do you make of", lovci stejní.
-
-Jen hlášení autora, příčina je odhad: kamera a portrét v rozhovoru (viz R3).
-
-## Na co si dát pozor (zjištěno dnes)
-
-- **Skripty přes heredoc v Bash nástroji se rozbíjejí** na uvozovkách a delším obsahu. Jednorázový
-  Python piš nástrojem Write do scratchpadu a pak ho spusť.
-- Soubory mají smíšené konce řádků; při úpravě skriptem zachovej, co v souboru je.
-- `scripts/play.ps1 -Capture` chce absolutní cestu k existující složce.
-- Proměnné `PIXEL_DAY`, `PIXEL_TIME`, `PIXEL_SKIP_PROLOGUE` platí jen pro nový save.
-- Save autora je smazaný (na jeho žádost), objevená místa na mapě také.
-- Skrytá podmíněná rekvizita si drží kolizi: plot nejde „spálit" skrytím.
-- `ActorSlice` posílá nejvýš 10 chodců; rozvrhy proto mají rozložené hodiny odchodů.
-- Studio světové snímky staví lidi na místa ze zóny ve stoje (rozvrh a sezení neukážou). Sezení
-  ověřuj živým během (`PIXEL_TIME=20`, `PIXEL_SPAWN=28.6,-7.6`, `PIXEL_BOT=idle`, `PIXEL_YAW=90`).
-- ElevenLabs: zbývalo asi 84 000 znaků kreditu. Na účtu jsou jen výchozí hlasy.
+- Než posuneš rekvizitu, změř terén pod jejími rohy a zkontroluj vodu (vůz se jednou zabořil do břehu).
+- Kolize podmíněných rekvizit se řídí jejich flagem (`World.HasFlag`).
+- Server se v Debug buildu startuje 34 s (pomalé `Zone.Scatter`), v Release 19 s; menu používá Release.
+- `Select-Object -First N` za během hry utrhne výpis a běh pak nikdy neskončí: výstup piš do souboru.
+- Skripty přes heredoc v Bash nástroji se rozbíjejí; jednorázový Python piš do scratchpadu.
 
 ## Užitečné příkazy
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/check.ps1            # testy + živý průchod Guildou
-powershell -ExecutionPolicy Bypass -File scripts/prologue.ps1         # bot projde prolog
-powershell -ExecutionPolicy Bypass -File scripts/studio.ps1 -Jobs people
-python asset-pipeline/generate_voices.py --dry                         # kolik znaků by stály hlasy
-```
-
-Živý běh s botem u Corwina, den 6 večer, ptá se na drby:
-
-```powershell
-$env:PIXEL_DAY="6"; $env:PIXEL_TIME="20"; $env:PIXEL_SPAWN="25.7,3.0"; $env:PIXEL_BOT="rumor"
-powershell -ExecutionPolicy Bypass -File scripts/play.ps1 -Test -Capture D:/PixelCreate/export/previews/live-yard
+powershell -ExecutionPolicy Bypass -File scripts/check.ps1        # testy + živý průchod Guildou
+powershell -ExecutionPolicy Bypass -File scripts/prologue.ps1     # bot projde zajetí a přepadení
+powershell -ExecutionPolicy Bypass -File scripts/prologue.ps1 -Contrary   # bot utíká před lovci
+powershell -ExecutionPolicy Bypass -File scripts/play.ps1         # hlavní menu
 ```
