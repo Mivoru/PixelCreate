@@ -534,8 +534,10 @@ public sealed class Zone
         // The ground rises to meet each end of a bridge, so nobody has to jump onto it.
         foreach (var bridge in (data.Platforms ?? Array.Empty<RectData>()).Where(p => p.X1 < data.Size / 2))
         {
-            var along = MathF.Max(bridge.X0 - x, x - bridge.X1);
-            var across = MathF.Max(MathF.Max(bridge.Z0 - z, z - bridge.Z1), 0f);
+            // A bridge runs along the longer side of its deck, east-west or north-south.
+            var alongX = bridge.X1 - bridge.X0 >= bridge.Z1 - bridge.Z0;
+            var along = alongX ? MathF.Max(bridge.X0 - x, x - bridge.X1) : MathF.Max(bridge.Z0 - z, z - bridge.Z1);
+            var across = alongX ? MathF.Max(MathF.Max(bridge.Z0 - z, z - bridge.Z1), 0f) : MathF.Max(MathF.Max(bridge.X0 - x, x - bridge.X1), 0f);
             if (along > -BridgeOverlap && along < BridgeRamp && across < BridgeRampWidth)
             {
                 // The rise starts under the deck, because the ground mesh is coarser than the join.

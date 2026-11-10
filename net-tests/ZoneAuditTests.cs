@@ -102,11 +102,10 @@ public class ZoneAuditTests
     public void BothBanks_OfEveryBridge_Connect()
     {
         var cells = Walkable(Valley.World.Spawn);
-        foreach (var bridge in Valley.Bridges)
+        foreach (var deck in Valley.Bridges.Select(b => new Deck(b)))
         {
-            var z = (bridge.MinZ + bridge.MaxZ) / 2;
-            Assert.True(cells.Contains(CellOf(new Vector3(bridge.MinX + 1, 0, z))), $"west end of bridge at {bridge.MinX} cannot be reached");
-            Assert.True(cells.Contains(CellOf(new Vector3(bridge.MaxX - 1, 0, z))), $"east end of bridge at {bridge.MaxX} cannot be reached");
+            Assert.True(cells.Contains(CellOf(deck.World(deck.AlongMin + 1, deck.AcrossMiddle))), $"the near end of the bridge at {deck.AlongMin} cannot be reached");
+            Assert.True(cells.Contains(CellOf(deck.World(deck.AlongMax - 1, deck.AcrossMiddle))), $"the far end of the bridge at {deck.AlongMax} cannot be reached");
         }
     }
 
@@ -218,13 +217,13 @@ public class ZoneAuditTests
     [Fact]
     public void Bridges_MeetTheGroundAtBothEnds()
     {
-        foreach (var bridge in Valley.Bridges)
+        foreach (var deck in Valley.Bridges.Select(b => new Deck(b)))
         {
-            var z = (bridge.MinZ + bridge.MaxZ) / 2;
-            foreach (var x in new[] { bridge.MinX - 0.2f, bridge.MaxX + 0.2f })
+            foreach (var along in new[] { deck.AlongMin - 0.2f, deck.AlongMax + 0.2f })
             {
-                var step = bridge.Height - Valley.World.Terrain!.At(x, z);
-                Assert.True(MathF.Abs(step) <= Tuning.StepHeight, $"the bridge end at x {x} is {step:F2} m off the ground");
+                var end = deck.World(along, deck.AcrossMiddle);
+                var step = deck.Bridge.Height - Valley.World.Terrain!.At(end.X, end.Z);
+                Assert.True(MathF.Abs(step) <= Tuning.StepHeight, $"the bridge end at {end.X:F1}, {end.Z:F1} is {step:F2} m off the ground");
             }
         }
     }
@@ -232,12 +231,11 @@ public class ZoneAuditTests
     [Fact]
     public void Bridges_CannotBeWalkedOffAtTheSide()
     {
-        foreach (var bridge in Valley.Bridges)
+        foreach (var deck in Valley.Bridges.Select(b => new Deck(b)))
         {
-            var middle = (bridge.MinX + bridge.MaxX) / 2;
-            var edge = new Vector3(middle, bridge.Height + 0.05f, bridge.MinZ);
-            Assert.True(Valley.World.OverlapsPlayer(edge), $"the bridge at {bridge.MinX} has no rail");
-            Assert.False(Valley.World.OverlapsPlayer(new Vector3(middle, bridge.Height - 2.6f, bridge.MinZ)), "a rail blocks the way under the bridge");
+            var edge = deck.World(deck.AlongMiddle, deck.AcrossMin, deck.Bridge.Height + 0.05f);
+            Assert.True(Valley.World.OverlapsPlayer(edge), $"the bridge at {deck.Bridge.MinX}, {deck.Bridge.MinZ} has no rail");
+            Assert.False(Valley.World.OverlapsPlayer(deck.World(deck.AlongMiddle, deck.AcrossMin, deck.Bridge.Height - 2.6f)), "a rail blocks the way under the bridge");
         }
     }
 
@@ -249,22 +247,21 @@ public class ZoneAuditTests
     public void Bridges_CanBeWalkedAcrossWithoutJumping()
     {
         var world = Valley.World;
-        foreach (var bridge in Valley.Bridges)
+        foreach (var deck in Valley.Bridges.Select(b => new Deck(b)))
         {
-            var middle = (bridge.MinZ + bridge.MaxZ) / 2;
             // Also come at each end from an angle, the way a road bends onto a bridge.
-            foreach (var (endX, outward) in new[] { (bridge.MinX, -1f), (bridge.MaxX, 1f) })
+            foreach (var (end, outward) in new[] { (deck.AlongMin, -1f), (deck.AlongMax, 1f) })
             {
                 foreach (var angle in new[] { -0.7f, -0.35f, 0.35f, 0.7f })
                 {
-                    var start = new Vector3(endX + outward * MathF.Cos(angle) * 9f, 0, middle + MathF.Sin(angle) * 9f);
+                    var start = deck.World(end + outward * MathF.Cos(angle) * 9f, deck.AcrossMiddle + MathF.Sin(angle) * 9f);
                     start.Y = world.GroundHeight(start.X, start.Z);
                     if (world.OverlapsPlayer(start))
                     {
                         continue; // a building stands there (the guild beside the west bridge)
                     }
 
-                    var goal = new Vector3((bridge.MinX + bridge.MaxX) / 2, 0, middle);
+                    var goal = deck.World(deck.AlongMiddle, deck.AcrossMiddle);
                     var state = PlayerState.Spawn(start);
                     for (var tick = 0; tick < Tuning.TickRate * 12; tick++)
                     {
@@ -278,24 +275,25 @@ public class ZoneAuditTests
                     }
 
                     Assert.True(new Vector2(goal.X - state.Position.X, goal.Z - state.Position.Z).Length() < 1.5f,
-                        $"coming onto the bridge at x {endX} from angle {angle} stopped at {state.Position.X:F1}, {state.Position.Y:F2}, {state.Position.Z:F1}");
+                        $"coming onto the bridge at {end} from angle {angle} stopped at {state.Position.X:F1}, {state.Position.Y:F2}, {state.Position.Z:F1}");
                 }
             }
 
-            foreach (var z in new[] { middle, bridge.MinZ + 0.9f, bridge.MaxZ - 0.9f })
+            foreach (var across in new[] { deck.AcrossMiddle, deck.AcrossMin + 0.9f, deck.AcrossMax - 0.9f })
             {
-                foreach (var (from, to) in new[] { (bridge.MinX - 4f, bridge.MaxX + 4f), (bridge.MaxX + 4f, bridge.MinX - 4f) })
+                foreach (var (from, to) in new[] { (deck.AlongMin - 4f, deck.AlongMax + 4f), (deck.AlongMax + 4f, deck.AlongMin - 4f) })
                 {
-                    var state = PlayerState.Spawn(new Vector3(from, world.GroundHeight(from, z), z));
-                    var input = new InputCmd { MoveX = (sbyte)(to > from ? 127 : -127) };
-                    for (var tick = 0; tick < Tuning.TickRate * 12 && MathF.Abs(state.Position.X - to) > 0.5f; tick++)
+                    var spot = deck.World(from, across);
+                    var state = PlayerState.Spawn(spot with { Y = world.GroundHeight(spot.X, spot.Z) });
+                    var input = deck.Move(to > from ? 1 : -1, 0);
+                    for (var tick = 0; tick < Tuning.TickRate * 12 && MathF.Abs(deck.Along(state.Position) - to) > 0.5f; tick++)
                     {
                         input.Tick = (uint)tick;
                         Movement.Step(ref state, input, world);
                     }
 
-                    Assert.True(MathF.Abs(state.Position.X - to) < 1f,
-                        $"walking across the bridge at x {bridge.MinX}..{bridge.MaxX}, z {z:F1} stopped at x {state.Position.X:F1}, y {state.Position.Y:F2}");
+                    Assert.True(MathF.Abs(deck.Along(state.Position) - to) < 1f,
+                        $"walking across the bridge {deck.AlongMin}..{deck.AlongMax} at {across:F1} stopped at {state.Position.X:F1}, {state.Position.Y:F2}, {state.Position.Z:F1}");
                 }
             }
         }
@@ -309,22 +307,22 @@ public class ZoneAuditTests
     public void BridgeEnds_CanBeLeftAnywhereAcrossTheDeck()
     {
         var world = Valley.World;
-        foreach (var bridge in Valley.Bridges)
+        foreach (var deck in Valley.Bridges.Select(b => new Deck(b)))
         {
-            for (var z = bridge.MinZ + 0.6f; z <= bridge.MaxZ - 0.6f; z += 0.4f)
+            for (var across = deck.AcrossMin + 0.6f; across <= deck.AcrossMax - 0.6f; across += 0.4f)
             {
-                foreach (var (x, outward) in new[] { (bridge.MinX, -1f), (bridge.MaxX, 1f) })
+                foreach (var (end, outward) in new[] { (deck.AlongMin, -1f), (deck.AlongMax, 1f) })
                 {
-                    var state = PlayerState.Spawn(new Vector3(x, bridge.Height, z));
-                    var input = new InputCmd { MoveX = (sbyte)(outward * 127) };
+                    var state = PlayerState.Spawn(deck.World(end, across, deck.Bridge.Height));
+                    var input = deck.Move(outward, 0);
                     for (var tick = 0; tick < Tuning.TickRate; tick++)
                     {
                         input.Tick = (uint)tick;
                         Movement.Step(ref state, input, world);
                     }
 
-                    Assert.True(MathF.Abs(state.Position.X - x) > 2f,
-                        $"leaving the bridge at x {x}, z {z:F1} stopped at x {state.Position.X:F2}");
+                    Assert.True(MathF.Abs(deck.Along(state.Position) - end) > 2f,
+                        $"leaving the bridge at {end}, across {across:F1} stopped at {state.Position.X:F2}, {state.Position.Z:F2}");
                 }
             }
         }
@@ -415,5 +413,29 @@ public class ZoneAuditTests
             point.Y = Valley.World.GroundHeight(point.X, point.Z) + 0.05f;
             Assert.True(Valley.World.OverlapsPlayer(point), $"a walker can stand inside the falls cliff at {point}");
         }
+    }
+
+    /// <summary>
+    /// A bridge seen along its own deck: it runs along the longer side of its platform. Along is the
+    /// way across the water, across is from rail to rail. World turns deck coordinates into a point.
+    /// </summary>
+    private readonly record struct Deck(Platform Bridge)
+    {
+        public bool AlongX => Bridge.MaxX - Bridge.MinX >= Bridge.MaxZ - Bridge.MinZ;
+        public float AlongMin => AlongX ? Bridge.MinX : Bridge.MinZ;
+        public float AlongMax => AlongX ? Bridge.MaxX : Bridge.MaxZ;
+        public float AcrossMin => AlongX ? Bridge.MinZ : Bridge.MinX;
+        public float AcrossMax => AlongX ? Bridge.MaxZ : Bridge.MaxX;
+        public float AcrossMiddle => (AcrossMin + AcrossMax) / 2;
+        public float AlongMiddle => (AlongMin + AlongMax) / 2;
+
+        public Vector3 World(float along, float across, float y = 0) => AlongX ? new Vector3(along, y, across) : new Vector3(across, y, along);
+
+        public float Along(Vector3 p) => AlongX ? p.X : p.Z;
+
+        public float Across(Vector3 p) => AlongX ? p.Z : p.X;
+
+        public InputCmd Move(float along, float across) =>
+            AlongX ? new InputCmd { MoveX = (sbyte)(along * 127), MoveZ = (sbyte)(across * 127) } : new InputCmd { MoveX = (sbyte)(across * 127), MoveZ = (sbyte)(along * 127) };
     }
 }
