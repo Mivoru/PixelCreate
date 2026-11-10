@@ -103,6 +103,8 @@ public partial class GameClient : Node
     private PlayerRig _player = null!;
     private Hud _hud = null!;
     private Sfx _sfx = null!;
+    private Voices _voices = null!;
+    private (string Speaker, string Text) _voiced;
     private Fx _fx = null!;
     private PlayerState _last;
     private byte _lastLevel = 1;
@@ -173,6 +175,7 @@ public partial class GameClient : Node
         _player = new PlayerRig(new Color("0099db"));
         _stage.View.AddChild(_player.Root);
         _sfx = new Sfx(_stage.View);
+        _voices = new Voices(_stage.View);
         var effects = new Node3D();
         _stage.View.AddChild(effects);
         _fx = new Fx(effects);
@@ -207,6 +210,9 @@ public partial class GameClient : Node
 
         _actorAt = _actors.Select(a => ToGodot(a.Home)).ToArray();
         _actorPresent = _actors.Select(a => a.Resident).ToArray();
+        // Sized here too: E pressed before the first actor update once read an empty array.
+        _actorWalking = new bool[_actors.Count];
+        _actorPose = new ActorPose[_actors.Count];
         foreach (var actor in _actors)
         {
             if (NpcLooks.For(actor.Role) is { } look)
@@ -728,7 +734,9 @@ public partial class GameClient : Node
         var lines = person.BarksNow(story).ToArray();
         if (near && lines.Length > 0 && !_hud.DialogOpen && _barks.Count < 2 && _client.Latest?.Scene == Snapshot.NoScene)
         {
-            _barks.Add((index, lines[Random.Shared.Next(lines.Length)], 4.5f));
+            var said = lines[Random.Shared.Next(lines.Length)];
+            _barks.Add((index, said, 4.5f));
+            _voices.SayAt(actor.Id, said, _actorAt[index] + Vector3.Up * 1.5f);
             _barkWait[index] = 28f + Random.Shared.NextSingle() * 30f;
         }
         else
@@ -756,6 +764,14 @@ public partial class GameClient : Node
     /// </summary>
     private void UpdateSpeaker()
     {
+        // A new line on the screen is said aloud, if it has a recording; anything else cuts the last one off.
+        var line = _hud.DialogOpen ? (_hud.Speaker, _hud.DialogText) : default;
+        if (line != _voiced)
+        {
+            _voiced = line;
+            _voices.Say(line.Item1 ?? "", line.Item2 ?? "");
+        }
+
         var rig = _hud.DialogOpen && _npcs.TryGetValue(_hud.Speaker, out var found) ? found : null;
         if (_speaking is not null && _speaking != rig && _speaking.Face is { } old)
         {
@@ -771,7 +787,7 @@ public partial class GameClient : Node
         }
 
         face.Expression = _hud.DialogFace ?? face.Resting;
-        face.Talking = _hud.DialogTyping;
+        face.Talking = _hud.DialogTyping || _voices.Talking;
         var eye = head.ToGlobal(new Vector3(0.12f, 0.02f, -2.4f));
         _portraitCamera.LookAtFromPosition(eye, head.ToGlobal(new Vector3(0, -0.02f, 0)));
     }

@@ -1,6 +1,7 @@
 {
   "elder": {
     "age": 78,
+    "voice": { "id": "pqHfZKP75CvOlQylNhV4", "name": "Bill", "stability": 0.55, "similarity_boost": 0.75, "style": 0.25 },
     "summary": "Old Bram. The oldest man in Hearthmere. He sits by the well and watches who comes down the road, and says less than he knows.",
     "traits": ["watchful", "plain-spoken", "tired"],
     "tones": { "compassionate": 2, "pragmatic": 1, "hard": -1 },
@@ -141,6 +142,7 @@
   },
   "mira": {
     "age": 24,
+    "voice": { "id": "cgSgspJ2msm6clMCkdW9", "name": "Jessica", "stability": 0.45, "similarity_boost": 0.75, "style": 0.35 },
     "summary": "Mira, receptionist of the Hearthmere Guild, who runs it in all but name. Cheerful with everyone. She came to the village as a child, from the north.",
     "traits": ["bright", "capable", "guarded"],
     "tones": { "compassionate": 2, "pragmatic": 1, "hard": -1 },
@@ -216,6 +218,7 @@
   },
   "corwin": {
     "age": 52,
+    "voice": { "id": "N2lVS1w4EtoT3dr4eOWO", "name": "Callum", "stability": 0.4, "similarity_boost": 0.75, "style": 0.4 },
     "summary": "Corwin Hale, Branch Master of the Hearthmere Guild. A-rank once; Greyfang took his leg and the drink took the rest. He sits in the tavern yard and misses nothing.",
     "traits": ["sharp", "bitter", "loyal"],
     "tones": { "compassionate": 1, "pragmatic": 2, "hard": 1 },

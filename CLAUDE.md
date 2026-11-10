@@ -245,6 +245,12 @@ Rules:
   rig when it changes. A new game opens the creator (`Hud.OpenCreator`, `PIXEL_BOT=creator`); test runs and
   `PIXEL_LOOK=default` start with the default look. Studio job `creator` photographs every choice.
 - Sound effects come from ElevenLabs: `python asset-pipeline/generate_sounds.py` (cached, keys stay outside the repo).
+- Voices (trial: Bram, Mira, Corwin): a person with a `voice` in `world/people.json` (ElevenLabs voice id and settings)
+  speaks. `python asset-pipeline/generate_voices.py` records their dialogue nodes, `about` lines and barks to
+  `client/assets/voices/<npc>/<first 16 hex of the text's SHA-1>.mp3` (not in git; `--dry` counts characters, `--voices`
+  lists voices; only new or changed lines are paid for). `Voices.cs` finds a line by the same hash: dialogue lines play
+  flat, barks from the speaker's place, a line without a file stays silent. Lines with `{gold}`-style fills and stage
+  directions in brackets are never recorded. The client prints `VOICE <npc> <hash>` for each line said.
 - A snapshot must fit one UDP packet, so the server sends each player only nearby enemies. `GameServer.Fit` trims
   the farthest shots, drops and enemies until it is under `MaxSnapshotBytes` (a rain of arrows over a camp in test
   mode reached 1065 bytes, and LiteNetLib's refusal killed the server); `UdpTransport.Send` drops a packet that is

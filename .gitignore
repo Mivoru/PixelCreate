@@ -6,3 +6,6 @@ export/previews/
 bin/
 obj/
 .sound-cache/
+
+# Spoken lines: made by asset-pipeline/generate_voices.py, too big for git.
+client/assets/voices/

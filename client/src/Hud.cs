@@ -286,6 +286,9 @@ public partial class Hud : Control
     /// <summary>The expression the current line asks of the speaker, from the dialogue data.</summary>
     public string? DialogFace { get; set; }
 
+    /// <summary>The line the dialogue box shows, for the voice that says it.</summary>
+    public string DialogText => _dialogText;
+
     /// <summary>True while the words of the line are still appearing: the speaker's mouth moves.</summary>
     public bool DialogTyping { get; private set; }
 

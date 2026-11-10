@@ -162,4 +162,5 @@ def main():
         convert(name, keep, level)
 
 
-main()
+if __name__ == "__main__":
+    main()
