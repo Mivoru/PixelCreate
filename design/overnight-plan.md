@@ -45,3 +45,4 @@ Pravidla:
 | 22:58 | start | plán zapsán, cron nastaven |
 | 23:40 | 1 | hotovo: nový terén údolí (5 skalisek místo vnitřních hřbetů, Silverbrook ven západním sedlem, Ironwash do Mirror Lake), most přes Ironwash u East Watch (183, −30) severojižně; nájezd i testy mostů podle delší strany desky; 327 testů zelených, snímek `ironwash_bridge` ukazuje vodu pod mostem |
 | 23:55 | 2 | hotovo: world-plan.md kapitola 8 (biomy, atmosféra s prolínáním 40 m, logika sídel, standard domů, opuštěná místa), waystones jen od kamene ke kameni, voda v `layout.json` podle údolí (Silverbrook, Westbrook, Ironwash do Mirror Lake, Mirrorrun za jižním okrajem), mapy překresleny |
+| 00:05 | 3 | hotovo: Southern Wilds → Northern Wilds (zóna, snímek `wildcamp_north`), CLAUDE.md opravené světové strany (Greyfang JV, Moonfell JZ, Ironjaw SV); příběhové dokumenty nechány; kdo už měl Southern Wilds objevené, uvidí jméno až po novém objevení |

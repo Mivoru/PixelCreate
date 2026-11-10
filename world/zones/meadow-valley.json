@@ -25,7 +25,7 @@
     { "name": "Ironjaw Warcamp", "x": 212, "z": -132, "radius": 44 },
     { "name": "Ironjaw Outpost", "x": 174.0, "z": -50.0, "radius": 14 },
     { "name": "Westwood", "x": -210, "z": 0, "radius": 60 },
-    { "name": "Southern Wilds", "x": 0, "z": -215, "radius": 70 }
+    { "name": "Northern Wilds", "x": 0, "z": -215, "radius": 70 }
   ],
   "trial": [480, 0],
   "waterfall": [-20, 143],

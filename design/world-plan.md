@@ -35,7 +35,7 @@ výhledů (z Ridges je vidět dolů na údolí) a podle stoupání silnic mezi z
 
 **Světové strany:** herní mapa má sever nahoře (−z). Tři jména v dnešní zóně tomu odporují. „Southern
 Wilds" leží na severu (z −215). Greyfang leží na jihovýchodě, ne na severovýchodě. Moonfell leží na
-jihozápadě, ne na severozápadě. Návrh: Southern Wilds přejmenovat na **Northern Wilds**. Popisy
+jihozápadě, ne na severozápadě. Southern Wilds je od 2026-11-11 přejmenované na **Northern Wilds**. Popisy
 Greyfang a Moonfell opravit v dokumentech. Jejich polohu neměnit, navazují na regiony za okrajem.
 
 ---

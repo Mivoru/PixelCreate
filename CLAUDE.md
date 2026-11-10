@@ -132,7 +132,7 @@ Rules:
   the player's back), skirmisher (falls back after a blow), ranged, support (keeps behind its front line) or pack;
   a `leader` wolf's call rallies its kind and lets two more of the pack strike for 5 s. `net-tests/TacticsTests.cs`.
 - Goblins and orcs also roam: a camp with a `route` in the zone file is a patrol (`Patrol.cs`) that walks its points
-  and back, resting at each, and small wild camps sit in Westwood, the Southern Wilds and south of East Watch. The
+  and back, resting at each, and small wild camps sit in Westwood, the Northern Wilds and north of East Watch. The
   zone audit keeps every patrol point reachable and every hostile camp or point over 50 m from the village. Put camps
   on flat ground: a slope check before placing saves a rebuild.
 - Camps and patrols marked `hunts` go after deer and wild boar now and then (`Hunt.cs`): up to three hunters, a
@@ -278,8 +278,8 @@ Rules:
 - Regenerate textures, palette and UI font with `python asset-pipeline/generate_textures.py`.
 - Zones live in `world/zones/*.json`: the layout is authored, the scattered detail comes from the seed.
   Meadow Valley is 600 m across: the old 360 m valley is ringed by `ridges` (mountain chains along a line, ends sinking
-  into walkable passes), and beyond them lie Greyfang Forest (wolves, north-east), Moonfell (north-west) and the
-  Ironjaw Warcamp (south-east). `grounds` paint forest floor, blight or trampled earth on terrain and grass. Props for
+  into walkable passes), and beyond them lie Greyfang Forest (wolves, south-east), Moonfell (south-west) and the
+  Ironjaw Warcamp (north-east). `grounds` paint forest floor, blight or trampled earth on terrain and grass. Props for
   these lands come from `asset-pipeline/lands.py`. The terrain is drawn in 60 m chunks so off-screen ground is culled.
 - Blender: `D:\Program\Blender Foundation\Blender 5.2\blender.exe -b --factory-startup -P <script>`.
 - Play: `powershell -ExecutionPolicy Bypass -File scripts/play.ps1` opens the main menu (`MainMenu.cs`, scene
