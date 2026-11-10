@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using Godot;
 using PixelCreate.Core;
 
@@ -117,6 +117,9 @@ public sealed record RigLook(string Kind, Color Skin, float Scale, string Weapon
 
     /// <summary>The face's details: nose, eye shape, brows, scar and stubble.</summary>
     public FaceStyle FaceStyle { get; init; } = FaceStyle.Plain;
+
+    /// <summary>The item whose model the hand holds, when not the kind's default (Hanne's own short sword).</summary>
+    public string? Item { get; init; }
 }
 
 /// <summary>
@@ -683,7 +686,7 @@ public sealed class PlayerRig
             return;
         }
 
-        var item = _weaponItem ?? DefaultItem(weapon);
+        var item = _weaponItem ?? _look.Item ?? DefaultItem(weapon);
         if (weapon == "bow")
         {
             // The bow stands upright in the fist, its string towards the archer; it bends as it is drawn.

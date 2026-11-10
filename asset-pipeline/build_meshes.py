@@ -1069,6 +1069,38 @@ def cage_frame(broken):
     timber("shaft", (1.5, 0.3, 0.3), (2.9, 0.3, 0.45), 0.07)
 
 
+def net_cover():
+    """The finders' rope net, thrown and fallen over a standing man: a dome of knotted rope that
+    hangs to the ground, with stone weights round its hem. Origin on the ground under its middle."""
+    radius, height = 0.75, 1.95
+    meridians, rings = 12, 6
+    hem = []
+    for m in range(meridians):
+        angle = m * 2 * math.pi / meridians
+        points = []
+        for r in range(rings + 1):
+            t = r / rings
+            # From the crown (t = 0) down the sides to a hem that spreads a little on the ground.
+            spread = radius * (math.sin(t * math.pi / 2) * (1.0 if t < 1 else 1.18))
+            z = height * math.cos(t * math.pi / 2) ** 0.8 if t < 1 else 0.04
+            points.append((math.cos(angle) * spread, math.sin(angle) * spread, z))
+        for a, b in zip(points, points[1:]):
+            timber("rope", a, b, 0.022, "sack")
+        hem.append(points[-1])
+        if m == 0:
+            crown = points[0]
+    for r in range(1, rings + 1):
+        t = r / rings
+        spread = radius * math.sin(t * math.pi / 2) * (1.0 if t < 1 else 1.18)
+        z = height * math.cos(t * math.pi / 2) ** 0.8 if t < 1 else 0.04
+        ring = [(math.cos(m * 2 * math.pi / meridians) * spread, math.sin(m * 2 * math.pi / meridians) * spread, z) for m in range(meridians)]
+        for i in range(meridians):
+            timber("knot_line", ring[i], ring[(i + 1) % meridians], 0.018, "sack")
+    blob("crown_knot", (crown[0], crown[1], crown[2]), 0.07, "sack", 21, 1.0, 1)
+    for i, (x, y, z) in enumerate(hem[::2]):
+        blob("weight", (x, y, 0.06), 0.07, "rock_dark", 30 + i, 0.9, 1)
+
+
 def cage_cart():
     cage_frame(False)
 
@@ -1927,6 +1959,7 @@ MODELS = {
     "anime_beard": anime_beard,
     "cage_cart": cage_cart,
     "cage_cart_broken": cage_cart_broken,
+    "net_cover": net_cover,
     "anime_hair_undercut": anime_hair_undercut,
     "anime_hair_topknot": anime_hair_topknot,
     "anime_hair_swept": anime_hair_swept,

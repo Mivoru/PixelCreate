@@ -122,9 +122,6 @@ public sealed class Zone
     {
         "twigs", "berry_bush", "tall_bush", "reeds", "grass_tuft", "field", "pier", "fern", "bridge", "bridge_stone",
         "guild_interior", "trial_arena", "flowers", "mushroom", "bush",
-
-        // The finders' cage: a scene keeps the player in it, and it must not trap anyone after.
-        "cage_cart", "cage_cart_broken",
     };
 
     /// <summary>One collision box of a model, around its origin in its own axes: x, z and the top.</summary>
@@ -809,7 +806,11 @@ public sealed class Zone
 
                     // A sheared fence rises along its length; its boxes rise with it.
                     var lift = prop.Slope * (x0 + x1) / 2 * prop.Scale;
-                    boxes.Add(new Aabb(new Vector3(min.X, p.Y + lift - 1f, min.Y), new Vector3(max.X, p.Y + lift + box.Top * prop.Scale, max.Y)));
+                    boxes.Add(new Aabb(new Vector3(min.X, p.Y + lift - 1f, min.Y), new Vector3(max.X, p.Y + lift + box.Top * prop.Scale, max.Y))
+                    {
+                        Flag = prop.Flag,
+                        Unless = prop.Unless,
+                    });
                 }
             }
         }

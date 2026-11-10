@@ -1,290 +1,59 @@
 {
   "id": "prologue_1_intro",
-  "trigger": {
-    "when": {
-      "all": [
-        {
-          "flag": "prologue.new"
-        },
-        {
-          "notFlag": "prologue.started"
-        }
-      ]
-    }
-  },
+  "trigger": { "when": { "all": [ { "flag": "prologue.new" }, { "notFlag": "prologue.started" } ] } },
   "steps": [
-    {
-      "effects": [
-        {
-          "setFlag": "prologue.started"
-        }
-      ]
-    },
-    {
-      "lockInput": true
-    },
-    {
-      "fade": {
-        "to": "out",
-        "seconds": 0.01
-      }
-    },
-    {
-      "video": {
-        "file": "intro",
-        "seconds": 15.5,
-        "caption": "Forty Crowns",
-        "captionFrom": 12.7
-      }
-    },
-    {
-      "time": {
-        "day": 1,
-        "hour": 9
-      }
-    },
-    {
-      "teleport": {
-        "to": [
-          71,
-          113
-        ]
-      }
-    },
-    {
-      "fade": {
-        "to": "in",
-        "seconds": 0.8
-      }
-    },
-    {
-      "waitFor": {
-        "flag": "look.chosen"
-      }
-    },
-    {
-      "fade": {
-        "to": "out",
-        "seconds": 0.6
-      }
-    },
-    {
-      "teleport": {
-        "to": [
-          72.5,
-          113
-        ]
-      }
-    },
-    {
-      "spawn": {
-        "actor": "vosk",
-        "at": [
-          70,
-          108
-        ],
-        "yaw": 180
-      }
-    },
-    {
-      "spawn": {
-        "actor": "gil",
-        "at": [
-          68.6,
-          108.4
-        ],
-        "yaw": 165
-      }
-    },
-    {
-      "spawn": {
-        "actor": "hanne",
-        "at": [
-          71.6,
-          108.6
-        ],
-        "yaw": 195
-      }
-    },
-    {
-      "spawn": {
-        "actor": "corb",
-        "at": [
-          73,
-          107.8
-        ],
-        "yaw": 205
-      }
-    },
-    {
-      "camera": {
-        "from": [
-          73,
-          14,
-          122
-        ],
-        "to": [
-          72,
-          0,
-          112
-        ]
-      }
-    },
-    {
-      "fade": {
-        "to": "in",
-        "seconds": 1.5
-      }
-    },
-    {
-      "wait": 1.5
-    },
-    {
-      "playerCamera": {}
-    },
-    {
-      "unlockInput": true
-    },
-    {
-      "waitFor": {
-        "any": [
-          {
-            "at": {
-              "x": 70,
-              "z": 108,
-              "r": 3.5
-            }
-          },
-          {
-            "not": {
-              "at": {
-                "x": 71.5,
-                "z": 111,
-                "r": 14
-              }
-            }
-          }
-        ]
-      },
-      "timeout": 25
-    },
-    {
-      "lockInput": true
-    },
-    {
-      "effects": [
-        {
-          "setFlag": "prologue.netted"
-        }
-      ],
-      "if": {
-        "not": {
-          "at": {
-            "x": 70,
-            "z": 108,
-            "r": 4.5
-          }
-        }
-      }
-    },
-    {
-      "say": {
-        "actor": "gil",
-        "text": "Don't let it get away! Corb, the net!",
-        "bark": true
-      },
-      "if": {
-        "flag": "prologue.netted"
-      }
-    },
-    {
-      "fade": {
-        "to": "out",
-        "seconds": 0.4
-      },
-      "if": {
-        "flag": "prologue.netted"
-      }
-    },
-    {
-      "teleport": {
-        "to": [
-          70.5,
-          110.8
-        ]
-      },
-      "if": {
-        "flag": "prologue.netted"
-      }
-    },
-    {
-      "fade": {
-        "to": "in",
-        "seconds": 0.8
-      },
-      "if": {
-        "flag": "prologue.netted"
-      }
-    },
-    {
-      "say": {
-        "actor": "gil",
-        "text": "Told you. Saw the light come down over the ridge."
-      }
-    },
-    {
-      "talk": {
-        "actor": "vosk",
-        "node": "shore"
-      }
-    },
-    {
-      "say": {
-        "actor": "vosk",
-        "text": "Gil. The net.",
-        "face": "smirk"
-      },
-      "if": {
-        "notFlag": "prologue.netted"
-      }
-    },
-    {
-      "say": {
-        "actor": "vosk",
-        "text": "Tie it tight. They always run.",
-        "face": "smirk"
-      },
-      "if": {
-        "flag": "prologue.netted"
-      }
-    },
-    {
-      "fade": {
-        "to": "out",
-        "seconds": 0.5
-      }
-    },
-    {
-      "despawn": "vosk"
-    },
-    {
-      "despawn": "gil"
-    },
-    {
-      "despawn": "hanne"
-    },
-    {
-      "despawn": "corb"
-    },
-    {
-      "effects": [
-        {
-          "setFlag": "prologue.captured"
-        }
-      ]
-    },
-    {
-      "scene": "prologue_2_cage"
-    }
+    { "effects": [ { "setFlag": "prologue.started" } ] },
+    { "lockInput": true },
+    { "fade": { "to": "out", "seconds": 0.01 } },
+    { "video": { "file": "intro", "seconds": 15.5, "caption": "Forty Crowns", "captionFrom": 12.7 } },
+    { "time": { "day": 1, "hour": 9 } },
+    { "teleport": { "to": [71, 113] } },
+    { "fade": { "to": "in", "seconds": 0.8 } },
+    { "waitFor": { "flag": "look.chosen" } },
+    { "fade": { "to": "out", "seconds": 0.6 } },
+    { "teleport": { "to": [72.5, 113] } },
+    { "spawn": { "actor": "vosk", "at": [70, 108], "yaw": 180 } },
+    { "spawn": { "actor": "gil", "at": [68.6, 108.4], "yaw": 165 } },
+    { "spawn": { "actor": "hanne", "at": [71.6, 108.6], "yaw": 195 } },
+    { "spawn": { "actor": "corb", "at": [73, 107.8], "yaw": 205 } },
+    { "camera": { "from": [73, 14, 122], "to": [72, 0, 112] } },
+    { "fade": { "to": "in", "seconds": 1.5 } },
+    { "wait": 1.0 },
+    { "playerCamera": {} },
+
+    { "say": { "actor": "vosk", "text": "There. Fresh out of the sky, and still on its feet. Easy, lads. Don't spook it.", "bark": true } },
+    { "follow": { "actor": "vosk", "speed": 2.2 } },
+    { "follow": { "actor": "gil", "speed": 2.6 } },
+    { "follow": { "actor": "corb", "speed": 2.0 } },
+    { "unlockInput": true },
+    { "waitFor": { "any": [ { "nearActor": { "id": "vosk", "r": 3 } }, { "not": { "at": { "x": 71.5, "z": 111, "r": 10 } } } ] }, "timeout": 15 },
+
+    { "effects": [ { "setFlag": "prologue.netted" } ], "if": { "not": { "nearActor": { "id": "vosk", "r": 3.5 } } } },
+    { "say": { "actor": "gil", "text": "It's running! Mine!", "bark": true }, "if": { "flag": "prologue.netted" } },
+    { "throw": { "actor": "gil", "prop": "net", "speed": 13 }, "if": { "flag": "prologue.netted" } },
+    { "say": { "actor": "gil", "text": "Got it! Told you I'd get the next one.", "bark": true }, "if": { "flag": "prologue.netted" } },
+
+    { "lockInput": true },
+    { "unfollow": "vosk" },
+    { "unfollow": "gil" },
+    { "unfollow": "corb" },
+    { "talk": { "actor": "vosk", "node": "shore", "approach": true } },
+
+    { "say": { "actor": "vosk", "text": "Gil. The net.", "face": "smirk" }, "if": { "notFlag": "prologue.netted" } },
+    { "throw": { "actor": "gil", "prop": "net", "speed": 9 }, "if": { "notFlag": "prologue.netted" } },
+    { "say": { "actor": "vosk", "text": "Tie it tight. They always run.", "face": "smirk" }, "if": { "flag": "prologue.netted" } },
+
+    { "say": { "actor": "corb", "text": "Up you come. Don't kick.", "bark": true } },
+    { "follow": "gil" },
+    { "follow": "corb" },
+    { "drag": { "to": [72.4, 103.6], "speed": 2.2, "seconds": 4, "prop": "net" } },
+    { "fade": { "to": "out", "seconds": 1 } },
+    { "despawn": "net" },
+    { "despawn": "vosk" },
+    { "despawn": "gil" },
+    { "despawn": "hanne" },
+    { "despawn": "corb" },
+    { "effects": [ { "setFlag": "prologue.captured" } ] },
+    { "scene": "prologue_2_cage" }
   ]
 }

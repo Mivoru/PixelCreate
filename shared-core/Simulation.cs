@@ -456,7 +456,14 @@ public struct PlayerState
     };
 }
 
-public readonly record struct Aabb(Vector3 Min, Vector3 Max);
+public readonly record struct Aabb(Vector3 Min, Vector3 Max)
+{
+    /// <summary>The box blocks only once this story flag is set (a prop shown by a flag).</summary>
+    public string? Flag { get; init; }
+
+    /// <summary>The box stops blocking once this story flag is set (a prop hidden by a flag).</summary>
+    public string? Unless { get; init; }
+}
 
 /// <summary>Static collision geometry: boxes, and terrain or the plane y = 0 as the ground.</summary>
 public sealed class World
@@ -523,7 +530,10 @@ public sealed class World
     {
         foreach (var box in _huge)
         {
-            yield return box;
+            if (Blocks(box))
+            {
+                yield return box;
+            }
         }
 
         var (x0, z0, x1, z1) = Cells(minX, minZ, maxX, maxZ);
@@ -535,12 +545,25 @@ public sealed class World
                 {
                     foreach (var box in list)
                     {
-                        yield return box;
+                        if (Blocks(box))
+                        {
+                            yield return box;
+                        }
                     }
                 }
             }
         }
     }
+
+    /// <summary>
+    /// The story flags this world's conditional boxes follow: the server gives its world state, the
+    /// client its copy. Unset (tools, tests), every box of a prop shown by a flag is off and every box
+    /// of a prop hidden by a flag is on, as the props stand at the start of a new game.
+    /// </summary>
+    public Func<string, bool> HasFlag { get; set; } = _ => false;
+
+    /// <summary>Whether a box blocks now: a conditional prop's boxes come and go with the prop.</summary>
+    public bool Blocks(Aabb box) => (box.Flag is null || HasFlag(box.Flag)) && (box.Unless is null || !HasFlag(box.Unless));
 
     public float GroundHeight(float x, float z)
     {

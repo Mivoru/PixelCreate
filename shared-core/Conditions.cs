@@ -30,6 +30,12 @@ public interface IStoryContext
 
     /// <summary>Where the player stands, for conditions about places.</summary>
     System.Numerics.Vector3 Position { get; }
+
+    /// <summary>How far the player is from someone, in metres. Only the server knows; the client says "far".</summary>
+    float DistanceToActor(string actor) => float.MaxValue;
+
+    /// <summary>Whether someone a scene had fighting has fallen. Only the server knows.</summary>
+    bool ActorDown(string actor) => false;
 }
 
 /// <summary>A test over the story state, read from the small condition language in the story data.</summary>
@@ -94,6 +100,8 @@ public abstract class Condition
         "saleValue" => new Range("saleValue", null, Min(value), Max(value), c => c.SaleValue),
         "activeJobs" => new Range("activeJobs", null, Min(value), Max(value), c => Story.ActiveJobs(c.World)),
         "near" => new NearRole(value.GetString()!),
+        "down" => new ActorIsDown(value.GetString()!),
+        "nearActor" => new NearActor(value.GetProperty("id").GetString()!, value.TryGetProperty("r", out var nr) ? nr.GetSingle() : 3f),
         "at" => new AtPlace(new System.Numerics.Vector3(value.GetProperty("x").GetSingle(), 0, value.GetProperty("z").GetSingle()),
             value.TryGetProperty("r", out var radius) ? radius.GetSingle() : 6f),
         _ => throw new FormatException($"Unknown condition '{key}'."),
@@ -203,6 +211,21 @@ public abstract class Condition
     {
         public override bool Holds(IStoryContext context) =>
             System.Numerics.Vector3.Distance(context.Position with { Y = 0 }, place) < radius;
+
+        public override bool ReadsPlace => true;
+    }
+
+    private sealed class ActorIsDown(string actor) : Condition
+    {
+        public override bool Holds(IStoryContext context) => context.ActorDown(actor);
+
+        // Server-only, like a place: the client cannot replay it.
+        public override bool ReadsPlace => true;
+    }
+
+    private sealed class NearActor(string actor, float radius) : Condition
+    {
+        public override bool Holds(IStoryContext context) => context.DistanceToActor(actor) < radius;
 
         public override bool ReadsPlace => true;
     }

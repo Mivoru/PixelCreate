@@ -443,6 +443,13 @@ public sealed class GameServer : IEnemyEvents
     private bool _sceneEntered;
     private bool _sceneApart;
 
+    // Set while a thrown net holds the player: held even while someone walks up to talk.
+    private bool _sceneRooted;
+    private float _throwSpan;
+
+    /// <summary>Whether a scene holds the player still now: locked and not waiting for a speaker to come, or netted.</summary>
+    private bool SceneHolds => (_sceneLocked && !_sceneApart) || _sceneRooted;
+
     // Where a player not yet bound to the Anchor Stone wakes after dying, set by a scene's checkpoint step.
     private Vector3? _checkpoint;
     private readonly Dictionary<int, string> _enemyTags = new();
@@ -472,6 +479,7 @@ public sealed class GameServer : IEnemyEvents
             _sceneSlide = 0;
             _sceneTalked = false;
             _sceneEntered = false;
+            _sceneRooted = false;
         }
     }
 
@@ -513,6 +521,9 @@ public sealed class GameServer : IEnemyEvents
         _random = new Random(options.Seed);
         _actors = Core.Actors.For(world);
         _actorById = _actors.ToDictionary(a => a.Id);
+
+        // Props shown or hidden by a story flag block or let through with it (the finders' cage).
+        world.HasFlag = _story.Has;
         if (options.Save is { } save)
         {
             save.World.Into(_story);
@@ -674,9 +685,10 @@ public sealed class GameServer : IEnemyEvents
         if (!EnemiesFrozen)
         {
             // A player a scene holds still (in the cage, in a talk) is out of the fight: nothing notices them.
-            var held = _sceneLocked && !_sceneApart;
+            var held = SceneHolds;
             var targets = _players.Values.Where(p => !held).OrderBy(p => p.Id)
-                .Select(p => new Target(p.Id, p.State.Position, p.State.Velocity, p.State.Attack != AttackKind.None)).Concat(CreatureTargets()).ToArray();
+                .Select(p => new Target(p.Id, p.State.Position, p.State.Velocity, p.State.Attack != AttackKind.None)).Concat(CreatureTargets())
+                .Concat(ActorTargets()).ToArray();
             // The first night is the story's: from the cage to the morning in Hearthmere only what a scene
             // sends comes for the player. The wild leaves them be unless they strike it first.
             var firstNight = _story.Has("prologue.started") && !_story.Has("prologue.slept");
@@ -705,6 +717,8 @@ public sealed class GameServer : IEnemyEvents
         {
             patrol.Step(_random);
         }
+
+        StepFighters();
 
         StepWalls();
 
@@ -853,7 +867,7 @@ public sealed class GameServer : IEnemyEvents
 
         player.NextTick++;
         player.Reading = command.Buttons.HasFlag(Buttons.Reading);
-        if (_sceneLocked && !_sceneApart)
+        if (SceneHolds)
         {
             // A scene holds the player still; the client holds its prediction still the same way.
             command.MoveX = 0;
@@ -1599,6 +1613,7 @@ public sealed class GameServer : IEnemyEvents
                 _story.SetFlag(_scene.DoneFlag);
                 _scene = null;
                 _sceneLocked = false;
+                _sceneRooted = false;
                 return;
             }
 
@@ -1609,9 +1624,9 @@ public sealed class GameServer : IEnemyEvents
                 continue;
             }
 
-            if (SceneData.Holds(step) && step.Kind == "move" && !_sceneEntered)
+            if (SceneData.Holds(step) && step.Kind is "move" or "throw" or "drag" && !_sceneEntered)
             {
-                // A walk that holds the scene starts when the scene reaches it.
+                // A walk, a throw or a drag that holds the scene starts when the scene reaches it.
                 _sceneEntered = true;
                 RunStep(step, player, context);
             }
@@ -1636,7 +1651,7 @@ public sealed class GameServer : IEnemyEvents
                 return;
             }
 
-            if (SceneData.Holds(step) ? !StepDone(step, context) : !RunStep(step, player, context))
+            if (SceneData.Holds(step) ? !StepDone(step, player, context) : !RunStep(step, player, context))
             {
                 return;
             }
@@ -1654,7 +1669,7 @@ public sealed class GameServer : IEnemyEvents
         _sceneEntered = false;
     }
 
-    private bool StepDone(SceneStep step, IStoryActions context)
+    private bool StepDone(SceneStep step, Player player, IStoryActions context)
     {
         var elapsed = (Tick - _sceneStepTick) * Tuning.TickSeconds;
         if (step.Timeout > 0 && elapsed >= step.Timeout)
@@ -1673,8 +1688,57 @@ public sealed class GameServer : IEnemyEvents
             "waitFor" => step.When.Holds(context),
             "waitForKills" => !_enemies.Any(e => e.Alive && _enemyTags.TryGetValue(e.Id, out var tag) && tag == step.Tag),
             "move" => !_actorById.TryGetValue(step.Actor, out var mover) || mover.Path.Count == 0,
+            "throw" => FlyThrown(step, player),
+            "drag" => Drag(step, player, elapsed),
             _ => true,
         };
+    }
+
+    /// <summary>
+    /// Moves a thrown prop one tick on towards the player, in an arc, homing (a net that is a skill, not
+    /// a stone). True once it has landed: the player is held where they stand.
+    /// </summary>
+    private bool FlyThrown(SceneStep step, Player player)
+    {
+        if (!_actorById.TryGetValue(step.Item, out var prop))
+        {
+            _sceneRooted = true;
+            return true;
+        }
+
+        var target = player.State.Position;
+        var gap = target - prop.Position;
+        gap.Y = 0;
+        var left = gap.Length();
+        var reach = step.Speed * Tuning.TickSeconds;
+        if (left <= reach + 0.3f)
+        {
+            prop.Position = target with { Y = _world.GroundHeight(target.X, target.Z) };
+            _sceneRooted = true;
+            return true;
+        }
+
+        prop.Position += Vector3.Normalize(gap) * reach;
+        var progress = Math.Clamp(1f - (left - reach) / Math.Max(_throwSpan, 0.1f), 0f, 1f);
+        prop.Position.Y = _world.GroundHeight(prop.Position.X, prop.Position.Z) + (1.6f + (0.4f - 1.6f) * progress) + MathF.Sin(progress * MathF.PI) * Math.Min(3f, _throwSpan * 0.25f);
+        prop.Yaw += 0.25f;
+        return false;
+    }
+
+    /// <summary>Pulls the held player one tick towards the step's point, the net with them. True when the time is up or they are there.</summary>
+    private bool Drag(SceneStep step, Player player, float elapsed)
+    {
+        var gap = step.Points[0] - player.State.Position;
+        gap.Y = 0;
+        var reach = step.Speed * Tuning.TickSeconds;
+        var there = gap.Length() <= reach;
+        Move(player, there ? step.Points[0] : player.State.Position + Vector3.Normalize(gap) * reach);
+        if (step.Item.Length > 0 && _actorById.TryGetValue(step.Item, out var prop))
+        {
+            prop.Position = player.State.Position;
+        }
+
+        return there || elapsed >= step.Seconds;
     }
 
     /// <summary>Runs a step that happens at once. Returns false when the scene changed under it.</summary>
@@ -1690,10 +1754,42 @@ public sealed class GameServer : IEnemyEvents
             case "unlockInput":
                 _sceneLocked = false;
                 break;
+            case "throw":
+                if (_actorById.TryGetValue(step.Item, out var thrown) && actor is not null)
+                {
+                    // The prop leaves the thrower's hands.
+                    thrown.Take();
+                    thrown.Path.Clear();
+                    thrown.Position = actor.Position + Vector3.UnitY * 1.6f;
+                    thrown.Active = true;
+                    var span = player.State.Position - actor.Position;
+                    span.Y = 0;
+                    _throwSpan = span.Length();
+                }
+
+                break;
+            case "unroot":
+                _sceneRooted = false;
+                break;
+            case "despawnEnemies":
+                _enemies.RemoveAll(e => _enemyTags.TryGetValue(e.Id, out var tag) && tag == step.Tag);
+                break;
+            case "homeEnemies" when step.Home is { } goal:
+                var spot = 0;
+                foreach (var enemy in _enemies.Where(e => e.Alive && _enemyTags.TryGetValue(e.Id, out var tag) && tag == step.Tag))
+                {
+                    var angle = spot++ * 2.1f;
+                    var home = goal + new Vector3(MathF.Cos(angle) * 1.1f, 0, MathF.Sin(angle) * 1.1f);
+                    home.Y = _world.GroundHeight(home.X, home.Z);
+                    enemy.Home = enemy.Home with { Center = home, Radius = 1.5f };
+                    enemy.Returning = true;
+                }
+
+                break;
             case "spawn" or "place" when actor is not null:
                 actor.Take();
                 actor.Path.Clear();
-                actor.Position = Ground(step.Points[0]);
+                actor.Position = Ground(step.NearPlayer is { } near ? player.State.Position + near : step.Points[0]);
                 actor.Yaw = step.Yaw;
                 actor.Active = true;
                 break;
@@ -1713,6 +1809,7 @@ public sealed class GameServer : IEnemyEvents
             case "follow" when actor is not null:
                 actor.Take();
                 actor.Follows = player.Id;
+                actor.FollowSpeed = step.Speed;
                 _story.SetFlag(WithFlag(actor.Id));
                 break;
             case "unfollow" when actor is not null:
@@ -1722,6 +1819,11 @@ public sealed class GameServer : IEnemyEvents
             case "pose" when actor is not null:
                 actor.Take();
                 actor.Pose = step.Pose;
+                if (step.Pose == ActorPose.Fallen)
+                {
+                    // Put down by the scene (a fight that ran too long): out of it for good.
+                    actor.Fighting = false;
+                }
                 break;
             case "teleport":
                 Move(player, step.Points[0]);
@@ -1744,7 +1846,19 @@ public sealed class GameServer : IEnemyEvents
                 SpawnTagged(step, player);
                 break;
             case "drop":
-                DropAt(player, step.Item, step.Points[0], step.Count);
+                DropAt(player, step.Item, actor is not null ? actor.Position + new Vector3(0.6f, 0, 0.3f) : step.Points[0], step.Count);
+                break;
+            case "fight" when actor is not null:
+                actor.Take();
+                actor.Fighting = true;
+                actor.Health = step.Count;
+                actor.Damage = (short)step.Level;
+                actor.StrikeCooldown = 20 + _random.Next(40);
+                actor.Pose = ActorPose.Stand;
+                actor.FightHome = step.Points.Length > 0 && step.Points[0] != Vector3.Zero ? Ground(step.Points[0]) : actor.Position;
+                actor.Path.Clear();
+                actor.Path.Enqueue(actor.FightHome);
+                actor.Speed = 4f;
                 break;
             case "checkpoint":
                 _checkpoint = step.Points[0];
@@ -1766,16 +1880,36 @@ public sealed class GameServer : IEnemyEvents
             var angle = i * MathF.Tau / Math.Max(1, step.Count);
             var at = step.Points[0] + new Vector3(MathF.Cos(angle) * 1.5f, 0, MathF.Sin(angle) * 1.5f);
             at.Y = _world.GroundHeight(at.X, at.Z);
+
+            // Enemies with a home walk there from where they appear (out of the ruins, to the cart).
+            var home = step.Home is { } goal ? goal + new Vector3(MathF.Cos(angle) * 1.2f, 0, MathF.Sin(angle) * 1.2f) : at;
+            home.Y = _world.GroundHeight(home.X, home.Z);
             var enemy = new Enemy
             {
                 Id = _nextEnemyId++,
                 Type = type,
-                Home = new EnemySpawn(at, 3f, 1, step.Level, step.Level, int.MaxValue, false, new[] { step.Item }),
+                Home = new EnemySpawn(home, 2f, 1, step.Level, step.Level, int.MaxValue, false, new[] { step.Item }),
             };
             enemy.Reset(_random, _world);
             enemy.Position = at;
-            enemy.Health = (short)Math.Max(1, (int)(enemy.Health * step.Health));
-            enemy.TargetId = player.Id;
+
+            // The scene's level, not the type's range: the first fight is the story's to set.
+            enemy.Level = (byte)Math.Max(1, step.Level);
+            enemy.Health = (short)Math.Max(1, (int)(enemy.MaxHealth * step.Health));
+            if (step.Targets.Length > 0 && _actorById.TryGetValue(step.Targets[i % step.Targets.Length], out var mark) && mark.Fighting)
+            {
+                // It comes for one of the people the scene has fighting.
+                enemy.TargetId = Core.Actor.ActorBase + mark.Index;
+            }
+            else if (step.Home is null)
+            {
+                enemy.TargetId = player.Id;
+            }
+            else
+            {
+                // They make straight for their goal, as a camp's goblins go back to theirs.
+                enemy.Returning = true;
+            }
             _enemyTags[enemy.Id] = step.Tag;
             _enemies.Add(enemy);
         }
@@ -1937,6 +2071,13 @@ public sealed class GameServer : IEnemyEvents
         public bool Near(string role) => server.Near(player, role);
 
         public Vector3 Position => player.State.Position;
+
+        public bool ActorDown(string actor) => server._actorById.TryGetValue(actor, out var found) && found.Pose == ActorPose.Fallen;
+
+        public float DistanceToActor(string actor) =>
+            server._actorById.TryGetValue(actor, out var found) && found.Active
+                ? Vector2.Distance(new Vector2(found.Position.X, found.Position.Z), new Vector2(player.State.Position.X, player.State.Position.Z))
+                : float.MaxValue;
 
         public void AddGold(int amount) => player.Gold = Math.Max(0, player.Gold + amount);
 
@@ -3200,6 +3341,88 @@ public sealed class GameServer : IEnemyEvents
             victim.TakeHit(damage, attacker.Position, Enemy.CreatureBase + attacker.Id);
             attacker.Landed = true;
         }
+
+        if (FightingActor(attacker.TargetId) is { } person && Vector3.Distance(person.Position with { Y = 0 }, center with { Y = 0 }) <= radius + 0.8f)
+        {
+            HurtActor(person, damage);
+            attacker.Landed = true;
+        }
+    }
+
+    /// <summary>The fighting actor an enemy target id names, while they still stand.</summary>
+    private Actor? FightingActor(int targetId) =>
+        targetId >= Core.Actor.ActorBase && targetId - Core.Actor.ActorBase < _actors.Count &&
+        _actors[targetId - Core.Actor.ActorBase] is { Fighting: true, Active: true } person ? person : null;
+
+    /// <summary>People a scene has fighting, as targets for the enemies, beside the players.</summary>
+    private IEnumerable<Target> ActorTargets() => _actors
+        .Where(a => a.Fighting && a.Active)
+        .Select(a => new Target(Core.Actor.ActorBase + a.Index, a.Position, Vector3.Zero, a.StrikeTicks > 0));
+
+    private static void HurtActor(Actor person, short damage)
+    {
+        person.Health -= damage;
+        if (person.Health <= 0)
+        {
+            // Down for good: the scene goes on when everyone it waits for is down.
+            person.Fighting = false;
+            person.Pose = ActorPose.Fallen;
+            person.StrikeTicks = 0;
+            person.Path.Clear();
+        }
+    }
+
+    /// <summary>
+    /// Fighting actors close on the nearest enemy and strike it now and then: a real fight beside the
+    /// cart, not people falling on a timer. Their blows hurt but leave the goblins for the player.
+    /// </summary>
+    private void StepFighters()
+    {
+        foreach (var person in _actors.Where(a => a.Fighting && a.Active))
+        {
+            if (person.StrikeTicks > 0 && --person.StrikeTicks == 0)
+            {
+                person.Pose = ActorPose.Stand;
+            }
+
+            // They hold their stand by the cart: only an enemy that comes close is met.
+            var foe = _enemies.Where(e => e.Alive && e.Def.Kind != "animal" && Vector3.DistanceSquared(e.Position, person.FightHome) < 6f * 6f)
+                .OrderBy(e => Vector3.DistanceSquared(e.Position, person.Position)).FirstOrDefault();
+            if (foe is null || person.Path.Count > 0)
+            {
+                continue;
+            }
+
+            var gap = foe.Position - person.Position;
+            gap.Y = 0;
+            var distance = gap.Length();
+            person.Yaw = Core.Actor.Facing(gap);
+            if (distance > 1.7f && person.StrikeTicks == 0)
+            {
+                var next = person.Position + Vector3.Normalize(gap) * Math.Min(distance - 1.6f, 3.4f * Tuning.TickSeconds);
+                if (Vector3.Distance(next with { Y = 0 }, person.FightHome with { Y = 0 }) <= 3f)
+                {
+                    person.Position = next with { Y = _world.GroundHeight(next.X, next.Z) };
+                }
+
+                continue;
+            }
+
+            if (--person.StrikeCooldown > 0 || distance > 2.2f)
+            {
+                continue;
+            }
+
+            person.StrikeCooldown = 55 + _random.Next(40);
+            person.StrikeTicks = 22;
+            person.Pose = ActorPose.Strike;
+            foe.TakeHit(person.Damage, person.Position);
+            if (!foe.Returning && foe.TargetId < 0)
+            {
+                // Struck, it turns on whoever struck it.
+                foe.TargetId = Core.Actor.ActorBase + person.Index;
+            }
+        }
     }
 
     /// <summary>The enemy or animal a creature target id names, if it is alive.</summary>
@@ -3614,6 +3837,16 @@ public sealed class GameServer : IEnemyEvents
             {
                 prey.TakeHit(shot.Damage, shot.Position - shot.Velocity * Tuning.TickSeconds, Enemy.CreatureBase + shot.HunterId);
                 struck = true;
+            }
+
+            // A goblin archer's arrow finds the finders too.
+            foreach (var person in _actors)
+            {
+                if (!struck && person.Fighting && person.Active && Vector3.Distance(person.Position + Vector3.UnitY, shot.Position) < shot.Radius + 0.35f)
+                {
+                    HurtActor(person, shot.Damage);
+                    struck = true;
+                }
             }
 
             foreach (var player in _players.Values)

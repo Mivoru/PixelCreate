@@ -122,6 +122,29 @@ public class SceneTests
         Assert.False(server.StoryState.Has(GameServer.WithFlag("nell")));
     }
 
+    private const string Chase = """
+    {
+      "id": "test_chase",
+      "steps": [
+        { "spawn": { "actor": "vosk", "at": [0, -6] } },
+        { "follow": "vosk" },
+        { "waitFor": { "nearActor": { "id": "vosk", "r": 3 } }, "timeout": 20 },
+        { "effects": [ { "setFlag": "test.caught" } ] }
+      ]
+    }
+    """;
+
+    [Fact]
+    public void NearActor_HoldsOnlyOnceTheyHaveWalkedUp()
+    {
+        var (server, client, network) = Start();
+        server.StartScene(SceneData.Parse(JsonDocument.Parse(Chase).RootElement, 999));
+        Run(server, client, network, 3);
+        Assert.False(server.StoryState.Has("test.caught"), $"caught at once; vosk at {server.Actor("vosk").Position}, player at {server.GetPlayer(1)!.Value.Position}");
+        Run(server, client, network, Tuning.TickRate * 3);
+        Assert.True(server.StoryState.Has("test.caught"));
+    }
+
     [Fact]
     public void ActorsAwayFromHome_ReachTheClient()
     {

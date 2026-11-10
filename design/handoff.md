@@ -26,6 +26,24 @@ hráč nevěděl, kam jít.
 - Úvod chce nahradit dvěma videi z Gemini (2 × 10 s). Prompty dostal; videa přijdou do `refs/`.
 - Chce velkou mapu na M, vlastní body a cestu vyznačenou ve světě (jako Witcher 3).
 
+## Rozhodnuto 2026-11-10 odpoledne (po druhém hraní)
+
+Autor: začátek prologu „vypadá otřesně". Pořadí práce: 1) začátek prologu, 2) mapa na M, waypointy a
+cesta na minimapě i na zemi automaticky z questu (R2), 3) kamera a portrét v rozhovoru (R3).
+
+Začátek prologu (rozhodnuto autorem):
+- Po pádu lovci nestojí: jdou k hráči. Kdo utíká, na toho Gil hodí síť jako skutečnou schopnost
+  (letí, dopadne, znehybní). Lovci dojdou, Vosk promluví, Gil a Corb hráče v síti odtáhnou k vozu.
+- Klec je pevná (kolize podmíněných rekvizit se řídí jejich flagem). Cíl v kleci nelže
+  („Talk to Nell. Wait for a chance."), ne „find a way out".
+- Přepadení: goblini přijdou viditelně od ruin, Gil, Hanne a Corb padnou, raněný Vosk uteče
+  (musí přežít kvůli dni 11). Goblin rozbije mříže, hráč vyskočí a goblini jdou po něm a Nell.
+  Žádní goblini z ničeho 5 m od vozu na půl životů.
+- Zbraň: Hannin krátký meč (`hannes_shortsword`, rezavé železo, čísla jako dřevěný meč) leží u
+  padlé Hanne. Dřevěný meč ze vzduchu pryč.
+- Lovci vypadají každý jinak a mají své zbraně: Gil hubený s dýkou a sítí, Hanne žena s mečem,
+  Corb velký s palicí a vousy, Vosk s lukem.
+
 ## Co dělat jako první
 
 **R1 je postavená (2026-11-10), čeká na zahrání autorem.** Bot `prologue` i všechny čtyři

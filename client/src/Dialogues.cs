@@ -301,7 +301,7 @@ public static class NpcLooks
     };
 
     /// <summary>Brann Vosk: the finders' captain, broad, scarred, in a worn leather coat.</summary>
-    private static readonly RigLook FinderCaptain = new("finder_captain", new Color("e0b494"), 1.08f, "club")
+    private static readonly RigLook FinderCaptain = new("finder_captain", new Color("e0b494"), 1.08f, "bow")
     {
         Hair = "swept",
         Cloak = true,
@@ -320,7 +320,7 @@ public static class NpcLooks
         },
     };
 
-    /// <summary>A finder: one of Vosk's hired men, in drab hooded leathers.</summary>
+    /// <summary>A finder: one of Vosk's hired men, in drab hooded leathers. (Any finder without a look of their own.)</summary>
     private static readonly RigLook Finder = new("finder", new Color("e8c0a4"), 1.0f, "club")
     {
         Hair = "pip",
@@ -336,6 +336,69 @@ public static class NpcLooks
             ["anime_shirt"] = new("6a6a5a"),
             ["anime_cloak"] = new("4a4a3e"),
             ["anime_vest"] = new("5a4a3a"),
+            ["anime_trousers"] = new("3a3440"),
+        },
+    };
+
+    /// <summary>Gil: lean and quick, the finder who throws the net; a knife at hand, a weasel's face, a rope coat.</summary>
+    private static readonly RigLook FinderGil = new("finder_gil", new Color("e8c0a4"), 0.96f, "dagger")
+    {
+        Hair = "undercut",
+        Cloak = false,
+        FaceWidth = 0.88f,
+        Mood = "smirk",
+        Extras = new[] { "vest" },
+        Eyes = new Color("6a5a2a"),
+        Brows = new Color("5a3a1a"),
+        FaceStyle = new FaceStyle(2, 1, 1, "none", true, new Color("6a4a2a")),
+        Palette = new Dictionary<string, Color>
+        {
+            ["anime_hair"] = new("8a5a2a"),
+            ["anime_shirt"] = new("7a6a4a"),
+            ["anime_vest"] = new("c8b48c"),
+            ["anime_trousers"] = new("4a4038"),
+        },
+    };
+
+    /// <summary>Hanne: a woman in a mail shirt under a dark cloak, a short sword at her hip; the steadiest of them.</summary>
+    private static readonly RigLook FinderHanne = new("finder_hanne", new Color("f0c8b0"), 0.97f, "sword")
+    {
+        Hair = "rhea",
+        Feminine = true,
+        Cloak = true,
+        Mood = "neutral",
+        Item = "hannes_shortsword",
+        Extras = new[] { "armor" },
+        Eyes = new Color("3a5a7a"),
+        Brows = new Color("2a2a2a"),
+        FaceStyle = new FaceStyle(1, 2, 0, "cheek"),
+        Palette = new Dictionary<string, Color>
+        {
+            ["anime_hair"] = new("2a2a30"),
+            ["anime_shirt"] = new("4a4a52"),
+            ["anime_cloak"] = new("2e3a34"),
+            ["anime_trousers"] = new("3a3440"),
+            ["anime_armor"] = new("8a909a"),
+            ["anime_armor_dark"] = new("5a606a"),
+        },
+    };
+
+    /// <summary>Corb: the big one, shaved head and a red beard, a club over his shoulder, slow to talk.</summary>
+    private static readonly RigLook FinderCorb = new("finder_corb", new Color("e0a888"), 1.13f, "club")
+    {
+        Hair = "shaved",
+        Cloak = false,
+        FaceWidth = 1.12f,
+        Mood = "neutral",
+        Extras = new[] { "beard", "vest" },
+        Eyes = new Color("4a4a3a"),
+        Brows = new Color("8a3a1a"),
+        FaceStyle = new FaceStyle(0, 0, 2, "eye"),
+        Palette = new Dictionary<string, Color>
+        {
+            ["anime_hair"] = new("9a4a20"),
+            ["anime_shirt"] = new("5a3a2a"),
+            ["anime_vest"] = new("3a2a20"),
             ["anime_trousers"] = new("3a3440"),
         },
     };
@@ -588,7 +651,7 @@ public static class NpcLooks
     {
         ("rhea", Examiner), ("mira", Receptionist), ("bram", Villager), ("tess", VillagerB), ("lina", Merchant),
         ("garrick", Guard), ("hollis", Appraiser), ("elda", Baker), ("pip", Farmer), ("sora", Mage), ("kai", Swordsman),
-        ("nell", Captive), ("haruto", Lost), ("vosk", FinderCaptain), ("finder", Finder),
+        ("nell", Captive), ("haruto", Lost), ("vosk", FinderCaptain), ("gil", FinderGil), ("hanne", FinderHanne), ("corb", FinderCorb),
         ("corwin", BranchMaster), ("tam", Apprentice), ("edwin", PartySword), ("moss", PartyBow), ("fen", PartyHealer),
         ("rook", PartyShield), ("osric", Miller), ("anwen", MillerDaughter), ("hamm", FarmElder), ("maddy", FarmGirl),
         ("tobias", Farmhand),
@@ -611,6 +674,9 @@ public static class NpcLooks
         "lost" => Lost,
         "finder_captain" => FinderCaptain,
         "finder" => Finder,
+        "finder_gil" => FinderGil,
+        "finder_hanne" => FinderHanne,
+        "finder_corb" => FinderCorb,
         "branch_master" => BranchMaster,
         "apprentice" => Apprentice,
         "party_sword" => PartySword,
@@ -654,7 +720,7 @@ public static class Dialogues
         "captive" => "Bonded Girl",
         "lost" => "Lightborn",
         "finder_captain" => "Finder Captain",
-        "finder" => "Finder",
+        "finder" or "finder_gil" or "finder_hanne" or "finder_corb" => "Finder",
         "object" or "anchor_stone" => "",
         _ => "Villager",
     };

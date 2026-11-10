@@ -160,6 +160,21 @@ def wooden_sword(k):
     k.round((0, -0.072, 0), (0.022, 0.018, 0.022), "wpn_wood")
 
 
+def hannes_shortsword(k):
+    """A finder's short sword: a plain iron blade, worn bright at the edge and brown at the base, a
+    straight bar guard, a leather grip and a round pommel. Hanne's, kept oiled."""
+    width = lambda s: 0.03 * (1 - max(0.0, s - 0.78) ** 1.6 * 8) if s < 0.98 else 0.006
+    k.blade(0.07, 0.6, width, width, lambda s: 0.008, "wpn_steel_dark", "wpn_edge", band=0.22)
+    # Brown at the base of the blade, where the oil never quite reached.
+    for y, x, size in ((0.11, -0.006, 0.014), (0.16, 0.007, 0.011)):
+        k.round((x, y, 0.0), (size, size * 1.3, 0.0085), "wpn_rust", subdivisions=1)
+    k.box((0, 0.058, 0), (0.17, 0.02, 0.026), "wpn_iron")
+    for x in (-0.085, 0.085):
+        k.round((x, 0.058, 0), (0.014, 0.014, 0.016), "wpn_iron")
+    k.wrap(-0.058, 0.046, 0.015, "wpn_leather", "wpn_leather_dark", 8)
+    k.round((0, -0.066, 0), (0.02, 0.018, 0.02), "wpn_iron")
+
+
 def spiked_club(k):
     """A knotted log swelling towards its head, studded with iron spikes, with a leather grip."""
     points, radii = [], []
@@ -284,6 +299,7 @@ BUILDERS = {
     "twin_daggers": twin_daggers,
     "rusty_dagger": rusty_dagger,
     "wooden_sword": wooden_sword,
+    "hannes_shortsword": hannes_shortsword,
     "spiked_club": spiked_club,
     "bone_staff": bone_staff,
 }

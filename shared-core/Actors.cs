@@ -14,6 +14,9 @@ public enum ActorPose : byte
     Stand = 0,
     Fallen = 1,
     Sit = 2,
+
+    /// <summary>A blow in a fight: the client swings the weapon in hand once while it lasts.</summary>
+    Strike = 3,
 }
 
 /// <summary>An actor's state as the client hears it. Only actors away from their resting state are sent.</summary>
@@ -48,6 +51,30 @@ public sealed class Actor
 
     /// <summary>The player this actor walks behind, or -1.</summary>
     public int Follows = -1;
+
+    /// <summary>A follower's pace in m/s, or 0 to keep up with the player at any pace (hunters close in at a walk).</summary>
+    public float FollowSpeed;
+
+    /// <summary>
+    /// Set while a scene has the actor fight (the finders at the ambush): enemies may take them as a
+    /// target, they strike back, and they fall when <see cref="Health"/> runs out.
+    /// </summary>
+    public bool Fighting;
+
+    public int Health;
+
+    /// <summary>Where a fighting actor took their stand: they hold near it and let the enemy come.</summary>
+    public Vector3 FightHome;
+
+    /// <summary>Damage of one blow, and ticks until the next.</summary>
+    public short Damage;
+    public int StrikeCooldown;
+
+    /// <summary>Ticks left of the blow being shown.</summary>
+    public int StrikeTicks;
+
+    /// <summary>Enemy target ids from here up are fighting actors: <c>ActorBase + Index</c>.</summary>
+    public const int ActorBase = 2_000_000;
 
     /// <summary>
     /// Where the actor rests now, which the client works out by itself (<see cref="Schedules.RestOf"/>):
@@ -123,7 +150,7 @@ public sealed class Actor
             var offset = lead - Position;
             offset.Y = 0;
             var distance = offset.Length();
-            if (distance > 30f)
+            if (distance > 30f && FollowSpeed <= 0f)
             {
                 // Left far behind (a door, a fall): step up beside the leader.
                 Position = lead + new Vector3(1.2f, 0, 1.2f);
@@ -134,7 +161,7 @@ public sealed class Actor
             if (distance > 2.6f)
             {
                 goal = lead - Vector3.Normalize(offset) * 2.2f;
-                step = Math.Min(Tuning.MoveSpeed * 1.15f, MathF.Max(Speed, distance * 2f)) * Tuning.TickSeconds;
+                step = (FollowSpeed > 0f ? FollowSpeed : Math.Min(Tuning.MoveSpeed * 1.15f, MathF.Max(Speed, distance * 2f))) * Tuning.TickSeconds;
             }
             else
             {

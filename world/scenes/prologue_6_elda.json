@@ -73,6 +73,12 @@
       "despawn": "corb"
     },
     {
+      "despawn": "gil"
+    },
+    {
+      "effects": [ { "fate": { "gil": "dead", "hanne": "dead", "corb": "dead" } } ]
+    },
+    {
       "despawn": "elda"
     },
     {

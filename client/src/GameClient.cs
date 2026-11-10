@@ -96,7 +96,13 @@ public partial class GameClient : Node
     private readonly Dictionary<int, IGroundHazard> _walls = new();
     private Zone _zone = null!;
     private Minimap _minimap = null!;
+
+    // Things scenes move about that are not people (the finders' net), by actor id.
+    private readonly Dictionary<string, Node3D> _propViews = new();
     private IntroVideo _introVideo = null!;
+
+    // Set while a thrown net holds the player (a scene's throw has landed), for the objective.
+    private bool _sceneRooted;
 
     // The scene step whose film is showing, or -1: Space, Enter or Esc skips it.
     private int _videoStep = -1;
@@ -220,6 +226,7 @@ public partial class GameClient : Node
         // Sized here too: E pressed before the first actor update once read an empty array.
         _actorWalking = new bool[_actors.Count];
         _actorPose = new ActorPose[_actors.Count];
+        _actorStrike = new float[_actors.Count];
         foreach (var actor in _actors)
         {
             if (NpcLooks.For(actor.Role) is { } look)
@@ -232,6 +239,18 @@ public partial class GameClient : Node
                 _stage.View.AddChild(rig.Root);
                 _npcs.Add(actor.Id, rig);
             }
+            else if (actor.Role.StartsWith("prop:", StringComparison.Ordinal))
+            {
+                // A thing a scene moves (the finders' net): its model, placed like a person.
+                var model = actor.Role["prop:".Length..];
+                if (ResourceLoader.Exists($"res://assets/{model}.glb"))
+                {
+                    var node = GD.Load<PackedScene>($"res://assets/{model}.glb").Instantiate<Node3D>();
+                    node.Visible = actor.Resident;
+                    _stage.View.AddChild(node);
+                    _propViews.Add(actor.Id, node);
+                }
+            }
             else if (actor.Role is "storage" or "anchor_stone")
             {
                 // Things you can use, like the Guild chest, carry a floating sign so players see them.
@@ -239,15 +258,12 @@ public partial class GameClient : Node
             }
         }
 
-        _hud.ShowStory(new[]
-        {
-            "The last thing you remember is a blinding light.",
-            "You wake on a road in a world you do not know.",
-            "People here speak of adventurers, and of a Guild to the west.",
-        });
 
         _transport = UdpTransport.Connect(host, port);
         _client = new ClientPrediction(_transport, _world);
+
+        // Props shown or hidden by a story flag block with it, from the story copy the server sends.
+        _world.HasFlag = flag => _client.Story.Has(flag);
         if (_captureDir is null)
         {
             Input.MouseMode = Input.MouseModeEnum.Captured;
@@ -542,6 +558,7 @@ public partial class GameClient : Node
             _sceneShown = (-1, -1);
             _sceneCamera = null;
             _sceneLocked = false;
+            _sceneRooted = false;
             _sceneApart = null;
             _hud.Fade = 0f;
             _hud.SlideShown = false;
@@ -558,6 +575,7 @@ public partial class GameClient : Node
         _sceneCamera = null;
         _sceneLocked = false;
         _hud.Fade = 0f;
+        var rooted = false;
         var sceneStory = new ClientStory(_client, _hud.Items);
         for (var i = 0; i <= index; i++)
         {
@@ -586,9 +604,18 @@ public partial class GameClient : Node
                     var progress = i == index ? Mathf.Clamp(elapsed / Mathf.Max(past.Seconds, 0.01f), 0f, 1f) : 1f;
                     _hud.Fade = past.Out ? progress : 1f - progress;
                     break;
+                case "throw" when i < index:
+                    // The net has landed: held, even while someone walks up to talk.
+                    rooted = true;
+                    break;
+                case "unroot":
+                    rooted = false;
+                    break;
             }
         }
 
+        _sceneLocked |= rooted;
+        _sceneRooted = rooted;
         if (step.Kind == "video")
         {
             _introVideo.Show(step.Item, step.Seconds, step.Text, step.CaptionFrom, GetProcessDeltaTime());
@@ -624,7 +651,8 @@ public partial class GameClient : Node
                 _hud.CloseDialog();
             }
 
-            _sceneLocked = false;
+            _sceneLocked = rooted;
+            _sceneRooted = rooted;
             _sceneApart = actor;
             return;
         }
@@ -674,6 +702,7 @@ public partial class GameClient : Node
     private bool[] _actorPresent = null!;
     private bool[] _actorWalking = Array.Empty<bool>();
     private ActorPose[] _actorPose = Array.Empty<ActorPose>();
+    private float[] _actorStrike = Array.Empty<float>();
 
     /// <summary>
     /// Places everyone from the server's actor views: those it sends stand where it says; the rest
@@ -685,6 +714,7 @@ public partial class GameClient : Node
         {
             _actorWalking = new bool[_actors.Count];
             _actorPose = new ActorPose[_actors.Count];
+        _actorStrike = new float[_actors.Count];
         }
 
         var views = new Dictionary<ushort, ActorView>();
@@ -717,6 +747,14 @@ public partial class GameClient : Node
 
             _actorPresent[index] = present;
             _actorPose[index] = pose;
+            if (_propViews.TryGetValue(actor.Id, out var propView))
+            {
+                propView.Visible = present;
+                propView.Position = _actorAt[index];
+                propView.Rotation = new Vector3(0, yaw, 0);
+                continue;
+            }
+
             if (!_npcs.TryGetValue(actor.Id, out var rig))
             {
                 continue;
@@ -743,7 +781,11 @@ public partial class GameClient : Node
                 rig.Root.Position += Vector3.Up * 0.15f;
             }
 
-            rig.Animate(new MotionState(_actorWalking[index] ? Mathf.Min(speed, Tuning.MoveSpeed) : 0f, true, 0f, false, AttackKind.None, 0), delta);
+            // A blow in a scene's fight: the weapon in hand swings once while the pose lasts.
+            _actorStrike[index] = pose == ActorPose.Strike ? _actorStrike[index] + delta : 0f;
+            var strike = pose == ActorPose.Strike ? AttackKind.Light : AttackKind.None;
+            rig.Animate(new MotionState(_actorWalking[index] ? Mathf.Min(speed, Tuning.MoveSpeed) : 0f, true, 0f, false, strike,
+                (int)(_actorStrike[index] * Tuning.TickRate)), delta);
         }
 
         // Lines said in passing float over their speaker's head for a few seconds, fading at both ends.
@@ -879,8 +921,8 @@ public partial class GameClient : Node
         var best = Guild.TalkRange;
         foreach (var actor in _actors)
         {
-            // The fallen are not spoken to.
-            if (!_actorPresent[actor.Index] || _actorPose[actor.Index] == ActorPose.Fallen)
+            // The fallen are not spoken to, nor things a scene moves about (the net).
+            if (!_actorPresent[actor.Index] || _actorPose[actor.Index] == ActorPose.Fallen || _propViews.ContainsKey(actor.Id))
             {
                 continue;
             }
@@ -951,7 +993,7 @@ public partial class GameClient : Node
         // On the shore, before the net, the only people in sight are the finders.
         if (_client.Story.Has("prologue.started") && !_client.Story.Has("prologue.captured"))
         {
-            return "Go to the men by the shore";
+            return _sceneRooted ? "Caught in the finders' net" : "Go to the men by the shore";
         }
 
         // The prologue tells its own way; the Guild's hints begin once it is over.
@@ -2010,8 +2052,52 @@ public partial class GameClient : Node
         var dx = target.X - position.X;
         var dz = target.Z - position.Z;
         var distance = Mathf.Sqrt(dx * dx + dz * dz);
-        _yaw = Mathf.Atan2(-dx, -dz);
+        _yaw = distance < reach ? Mathf.Atan2(-dx, -dz) : Steer(position, Mathf.Atan2(-dx, -dz));
         return distance < reach ? ((sbyte)0, (sbyte)0, buttons) : ToMove(0, 1, buttons);
+    }
+
+    // The side the bot last went round something on, so it does not dither left and right.
+    private float _botSide = 1f;
+
+    /// <summary>
+    /// The heading nearest the wanted one along which the next metre and a half is clear of solid
+    /// boxes: the bot walks round a cart or a fence instead of pressing into it.
+    /// </summary>
+    private float Steer(System.Numerics.Vector3 position, float wanted)
+    {
+        bool Clear(float heading)
+        {
+            foreach (var reach in new[] { 0.6f, 1.5f })
+            {
+                var spot = position + new System.Numerics.Vector3(-Mathf.Sin(heading) * reach, 0, -Mathf.Cos(heading) * reach);
+                spot.Y = _world.GroundHeight(spot.X, spot.Z) + 0.05f;
+                if (_world.OverlapsPlayer(spot))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        if (Clear(wanted))
+        {
+            return wanted;
+        }
+
+        for (var turn = 0.35f; turn < 2.6f; turn += 0.35f)
+        {
+            foreach (var side in new[] { _botSide, -_botSide })
+            {
+                if (Clear(wanted + side * turn))
+                {
+                    _botSide = side;
+                    return wanted + side * turn;
+                }
+            }
+        }
+
+        return wanted;
     }
 
     private static void PressKey(Key key, bool pressed)

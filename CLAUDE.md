@@ -188,7 +188,12 @@ Rules:
   guard the shown steps by the flag. `StoryRulesTests` checks this, a timeout or `until` on every wait while the player
   has the controls, and that no line names a person without a proving condition (`Proofs`: Nell needs `with.nell` or
   `nell.hidden`). `follow` sets `with.<id>` (cleared by `unfollow` and `despawn`); a loaded game brings followers back
-  from those flags (`RestoreFollowers`). Rules found by playing:
+  from those flags (`RestoreFollowers`). `follow` takes `{ "actor", "speed" }` for someone who closes in at a walk.
+  More steps: `throw` (a prop actor such as `net`, role `prop:net_cover`, flies homing from the thrower to the player
+  and holds them where it lands, even while a speaker walks up; `unroot` lets go), `drag` (the held player is pulled
+  towards a point, the prop with them), `spawn`/`place` with `nearPlayer` offsets, `spawnEnemies` with a `home` they
+  walk to and the scene's `level` (not the type's range), `homeEnemies` (send a tag elsewhere) and `despawnEnemies`.
+  The condition `nearActor` (`{ "id", "r" }`) is answered by the server only. Rules found by playing:
   - People speak face to face: a line or a talk waits until speaker and player are within `SceneData.SpeakRange`.
     Until then the player walks freely and the objective reads "Go to <name>"; a follower or a speaker with
     `approach` comes over. A `bark` carries any distance and never holds the controls.
@@ -210,6 +215,12 @@ Rules:
   player comes another way.
   The intro is now the film (see Play below); the old painted slides of `asset-pipeline/generate_intro.py` are unused.
   Keep the ruins camp and patrol away from the ambush on the road at (71.5, 72): level 4 goblins joined the first fight.
+  The opening as the author decided it (2026-11-10): the finders walk up to the fallen player; one who runs is caught by
+  Gil's thrown net; they drag the player to the solid cage cart (camp at 67.5, 101). On the road, goblins come out of
+  the ruins, Hanne, Corb and Gil fall, Vosk flees (he must live for day 11), a goblin breaks the bars and the player
+  jumps out by Hanne's Shortsword (`hannes_shortsword`, the wooden sword's numbers). Each finder has a look and weapon
+  of their own (`finder_gil` dagger, `finder_hanne` sword, `finder_corb` club, Vosk a bow); the bodies are cleared at
+  Elda's, where their fates are set. Cage and ambush are shown from fixed side cameras until the player is free.
 - Roads are the highways of everyone who walks by themselves (`RoadMap` in `Schedules.cs`, built from the zone's
   `paths` in `World.Roads`): `Route` goes straight when the line is clear and short, else onto a road by a clear line,
   along the roads and off again, so nobody walks into a wall. NPCs on their day (`world/schedules.json`,
@@ -249,7 +260,9 @@ Rules:
   (5: Maddy and Tobias gone, `harrow.raided`; Hamm goes to Garrick, Pip keeps watch), the Brightwater Four's first job
   (6), the council (8), news from Saltmere (10). A schedule block with a `when` goes before the plain block of the same
   hour: the first that holds wins. `PIXEL_DAY=6` starts a new game on that day (earlier plans run at once).
-  `net-tests/VillageTests.cs` lives those days. A hidden conditional prop keeps its collision, so do not hide fences.
+  `net-tests/VillageTests.cs` lives those days. A conditional prop's collision comes and goes with it (`Aabb.Flag`/`Unless`,
+  `World.HasFlag` fed from the server's world state and the client's copy), so the finders' cage holds the player and
+  its wreck blocks the road only once there.
 - On the prologue's first night (until `prologue.slept`) only what a scene sends comes for the player; the wild
   leaves them be unless struck first. An unbound Lightborn (role `lost`) who vanishes goes out in rising light.
 - A weapon picked up with empty hands is worn at once (the prologue's player has none until the wooden sword).

@@ -57,6 +57,18 @@ public sealed record SceneStep(string Kind)
     /// </summary>
     public float Timeout { get; init; }
 
+    /// <summary>
+    /// For spawn and place: put the actor this far from the player (world x and z) instead of at a
+    /// fixed point. A net that lands on the player, hunters who gather round them wherever they ran.
+    /// </summary>
+    public Vector3? NearPlayer { get; init; }
+
+    /// <summary>For spawnEnemies: the actors the enemies go for, one each in turn (the finders at the ambush).</summary>
+    public string[] Targets { get; init; } = Array.Empty<string>();
+
+    /// <summary>For spawnEnemies: the point the enemies make for and keep as their home (they come out of the ruins to the cart).</summary>
+    public Vector3? Home { get; init; }
+
     /// <summary>For a video: the second from which its caption shows.</summary>
     public float CaptionFrom { get; init; }
 
@@ -126,15 +138,43 @@ public static class SceneData
         {
             "lockInput" => new SceneStep("lockInput"),
             "unlockInput" => new SceneStep("unlockInput"),
-            "spawn" => new SceneStep("spawn") { Actor = Str(v, "actor"), Points = new[] { Ground(v.GetProperty("at")) }, Yaw = Degrees(v, "yaw") },
-            "place" => new SceneStep("place") { Actor = Str(v, "actor"), Points = new[] { Ground(v.GetProperty("at")) }, Yaw = Degrees(v, "yaw") },
+            "spawn" or "place" => new SceneStep(property.Name)
+            {
+                Actor = Str(v, "actor"), Yaw = Degrees(v, "yaw"),
+                Points = v.TryGetProperty("at", out var at) ? new[] { Ground(at) } : new[] { Vector3.Zero },
+                NearPlayer = v.TryGetProperty("nearPlayer", out var np) ? Ground(np) : null,
+            },
+            // A prop actor (the net) flies from the thrower to the player, wherever they run, and holds them where it lands.
+            "throw" => new SceneStep("throw") { Actor = Str(v, "actor"), Item = Str(v, "prop"), Speed = v.TryGetProperty("speed", out var ts) ? ts.GetSingle() : 13f },
+            // Lets go of a player a throw holds.
+            "unroot" => new SceneStep("unroot"),
+            // The player, held, is pulled towards a point for some seconds (dragged in the net to the cart).
+            "drag" => new SceneStep("drag")
+            {
+                Points = new[] { Ground(v.GetProperty("to")) }, Speed = v.TryGetProperty("speed", out var ds) ? ds.GetSingle() : 2f,
+                Seconds = v.TryGetProperty("seconds", out var dsec) ? dsec.GetSingle() : 3f, Item = Str(v, "prop"),
+            },
+            "despawnEnemies" => new SceneStep("despawnEnemies") { Tag = v.GetString()! },
+            // Has an actor fight: enemies may go for them, they strike back, and fall when their health is gone.
+            "fight" => new SceneStep("fight")
+            {
+                Actor = Str(v, "actor"), Count = v.TryGetProperty("health", out var fh) ? fh.GetInt32() : 40,
+                Level = v.TryGetProperty("damage", out var fd) ? fd.GetInt32() : 3,
+                // "at": the stand they take and hold (they run there first).
+                Points = v.TryGetProperty("at", out var fa) ? new[] { Ground(fa) } : Array.Empty<Vector3>(),
+            },
+            // Sends a scene's enemies to a new place, which becomes their home (from the fallen finders to the cage).
+            "homeEnemies" => new SceneStep("homeEnemies") { Tag = Str(v, "tag"), Home = Ground(v.GetProperty("to")) },
             "despawn" => new SceneStep("despawn") { Actor = v.GetString()! },
             "move" => new SceneStep("move")
             {
                 Actor = Str(v, "actor"), Points = v.GetProperty("to").EnumerateArray().Select(Ground).ToArray(),
                 Speed = v.TryGetProperty("speed", out var s) ? s.GetSingle() : 3.5f, Wait = wait,
             },
-            "follow" => new SceneStep("follow") { Actor = v.GetString()! },
+            // "follow": "nell", or { "actor": "vosk", "speed": 2.4 } for someone who closes in at a walk.
+            "follow" => v.ValueKind == JsonValueKind.String
+                ? new SceneStep("follow") { Actor = v.GetString()!, Speed = 0f }
+                : new SceneStep("follow") { Actor = Str(v, "actor"), Speed = v.TryGetProperty("speed", out var fsp) ? fsp.GetSingle() : 0f },
             "unfollow" => new SceneStep("unfollow") { Actor = v.GetString()! },
             "pose" => new SceneStep("pose") { Actor = Str(v, "actor"), Pose = Enum.Parse<ActorPose>(Str(v, "pose"), true) },
             "camera" => new SceneStep("camera") { From = Space(v.GetProperty("from")), To = Space(v.GetProperty("to")) },
@@ -169,10 +209,18 @@ public static class SceneData
                 Item = Str(v, "type"), Count = v.TryGetProperty("count", out var c) ? c.GetInt32() : 1, Points = new[] { Ground(v.GetProperty("at")) },
                 Tag = Str(v, "tag"), Level = v.TryGetProperty("level", out var l) ? l.GetInt32() : 1,
                 Health = v.TryGetProperty("health", out var h) ? h.GetSingle() : 1f,
+                Home = v.TryGetProperty("home", out var home) ? Ground(home) : null,
+                Targets = v.TryGetProperty("fight", out var ft) ? ft.EnumerateArray().Select(x => x.GetString()!).ToArray() : Array.Empty<string>(),
             },
             "checkpoint" => new SceneStep("checkpoint") { Points = new[] { Ground(v) } },
             "waitForKills" => new SceneStep("waitForKills") { Tag = v.GetString()! },
-            "drop" => new SceneStep("drop") { Item = Str(v, "item"), Points = new[] { Ground(v.GetProperty("at")) }, Count = v.TryGetProperty("count", out var dc) ? dc.GetInt32() : 1 },
+            "drop" => new SceneStep("drop")
+            {
+                Item = Str(v, "item"), Points = v.TryGetProperty("at", out var dat) ? new[] { Ground(dat) } : new[] { Vector3.Zero },
+                Count = v.TryGetProperty("count", out var dc) ? dc.GetInt32() : 1,
+                // "atActor": where someone stands or fell (Hanne's sword lies where she went down).
+                Actor = Str(v, "atActor"),
+            },
             "scene" => new SceneStep("scene") { Scene = v.GetString()! },
             _ => throw new FormatException($"Unknown scene step '{property.Name}'."),
         };
@@ -190,6 +238,6 @@ public static class SceneData
         Vector3.Distance(speaker with { Y = 0 }, player with { Y = 0 }) > SpeakRange;
 
     /// <summary>Steps that hold the scene until something happens; the rest run at once.</summary>
-    public static bool Holds(SceneStep step) => step.Kind is "fade" or "slides" or "video" or "say" or "talk" or "wait" or "waitFor" or "waitForKills"
+    public static bool Holds(SceneStep step) => step.Kind is "fade" or "slides" or "video" or "throw" or "drag" or "say" or "talk" or "wait" or "waitFor" or "waitForKills"
         || (step.Kind == "move" && step.Wait);
 }

@@ -207,6 +207,21 @@ def wooden_sword():
     return canvas
 
 
+def hannes_shortsword():
+    canvas = Canvas()
+    axis = Axis((4.5, 27.5), (27.5, 4.5))
+    blob(canvas, *axis.point(1.2), 1.7, "steel")
+    part(canvas, axis, 2.2, 7.6, lambda s: 1.2, "leather", stripes=1.5)
+    bar(canvas, axis, 8.4, 4.6, 0.9, "steel")
+    taper = lambda s: 2.0 if s < 0.8 else 2.0 * max(0.0, 1 - (s - 0.8) / 0.2)
+    part(canvas, axis, 9.3, 31.5, taper, "steel", kind="blade", edge=RAMPS["steel"][4], ridge=RAMPS["steel"][2])
+    # Brown near the guard, where the oil never quite reached.
+    for t, d in ((11, 0.5), (13, -0.5)):
+        x, y = axis.point(t, d)
+        canvas.put(int(x), int(y), RAMPS["rust"][1])
+    return canvas
+
+
 def spiked_club():
     canvas = Canvas()
     axis = Axis((4.5, 27.5), (26.5, 5.5))
@@ -300,6 +315,7 @@ PAINTERS = {
     "twin_daggers": twin_daggers,
     "rusty_dagger": rusty_dagger,
     "wooden_sword": wooden_sword,
+    "hannes_shortsword": hannes_shortsword,
     "spiked_club": spiked_club,
     "bone_staff": bone_staff,
     "goblin_shortbow": goblin_shortbow,
