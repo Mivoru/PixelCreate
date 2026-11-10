@@ -61,7 +61,12 @@ public readonly record struct PlacedProp(string Model, Vector3 Position, float S
 /// </summary>
 public sealed class Zone
 {
-    private sealed record HillData(float X, float Z, float Radius, float Height);
+    /// <summary>
+    /// A hill. Round by default; with <c>Stretch</c> above 1 it is a long ridge turned by <c>Yaw</c>
+    /// (degrees, 0 along x) with a wandering, lobed outline, and <c>Terrace</c> (metres) steps its slopes
+    /// into shelves.
+    /// </summary>
+    private sealed record HillData(float X, float Z, float Radius, float Height, float Stretch = 1f, float Yaw = 0f, float Terrace = 0f);
 
     /// <summary>
     /// A kind of ground over a round area: forest (a dark floor of needles and moss, little grass),
@@ -444,11 +449,21 @@ public sealed class Zone
         var height = 0f;
         foreach (var hill in data.Hills)
         {
-            var distance = new Vector2(x - hill.X, z - hill.Z).Length() / hill.Radius;
+            var distance = HillDistance(hill, x - hill.X, z - hill.Z);
             if (distance < 1f)
             {
                 var falloff = 1f - distance * distance;
-                height += hill.Height * falloff * falloff;
+                var rise = hill.Height * falloff * falloff;
+                if (hill.Terrace > 0f)
+                {
+                    // Shelves: flat treads joined by short, still walkable risers.
+                    var steps = rise / hill.Terrace;
+                    var tread = MathF.Floor(steps);
+                    var riser = Math.Clamp((steps - tread - 0.6f) / 0.4f, 0f, 1f);
+                    rise = (tread + riser * riser * (3f - 2f * riser)) * hill.Terrace;
+                }
+
+                height += rise;
             }
         }
 
@@ -468,6 +483,23 @@ public sealed class Zone
         }
 
         return height;
+    }
+
+    /// <summary>How far a point lies from a hill's middle, as a share of its outline (1 on the outline).</summary>
+    private static float HillDistance(HillData hill, float dx, float dz)
+    {
+        if (hill.Stretch <= 1f)
+        {
+            return new Vector2(dx, dz).Length() / hill.Radius;
+        }
+
+        var yaw = hill.Yaw * MathF.PI / 180f;
+        var along = dx * MathF.Cos(yaw) + dz * MathF.Sin(yaw);
+        var across = -dx * MathF.Sin(yaw) + dz * MathF.Cos(yaw);
+        var angle = MathF.Atan2(across, along);
+        var seed = hill.X * 0.37f + hill.Z * 0.21f;
+        var lobes = 1f + 0.14f * MathF.Sin(2f * angle + seed) + 0.09f * MathF.Sin(3f * angle - seed * 1.7f) + 0.05f * MathF.Sin(5f * angle + seed * 0.6f);
+        return new Vector2(along / (hill.Radius * hill.Stretch), across / hill.Radius).Length() / lobes;
     }
 
     /// <summary>The bed height every few metres along a river. It only ever falls, so water can flow.</summary>
