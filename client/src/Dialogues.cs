@@ -846,15 +846,6 @@ public static class Dialogues
             choices.Insert(goodbye < 0 ? choices.Count : goodbye, ask);
         }
 
-        if (opening && People.Of(npc.Id) is { About.Count: > 0 } person)
-        {
-            // Asked at the start of a talk, before the goodbye: what they make of the others.
-            var ask = new DialogChoice("What do you make of...?", Command.None, 0,
-                () => ShowAbout(hud, npc, person, () => Show(hud, npc, dialogue, node, context, snapshot, true), context));
-            var goodbye = choices.FindLastIndex(c => c.Muted);
-            choices.Insert(goodbye < 0 ? choices.Count : goodbye, ask);
-        }
-
         hud.ShowDialog(npc.Name, Fill(node.Text, context, snapshot), choices.ToArray());
         hud.DialogFace = node.Face;
         hud.Speaker = npc.Id;

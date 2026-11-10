@@ -39,6 +39,7 @@ if ($local) {
     if ($LASTEXITCODE -ne 0) { throw "The server did not build." }
 }
 
+if ($Capture) { New-Item -ItemType Directory -Force $Capture | Out-Null }
 if ($local -and -not $menu) {
     if ($Test) { $env:PIXEL_TEST = "1" }
     $server = Start-Process $serverExe -PassThru -WindowStyle Hidden -RedirectStandardOutput (Join-Path $root "export\previews\server.log") -RedirectStandardError (Join-Path $root "export\previews\server-errors.log")

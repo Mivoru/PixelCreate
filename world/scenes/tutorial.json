@@ -1,0 +1,23 @@
+{
+  "id": "tutorial",
+  "trigger": {
+    "when": { "all": [ { "flag": "tutorial.started" }, { "notFlag": "tutorial.finished" } ] },
+    "near": [480, 0],
+    "radius": 40
+  },
+  "until": { "flag": "tutorial.finished" },
+  "steps": [
+    { "say": { "name": "Rhea", "text": "So you signed. Good. Before Mira sends you out, I want to see you hold a sword. Hit me. Light and quick: the left button.", "bark": true } },
+    { "waitFor": { "flag": "tutorial.light" } },
+    { "say": { "name": "Rhea", "text": "Now put your weight into it. The right button: a heavy blow.", "bark": true } },
+    { "waitFor": { "flag": "tutorial.heavy" } },
+    { "say": { "name": "Rhea", "text": "My turn. Hold the wheel and take my blows on your guard. A guard costs stamina, so watch the green bar.", "bark": true } },
+    { "waitFor": { "flag": "tutorial.block" } },
+    { "say": { "name": "Rhea", "text": "When I lift the blade high, the ground goes red. Don't block that one. Shift, and dash through it.", "bark": true } },
+    { "waitFor": { "flag": "tutorial.dodge" } },
+    { "say": { "name": "Rhea", "text": "Last one. Run, and press Ctrl to slide. Low and fast, under a swing or out of a crowd.", "bark": true } },
+    { "waitFor": { "flag": "tutorial.slide" } },
+    { "say": { "name": "Rhea", "text": "That will keep you alive out there. Go on. Mira has work for you.", "bark": true } },
+    { "effects": [ { "action": "endTutorial" } ] }
+  ]
+}

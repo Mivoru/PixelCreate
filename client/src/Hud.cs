@@ -857,6 +857,7 @@ public partial class Hud : Control
         DrawStatus();
         DrawHotbar();
         DrawGuide();
+        DrawTutorial();
         DrawLootFeed();
         if (ShowPosition)
         {

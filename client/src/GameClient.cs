@@ -322,6 +322,10 @@ public partial class GameClient : Node
                     (_pendingCommand, _pendingArg) = choice;
                 }
             }
+            else if (key.Keycode == Key.Backspace && _hud.TutorialShown && !_hud.DialogOpen)
+            {
+                (_pendingCommand, _pendingArg) = (Command.SkipTutorial, 0);
+            }
             else if (key.Keycode == Key.F3)
             {
                 _hud.ShowPosition = !_hud.ShowPosition;
@@ -670,6 +674,10 @@ public partial class GameClient : Node
         {
             // Called out while the player plays: a banner, not a dialogue box.
             _hud.ShowBanner($"{actor?.Name ?? step.Name}: {step.Text}", new Color("f4f0e6"));
+
+            // Called out loud, from where they stand, when the line is recorded.
+            var speaker = actor?.Id ?? step.Name.ToLowerInvariant();
+            _voices.SayAt(speaker, step.Text, actor is not null ? _actorAt[actor.Index] + Vector3.Up * 1.5f : ToGodot(_client.State.Position) + Vector3.Up * 1.5f);
         }
         else if (step.Kind == "say" && fresh)
         {
@@ -751,6 +759,19 @@ public partial class GameClient : Node
                 _fx.Ring(before + Vector3.Up * 0.1f, new Color("c0cbdc"), 2.4f, 0.7f);
             }
 
+            if (present && _actorPresent[index] && pose != _actorPose[index])
+            {
+                // A fight is heard: a blow lands with a sound and now and then a shout; the fallen say their last.
+                if (pose == ActorPose.Strike)
+                {
+                    FightShout(actor, index);
+                }
+                else if (pose == ActorPose.Fallen && _actorPose[index] is ActorPose.Stand or ActorPose.Strike)
+                {
+                    LastWords(actor, index);
+                }
+            }
+
             _actorPresent[index] = present;
             _actorPose[index] = pose;
             if (_propViews.TryGetValue(actor.Id, out var propView))
@@ -810,6 +831,47 @@ public partial class GameClient : Node
             var height = _actorPose[who] == ActorPose.Sit ? 1.55f : 2.05f;
             _hud.Barks.Add((_actorAt[who] + Vector3.Up * height, text, Mathf.Clamp(Mathf.Min(left, 4.5f - left) * 3f, 0f, 1f)));
         }
+    }
+
+    // When each actor may shout again in a fight, in seconds of game time.
+    private readonly Dictionary<int, double> _shoutAt = new();
+
+    /// <summary>A fighting actor's blow: the weapon's sound, and now and then one of their shouts (voiced when recorded).</summary>
+    private void FightShout(Actor actor, int index)
+    {
+        var at = _actorAt[index] + Vector3.Up * 1.4f;
+        var look = NpcLooks.For(actor.Role);
+        _sfx.Play(look?.Weapon == "club" ? "club_thud" : "blade_hit", at);
+        var now = Time.GetTicksMsec() / 1000.0;
+        if (People.Of(actor.Id) is not { Fight.Length: > 0 } person || now < _shoutAt.GetValueOrDefault(index) || Random.Shared.NextDouble() > 0.45)
+        {
+            return;
+        }
+
+        _shoutAt[index] = now + 3.0;
+        var line = person.Fight[Random.Shared.Next(person.Fight.Length)];
+        _barks.Add((index, line, 2.6f));
+        if (!_voices.SayAt(actor.Id, line, at))
+        {
+            _sfx.Play(look?.Female == true ? "woman_shout" : "man_shout", at);
+        }
+    }
+
+    /// <summary>Someone a fight puts down: their last words over them, and a cry.</summary>
+    private void LastWords(Actor actor, int index)
+    {
+        var at = _actorAt[index] + Vector3.Up * 0.8f;
+        var female = NpcLooks.For(actor.Role)?.Female == true;
+        if (People.Of(actor.Id) is { Death.Length: > 0 } person)
+        {
+            _barks.Add((index, person.Death, 3.5f));
+            if (_voices.SayAt(actor.Id, person.Death, at))
+            {
+                return;
+            }
+        }
+
+        _sfx.Play(female ? "woman_death" : "man_death", at);
     }
 
     private float[] _barkWait = Array.Empty<float>();
@@ -996,6 +1058,11 @@ public partial class GameClient : Node
         if (_sceneApart is { } speaker)
         {
             return $"Go to {speaker.Name}";
+        }
+
+        if (_hud.TutorialShown)
+        {
+            return "Training with Rhea in the yard";
         }
 
         // On the shore, before the net, the only people in sight are the finders.
@@ -1445,6 +1512,18 @@ public partial class GameClient : Node
     private (sbyte X, sbyte Z, Buttons Buttons) BotInput()
     {
         var mode = OS.GetEnvironment("PIXEL_BOT");
+        if (_hud.TutorialShown && mode != "tutorial")
+        {
+            // Bots test other things: they skip Rhea's training (PIXEL_BOT=tutorial plays it).
+            BotStage("skip the training");
+            if (_client.Tick % 30 == 0 && !_hud.DialogOpen)
+            {
+                (_pendingCommand, _pendingArg) = (Command.SkipTutorial, 0);
+            }
+
+            return (0, 0, Buttons.None);
+        }
+
         if (mode == "guild")
         {
             return GuildBot();
@@ -1478,6 +1557,11 @@ public partial class GameClient : Node
         if (mode == "map")
         {
             return MapBot();
+        }
+
+        if (mode == "tutorial")
+        {
+            return TutorialBot();
         }
 
         if (mode == "creator")
@@ -2030,6 +2114,63 @@ public partial class GameClient : Node
     /// <summary>Whether the prologue bot plays contrary this way (<c>PIXEL_CONTRARY=flee</c>: runs from the finders).</summary>
     private static bool Contrary(string way) =>
         (OS.GetEnvironment("PIXEL_CONTRARY") ?? "").Split(',', StringSplitOptions.TrimEntries).Contains(way);
+
+    /// <summary>
+    /// Plays Rhea's training (PIXEL_BOT=tutorial, start in the Guild hall): signs with Mira, then each
+    /// lesson in turn: light blows, heavy blows, the guard held up to her, dashes, and slides on the run.
+    /// </summary>
+    private (sbyte X, sbyte Z, Buttons Buttons) TutorialBot()
+    {
+        var snapshot = _client.Latest;
+        if (snapshot is null || _client.Tick < 60)
+        {
+            return (0, 0, Buttons.None);
+        }
+
+        var story = _client.Story;
+        if (_hud.DialogOpen)
+        {
+            if (++_botWait > BotDialogTicks)
+            {
+                (_pendingCommand, _pendingArg) = _hud.Choose(0);
+                _botWait = 0;
+            }
+
+            return (0, 0, Buttons.None);
+        }
+
+        if (!story.Has(Tutorial.Started))
+        {
+            var mira = _world.Npcs.First(n => n.Role == "receptionist").Position;
+            return BotConverse("sign with Mira", new Vector3(mira.X, 0, mira.Z + 2.6f), "Sign me up.");
+        }
+
+        if (story.Has(Tutorial.Finished))
+        {
+            return BotDone();
+        }
+
+        var lesson = Array.FindIndex(Tutorial.Lessons, l => !story.Has(l.Flag));
+        var examiner = snapshot.Enemies.Where(e => EnemyDef.All[e.Type].Id == Guild.ExaminerId).Cast<EnemyView?>().FirstOrDefault();
+        if (lesson < 0 || examiner is not { } rhea)
+        {
+            BotStage("wait for Rhea's last word");
+            return (0, 0, Buttons.None);
+        }
+
+        var at = ToGodot(rhea.Position);
+        var tick = _client.Tick;
+        BotStage($"lesson {Tutorial.Lessons[lesson].Counts}");
+        return Tutorial.Lessons[lesson].Counts switch
+        {
+            "light" => BotWalk(at, 1.6f, tick % 24 == 0 ? Buttons.Light : Buttons.None),
+            "heavy" => BotWalk(at, 1.6f, tick % 90 < 30 ? Buttons.Heavy : Buttons.None),
+            "block" => BotWalk(at, 2.4f, Buttons.Block),
+            "dodge" => BotWalk(at, 2.6f, tick % 45 == 0 ? Buttons.Dash : Buttons.None),
+            // Run out and back across the yard, sliding as it goes.
+            _ => BotWalk(at + new Vector3(tick % 360 < 180 ? 9f : -9f, 0, 0), 1f, tick % 50 == 0 ? Buttons.Slide : Buttons.None),
+        };
+    }
 
     /// <summary>
     /// Checks the way-finding (PIXEL_BOT=map): sets a mark at the Old Ruins, follows the trail on the

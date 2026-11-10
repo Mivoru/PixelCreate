@@ -154,7 +154,7 @@ public sealed class FireWallHazard
 }
 
 /// <summary>The authoritative game. It owns every player and enemy, and knows nothing about rendering.</summary>
-public sealed class GameServer : IEnemyEvents
+public sealed partial class GameServer : IEnemyEvents
 {
     /// <summary>Inputs above the normal buffer before the server starts to catch up.</summary>
     private const int CatchUpSurplus = 4;
@@ -288,6 +288,11 @@ public sealed class GameServer : IEnemyEvents
 
         /// <summary>The block, parry and dodge counts when the current round of the prologue trial began.</summary>
         public (byte Blocks, byte Parries, byte Dodges) TrialMark;
+
+        /// <summary>Rhea's training: what the current lesson counted so far, the block and dodge counts when it began, and the last tick's slide.</summary>
+        public int TutorCount;
+        public (byte Blocks, byte Dodges) TutorMark;
+        public bool WasSliding;
 
         /// <summary>How the player looks, one choice per <see cref="AppearanceField"/>.</summary>
         public byte[] Appearance = Core.Appearance.NotChosen;
@@ -942,6 +947,7 @@ public sealed class GameServer : IEnemyEvents
         var maxHealth = MaxHealth(player);
         StepBarrier(player, maxHealth);
         StepTrialRounds(player);
+        StepTutorial(player);
         if (player.State.Health <= 0)
         {
             if (player.Rank == GuildRank.InTrial)
@@ -1265,6 +1271,9 @@ public sealed class GameServer : IEnemyEvents
             case Command.BeginTrial:
                 RunAction(player, "beginTrial");
                 break;
+            case Command.SkipTutorial when _story.Has(Tutorial.Started) && !_story.Has(Tutorial.Finished):
+                EndTutorial(player);
+                break;
             case Command.SellCrystals:
                 RunAction(player, "sellCrystals");
                 break;
@@ -1549,6 +1558,12 @@ public sealed class GameServer : IEnemyEvents
                 break;
             case "resetAttributes":
                 Obey(player, Command.ResetAttributes);
+                break;
+            case "beginTutorial" when player.Rank == GuildRank.Adventurer:
+                BeginTutorial(player);
+                break;
+            case "endTutorial":
+                EndTutorial(player);
                 break;
             case var start when start.StartsWith("scene:", StringComparison.Ordinal) && _scene is null:
                 StartScene(start[6..]);
@@ -2208,6 +2223,16 @@ public sealed class GameServer : IEnemyEvents
     /// </summary>
     private bool Hurt(Player player, short damage, byte slowTicks, Enemy? attacker = null, bool heavy = false, Vector3? from = null)
     {
+        if (attacker is { TutorLesson: > 0 })
+        {
+            // Rhea's training blows sting and never kill.
+            damage = (short)Math.Min(damage, Tutorial.MaxBlow);
+            if (player.State.Health - damage < 1)
+            {
+                damage = (short)Math.Max(0, player.State.Health - 1);
+            }
+        }
+
         if (player.State.DashTicks > 0)
         {
             player.Dodges++;
@@ -2349,6 +2374,12 @@ public sealed class GameServer : IEnemyEvents
             var inFront = distance < 0.6f || Vector3.Dot(toEnemy / distance, forward) >= attack.MinDot;
             if (distance > attack.Range + enemy.Def.Size * 0.5f || height > 2.2f || !inFront)
             {
+                continue;
+            }
+
+            if (TutorStruck(player, enemy, kind))
+            {
+                // A training blow on Rhea: counted, harmless.
                 continue;
             }
 
@@ -3402,7 +3433,7 @@ public sealed class GameServer : IEnemyEvents
                 continue;
             }
 
-            person.StrikeCooldown = 55 + _random.Next(40);
+            person.StrikeCooldown = 36 + _random.Next(30);
             person.StrikeTicks = 22;
             person.Pose = ActorPose.Strike;
             foe.TakeHit(person.Damage, person.Position);

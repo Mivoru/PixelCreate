@@ -296,6 +296,12 @@ public sealed class GoblinView : IEnemyView
                 {
                     sfx.Play(sound, position + Vector3.Up);
                 }
+
+                // Goblins scream as they strike, not only when struck.
+                if (_def.Kind is not ("orc" or "werewolf" or "animal" or "slime") && System.Random.Shared.NextDouble() < 0.5)
+                {
+                    sfx.Play(System.Random.Shared.NextDouble() < 0.7 ? "goblin_shriek" : "goblin_cackle", position + Vector3.Up);
+                }
             }
         }
 

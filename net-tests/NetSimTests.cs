@@ -1036,8 +1036,11 @@ public sealed class GuildTests
     }
 
     /// <summary>Signs with the Guild at Mira's counter: rank F.</summary>
-    private static void Promote(GameServer server, ClientPrediction client, SimNetwork network) =>
+    private static void Promote(GameServer server, ClientPrediction client, SimNetwork network)
+    {
         Run(server, client, network, 12, Command.Choose, Buttons.None, Option("mira", "Sign me up."));
+        Run(server, client, network, 12, Command.Choose, Buttons.None, Option("mira", "Later."));
+    }
 
     /// <summary>Rhea's trial is for rank E: a registered adventurer from level five.</summary>
     private static void StartTrial(GameServer server, ClientPrediction client, SimNetwork network)

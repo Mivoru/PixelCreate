@@ -58,6 +58,9 @@ public enum Command : byte
 
     /// <summary>The player listens to a rumour; the argument is its place in <see cref="Story.Rumors"/>. The server checks someone near tells it.</summary>
     HearRumor = 215,
+
+    /// <summary>Skips the rest of Rhea's training.</summary>
+    SkipTutorial = 216,
 }
 
 /// <summary>A newcomer must beat the guild examiner to become an adventurer.</summary>
@@ -76,6 +79,9 @@ public static class Guild
 
     /// <summary>Interiors stand on platforms east of this line (the Guild hall at x 420, the trial ground at x 480).</summary>
     public const float InteriorX = 400f;
+
+    /// <summary>Where a player stands on coming into the Guild hall by its door.</summary>
+    public static readonly Vector3 HallEntry = new(420, 0, 6.5f);
 
     public static readonly int[] CrystalPrices = { 5, 30, 150, 800 };
 

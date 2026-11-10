@@ -27,6 +27,10 @@ public sealed record PersonDef(
     IReadOnlyDictionary<string, int> Bonds, IReadOnlyDictionary<string, string> About,
     PersonMood[] Moods, PersonBark[] Barks)
 {
+    /// <summary>What they shout in a fight now and then, and their last words when they fall.</summary>
+    public string[] Fight { get; init; } = Array.Empty<string>();
+    public string Death { get; init; } = "";
+
     /// <summary>The face they wear now, or null for the one they were drawn with.</summary>
     public string? Mood(IStoryContext context) => Moods.FirstOrDefault(m => m.When.Holds(context))?.Face;
 
@@ -148,7 +152,11 @@ public static class People
                     : Array.Empty<PersonMood>(),
                 p.TryGetProperty("barks", out var barks)
                     ? barks.EnumerateArray().Select(b => new PersonBark(Condition.Parse(b.TryGetProperty("when", out var w) ? w : (JsonElement?)null), b.GetProperty("text").GetString()!)).ToArray()
-                    : Array.Empty<PersonBark>());
+                    : Array.Empty<PersonBark>())
+            {
+                Fight = p.TryGetProperty("fight", out var fight) ? fight.EnumerateArray().Select(f => f.GetString()!).ToArray() : Array.Empty<string>(),
+                Death = p.TryGetProperty("death", out var death) ? death.GetString()! : "",
+            };
         }
 
         return all;

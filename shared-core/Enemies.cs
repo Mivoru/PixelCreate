@@ -192,18 +192,21 @@ public sealed partial class Enemy
     /// </summary>
     public int TrialRound;
 
+    /// <summary>Rhea's training lesson (<see cref="Tutorial.Lessons"/>, from 1), or 0. In a striking or sliding lesson she stands still; she cannot be hurt.</summary>
+    public int TutorLesson;
+
     /// <summary>In a lesson round, holds back every ability but the one the round teaches, and keeps that one coming.</summary>
     private void HoldTrialAbilities()
     {
-        if (TrialRound is not (1 or 2) || Def.Abilities is not { } abilities)
+        if ((TrialRound is not (1 or 2) && TutorLesson is not (3 or 4)) || Def.Abilities is not { } abilities)
         {
             return;
         }
 
-        var taught = TrialRound == 1 ? "melee" : "slam";
+        var taught = TrialRound == 1 || TutorLesson == 3 ? "melee" : "slam";
         for (var i = 0; i < abilities.Length; i++)
         {
-            _cooldowns[i] = abilities[i].Effect == taught ? Math.Min(_cooldowns[i], TrialRound == 1 ? 40 : 100) : Math.Max(_cooldowns[i], 2);
+            _cooldowns[i] = abilities[i].Effect == taught ? Math.Min(_cooldowns[i], TrialRound == 1 || TutorLesson == 3 ? 40 : 100) : Math.Max(_cooldowns[i], 2);
         }
     }
 
@@ -280,6 +283,21 @@ public sealed partial class Enemy
         {
             Action = EnemyAction.Dead;
             Velocity = Vector3.Zero;
+            return;
+        }
+
+        if (TutorLesson > 0 && TutorLesson is not (3 or 4))
+        {
+            // In a lesson where the player strikes or slides, Rhea stands and watches them.
+            Velocity = Vector3.Zero;
+            Action = EnemyAction.Idle;
+            ActionTicks = 10;
+            if (FindTarget(targets) is { } watched)
+            {
+                var look = watched.Position - Position;
+                Facing = MathF.Atan2(-look.X, -look.Z);
+            }
+
             return;
         }
 
@@ -416,7 +434,7 @@ public sealed partial class Enemy
     public bool TakeHit(short damage, Vector3 from, int attackerId = -1)
     {
         // The first two rounds of the prologue trial are lessons: the examiner cannot be hurt.
-        if (InShadow || Dodging || TrialRound is 1 or 2)
+        if (InShadow || Dodging || TrialRound is 1 or 2 || TutorLesson > 0)
         {
             return false;
         }

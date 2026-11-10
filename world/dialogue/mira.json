@@ -11,6 +11,24 @@
     },
     {
       "when": {
+        "all": [
+          {
+            "rank": {
+              "min": 1
+            }
+          },
+          {
+            "notFlag": "tutorial.offered"
+          },
+          {
+            "notFlag": "tutorial.started"
+          }
+        ]
+      },
+      "node": "registered"
+    },
+    {
+      "when": {
         "quest": {
           "slime_cull": "ready"
         }
@@ -239,6 +257,17 @@
       "text": "Good to see you. The Guild buys every magic crystal you bring. Hides, teeth and the like go to Hollis at the side counter.",
       "options": [
         {
+          "text": "Train with Rhea in the yard",
+          "when": {
+            "notFlag": "tutorial.started"
+          },
+          "effects": [
+            {
+              "action": "beginTutorial"
+            }
+          ]
+        },
+        {
           "text": "Sell all crystals ({crystalWorth} gold)",
           "effects": [
             {
@@ -333,11 +362,27 @@
       ]
     },
     "registered": {
-      "text": "Done. The board by the wall has the jobs. Touch the Anchor Stone by the door, too: fall out there and you wake here.",
+      "text": "Done, you're rank F. One more thing: Rhea wants to see you hold a sword before you go out. She'll show you the basics in the yard.",
       "face": "smile",
       "options": [
         {
-          "text": "Thanks."
+          "text": "Take me to her.",
+          "effects": [
+            {
+              "setFlag": "tutorial.offered"
+            },
+            {
+              "action": "beginTutorial"
+            }
+          ]
+        },
+        {
+          "text": "Later.",
+          "effects": [
+            {
+              "setFlag": "tutorial.offered"
+            }
+          ]
         }
       ]
     },

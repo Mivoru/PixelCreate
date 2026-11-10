@@ -441,7 +441,7 @@ public static class Story
     private static Dictionary<StoryKind, string[]> BuildKeys()
     {
         var sets = Enum.GetValues<StoryKind>().ToDictionary(k => k, _ => new SortedSet<string>(StringComparer.Ordinal));
-        foreach (var flag in CodeFlags.Concat(Notes.Keys).Concat(Scenes.Select(s => s.DoneFlag)))
+        foreach (var flag in CodeFlags.Concat(Tutorial.Flags).Concat(Notes.Keys).Concat(Scenes.Select(s => s.DoneFlag)))
         {
             sets[StoryKind.Flag].Add(flag);
         }

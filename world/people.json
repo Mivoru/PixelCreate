@@ -1,11 +1,33 @@
 {
   "elder": {
     "age": 78,
-    "voice": { "id": "pqHfZKP75CvOlQylNhV4", "name": "Bill", "stability": 0.55, "similarity_boost": 0.75, "style": 0.25 },
+    "voice": {
+      "id": "pqHfZKP75CvOlQylNhV4",
+      "name": "Bill",
+      "stability": 0.55,
+      "similarity_boost": 0.75,
+      "style": 0.25
+    },
     "summary": "Old Bram. The oldest man in Hearthmere. He sits by the well and watches who comes down the road, and says less than he knows.",
-    "traits": ["watchful", "plain-spoken", "tired"],
-    "tones": { "compassionate": 2, "pragmatic": 1, "hard": -1 },
-    "bonds": { "elda": 35, "mira": 25, "smith": 20, "lina": -15, "garrick": 5, "kai": -10, "sora": 15 },
+    "traits": [
+      "watchful",
+      "plain-spoken",
+      "tired"
+    ],
+    "tones": {
+      "compassionate": 2,
+      "pragmatic": 1,
+      "hard": -1
+    },
+    "bonds": {
+      "elda": 35,
+      "mira": 25,
+      "smith": 20,
+      "lina": -15,
+      "garrick": 5,
+      "kai": -10,
+      "sora": 15
+    },
     "about": {
       "elda": "Feeds half the village and scolds the other half. Her boy is with the levy. Don't ask her about him unless you mean to listen.",
       "lina": "Counts other people's coin and calls it trade. She was not always so. Debt does that.",
@@ -17,20 +39,67 @@
       "wren": "Good hands, old fear. She left the Church, and the Church does not like to be left."
     },
     "moods": [
-      { "when": { "time": { "from": 1080, "to": 1320 } }, "face": "smile" }
+      {
+        "when": {
+          "time": {
+            "from": 1080,
+            "to": 1320
+          }
+        },
+        "face": "smile"
+      }
     ],
     "barks": [
-      { "when": { "time": { "from": 360, "to": 720 } }, "text": "Three this year. Three." },
-      { "when": { "time": { "from": 720, "to": 1080 } }, "text": "Well's low. It was never low in my day." },
-      { "when": { "time": { "from": 1080, "to": 1320 } }, "text": "Sit, if you're sitting. Standing makes the ale nervous." }
+      {
+        "when": {
+          "time": {
+            "from": 360,
+            "to": 720
+          }
+        },
+        "text": "Three this year. Three."
+      },
+      {
+        "when": {
+          "time": {
+            "from": 720,
+            "to": 1080
+          }
+        },
+        "text": "Well's low. It was never low in my day."
+      },
+      {
+        "when": {
+          "time": {
+            "from": 1080,
+            "to": 1320
+          }
+        },
+        "text": "Sit, if you're sitting. Standing makes the ale nervous."
+      }
     ]
   },
   "elda": {
     "age": 51,
     "summary": "Elda the baker. Up before the sun, feeds anyone who looks thin, and has opinions about all of them. Her son Jory serves in the margravine's levy.",
-    "traits": ["warm", "blunt", "worried"],
-    "tones": { "compassionate": 3, "pragmatic": 0, "hard": -2 },
-    "bonds": { "elder": 30, "pip": 20, "smith": 25, "lina": -10, "garrick": 10, "mira": 20 },
+    "traits": [
+      "warm",
+      "blunt",
+      "worried"
+    ],
+    "tones": {
+      "compassionate": 3,
+      "pragmatic": 0,
+      "hard": -2
+    },
+    "bonds": {
+      "elder": 30,
+      "pip": 20,
+      "smith": 25,
+      "lina": -10,
+      "garrick": 10,
+      "mira": 20
+    },
     "about": {
       "elder": "Bram was old when I was a girl. He knows every grave in the yard by name. Bring him bread and he pretends he didn't want it.",
       "pip": "Good boy. Works that farm like it was three of him. His father owes the Company and thinks nobody knows.",
@@ -39,19 +108,56 @@
       "smith": "Tess keeps her fire lit and her mouth shut. I'd take one of her over ten of most people."
     },
     "moods": [
-      { "when": { "time": { "from": 300, "to": 480 } }, "face": "tired" }
+      {
+        "when": {
+          "time": {
+            "from": 300,
+            "to": 480
+          }
+        },
+        "face": "tired"
+      }
     ],
     "barks": [
-      { "when": { "time": { "from": 300, "to": 600 } }, "text": "First loaves are out! Don't all stand there." },
-      { "when": { "time": { "from": 600, "to": 1200 } }, "text": "You're thin. Everyone who falls here is thin." }
+      {
+        "when": {
+          "time": {
+            "from": 300,
+            "to": 600
+          }
+        },
+        "text": "First loaves are out! Don't all stand there."
+      },
+      {
+        "when": {
+          "time": {
+            "from": 600,
+            "to": 1200
+          }
+        },
+        "text": "You're thin. Everyone who falls here is thin."
+      }
     ]
   },
   "smith": {
     "age": 34,
     "summary": "Tess, who keeps the forge. Her husband Orrin was bonded to the Saltdeeps three years ago for a debt. She has had no word since.",
-    "traits": ["quiet", "stubborn", "proud"],
-    "tones": { "compassionate": 1, "pragmatic": 2, "hard": 0 },
-    "bonds": { "elda": 25, "elder": 20, "lina": -35, "garrick": 0 },
+    "traits": [
+      "quiet",
+      "stubborn",
+      "proud"
+    ],
+    "tones": {
+      "compassionate": 1,
+      "pragmatic": 2,
+      "hard": 0
+    },
+    "bonds": {
+      "elda": 25,
+      "elder": 20,
+      "lina": -35,
+      "garrick": 0
+    },
     "about": {
       "lina": "Ask her what a husband costs. She'll have the figure.",
       "elda": "She leaves a loaf on my anvil when she thinks I'm not eating. I'm not, mostly.",
@@ -59,20 +165,63 @@
       "garrick": "He was at the gate the day they took Orrin through it. He opened it."
     },
     "moods": [
-      { "when": { "time": { "from": 1140, "to": 1320 } }, "face": "sad" }
+      {
+        "when": {
+          "time": {
+            "from": 1140,
+            "to": 1320
+          }
+        },
+        "face": "sad"
+      }
     ],
     "barks": [
-      { "when": { "flag": "news.saltmere" }, "text": "Saltmere. He's at Saltmere." },
-      { "when": { "time": { "from": 360, "to": 1140 } }, "text": "Iron's dear this year. Ask the goblins where it all goes." },
-      { "when": { "time": { "from": 1140, "to": 1320 } }, "text": "..." }
+      {
+        "when": {
+          "flag": "news.saltmere"
+        },
+        "text": "Saltmere. He's at Saltmere."
+      },
+      {
+        "when": {
+          "time": {
+            "from": 360,
+            "to": 1140
+          }
+        },
+        "text": "Iron's dear this year. Ask the goblins where it all goes."
+      },
+      {
+        "when": {
+          "time": {
+            "from": 1140,
+            "to": 1320
+          }
+        },
+        "text": "..."
+      }
     ]
   },
   "lina": {
     "age": 38,
     "summary": "Lina, who trades from the stall by the square. Everything she sells comes through the Halveth Company, and so does everything she owes.",
-    "traits": ["sharp", "charming", "cornered"],
-    "tones": { "compassionate": -1, "pragmatic": 3, "hard": 1 },
-    "bonds": { "smith": -20, "elda": 5, "elder": -10, "garrick": 15, "wren": -5 },
+    "traits": [
+      "sharp",
+      "charming",
+      "cornered"
+    ],
+    "tones": {
+      "compassionate": -1,
+      "pragmatic": 3,
+      "hard": 1
+    },
+    "bonds": {
+      "smith": -20,
+      "elda": 5,
+      "elder": -10,
+      "garrick": 15,
+      "wren": -5
+    },
     "about": {
       "smith": "Tess blames me for a contract her husband put his own mark to. I only carried the paper.",
       "elder": "The old man thinks the village ran better before coin. It ran hungrier.",
@@ -81,19 +230,53 @@
       "elda": "She would give the bakery away loaf by loaf if nobody stopped her."
     },
     "moods": [
-      { "when": { "time": { "from": 420, "to": 1140 } }, "face": "smirk" }
+      {
+        "when": {
+          "time": {
+            "from": 420,
+            "to": 1140
+          }
+        },
+        "face": "smirk"
+      }
     ],
     "barks": [
-      { "when": { "flag": "council.met" }, "text": "A reeve who can read a contract. That's all I say." },
-      { "when": { "time": { "from": 420, "to": 1140 } }, "text": "Company goods, Company prices. Fresh off the East Watch road." }
+      {
+        "when": {
+          "flag": "council.met"
+        },
+        "text": "A reeve who can read a contract. That's all I say."
+      },
+      {
+        "when": {
+          "time": {
+            "from": 420,
+            "to": 1140
+          }
+        },
+        "text": "Company goods, Company prices. Fresh off the East Watch road."
+      }
     ]
   },
   "wren": {
     "age": 29,
     "summary": "Wren the alchemist, with a stall by the Guild road. She trained under the Church of the Pale Lantern and left without leave.",
-    "traits": ["careful", "kind", "afraid"],
-    "tones": { "compassionate": 2, "pragmatic": 1, "hard": -3 },
-    "bonds": { "mira": 30, "lina": -15, "sora": 20, "elder": 10 },
+    "traits": [
+      "careful",
+      "kind",
+      "afraid"
+    ],
+    "tones": {
+      "compassionate": 2,
+      "pragmatic": 1,
+      "hard": -3
+    },
+    "bonds": {
+      "mira": 30,
+      "lina": -15,
+      "sora": 20,
+      "elder": 10
+    },
     "about": {
       "mira": "She gave me this pitch when nobody else would rent to a woman with no past. I don't forget it.",
       "lina": "She has asked twice where I learned my craft. She smiles when she asks.",
@@ -102,15 +285,37 @@
     },
     "moods": [],
     "barks": [
-      { "when": { "time": { "from": 420, "to": 1200 } }, "text": "Red for wounds. Don't drink two at once, whatever Kai says." }
+      {
+        "when": {
+          "time": {
+            "from": 420,
+            "to": 1200
+          }
+        },
+        "text": "Red for wounds. Don't drink two at once, whatever Kai says."
+      }
     ]
   },
   "garrick": {
     "age": 44,
     "summary": "Garrick, the village guard. One man for a gate, a road and the nights. He takes what he is offered, and he is offered things.",
-    "traits": ["weary", "easygoing", "compromised"],
-    "tones": { "compassionate": 1, "pragmatic": 2, "hard": -2 },
-    "bonds": { "lina": 15, "elda": 20, "smith": -5, "elder": 5, "kai": -15 },
+    "traits": [
+      "weary",
+      "easygoing",
+      "compromised"
+    ],
+    "tones": {
+      "compassionate": 1,
+      "pragmatic": 2,
+      "hard": -2
+    },
+    "bonds": {
+      "lina": 15,
+      "elda": 20,
+      "smith": -5,
+      "elder": 5,
+      "kai": -15
+    },
     "about": {
       "kai": "Your kind die and get up again. He acts like it. One night he'll start something in that yard that a village man has to finish.",
       "elda": "Best bread in the March. I owe her since the thaw. She hasn't asked.",
@@ -119,20 +324,61 @@
       "elder": "Knows more than he says. Lets you find out the hard way."
     },
     "moods": [
-      { "when": { "time": { "from": 1200, "to": 1380 } }, "face": "smile" }
+      {
+        "when": {
+          "time": {
+            "from": 1200,
+            "to": 1380
+          }
+        },
+        "face": "smile"
+      }
     ],
     "barks": [
-      { "when": { "flag": "harrow.raided" }, "text": "Boars. I told him boars." },
-      { "when": { "time": { "from": 360, "to": 1200 } }, "text": "Road's quiet. I like it quiet." },
-      { "when": { "time": { "from": 1380, "to": 1439 } }, "text": "Nights are long at this gate." }
+      {
+        "when": {
+          "flag": "harrow.raided"
+        },
+        "text": "Boars. I told him boars."
+      },
+      {
+        "when": {
+          "time": {
+            "from": 360,
+            "to": 1200
+          }
+        },
+        "text": "Road's quiet. I like it quiet."
+      },
+      {
+        "when": {
+          "time": {
+            "from": 1380,
+            "to": 1439
+          }
+        },
+        "text": "Nights are long at this gate."
+      }
     ]
   },
   "pip": {
     "age": 17,
     "summary": "Pip of Harrow Farm. Works the fields with his father Hamm, and keeps a pitchfork by the door since the goblins grew bold.",
-    "traits": ["earnest", "jumpy", "loyal"],
-    "tones": { "compassionate": 2, "pragmatic": 0, "hard": -2 },
-    "bonds": { "elda": 25, "elder": 15, "garrick": 5 },
+    "traits": [
+      "earnest",
+      "jumpy",
+      "loyal"
+    ],
+    "tones": {
+      "compassionate": 2,
+      "pragmatic": 0,
+      "hard": -2
+    },
+    "bonds": {
+      "elda": 25,
+      "elder": 15,
+      "garrick": 5
+    },
     "about": {
       "elda": "She used to give me the burnt ends when I was small. Still does. Don't tell her I said still.",
       "garrick": "He's one man. One. You count the goblins and tell me that's enough.",
@@ -140,17 +386,50 @@
     },
     "moods": [],
     "barks": [
-      { "when": { "flag": "harrow.raided" }, "text": "I heard her shout. I heard her." },
-      { "when": { "time": { "from": 360, "to": 1140 } }, "text": "Walk past the sheep, don't run. They bolt." }
+      {
+        "when": {
+          "flag": "harrow.raided"
+        },
+        "text": "I heard her shout. I heard her."
+      },
+      {
+        "when": {
+          "time": {
+            "from": 360,
+            "to": 1140
+          }
+        },
+        "text": "Walk past the sheep, don't run. They bolt."
+      }
     ]
   },
   "mira": {
     "age": 24,
-    "voice": { "id": "cgSgspJ2msm6clMCkdW9", "name": "Jessica", "stability": 0.45, "similarity_boost": 0.75, "style": 0.35 },
+    "voice": {
+      "id": "cgSgspJ2msm6clMCkdW9",
+      "name": "Jessica",
+      "stability": 0.45,
+      "similarity_boost": 0.75,
+      "style": 0.35
+    },
     "summary": "Mira, receptionist of the Hearthmere Guild, who runs it in all but name. Cheerful with everyone. She came to the village as a child, from the north.",
-    "traits": ["bright", "capable", "guarded"],
-    "tones": { "compassionate": 2, "pragmatic": 1, "hard": -1 },
-    "bonds": { "wren": 30, "elder": 25, "hollis": 20, "kai": -5, "sora": 15 },
+    "traits": [
+      "bright",
+      "capable",
+      "guarded"
+    ],
+    "tones": {
+      "compassionate": 2,
+      "pragmatic": 1,
+      "hard": -1
+    },
+    "bonds": {
+      "wren": 30,
+      "elder": 25,
+      "hollis": 20,
+      "kai": -5,
+      "sora": 15
+    },
     "about": {
       "hollis": "Twenty years with the Company before he came to us. He reads a ledger the way priests read scripture.",
       "kai": "He brings in more crystals than anyone and more trouble than the rest together.",
@@ -164,9 +443,21 @@
   "hollis": {
     "age": 58,
     "summary": "Hollis, the Guild's appraiser. Kept the Halveth Company's books in East Watch for twenty years before he came to Hearthmere.",
-    "traits": ["exact", "dry", "honest"],
-    "tones": { "compassionate": 0, "pragmatic": 2, "hard": -1 },
-    "bonds": { "mira": 25, "lina": -10, "kai": -5 },
+    "traits": [
+      "exact",
+      "dry",
+      "honest"
+    ],
+    "tones": {
+      "compassionate": 0,
+      "pragmatic": 2,
+      "hard": -1
+    },
+    "bonds": {
+      "mira": 25,
+      "lina": -10,
+      "kai": -5
+    },
     "about": {
       "mira": "She adds faster than I do and pretends she doesn't. Sensible girl.",
       "lina": "She trades on Holt's paper. I wrote that paper for twenty years. I know what the small script says.",
@@ -178,27 +469,68 @@
   "kai": {
     "age": 19,
     "summary": "Kai, a Lightborn who fell a year ago. A fine swordsman who treats the world as a game he is winning.",
-    "traits": ["cocky", "generous", "careless"],
-    "tones": { "compassionate": 0, "pragmatic": 1, "hard": 2 },
-    "bonds": { "sora": 10, "garrick": -10, "mira": 15 },
+    "traits": [
+      "cocky",
+      "generous",
+      "careless"
+    ],
+    "tones": {
+      "compassionate": 0,
+      "pragmatic": 1,
+      "hard": 2
+    },
+    "bonds": {
+      "sora": 10,
+      "garrick": -10,
+      "mira": 15
+    },
     "about": {
       "sora": "She thinks there's a way home. I tell her this is the better server. She doesn't laugh.",
       "garrick": "Level nothing, guards a gate. Why do they even give him a name?",
       "mira": "Best quest-giver in the zone. I mean that as a compliment. She doesn't take it as one."
     },
     "moods": [
-      { "when": { "time": { "from": 1080, "to": 1320 } }, "face": "laugh" }
+      {
+        "when": {
+          "time": {
+            "from": 1080,
+            "to": 1320
+          }
+        },
+        "face": "laugh"
+      }
     ],
     "barks": [
-      { "when": { "time": { "from": 1080, "to": 1320 } }, "text": "Next round's on whoever died last. Not me, then." }
+      {
+        "when": {
+          "time": {
+            "from": 1080,
+            "to": 1320
+          }
+        },
+        "text": "Next round's on whoever died last. Not me, then."
+      }
     ]
   },
   "sora": {
     "age": 22,
     "summary": "Sora, a Lightborn who fell a year ago. She studies the old Auren stones and believes there is a way back.",
-    "traits": ["studious", "homesick", "stubborn"],
-    "tones": { "compassionate": 2, "pragmatic": 1, "hard": -2 },
-    "bonds": { "kai": 5, "wren": 20, "elder": 15, "mira": 15 },
+    "traits": [
+      "studious",
+      "homesick",
+      "stubborn"
+    ],
+    "tones": {
+      "compassionate": 2,
+      "pragmatic": 1,
+      "hard": -2
+    },
+    "bonds": {
+      "kai": 5,
+      "wren": 20,
+      "elder": 15,
+      "mira": 15
+    },
     "about": {
       "kai": "He stopped counting the days. I think that is how it gets you.",
       "wren": "She was taught to read part of the old script and forbidden the rest. She helps me anyway.",
@@ -210,23 +542,57 @@
   "nell": {
     "age": 13,
     "summary": "Nell of Westwood, bonded to the Halveth Company for her father's debt of fifteen crowns. She was in the cage with you.",
-    "traits": ["quick", "frightened", "brave"],
+    "traits": [
+      "quick",
+      "frightened",
+      "brave"
+    ],
     "tones": {},
-    "judges": { "vosk.defied": 4 },
-    "bonds": { "mira": 20 },
+    "judges": {
+      "vosk.defied": 4
+    },
+    "bonds": {
+      "mira": 20
+    },
     "about": {},
     "moods": [
-      { "when": { "notFlag": "nell.hidden" }, "face": "afraid" }
+      {
+        "when": {
+          "notFlag": "nell.hidden"
+        },
+        "face": "afraid"
+      }
     ],
     "barks": []
   },
   "corwin": {
     "age": 52,
-    "voice": { "id": "N2lVS1w4EtoT3dr4eOWO", "name": "Callum", "stability": 0.4, "similarity_boost": 0.75, "style": 0.4 },
+    "voice": {
+      "id": "N2lVS1w4EtoT3dr4eOWO",
+      "name": "Callum",
+      "stability": 0.4,
+      "similarity_boost": 0.75,
+      "style": 0.4
+    },
     "summary": "Corwin Hale, Branch Master of the Hearthmere Guild. A-rank once; Greyfang took his leg and the drink took the rest. He sits in the tavern yard and misses nothing.",
-    "traits": ["sharp", "bitter", "loyal"],
-    "tones": { "compassionate": 1, "pragmatic": 2, "hard": 1 },
-    "bonds": { "mira": 40, "elder": 20, "kai": -5, "edwin": 25, "garrick": 5, "hollis": 15 },
+    "traits": [
+      "sharp",
+      "bitter",
+      "loyal"
+    ],
+    "tones": {
+      "compassionate": 1,
+      "pragmatic": 2,
+      "hard": 1
+    },
+    "bonds": {
+      "mira": 40,
+      "elder": 20,
+      "kai": -5,
+      "edwin": 25,
+      "garrick": 5,
+      "hollis": 15
+    },
     "about": {
       "mira": "Runs my branch better than I ever did, and lets me keep the title. I'd die for that girl. Easier than filling in her ledgers.",
       "edwin": "Good heart, good arm, no fear. Two of those will get him killed. I signed his badge myself. I think about that.",
@@ -236,21 +602,84 @@
       "hollis": "Twenty years a clerk before he came to us. Knows iron and hides, and what both are worth to the wrong people."
     },
     "moods": [
-      { "when": { "any": [{ "time": { "from": 1380, "to": 1439 } }, { "time": { "from": 0, "to": 359 } }] }, "face": "asleep" },
-      { "when": { "time": { "from": 1080, "to": 1320 } }, "face": "smirk" }
+      {
+        "when": {
+          "any": [
+            {
+              "time": {
+                "from": 1380,
+                "to": 1439
+              }
+            },
+            {
+              "time": {
+                "from": 0,
+                "to": 359
+              }
+            }
+          ]
+        },
+        "face": "asleep"
+      },
+      {
+        "when": {
+          "time": {
+            "from": 1080,
+            "to": 1320
+          }
+        },
+        "face": "smirk"
+      }
     ],
     "barks": [
-      { "when": { "time": { "from": 360, "to": 720 } }, "text": "Too bright. Who ordered morning?" },
-      { "when": { "time": { "from": 720, "to": 1080 } }, "text": "Mira! Is the board full? ...Good girl." },
-      { "when": { "time": { "from": 1080, "to": 1320 } }, "text": "Count them in. Always count them in." }
+      {
+        "when": {
+          "time": {
+            "from": 360,
+            "to": 720
+          }
+        },
+        "text": "Too bright. Who ordered morning?"
+      },
+      {
+        "when": {
+          "time": {
+            "from": 720,
+            "to": 1080
+          }
+        },
+        "text": "Mira! Is the board full? ...Good girl."
+      },
+      {
+        "when": {
+          "time": {
+            "from": 1080,
+            "to": 1320
+          }
+        },
+        "text": "Count them in. Always count them in."
+      }
     ]
   },
   "tam": {
     "age": 15,
     "summary": "Tam, Hollis's apprentice at the Guild's side counter. Eager, careful, and afraid of the one mistake that costs his master money.",
-    "traits": ["eager", "anxious", "honest"],
-    "tones": { "compassionate": 3, "pragmatic": 1, "hard": -3 },
-    "bonds": { "hollis": 35, "mira": 30, "kai": 10, "corwin": 5 },
+    "traits": [
+      "eager",
+      "anxious",
+      "honest"
+    ],
+    "tones": {
+      "compassionate": 3,
+      "pragmatic": 1,
+      "hard": -3
+    },
+    "bonds": {
+      "hollis": 35,
+      "mira": 30,
+      "kai": 10,
+      "corwin": 5
+    },
     "about": {
       "hollis": "He says 'again' more than he says my name. But he's never once docked me. I looked in the book.",
       "mira": "She saves me the heel of the loaf. She pretends she doesn't.",
@@ -258,16 +687,48 @@
     },
     "moods": [],
     "barks": [
-      { "when": { "time": { "from": 360, "to": 720 } }, "text": "Twelve boar hides, nine fair, three poor. Twelve." },
-      { "when": { "time": { "from": 720, "to": 1080 } }, "text": "Tower is East Watch. Three waves is Saltmere..." }
+      {
+        "when": {
+          "time": {
+            "from": 360,
+            "to": 720
+          }
+        },
+        "text": "Twelve boar hides, nine fair, three poor. Twelve."
+      },
+      {
+        "when": {
+          "time": {
+            "from": 720,
+            "to": 1080
+          }
+        },
+        "text": "Tower is East Watch. Three waves is Saltmere..."
+      }
     ]
   },
   "edwin": {
     "age": 19,
     "summary": "Edwin, leader of the Brightwater Four: four Hearthmere-born adventurers at rank F. Sure of himself, kind, and certain that somebody from here ought to do this work.",
-    "traits": ["brave", "kind", "overconfident"],
-    "tones": { "compassionate": 1, "pragmatic": 1, "hard": 2 },
-    "bonds": { "moss": 35, "fen": 40, "rook": 35, "corwin": 20, "mira": 20, "kai": 10, "elder": 15 },
+    "traits": [
+      "brave",
+      "kind",
+      "overconfident"
+    ],
+    "tones": {
+      "compassionate": 1,
+      "pragmatic": 1,
+      "hard": 2
+    },
+    "bonds": {
+      "moss": 35,
+      "fen": 40,
+      "rook": 35,
+      "corwin": 20,
+      "mira": 20,
+      "kai": 10,
+      "elder": 15
+    },
     "about": {
       "moss": "Sees a rabbit's track on bare stone. Says nine words a day, and eight are about your feet.",
       "fen": "She's why the rest of us still have all our fingers. Don't tell her she's the brave one. She'll argue.",
@@ -276,19 +737,56 @@
       "corwin": "He signed our badges and then didn't speak for an hour. He was A-rank. One day I'll ask him what it's like."
     },
     "moods": [
-      { "when": { "time": { "from": 1080, "to": 1320 } }, "face": "laugh" }
+      {
+        "when": {
+          "time": {
+            "from": 1080,
+            "to": 1320
+          }
+        },
+        "face": "laugh"
+      }
     ],
     "barks": [
-      { "when": { "time": { "from": 360, "to": 720 } }, "text": "Board first, then breakfast. Rook. Board first." },
-      { "when": { "time": { "from": 1080, "to": 1320 } }, "text": "To Brightwater! And to whoever's buying." }
+      {
+        "when": {
+          "time": {
+            "from": 360,
+            "to": 720
+          }
+        },
+        "text": "Board first, then breakfast. Rook. Board first."
+      },
+      {
+        "when": {
+          "time": {
+            "from": 1080,
+            "to": 1320
+          }
+        },
+        "text": "To Brightwater! And to whoever's buying."
+      }
     ]
   },
   "moss": {
     "age": 20,
     "summary": "Moss, the archer of the Brightwater Four. Quiet, dry, and the first to notice what the ground has to say.",
-    "traits": ["quiet", "observant", "dry"],
-    "tones": { "compassionate": 0, "pragmatic": 2, "hard": -1 },
-    "bonds": { "edwin": 35, "fen": 25, "rook": 30, "pip": 10 },
+    "traits": [
+      "quiet",
+      "observant",
+      "dry"
+    ],
+    "tones": {
+      "compassionate": 0,
+      "pragmatic": 2,
+      "hard": -1
+    },
+    "bonds": {
+      "edwin": 35,
+      "fen": 25,
+      "rook": 30,
+      "pip": 10
+    },
     "about": {
       "edwin": "He walks in front. Somebody has to. I'd rather it wasn't always him.",
       "rook": "Loud. Useful. The goblins look at him, and I get a clean shot.",
@@ -296,16 +794,46 @@
     },
     "moods": [],
     "barks": [
-      { "when": { "time": { "from": 360, "to": 720 } }, "text": "Wind's from the south." },
-      { "when": { "time": { "from": 1080, "to": 1320 } }, "text": "...Heel first. Every one of them." }
+      {
+        "when": {
+          "time": {
+            "from": 360,
+            "to": 720
+          }
+        },
+        "text": "Wind's from the south."
+      },
+      {
+        "when": {
+          "time": {
+            "from": 1080,
+            "to": 1320
+          }
+        },
+        "text": "...Heel first. Every one of them."
+      }
     ]
   },
   "fen": {
     "age": 19,
     "summary": "Fen, healer of the Brightwater Four. She patches the other three with herbs bought from Wren on credit, and keeps a list of everything that could go wrong.",
-    "traits": ["caring", "worried", "stubborn"],
-    "tones": { "compassionate": 2, "pragmatic": 1, "hard": -2 },
-    "bonds": { "edwin": 40, "moss": 25, "rook": 30, "wren": 30, "elda": 20 },
+    "traits": [
+      "caring",
+      "worried",
+      "stubborn"
+    ],
+    "tones": {
+      "compassionate": 2,
+      "pragmatic": 1,
+      "hard": -2
+    },
+    "bonds": {
+      "edwin": 40,
+      "moss": 25,
+      "rook": 30,
+      "wren": 30,
+      "elda": 20
+    },
     "about": {
       "wren": "She taught me which mushrooms mend and which only look as if they do. She never says where she learned it.",
       "edwin": "He thinks if he's brave enough, nobody gets hurt. It doesn't work like that. I have the needle to prove it.",
@@ -313,19 +841,58 @@
       "moss": "He notices everything, and tells you a day later."
     },
     "moods": [
-      { "when": { "time": { "from": 1080, "to": 1320 } }, "face": "smile" }
+      {
+        "when": {
+          "time": {
+            "from": 1080,
+            "to": 1320
+          }
+        },
+        "face": "smile"
+      }
     ],
     "barks": [
-      { "when": { "time": { "from": 360, "to": 720 } }, "text": "Feverleaf, two bundles. And the red, if she'll trust me for it." },
-      { "when": { "time": { "from": 1080, "to": 1320 } }, "text": "Rook. Sleeve. Show me the arm." }
+      {
+        "when": {
+          "time": {
+            "from": 360,
+            "to": 720
+          }
+        },
+        "text": "Feverleaf, two bundles. And the red, if she'll trust me for it."
+      },
+      {
+        "when": {
+          "time": {
+            "from": 1080,
+            "to": 1320
+          }
+        },
+        "text": "Rook. Sleeve. Show me the arm."
+      }
     ]
   },
   "rook": {
     "age": 21,
     "summary": "Rook, the shield of the Brightwater Four. Loud, hungry and hard to knock over. His brother Dunn weds the miller's daughter.",
-    "traits": ["loud", "loyal", "hungry"],
-    "tones": { "compassionate": 2, "pragmatic": 0, "hard": -1 },
-    "bonds": { "edwin": 35, "fen": 30, "moss": 30, "osric": -10, "anwen": 15, "elda": 25 },
+    "traits": [
+      "loud",
+      "loyal",
+      "hungry"
+    ],
+    "tones": {
+      "compassionate": 2,
+      "pragmatic": 0,
+      "hard": -1
+    },
+    "bonds": {
+      "edwin": 35,
+      "fen": 30,
+      "moss": 30,
+      "osric": -10,
+      "anwen": 15,
+      "elda": 25
+    },
     "about": {
       "osric": "Weighs the flour twice and my brother three times. Dunn's a good man. Osric will work that out by the wedding, or after.",
       "anwen": "Soon to be my sister. Kind. Quiet. Looks down the east road a lot, for a bride.",
@@ -333,20 +900,74 @@
       "elda": "The finest woman in the March. I'd marry her bread."
     },
     "moods": [
-      { "when": { "time": { "from": 1080, "to": 1320 } }, "face": "laugh" }
+      {
+        "when": {
+          "time": {
+            "from": 1080,
+            "to": 1320
+          }
+        },
+        "face": "laugh"
+      }
     ],
     "barks": [
-      { "when": { "all": [{ "flag": "brightwater.first_job" }, { "time": { "from": 1080, "to": 1320 } }] }, "text": "It BIT me. A slime! Look at it!" },
-      { "when": { "time": { "from": 360, "to": 720 } }, "text": "Is that bread? I smell bread." },
-      { "when": { "time": { "from": 1080, "to": 1320 } }, "text": "And then it hit the shield. BANG. Like that." }
+      {
+        "when": {
+          "all": [
+            {
+              "flag": "brightwater.first_job"
+            },
+            {
+              "time": {
+                "from": 1080,
+                "to": 1320
+              }
+            }
+          ]
+        },
+        "text": "It BIT me. A slime! Look at it!"
+      },
+      {
+        "when": {
+          "time": {
+            "from": 360,
+            "to": 720
+          }
+        },
+        "text": "Is that bread? I smell bread."
+      },
+      {
+        "when": {
+          "time": {
+            "from": 1080,
+            "to": 1320
+          }
+        },
+        "text": "And then it hit the shield. BANG. Like that."
+      }
     ]
   },
   "osric": {
     "age": 56,
     "summary": "Osric, miller of Mill Hill and a voice on the village council. Tight with coin, proud of his stones, prouder of his daughter Anwen.",
-    "traits": ["thrifty", "proud", "fair"],
-    "tones": { "compassionate": 2, "pragmatic": 1, "hard": 0 },
-    "bonds": { "anwen": 50, "elda": 20, "lina": 10, "rook": -10, "elder": 15, "hamm": 15 },
+    "traits": [
+      "thrifty",
+      "proud",
+      "fair"
+    ],
+    "tones": {
+      "compassionate": 2,
+      "pragmatic": 1,
+      "hard": 0
+    },
+    "bonds": {
+      "anwen": 50,
+      "elda": 20,
+      "lina": 10,
+      "rook": -10,
+      "elder": 15,
+      "hamm": 15
+    },
     "about": {
       "anwen": "My girl. Reads, sews, keeps the tally better than I do. Dunn had better deserve her. I've told him so, twice.",
       "elda": "Pays on the day, every week, for thirty years. If the rest of the March paid like Elda there'd be no Company.",
@@ -356,16 +977,46 @@
     },
     "moods": [],
     "barks": [
-      { "when": { "time": { "from": 360, "to": 720 } }, "text": "Wind's fair. Stones are turning. Good." },
-      { "when": { "time": { "from": 720, "to": 1080 } }, "text": "Twenty-four sacks. I counted twenty-four." }
+      {
+        "when": {
+          "time": {
+            "from": 360,
+            "to": 720
+          }
+        },
+        "text": "Wind's fair. Stones are turning. Good."
+      },
+      {
+        "when": {
+          "time": {
+            "from": 720,
+            "to": 1080
+          }
+        },
+        "text": "Twenty-four sacks. I counted twenty-four."
+      }
     ]
   },
   "anwen": {
     "age": 20,
     "summary": "Anwen, the miller's daughter, to be married on the twenty-fourth. Gentle, nervous, and never once out of the valley.",
-    "traits": ["gentle", "nervous", "curious"],
-    "tones": { "compassionate": 3, "pragmatic": 1, "hard": -3 },
-    "bonds": { "osric": 45, "rook": 15, "elda": 25, "sora": 20, "maddy": 20 },
+    "traits": [
+      "gentle",
+      "nervous",
+      "curious"
+    ],
+    "tones": {
+      "compassionate": 3,
+      "pragmatic": 1,
+      "hard": -3
+    },
+    "bonds": {
+      "osric": 45,
+      "rook": 15,
+      "elda": 25,
+      "sora": 20,
+      "maddy": 20
+    },
     "about": {
       "osric": "Father counts things so he doesn't have to say them. Forty sacks means he's pleased. He's counted the wedding guests four times.",
       "sora": "She lends me books. Real ones, from the Guild shelf. She says where she comes from, everyone can read. Imagine.",
@@ -373,19 +1024,59 @@
       "maddy": "She says she'll leave the day she turns eighteen. She says it every year, about every birthday."
     },
     "moods": [
-      { "when": { "time": { "from": 1080, "to": 1320 } }, "face": "blush" }
+      {
+        "when": {
+          "time": {
+            "from": 1080,
+            "to": 1320
+          }
+        },
+        "face": "blush"
+      }
     ],
     "barks": [
-      { "when": { "time": { "from": 360, "to": 720 } }, "text": "Blue thread. No, the grey. ...The blue." },
-      { "when": { "time": { "from": 1080, "to": 1320 } }, "text": "The road looks longer at dusk." }
+      {
+        "when": {
+          "time": {
+            "from": 360,
+            "to": 720
+          }
+        },
+        "text": "Blue thread. No, the grey. ...The blue."
+      },
+      {
+        "when": {
+          "time": {
+            "from": 1080,
+            "to": 1320
+          }
+        },
+        "text": "The road looks longer at dusk."
+      }
     ]
   },
   "hamm": {
     "age": 51,
     "summary": "Hamm Harrow, Pip's father, master of Harrow Farm and a voice on the council. Worn thin by a bad year and a debt to the Halveth Company.",
-    "traits": ["proud", "tired", "stubborn"],
-    "tones": { "compassionate": 1, "pragmatic": 2, "hard": -2 },
-    "bonds": { "pip": 50, "maddy": 35, "tobias": 30, "osric": 15, "lina": -10, "garrick": 5, "elder": 20 },
+    "traits": [
+      "proud",
+      "tired",
+      "stubborn"
+    ],
+    "tones": {
+      "compassionate": 1,
+      "pragmatic": 2,
+      "hard": -2
+    },
+    "bonds": {
+      "pip": 50,
+      "maddy": 35,
+      "tobias": 30,
+      "osric": 15,
+      "lina": -10,
+      "garrick": 5,
+      "elder": 20
+    },
     "about": {
       "pip": "My boy. He was never a frightened child. Then one of yours burned the barn. He's twenty and he checks the latch three times a night.",
       "maddy": "My brother's girl. Mouth like a magpie. Does two men's work and tells you about it.",
@@ -395,17 +1086,52 @@
     },
     "moods": [],
     "barks": [
-      { "when": { "flag": "harrow.raided" }, "text": "Two of mine. Out of my own yard." },
-      { "when": { "time": { "from": 360, "to": 720 } }, "text": "Far fence is down again." },
-      { "when": { "time": { "from": 720, "to": 1080 } }, "text": "Rain by week's end, or we carry water." }
+      {
+        "when": {
+          "flag": "harrow.raided"
+        },
+        "text": "Two of mine. Out of my own yard."
+      },
+      {
+        "when": {
+          "time": {
+            "from": 360,
+            "to": 720
+          }
+        },
+        "text": "Far fence is down again."
+      },
+      {
+        "when": {
+          "time": {
+            "from": 720,
+            "to": 1080
+          }
+        },
+        "text": "Rain by week's end, or we carry water."
+      }
     ]
   },
   "maddy": {
     "age": 17,
     "summary": "Maddy, Pip's cousin, seventeen, who works Harrow Farm and means to see the world past the south gate.",
-    "traits": ["cheeky", "restless", "hard-working"],
-    "tones": { "compassionate": 1, "pragmatic": 2, "hard": -2 },
-    "bonds": { "pip": 30, "hamm": 30, "tobias": 25, "anwen": 20, "kai": 15 },
+    "traits": [
+      "cheeky",
+      "restless",
+      "hard-working"
+    ],
+    "tones": {
+      "compassionate": 1,
+      "pragmatic": 2,
+      "hard": -2
+    },
+    "bonds": {
+      "pip": 30,
+      "hamm": 30,
+      "tobias": 25,
+      "anwen": 20,
+      "kai": 15
+    },
     "about": {
       "pip": "Jumps at his own shadow since the barn. He used to climb the mill sails for a dare. I miss that Pip.",
       "tobias": "Says nothing all day and then one thing at supper that's right. It's very annoying.",
@@ -414,16 +1140,45 @@
     },
     "moods": [],
     "barks": [
-      { "when": { "time": { "from": 360, "to": 720 } }, "text": "Tobias! You owe me a copper!" },
-      { "when": { "time": { "from": 720, "to": 1080 } }, "text": "One day. Straight down that road." }
+      {
+        "when": {
+          "time": {
+            "from": 360,
+            "to": 720
+          }
+        },
+        "text": "Tobias! You owe me a copper!"
+      },
+      {
+        "when": {
+          "time": {
+            "from": 720,
+            "to": 1080
+          }
+        },
+        "text": "One day. Straight down that road."
+      }
     ]
   },
   "tobias": {
     "age": 30,
     "summary": "Tobias, the hired man at Harrow Farm these twelve years. He says little and sees the fences every night.",
-    "traits": ["silent", "steady", "watchful"],
-    "tones": { "compassionate": 1, "pragmatic": 2, "hard": -1 },
-    "bonds": { "hamm": 35, "maddy": 25, "pip": 25, "garrick": -5 },
+    "traits": [
+      "silent",
+      "steady",
+      "watchful"
+    ],
+    "tones": {
+      "compassionate": 1,
+      "pragmatic": 2,
+      "hard": -1
+    },
+    "bonds": {
+      "hamm": 35,
+      "maddy": 25,
+      "pip": 25,
+      "garrick": -5
+    },
     "about": {
       "hamm": "Fair.",
       "maddy": "Talks for both of us. Suits me.",
@@ -431,7 +1186,138 @@
     },
     "moods": [],
     "barks": [
-      { "when": { "time": { "from": 720, "to": 1080 } }, "text": "Hm." }
+      {
+        "when": {
+          "time": {
+            "from": 720,
+            "to": 1080
+          }
+        },
+        "text": "Hm."
+      }
     ]
+  },
+  "vosk": {
+    "age": 46,
+    "voice": {
+      "id": "pNInz6obpgDQGcFmaJgB",
+      "name": "Adam",
+      "stability": 0.5,
+      "similarity_boost": 0.75,
+      "style": 0.3
+    },
+    "summary": "Brann Vosk, captain of the finders who wait at Mirror Lake for those who fall from the sky.",
+    "traits": [
+      "cold",
+      "practical"
+    ],
+    "fight": [
+      "Hold the cart!",
+      "Cut them down! Don't let them reach the cage!",
+      "Gil! The one on the right!"
+    ],
+    "tones": {},
+    "bonds": {},
+    "about": {},
+    "moods": [],
+    "barks": []
+  },
+  "gil": {
+    "age": 27,
+    "voice": {
+      "id": "N2lVS1w4EtoT3dr4eOWO",
+      "name": "Callum",
+      "stability": 0.4,
+      "similarity_boost": 0.75,
+      "style": 0.45
+    },
+    "summary": "Gil, Vosk's net man: quick, sly and too pleased with himself.",
+    "traits": [
+      "quick",
+      "sly"
+    ],
+    "fight": [
+      "Come on, then, you ugly little rat!",
+      "Archer! In the ruins!",
+      "Get off me!"
+    ],
+    "death": "Vosk... help me...",
+    "tones": {},
+    "bonds": {},
+    "about": {},
+    "moods": [],
+    "barks": []
+  },
+  "hanne": {
+    "age": 34,
+    "voice": {
+      "id": "Xb7hH8MSUJpSbSDYk0k2",
+      "name": "Alice",
+      "stability": 0.55,
+      "similarity_boost": 0.75,
+      "style": 0.3
+    },
+    "summary": "Hanne, the steadiest of the finders, an old soldier with a short sword.",
+    "traits": [
+      "steady",
+      "hard"
+    ],
+    "fight": [
+      "Two on the left!",
+      "Back, vermin!",
+      "Corb, stay with me!"
+    ],
+    "death": "Corb... run...",
+    "tones": {},
+    "bonds": {},
+    "about": {},
+    "moods": [],
+    "barks": []
+  },
+  "corb": {
+    "age": 39,
+    "voice": {
+      "id": "nPczCjzI2devNBz1zQrb",
+      "name": "Brian",
+      "stability": 0.55,
+      "similarity_boost": 0.75,
+      "style": 0.25
+    },
+    "summary": "Corb, the big one with the club, slow to speak and slow to quit.",
+    "traits": [
+      "strong",
+      "slow"
+    ],
+    "fight": [
+      "Come here!",
+      "I'll break you in half!",
+      "Hanne, behind you!"
+    ],
+    "death": "Too many... too many of them...",
+    "tones": {},
+    "bonds": {},
+    "about": {},
+    "moods": [],
+    "barks": []
+  },
+  "rhea": {
+    "age": 31,
+    "voice": {
+      "id": "EXAVITQu4vr4xnSDxMaL",
+      "name": "Sarah",
+      "stability": 0.5,
+      "similarity_boost": 0.75,
+      "style": 0.35
+    },
+    "summary": "Rhea, the Guild's examiner, who teaches every new adventurer to fight before they go out.",
+    "traits": [
+      "patient",
+      "exact"
+    ],
+    "tones": {},
+    "bonds": {},
+    "about": {},
+    "moods": [],
+    "barks": []
   }
 }
