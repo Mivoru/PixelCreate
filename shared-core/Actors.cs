@@ -55,6 +55,9 @@ public sealed class Actor
     /// </summary>
     public RestSpot Spot;
 
+    /// <summary>The points that lead in to where they rest (<see cref="ScheduleBlock.By"/>): they leave by them, last first.</summary>
+    public Vector3[] Way = Array.Empty<Vector3>();
+
     /// <summary>Set while a scene has the actor: their day waits until the scene lets them go.</summary>
     public bool Scripted;
 

@@ -1,0 +1,84 @@
+{
+  "npc": "hamm",
+  "entries": [
+    {
+      "node": "default"
+    }
+  ],
+  "nodes": {
+    "default": {
+      "text": "You're the shine my boy's afraid of. Hamm Harrow. This is my land. Walk slow on it and we'll have no quarrel.",
+      "face": "tired",
+      "options": [
+        {
+          "text": "Pip told me about the barn.",
+          "next": "barn",
+          "when": {
+            "flag": "pip.told_barn"
+          }
+        },
+        {
+          "text": "How's the farm?",
+          "next": "farm"
+        },
+        {
+          "text": "Goodbye"
+        }
+      ]
+    },
+    "barn": {
+      "text": "Then you know why. The dog was called Biscuit. Pip was eleven when he got him. Don't run near the cows.",
+      "face": "sad",
+      "options": [
+        {
+          "text": "I won't."
+        }
+      ]
+    },
+    "farm": {
+      "text": "Good soil, bad year. The Company lent me seed money at the thaw. I'll pay at harvest, if the harvest and the goblins both allow.",
+      "options": [
+        {
+          "text": "If I can help, ask.",
+          "tone": "compassionate",
+          "next": "farm_kind"
+        },
+        {
+          "text": "What do you owe?",
+          "tone": "pragmatic",
+          "next": "farm_plain"
+        },
+        {
+          "text": "Never borrow from a company.",
+          "tone": "hard",
+          "next": "farm_hard"
+        }
+      ]
+    },
+    "farm_kind": {
+      "text": "I don't ask your kind for things. ...But I heard you. That's more than the last one got.",
+      "options": [
+        {
+          "text": "Goodbye"
+        }
+      ]
+    },
+    "farm_plain": {
+      "text": "Thirty crowns, and the interest. Holt writes the interest. I only sign.",
+      "options": [
+        {
+          "text": "Goodbye"
+        }
+      ]
+    },
+    "farm_hard": {
+      "text": "And eat what, till harvest? Advice comes cheap from a man who can't starve.",
+      "face": "angry",
+      "options": [
+        {
+          "text": "Goodbye"
+        }
+      ]
+    }
+  }
+}

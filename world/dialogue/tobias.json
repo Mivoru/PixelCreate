@@ -1,0 +1,82 @@
+{
+  "npc": "tobias",
+  "entries": [
+    {
+      "node": "default"
+    }
+  ],
+  "nodes": {
+    "default": {
+      "text": "(He nods, and goes on mending the harness.)",
+      "options": [
+        {
+          "text": "You don't talk much.",
+          "next": "quiet"
+        },
+        {
+          "text": "How long have you worked here?",
+          "next": "years"
+        },
+        {
+          "text": "Goodbye"
+        }
+      ]
+    },
+    "quiet": {
+      "text": "No.",
+      "options": [
+        {
+          "text": "How long have you worked here?",
+          "next": "years"
+        },
+        {
+          "text": "Fair."
+        }
+      ]
+    },
+    "years": {
+      "text": "Twelve years. Hamm's father took me on. ...Fence by the far field's down again. Something leans on it at night.",
+      "options": [
+        {
+          "text": "I'll keep an eye out.",
+          "tone": "compassionate",
+          "next": "years_kind"
+        },
+        {
+          "text": "Leans? What kind of something?",
+          "tone": "pragmatic",
+          "next": "years_plain"
+        },
+        {
+          "text": "Then mend the fence.",
+          "tone": "hard",
+          "next": "years_hard"
+        }
+      ]
+    },
+    "years_kind": {
+      "text": "Kind of you.",
+      "options": [
+        {
+          "text": "Goodbye"
+        }
+      ]
+    },
+    "years_plain": {
+      "text": "Short. Heavy feet. More than one. I told Garrick. He said boars.",
+      "options": [
+        {
+          "text": "Those aren't boars."
+        }
+      ]
+    },
+    "years_hard": {
+      "text": "(He looks at you for a while, then goes back to the harness.)",
+      "options": [
+        {
+          "text": "Goodbye"
+        }
+      ]
+    }
+  }
+}

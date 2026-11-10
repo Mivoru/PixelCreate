@@ -136,4 +136,86 @@ public class ScheduleTests
         Assert.True(kai.Active);
         Assert.True(Vector3.Distance(kai.Position, new Vector3(-36, kai.Position.Y, 25.2f)) < 6f, $"Kai came out at {kai.Position}, not by the Guild door");
     }
+
+    [Fact]
+    public void InTheEvening_TheBrightwaterFourShareATable_AndCorwinKeepsHis()
+    {
+        var server = Start(21);
+        foreach (var id in new[] { "edwin", "moss", "fen", "rook", "corwin" })
+        {
+            var who = server.Actor(id);
+            Assert.True(who.Active && who.Pose == ActorPose.Sit && who.Position.X is > 20f and < 26f, $"{id} is not in the tavern yard at nine");
+        }
+
+        // Two people never share a seat.
+        var seated = Schedules.All.Keys.Select(server.Actor).Where(a => a.Active && a.Pose == ActorPose.Sit).ToArray();
+        foreach (var a in seated)
+        {
+            foreach (var b in seated.Where(b => b != a))
+            {
+                Assert.True(Vector3.Distance(a.Position, b.Position) > 0.8f, $"{a.Id} and {b.Id} sit on each other");
+            }
+        }
+    }
+
+    /// <summary>A place that is itself inside something: a seat on a bench, Wren's place behind her counter.</summary>
+    private static bool Solid(Vector3 spot) => Valley.World.OverlapsPlayer(spot with { Y = Valley.World.GroundHeight(spot.X, spot.Z) + 0.1f });
+
+    [Fact]
+    public void EveryWalkOfADay_GoesRoundWhatStandsInTheWay()
+    {
+        // From each place of someone's day to the next, by the road map: no leg of the way crosses anything solid.
+        var world = Valley.World;
+        var roads = new RoadMap(world.Roads);
+        var blocked = new List<string>();
+        foreach (var (id, blocks) in Schedules.All)
+        {
+            var day = blocks.OrderBy(b => b.FromHour).ToArray();
+            for (var i = 0; i < day.Length; i++)
+            {
+                var from = day[(i + day.Length - 1) % day.Length];
+                var to = day[i];
+                var start = to.Via is { } door && from.Home is not null ? door : from.Home ?? from.At!.Value;
+                var goal = to.Home ?? to.At!.Value;
+                if (Vector3.Distance(start, goal) is < 0.5f or > 150f || Math.Abs(start.X) > 300f)
+                {
+                    // Nowhere to go, a jump between the hall and the village, or a walk inside the hall (no roads, open floor).
+                    continue;
+                }
+
+                var at = new Vector2(start.X, start.Z);
+                var first = true;
+                var leaving = from.Home is null ? from.By : Array.Empty<Vector3>();
+                foreach (var point in Schedules.Way(roads, world, start, leaving, to.By, goal))
+                {
+                    var next = new Vector2(point.X, point.Z);
+                    // The last step may end on a seat, which is solid, and the whole of it may lie inside their own stall,
+                    // where a villager fits and the player's box does not.
+                    var last = next == new Vector2(goal.X, goal.Z) && (to.Pose == ActorPose.Sit || Solid(goal));
+                    // So may the first begin on one: they get up from the bench they sat on.
+                    var seat = MathF.Min(1f, 1.2f / MathF.Max(0.01f, Vector2.Distance(at, next)));
+                    var stop = last ? Vector2.Lerp(at, next, to.Pose == ActorPose.Sit ? 1f - seat : 0f) : next;
+                    var rise = first && (from.Pose == ActorPose.Sit || Solid(start)) ? Vector2.Lerp(at, next, from.Pose == ActorPose.Sit ? seat : 1f) : at;
+                    first = false;
+                    if (!RoadMap.Clear(rise, stop, world))
+                    {
+                        blocked.Add($"{id} at {to.FromHour}:00 between {at.X:F1}, {at.Y:F1} and {next.X:F1}, {next.Y:F1}");
+                    }
+
+                    at = next;
+                }
+            }
+        }
+
+        Assert.True(blocked.Count == 0, "People walk through something: " + string.Join("; ", blocked));
+    }
+
+    [Fact]
+    public void EveryoneInTheValley_HasATemper()
+    {
+        foreach (var npc in Valley.World.Npcs.Where(n => n.Role is not ("storage" or "quest_board" or "anchor_stone")))
+        {
+            Assert.True(People.Of(npc.Id) is not null, $"{npc.Id} has no entry in world/people.json");
+        }
+    }
 }

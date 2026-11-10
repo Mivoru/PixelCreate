@@ -1,0 +1,83 @@
+{
+  "npc": "moss",
+  "entries": [
+    {
+      "node": "default"
+    }
+  ],
+  "nodes": {
+    "default": {
+      "text": "Moss. ...You walk loud.",
+      "options": [
+        {
+          "text": "Loud?",
+          "next": "loud"
+        },
+        {
+          "text": "What do you see out there?",
+          "next": "tracks"
+        },
+        {
+          "text": "Goodbye"
+        }
+      ]
+    },
+    "loud": {
+      "text": "Heel first. Everything inside a hundred paces knows you by now. The deer left an hour ago.",
+      "options": [
+        {
+          "text": "I'm sorry about your deer.",
+          "tone": "compassionate",
+          "next": "loud_sorry"
+        },
+        {
+          "text": "Teach me, then.",
+          "tone": "pragmatic",
+          "next": "loud_teach"
+        },
+        {
+          "text": "I don't need quiet. I need fast.",
+          "tone": "hard",
+          "next": "loud_hard"
+        }
+      ]
+    },
+    "loud_sorry": {
+      "text": "The deer don't mind. I do. I was hungry.",
+      "face": "smirk",
+      "options": [
+        {
+          "text": "Goodbye"
+        }
+      ]
+    },
+    "loud_teach": {
+      "text": "Toe, then heel. Slow near a herd. They watch before they run, and one tells the rest.",
+      "options": [
+        {
+          "text": "Thanks."
+        }
+      ]
+    },
+    "loud_hard": {
+      "text": "Then be fast. The quiet ones eat.",
+      "options": [
+        {
+          "text": "Goodbye"
+        }
+      ]
+    },
+    "tracks": {
+      "text": "Goblin tracks by the south road. More than last month, and deeper in the heel. They're carrying something heavy home.",
+      "options": [
+        {
+          "text": "And me? What do my tracks say?",
+          "next": "loud"
+        },
+        {
+          "text": "I'll watch for them."
+        }
+      ]
+    }
+  }
+}

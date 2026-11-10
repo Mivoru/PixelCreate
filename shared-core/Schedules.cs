@@ -12,7 +12,11 @@ namespace PixelCreate.Core;
 /// <param name="Home">The door they go in by; they are out of the world once there.</param>
 /// <param name="When">A block with a condition is skipped unless it holds, so a day can change after an event.</param>
 /// <param name="Via">Where they come out when they were indoors somewhere far off: the other side of a door.</param>
-public sealed record ScheduleBlock(int FromHour, Vector3? At, float Yaw, Vector3? Home, ActorPose Pose, Condition When, Vector3? Via = null);
+public sealed record ScheduleBlock(int FromHour, Vector3? At, float Yaw, Vector3? Home, ActorPose Pose, Condition When, Vector3? Via = null)
+{
+    /// <summary>Points walked last on the way in and first on the way out: round the table to the far bench, round the end of a fence.</summary>
+    public Vector3[] By { get; init; } = Array.Empty<Vector3>();
+}
 
 /// <summary>Where someone rests now: the place, the facing, the pose, and whether they are in the world at all.</summary>
 public readonly record struct RestSpot(Vector3 At, float Yaw, ActorPose Pose, bool Present);
@@ -72,6 +76,33 @@ public static class Schedules
         return new RestSpot(spot, block.Yaw, block.Pose, block.Home is null);
     }
 
+    /// <summary>
+    /// The way from where someone is to a place of their day: out by the points of the place they leave,
+    /// along the roads, and in by the points of the place they go to.
+    /// </summary>
+    public static List<Vector3> Way(RoadMap roads, World world, Vector3 from, IReadOnlyList<Vector3> leaving, IReadOnlyList<Vector3> arriving, Vector3 goal)
+    {
+        Vector3 Ground(Vector3 point) => point with { Y = world.GroundHeight(point.X, point.Z) };
+        var way = new List<Vector3>();
+        for (var i = leaving.Count - 1; i >= 0; i--)
+        {
+            way.Add(Ground(leaving[i]));
+        }
+
+        way.AddRange(roads.Route(way.Count > 0 ? way[^1] : from, arriving.Count > 0 ? arriving[0] : goal, world));
+        for (var i = 1; i < arriving.Count; i++)
+        {
+            way.Add(Ground(arriving[i]));
+        }
+
+        if (arriving.Count > 0)
+        {
+            way.Add(Ground(goal));
+        }
+
+        return way;
+    }
+
     /// <summary>Every condition reference in the schedules, for the tests that check names against the data.</summary>
     public static IEnumerable<(string Kind, string Name, string Where)> References() =>
         All.SelectMany(p => p.Value.SelectMany(b => b.When.References().Select(r => (r.Kind, r.Name, $"schedule {p.Key}"))));
@@ -106,7 +137,11 @@ public static class Schedules
             : b.TryGetProperty("yaw", out var yaw) ? yaw.GetSingle() * MathF.PI / 180f : 0f;
         return new ScheduleBlock(
             b.GetProperty("from").GetInt32(), at, facing,
-            Point(b, "home"), pose, Condition.Parse(b.TryGetProperty("when", out var when) ? when : (JsonElement?)null), Point(b, "via"));
+            Point(b, "home"), pose, Condition.Parse(b.TryGetProperty("when", out var when) ? when : (JsonElement?)null), Point(b, "via"))
+        {
+            By = b.TryGetProperty("by", out var by)
+                ? by.EnumerateArray().Select(p => new Vector3(p[0].GetSingle(), 0, p[1].GetSingle())).ToArray() : Array.Empty<Vector3>(),
+        };
     }
 }
 

@@ -340,12 +340,258 @@ public static class NpcLooks
         },
     };
 
+    /// <summary>Corwin Hale: a big man gone grey, an old adventurer's coat, a scar over the eye.</summary>
+    private static readonly RigLook BranchMaster = new("branch_master", new Color("e0b494"), 1.06f, "none")
+    {
+        Hair = "swept",
+        Cloak = true,
+        Stoop = 0.06f,
+        FaceWidth = 1.06f,
+        Mood = "tired",
+        Extras = new[] { "beard_short", "vest" },
+        Eyes = new Color("5a4a3a"),
+        Brows = new Color("6a6a70"),
+        FaceStyle = new FaceStyle(2, 0, 2, "eye"),
+        Palette = new Dictionary<string, Color>
+        {
+            ["anime_hair"] = new("8a8a90"),
+            ["anime_shirt"] = new("6a5a4a"),
+            ["anime_cloak"] = new("4a2a2a"),
+            ["anime_vest"] = new("3a3440"),
+            ["anime_trousers"] = new("3a3440"),
+        },
+    };
+
+    /// <summary>Tam: a boy of fifteen in an apron too long for him.</summary>
+    private static readonly RigLook Apprentice = new("apprentice", new Color("f0c8b0"), 0.86f, "none")
+    {
+        Hair = "pip",
+        Cloak = false,
+        Rest = "clasped",
+        Mood = "neutral",
+        Extras = new[] { "apron" },
+        Eyes = new Color("6a4a30"),
+        Brows = new Color("6a4a30"),
+        FaceStyle = new FaceStyle(0, 1, 1),
+        Palette = new Dictionary<string, Color>
+        {
+            ["anime_hair"] = new("4a3020"),
+            ["anime_shirt"] = new("e8dcc0"),
+            ["anime_trousers"] = new("5a4a3a"),
+            ["anime_dark"] = new("6a5a3e"),
+            ["anime_vest"] = new("c8b48c"),
+            ["anime_glove"] = new("f0c8b0"),
+        },
+    };
+
+    /// <summary>Edwin: nineteen, fair-haired, in a blue cloak cut down from his father's.</summary>
+    private static readonly RigLook PartySword = new("party_sword", new Color("e8c0a4"), 1.0f, "sword")
+    {
+        Hair = "hero",
+        Cloak = true,
+        Mood = "smile",
+        Eyes = new Color("3f6fa8"),
+        Brows = new Color("a88838"),
+        FaceStyle = new FaceStyle(1, 1, 1),
+        Palette = new Dictionary<string, Color>
+        {
+            ["anime_hair"] = new("e0c060"),
+            ["anime_shirt"] = new("e8dcc0"),
+            ["anime_cloak"] = new("3a5a8a"),
+            ["anime_trousers"] = new("4a4038"),
+            ["anime_accent"] = new("e8e4dc"),
+        },
+    };
+
+    /// <summary>Moss: lean, dark, in hunter's green.</summary>
+    private static readonly RigLook PartyBow = new("party_bow", new Color("c08a64"), 0.99f, "bow")
+    {
+        Hair = "undercut",
+        Cloak = true,
+        FaceWidth = 0.94f,
+        Mood = "neutral",
+        Extras = new[] { "vest" },
+        Eyes = new Color("3e8948"),
+        Brows = new Color("1c1a24"),
+        FaceStyle = new FaceStyle(1, 0, 0),
+        Palette = new Dictionary<string, Color>
+        {
+            ["anime_hair"] = new("1c1a24"),
+            ["anime_shirt"] = new("5a6a4a"),
+            ["anime_cloak"] = new("3a4a32"),
+            ["anime_trousers"] = new("3a3440"),
+            ["anime_vest"] = new("5a4a3a"),
+        },
+    };
+
+    /// <summary>Fen: small, brown-haired, a healer's white apron over a green dress.</summary>
+    private static readonly RigLook PartyHealer = new("party_healer", new Color("f6d8c4"), 0.92f, "none")
+    {
+        Hair = "mira",
+        Feminine = true,
+        Skirt = true,
+        Cloak = false,
+        Rest = "clasped",
+        Mood = "smile",
+        Extras = new[] { "apron" },
+        Eyes = new Color("3e8948"),
+        Brows = new Color("4a3020"),
+        FaceStyle = new FaceStyle(0, 1, 0),
+        Palette = new Dictionary<string, Color>
+        {
+            ["anime_hair"] = new("6a4a30"),
+            ["anime_shirt"] = new("5a8a6a"),
+            ["anime_cloak"] = new("3a5a4a"),
+            ["anime_trousers"] = new("f0dcc8"),
+            ["anime_dark"] = new("5a8a6a"),
+            ["anime_vest"] = new("f4f0e6"),
+            ["anime_glove"] = new("f6d8c4"),
+        },
+    };
+
+    /// <summary>Rook: broad, shaven-headed, in the only armour the Four own.</summary>
+    private static readonly RigLook PartyShield = new("party_shield", new Color("e0b494"), 1.08f, "sword")
+    {
+        Hair = "shaved",
+        Cloak = false,
+        FaceWidth = 1.06f,
+        Mood = "smile",
+        Extras = new[] { "armor" },
+        Eyes = new Color("5a4a3a"),
+        Brows = new Color("3a2418"),
+        FaceStyle = new FaceStyle(2, 1, 2, "none", true, new Color("3a2418")),
+        Palette = new Dictionary<string, Color>
+        {
+            ["anime_hair"] = new("4a3020"),
+            ["anime_shirt"] = new("7a5a3a"),
+            ["anime_cloak"] = new("5a3a2a"),
+            ["anime_trousers"] = new("3a3440"),
+        },
+    };
+
+    /// <summary>Osric: a balding miller dusted with flour, moustache and apron.</summary>
+    private static readonly RigLook Miller = new("miller", new Color("e8c0a4"), 1.0f, "none")
+    {
+        Hair = "bram",
+        Cloak = false,
+        Rest = "behind",
+        Stoop = 0.05f,
+        FaceWidth = 1.06f,
+        Mood = "neutral",
+        Extras = new[] { "apron", "mustache" },
+        Eyes = new Color("5a4a3a"),
+        Brows = new Color("6a6a70"),
+        FaceStyle = new FaceStyle(2, 0, 2),
+        Palette = new Dictionary<string, Color>
+        {
+            ["anime_hair"] = new("8a8a90"),
+            ["anime_shirt"] = new("d8d0c0"),
+            ["anime_cloak"] = new("6a5a3e"),
+            ["anime_trousers"] = new("5a4a3a"),
+            ["anime_dark"] = new("6a5a3e"),
+            ["anime_vest"] = new("f4f0e6"),
+            ["anime_glove"] = new("e8c0a4"),
+        },
+    };
+
+    /// <summary>Anwen: twenty, fair hair tied back, a blue dress.</summary>
+    private static readonly RigLook MillerDaughter = new("miller_daughter", new Color("f6d8c4"), 0.93f, "none")
+    {
+        Hair = "rhea",
+        Feminine = true,
+        Skirt = true,
+        Cloak = false,
+        Rest = "clasped",
+        Mood = "smile",
+        Extras = new[] { "apron" },
+        Eyes = new Color("3f6fa8"),
+        Brows = new Color("a88838"),
+        FaceStyle = new FaceStyle(0, 1, 0),
+        Palette = new Dictionary<string, Color>
+        {
+            ["anime_hair"] = new("e0c060"),
+            ["anime_shirt"] = new("6a8ac0"),
+            ["anime_cloak"] = new("3a4a6a"),
+            ["anime_trousers"] = new("f0dcc8"),
+            ["anime_dark"] = new("6a8ac0"),
+            ["anime_vest"] = new("f4ecd8"),
+            ["anime_glove"] = new("f6d8c4"),
+        },
+    };
+
+    /// <summary>Hamm: Pip's father, sun-browned, greying, a farmer's short beard.</summary>
+    private static readonly RigLook FarmElder = new("farm_elder", new Color("e8b08a"), 1.02f, "none")
+    {
+        Hair = "short",
+        Cloak = false,
+        Rest = "behind",
+        Stoop = 0.04f,
+        Mood = "tired",
+        Extras = new[] { "beard_short" },
+        Eyes = new Color("3a7a4a"),
+        Brows = new Color("6a5a40"),
+        FaceStyle = new FaceStyle(1, 0, 2),
+        Palette = new Dictionary<string, Color>
+        {
+            ["anime_hair"] = new("8a7a60"),
+            ["anime_shirt"] = new("c8b48c"),
+            ["anime_trousers"] = new("5a4a3a"),
+            ["anime_dark"] = new("6a5a3e"),
+            ["anime_glove"] = new("e8b08a"),
+        },
+    };
+
+    /// <summary>Maddy: seventeen, red-haired, sleeves rolled.</summary>
+    private static readonly RigLook FarmGirl = new("farm_girl", new Color("f0c8b0"), 0.9f, "none")
+    {
+        Hair = "tess",
+        Feminine = true,
+        Skirt = true,
+        Cloak = false,
+        Mood = "smirk",
+        Extras = new[] { "apron" },
+        Eyes = new Color("3a7a4a"),
+        Brows = new Color("7a2420"),
+        FaceStyle = new FaceStyle(0, 0, 1),
+        Palette = new Dictionary<string, Color>
+        {
+            ["anime_hair"] = new("a8362e"),
+            ["anime_shirt"] = new("e8dcc0"),
+            ["anime_cloak"] = new("7a5a3a"),
+            ["anime_trousers"] = new("8a6a4a"),
+            ["anime_dark"] = new("e8dcc0"),
+            ["anime_vest"] = new("c8b48c"),
+            ["anime_glove"] = new("f0c8b0"),
+        },
+    };
+
+    /// <summary>Tobias: thirty, weathered, hair tied up out of the way.</summary>
+    private static readonly RigLook Farmhand = new("farmhand", new Color("c08a64"), 1.03f, "none")
+    {
+        Hair = "topknot",
+        Cloak = false,
+        Mood = "neutral",
+        Eyes = new Color("5a4a3a"),
+        Brows = new Color("1c1a24"),
+        FaceStyle = new FaceStyle(1, 0, 1, "none", true, new Color("2b3044")),
+        Palette = new Dictionary<string, Color>
+        {
+            ["anime_hair"] = new("2b3044"),
+            ["anime_shirt"] = new("8a7a5a"),
+            ["anime_trousers"] = new("4a4038"),
+            ["anime_dark"] = new("4a4038"),
+            ["anime_glove"] = new("c08a64"),
+        },
+    };
     /// <summary>Every person with a name, for the photo studio.</summary>
     public static readonly (string Name, RigLook Look)[] All =
     {
         ("rhea", Examiner), ("mira", Receptionist), ("bram", Villager), ("tess", VillagerB), ("lina", Merchant),
         ("garrick", Guard), ("hollis", Appraiser), ("elda", Baker), ("pip", Farmer), ("sora", Mage), ("kai", Swordsman),
         ("nell", Captive), ("haruto", Lost), ("vosk", FinderCaptain), ("finder", Finder),
+        ("corwin", BranchMaster), ("tam", Apprentice), ("edwin", PartySword), ("moss", PartyBow), ("fen", PartyHealer),
+        ("rook", PartyShield), ("osric", Miller), ("anwen", MillerDaughter), ("hamm", FarmElder), ("maddy", FarmGirl),
+        ("tobias", Farmhand),
     };
 
     public static RigLook? For(string role) => role switch
@@ -365,6 +611,17 @@ public static class NpcLooks
         "lost" => Lost,
         "finder_captain" => FinderCaptain,
         "finder" => Finder,
+        "branch_master" => BranchMaster,
+        "apprentice" => Apprentice,
+        "party_sword" => PartySword,
+        "party_bow" => PartyBow,
+        "party_healer" => PartyHealer,
+        "party_shield" => PartyShield,
+        "miller" => Miller,
+        "miller_daughter" => MillerDaughter,
+        "farm_elder" => FarmElder,
+        "farm_girl" => FarmGirl,
+        "farmhand" => Farmhand,
         _ => null,
     };
 }
@@ -387,7 +644,13 @@ public static class Dialogues
         "guard" => "Village Guard",
         "baker" => "Baker",
         "farmer" => "Farmer",
-        "adventurer_a" or "adventurer_b" => "Adventurer",
+        "adventurer_a" or "adventurer_b" or "party_sword" or "party_bow" or "party_healer" or "party_shield" => "Adventurer",
+        "branch_master" => "Branch Master",
+        "apprentice" => "Appraiser's Apprentice",
+        "miller" => "Miller",
+        "miller_daughter" => "Miller's Daughter",
+        "farm_elder" => "Farmer",
+        "farm_girl" or "farmhand" => "Farmhand",
         "captive" => "Bonded Girl",
         "lost" => "Lightborn",
         "finder_captain" => "Finder Captain",

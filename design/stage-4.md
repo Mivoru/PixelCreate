@@ -83,7 +83,7 @@ mlynář Osric, Anwen, Hamm, Maddy, Tobias, Kai, Sora, Nell (po prologu ve sklad
 
 | Postava | Kde | Co ukazuje | Háček |
 |---|---|---|---|
-| **Corwin Hale**, vedoucí pobočky | u stolu před hospodou, pořád | pije, vtipkuje, všechno ví | kdysi rank B; ví, proč nesmí Guilda do Moonfellu |
+| **Corwin Hale**, vedoucí pobočky | u stolu před hospodou, pořád | pije, vtipkuje, všechno ví | kdysi rank A (viz `characters.md`); ví, proč nesmí Guilda do Moonfellu |
 | **Tam** (15), Hollisův učeň | u Hollise v Guildě, večer doma | horlivý, bojí se chyby | Hollis ho učí značky na železe (oblouk A) |
 | **Edwin** (meč), vůdce Brightwater Four | ráno Guilda, den pryč, večer hospoda | sebejistý, hodný | zve hráče na pivo, nabídne společný job |
 | **Moss** (luk) | s Edwinem | tichý, suchý humor | všímá si stop (první řekne o železe) |
@@ -94,8 +94,12 @@ mlynář Osric, Anwen, Hamm, Maddy, Tobias, Kai, Sora, Nell (po prologu ve sklad
 | **Hamm**, Pipův otec | Harrow Farm | unavený, dluží | člen rady, dluh u společnosti |
 | **Maddy** (17) a **Tobias** | Harrow Farm, do dne 5 | Maddy drzá, Tobias mlčí | den 5 uneseni |
 
-Každý má vzhled z voleb úpravy vzhledu (ne ruční `RigLook`), rozhovor se 3 až 5 uzly, jednu volbu
-tónu, která hýbe důvěrou, a rozvrh.
+Každý má rozhovor se 3 až 5 uzly, jednu volbu tónu, která hýbe důvěrou, a rozvrh.
+
+**Postaveno (2026-11-10):** všech 11 lidí je ve hře. Vzhled je zatím ruční `RigLook` v `NpcLooks` ze slovníku úpravy
+vzhledu (účesy, vousy, `FaceStyle`), protože volby v `appearance.json` jsou jen mužské a ženy potřebují vlastní účesy.
+Nové jméno: **Dunn**, Rookův bratr a Anwenin ženich. Corwinova sázka nastavuje flag `corwin.bet` (quest přijde později).
+Maddy a Tobias jsou na farmě stále; zmizí až s událostí dne 5.
 
 ---
 

@@ -1758,10 +1758,13 @@ public sealed class GameServer : IEnemyEvents
         foreach (var actor in _actors)
         {
             var spot = Schedules.RestOf(actor, context, _calendar.Now.Hour, _world);
+            var block = Schedules.Now(actor.Id, context, _calendar.Now.Hour);
+            var by = block?.By ?? Array.Empty<Vector3>();
             if (actor.Scripted || actor.Follows >= 0)
             {
                 // A scene has them: they go back to their day when it lets them go.
                 actor.Spot = spot;
+                actor.Way = by;
                 continue;
             }
 
@@ -1770,7 +1773,7 @@ public sealed class GameServer : IEnemyEvents
                 continue;
             }
 
-            if (!atOnce && !actor.Active && Schedules.Now(actor.Id, context, _calendar.Now.Hour)?.Via is { } door)
+            if (!atOnce && !actor.Active && block?.Via is { } door)
             {
                 // Indoors somewhere else (the Guild hall is far off the map): they come out by this door.
                 actor.Position = door with { Y = _world.GroundHeight(door.X, door.Z) };
@@ -1784,8 +1787,12 @@ public sealed class GameServer : IEnemyEvents
             }
             else
             {
-                actor.WalkTo(spot, _roads.Route(actor.Position, spot.At, _world), StrollSpeed);
+                // Someone at their place leaves it the way they came in; someone caught on the road just turns.
+                var leaving = actor.Active && actor.Path.Count == 0 ? actor.Way : Array.Empty<Vector3>();
+                actor.WalkTo(spot, Schedules.Way(_roads, _world, actor.Position, leaving, by, spot.At), StrollSpeed);
             }
+
+            actor.Way = by;
         }
     }
 

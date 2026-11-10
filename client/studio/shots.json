@@ -66,5 +66,9 @@
   { "name": "moonfell_chapel", "eye": [-190, 4, 212], "at": [-214, 5, 226] },
   { "name": "moonfell_graves", "eye": [-193, 2.5, 238], "at": [-212, 1, 238] },
   { "name": "moonfell_altar", "eye": [-214, 2.5, 186], "at": [-226, 1.5, 193] },
-  { "name": "moonfell_moon", "eye": [-180, 2, 200], "at": [-223, 17, 221] }
+  { "name": "moonfell_moon", "eye": [-180, 2, 200], "at": [-223, 17, 221] },
+  { "name": "tavern_yard", "eye": [30.5, 3.4, -1], "at": [23.6, 0.8, -3.6] },
+  { "name": "mill_door", "eye": [29, 2.4, 18], "at": [34, 1.6, 11] },
+  { "name": "harrow_farm", "eye": [37, 3.2, -37], "at": [45, 1.2, -28] },
+  { "name": "guild_front", "eye": [-27, 2.2, 30], "at": [-31, 1.2, 24.8] }
 ]

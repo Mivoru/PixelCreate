@@ -1,0 +1,93 @@
+{
+  "npc": "tam",
+  "entries": [
+    {
+      "node": "default"
+    }
+  ],
+  "nodes": {
+    "default": {
+      "text": "Hides and teeth go to Master Hollis, not me. I only sort. And count. I counted right today. I checked twice.",
+      "options": [
+        {
+          "text": "What is he teaching you?",
+          "next": "marks"
+        },
+        {
+          "text": "You look worried.",
+          "next": "worried"
+        },
+        {
+          "text": "Goodbye"
+        }
+      ]
+    },
+    "marks": {
+      "text": "Weights, grades, and the stamps. Every forge in the March strikes its own mark on its iron. Master Hollis knows them all by heart. I know eleven.",
+      "options": [
+        {
+          "text": "Which eleven?",
+          "next": "eleven"
+        },
+        {
+          "text": "Goodbye"
+        }
+      ]
+    },
+    "eleven": {
+      "text": "East Watch is a tower. Saltmere is three waves. The King's is a crown, and you don't handle crown iron unless you want questions. The rest I get wrong when he watches.",
+      "options": [
+        {
+          "text": "Keep at it."
+        }
+      ]
+    },
+    "worried": {
+      "text": "If I grade a hide wrong, it comes out of his purse, not mine. He never says so. That's worse.",
+      "face": "sad",
+      "options": [
+        {
+          "text": "Everyone gets it wrong at first. You'll learn.",
+          "tone": "compassionate",
+          "next": "worried_kind"
+        },
+        {
+          "text": "Then check three times.",
+          "tone": "pragmatic",
+          "next": "worried_plain"
+        },
+        {
+          "text": "Then don't grade wrong.",
+          "tone": "hard",
+          "next": "worried_hard"
+        }
+      ]
+    },
+    "worried_kind": {
+      "text": "That's what Mira says. Master Hollis says 'again'. I think they mean the same thing.",
+      "face": "smile",
+      "options": [
+        {
+          "text": "They do."
+        }
+      ]
+    },
+    "worried_plain": {
+      "text": "Three. Yes. I can do three.",
+      "options": [
+        {
+          "text": "Goodbye"
+        }
+      ]
+    },
+    "worried_hard": {
+      "text": "...Yes. Sorry. I'll get back to the pile.",
+      "face": "sad",
+      "options": [
+        {
+          "text": "Goodbye"
+        }
+      ]
+    }
+  }
+}

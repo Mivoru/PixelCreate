@@ -1,0 +1,84 @@
+{
+  "npc": "osric",
+  "entries": [
+    {
+      "node": "default"
+    }
+  ],
+  "nodes": {
+    "default": {
+      "text": "Flour's sold by the sack, weighed on my scale, and paid for before it leaves the hill. If you've come to look at the sails, looking is free.",
+      "options": [
+        {
+          "text": "It's a fine mill.",
+          "next": "mill"
+        },
+        {
+          "text": "I hear there's a wedding.",
+          "next": "wedding"
+        },
+        {
+          "text": "Goodbye"
+        }
+      ]
+    },
+    "mill": {
+      "text": "My grandfather's stones. Every loaf Elda bakes was mine first. This village eats because that turns; some on the council forget it.",
+      "options": [
+        {
+          "text": "And the wedding?",
+          "next": "wedding"
+        },
+        {
+          "text": "Goodbye"
+        }
+      ]
+    },
+    "wedding": {
+      "text": "My Anwen, to Rook's brother Dunn. The twenty-fourth. The whole village is asked and I'm paying, so mind how much you eat.",
+      "options": [
+        {
+          "text": "You must be proud of her.",
+          "tone": "compassionate",
+          "next": "wedding_kind"
+        },
+        {
+          "text": "A wedding costs. Can the mill carry it?",
+          "tone": "pragmatic",
+          "next": "wedding_plain"
+        },
+        {
+          "text": "A lot of coin to feed people who forget you.",
+          "tone": "hard",
+          "next": "wedding_hard"
+        }
+      ]
+    },
+    "wedding_kind": {
+      "text": "Prouder than I let on. Her mother would have... well. The twenty-fourth. Come, if you're still about.",
+      "face": "smile",
+      "options": [
+        {
+          "text": "I'll come."
+        }
+      ]
+    },
+    "wedding_plain": {
+      "text": "It can. I've counted. I count everything; that's why there's a mill to count.",
+      "options": [
+        {
+          "text": "Goodbye"
+        }
+      ]
+    },
+    "wedding_hard": {
+      "text": "Hm. You've a sour tongue. Not a wrong one.",
+      "face": "smirk",
+      "options": [
+        {
+          "text": "Goodbye"
+        }
+      ]
+    }
+  }
+}

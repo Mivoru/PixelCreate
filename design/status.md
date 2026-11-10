@@ -19,7 +19,7 @@ Hra už je hratelný prototyp akční části. Zdroj pravdy je kód a `CLAUDE.md
 | AI | skupinová taktika (role, tahy na blízko, kruh), hlídky, lov zvířat, stáda zvířat |
 | Svět | zóna Meadow Valley 600 m, 21 oblastí, hřebeny, lesy, tábory, interiéry (Guilda, aréna), minimapa |
 | Guilda | registrace, zkouška u Rhey, tabule s 5 joby (jeden aktivní), prodej krystalů a kořisti |
-| NPC | 13 postav, každá jedna statická replika (Mira, Hollis a tabule mají větvení podle ranku) |
+| NPC | 24 postav s povahou (`people.json`), rozvrhem dne a rozhovorem; noví z etapy 4: Corwin, Tam, Brightwater Four (Edwin, Moss, Fen, Rook), Osric, Anwen, Hamm, Maddy, Tobias |
 | Ostatní | menu a nastavení, zvuky, foto studio, boti pro živé testy, síťový simulátor |
 | Postava (etapa 2) | mimika (12 výrazů z dat), živý portrét v dialogu, pohyb úst, výrazy v boji, úprava vzhledu (11 voleb, 10 účesů, 6 vousů), výchozí výrazy NPC |
 | Prolog (etapa 3) | úvodní obrázky, pád, lovci, klec, přepadení u ruin, cesta s Nell, Pip, Elda, Bram, Guilda, Anchor Stone, zkouška ve třech kolech; herci, scény, podmíněné rekvizity; bot `prologue` projde celý |
@@ -69,7 +69,14 @@ Hra už je hratelný prototyp akční části. Zdroj pravdy je kód a `CLAUDE.md
 
 ## 4. Další krok
 
-Etapy 0 až 3 jsou hotové. Další je **etapa 4** (živá vesnice, `design/stage-4.md`).
+Etapy 0 až 3 jsou hotové. Běží **etapa 4** (živá vesnice, `design/stage-4.md`).
+
+Z etapy 4 hotovo: mapa cest pro chodce, rozvrhy dne (20 lidí), dvorek hospody se třemi stoly, povahy (tóny, soudy,
+pouta, nálady, hlášky), 11 nových lidí s rozhovory a vzhledem.
+
+Z etapy 4 zbývá: drby („Heard anything?", dvě znění podle mluvčího), události dnů 3 až 10 (`agendas.json`), ranky F a E
+s body a dvěma novými joby, Memorial Wall, tři osobní questy (Elda, Tess, Corwin), důvěra slovem v deníku, podmíněné
+bloky rozvrhu po událostech, bot `village` a test dnů 3 až 10.
 
 Z etapy 3 zůstalo stranou: cesta vozem se neukazuje (stmívačka), lovci s hráčem nebojují, Haruto zmizí bez efektu světla, úvodní obrázky jsou malované skriptem (ne v Pixelwrightu).
 

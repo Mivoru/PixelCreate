@@ -212,14 +212,21 @@ Rules:
   walkers are sent. A scene that needs someone outside their hours places them first and despawns them after
   (Elda waits up in the prologue). A figure's front is -Z at yaw 0 (`Actor.Facing`): the other sign walked backwards.
   Door points must lie about a metre clear of the house's boxes; `net-tests/ScheduleTests.cs` checks every place.
-  The tavern yard (tables and benches east of the tavern door, footpath from the south road) fills from six.
+  `by` lists points walked last on the way in and first on the way out (`Schedules.Way`): round a table to the far
+  bench, round the end of a fence, into Wren's stall by its open end. `ScheduleTests` walks every leg of every day
+  and fails when one crosses something solid, so give a new seat or a fenced place its `by`.
+  The tavern yard (three tables east of the tavern door, footpath from the south road) fills from six: Corwin keeps
+  his bench all day, the Brightwater Four (Edwin, Moss, Fen, Rook) have the south table. Mornings the Four meet by
+  the Guild door, Osric and Anwen are at the mill, Hamm, Maddy and Tobias on Harrow Farm, Tam by Hollis's counter.
 - People (`world/people.json`, `People.cs`): what someone is like, apart from what they say. `tones` is the trust an
   answer's tone earns with them, once per answer (`People.HearTone` in `GameServer.Choose`; a `said.*` flag marks it);
   `judges` is trust for a flag when it is set (`People.Judge` from `WorldState.SetFlag`, off while a save loads and
   on the client's mirror); `bonds` what they feel for others; `about` what they say when asked about someone (the
   client adds "What do you make of...?" to an opening node, nothing goes to the server); `moods` the face they wear
   while a condition holds; `barks` lines said in passing, drawn over their head (`Hud.Barks`, `GameClient.Temper`).
-  Give every new person an entry: it is how one villager differs from the next. `PeopleTests`.
+  Give every new person an entry: it is how one villager differs from the next (a test fails without one). `PeopleTests`.
+  A new person also needs a role with a look and a title (`NpcLooks.For`, `NpcLooks.All`, `Dialogues.Title`), a dialogue
+  file with one answer in each tone, and a day in `schedules.json`.
 - On the prologue's first night (until `prologue.slept`) only what a scene sends comes for the player; the wild
   leaves them be unless struck first. An unbound Lightborn (role `lost`) who vanishes goes out in rising light.
 - A weapon picked up with empty hands is worn at once (the prologue's player has none until the wooden sword).

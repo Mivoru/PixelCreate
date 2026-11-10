@@ -1,0 +1,88 @@
+{
+  "npc": "anwen",
+  "entries": [
+    {
+      "node": "default"
+    }
+  ],
+  "nodes": {
+    "default": {
+      "text": "Oh, hello. You're the one who fell in the lake. Father says I'm not to bother the adventurers. I'm Anwen.",
+      "face": "blush",
+      "options": [
+        {
+          "text": "You're the bride?",
+          "next": "bride"
+        },
+        {
+          "text": "What's it like, living in a mill?",
+          "next": "mill"
+        },
+        {
+          "text": "Goodbye"
+        }
+      ]
+    },
+    "mill": {
+      "text": "Loud. Everything shakes a little, all the time. When the wind drops I can't sleep for the quiet.",
+      "face": "smile",
+      "options": [
+        {
+          "text": "And the wedding?",
+          "next": "bride"
+        },
+        {
+          "text": "Goodbye"
+        }
+      ]
+    },
+    "bride": {
+      "text": "On the twenty-fourth. I've known Dunn since we were small. Everyone says I'm lucky. I am. I only wish I'd seen something first. East Watch, even.",
+      "face": "sad",
+      "options": [
+        {
+          "text": "It's all right to be scared.",
+          "tone": "compassionate",
+          "next": "bride_kind"
+        },
+        {
+          "text": "East Watch is a day's walk. Go after the wedding.",
+          "tone": "pragmatic",
+          "next": "bride_plain"
+        },
+        {
+          "text": "Then don't marry him.",
+          "tone": "hard",
+          "next": "bride_hard"
+        }
+      ]
+    },
+    "bride_kind": {
+      "text": "Is it? Nobody's said that. They all say 'lucky'. Thank you.",
+      "face": "smile",
+      "options": [
+        {
+          "text": "Goodbye"
+        }
+      ]
+    },
+    "bride_plain": {
+      "text": "With Dunn! He'd carry too much and complain the whole road. ...Yes. Maybe.",
+      "face": "laugh",
+      "options": [
+        {
+          "text": "Goodbye"
+        }
+      ]
+    },
+    "bride_hard": {
+      "text": "That's not... I want to. You don't understand how it is here.",
+      "face": "angry",
+      "options": [
+        {
+          "text": "Goodbye"
+        }
+      ]
+    }
+  }
+}
