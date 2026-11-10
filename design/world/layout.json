@@ -1,0 +1,162 @@
+{
+  "_about": "The world of Velmora as planned on 2026-11-10: one source for the world map, the elevation map and, later, the zones. Metres; x east, z south (the game's axes: north is -z, up on every map). The centre of Meadow Valley, the zone that exists, is (0, 0).",
+  "bounds": { "x0": -2600, "x1": 1400, "z0": -1800, "z1": 1800 },
+
+  "coast": [
+    [-2600, -1800], [1400, -1800], [1400, 1150], [1180, 1220], [1000, 1250], [800, 1240], [650, 1330], [520, 1360],
+    [400, 1280], [250, 1330], [150, 1370], [-50, 1400], [-200, 1420], [-330, 1395], [-450, 1360], [-560, 1430],
+    [-700, 1450], [-900, 1400], [-1200, 1300], [-1500, 1250], [-1800, 1100], [-2100, 950], [-2350, 800], [-2600, 700]
+  ],
+
+  "ranges": [
+    { "name": "The Ridges", "points": [[-2600, -1350], [-1900, -1430], [-1500, -1420], [-1050, -1330], [-500, -1380], [0, -1420], [400, -1450], [900, -1380], [1400, -1350]], "width": 260, "height": 780, "passes": [[-900, -1340], [150, -1430]] },
+    { "name": "Greyspine Mountains", "points": [[-2350, -1450], [-2420, -900], [-2380, -600], [-2300, 0], [-2280, 400], [-2250, 650]], "width": 320, "height": 1050, "passes": [[-2330, -300]] },
+    { "name": "Meadow Valley rim", "ring": [0, 0], "radius": 335, "width": 95, "height": 230, "passes": [[-335, 10], [330, -30], [20, 335], [240, 240], [-240, 230], [230, -240], [-240, -240]] },
+    { "name": "Saltcliffs", "points": [[-330, 1320], [-150, 1330], [50, 1320], [200, 1290]], "width": 110, "height": 70, "passes": [] },
+    { "name": "Thornback Hills", "points": [[-800, -700], [-560, -560], [-380, -480]], "width": 220, "height": 160, "passes": [] }
+  ],
+
+  "plateaus": [
+    { "name": "Ironjaw Highlands", "centre": [880, -640], "radius": [520, 360], "height": 270 },
+    { "name": "Highcrest Plateau", "centre": [-1650, -760], "radius": [360, 290], "height": 190 },
+    { "name": "The Blight Steppe", "centre": [-300, -1720], "radius": [2300, 260], "height": 320 }
+  ],
+
+  "basins": [
+    { "name": "Riverlands", "centre": [-1080, 120], "radius": [520, 620], "depth": 35 },
+    { "name": "Marshes of Ell", "centre": [-880, 870], "radius": [380, 260], "depth": 45 },
+    { "name": "Meadow Valley floor", "centre": [0, 0], "radius": [270, 270], "depth": 20 }
+  ],
+
+  "rivers": [
+    { "name": "River Alder", "width": 24, "points": [[-1250, -1360], [-1290, -1000], [-1230, -650], [-1180, -420], [-1120, -150], [-1100, 0], [-1040, 300], [-980, 560], [-900, 820], [-760, 1080], [-600, 1260], [-470, 1390]] },
+    { "name": "Calder Stream", "width": 10, "points": [[-1750, -500], [-1580, -380], [-1400, -280], [-1170, -260]] },
+    { "name": "Westbrook", "width": 8, "points": [[-640, -260], [-800, -120], [-960, -40], [-1105, -40]] },
+    { "name": "Mirrorrun", "width": 14, "points": [[-24, 140], [10, 330], [80, 560], [170, 820], [280, 1060], [390, 1290]] },
+    { "name": "Ironwash", "width": 12, "points": [[980, -920], [800, -760], [620, -560], [450, -380], [330, -250], [200, -160]] }
+  ],
+
+  "lakes": [
+    { "name": "Mirror Lake", "centre": [70, 132], "radius": 26 },
+    { "name": "Lake Calder", "centre": [-1760, -510], "radius": 130 },
+    { "name": "Blackmere", "centre": [-860, 930], "radius": 95 },
+    { "name": "Moonfell Tarn", "centre": [-470, 540], "radius": 42 },
+    { "name": "Greywater", "centre": [-1200, -1080], "radius": 70 }
+  ],
+
+  "roads": [
+    { "name": "King's Road", "kind": "highway", "points": [[-1650, -760], [-1480, -560], [-1300, -330], [-1150, -120], [-1100, 0], [-900, -60], [-620, -40], [-335, 10], [0, 0], [124, -4], [330, -30], [520, -230], [700, -420]] },
+    { "name": "Salt Road", "kind": "road", "points": [[-1100, 0], [-1060, 250], [-1000, 480], [-930, 700], [-850, 860], [-720, 1060], [-560, 1240], [-450, 1330]] },
+    { "name": "Coast Road", "kind": "road", "points": [[-450, 1330], [-250, 1260], [-60, 1250], [150, 1250], [350, 1240], [550, 1290]] },
+    { "name": "Mirror Way", "kind": "trail", "points": [[0, 0], [20, 335], [110, 600], [220, 900], [380, 1150], [550, 1290]] },
+    { "name": "Thornwood Track", "kind": "trail", "points": [[-335, 10], [-470, -70], [-680, -170], [-850, -340]] },
+    { "name": "Ridge Road", "kind": "road", "points": [[-1650, -760], [-1450, -980], [-1200, -1080], [-900, -1250], [-900, -1340]] },
+    { "name": "Greyspine Road", "kind": "road", "points": [[-1650, -760], [-1900, -560], [-2150, -320], [-2330, -300]] },
+    { "name": "Oakhurst Lane", "kind": "trail", "points": [[-1100, 0], [-1250, 180], [-1350, 350]] },
+    { "name": "Ironjaw Trail", "kind": "trail", "points": [[700, -420], [860, -600], [950, -750], [1150, -520]] },
+    { "name": "Moonfell Path", "kind": "trail", "points": [[-240, 230], [-360, 380], [-470, 540]] }
+  ],
+
+  "settlements": [
+    { "name": "Hearthmere", "kind": "village", "at": [0, 0], "region": "Meadow Valley", "built": true },
+    { "name": "East Watch", "kind": "fort", "at": [124, -4], "region": "Meadow Valley", "built": true },
+    { "name": "Varn's Crossing", "kind": "town", "at": [-1100, 0], "region": "Riverlands" },
+    { "name": "Highcrest", "kind": "capital", "at": [-1650, -760], "region": "Crownlands" },
+    { "name": "Saltmere", "kind": "port", "at": [-450, 1330], "region": "Salt Coast" },
+    { "name": "Gull's Rest", "kind": "hamlet", "at": [550, 1290], "region": "Mirror Coast" },
+    { "name": "Fernhollow", "kind": "village", "at": [-680, -170], "region": "Thornwood" },
+    { "name": "Reedmoor", "kind": "village", "at": [-950, 780], "region": "Marshes of Ell" },
+    { "name": "Brindle", "kind": "hamlet", "at": [-620, -40], "region": "Thornwood" },
+    { "name": "Oakhurst", "kind": "hamlet", "at": [-1350, 350], "region": "Riverlands" },
+    { "name": "Fort Ironwatch", "kind": "fort", "at": [700, -420], "region": "Ironjaw Highlands" },
+    { "name": "Lantern Watch", "kind": "fort", "at": [-900, -1250], "region": "Blight Frontier" },
+    { "name": "Greyspine Gate", "kind": "fort", "at": [-2330, -300], "region": "Greyspine" }
+  ],
+
+  "camps": [
+    { "name": "Ironjaw Warcamp", "kind": "orc", "at": [960, -760] },
+    { "name": "Tuskridge Camp", "kind": "orc", "at": [1150, -470] },
+    { "name": "Redfen Goblins", "kind": "goblin", "at": [-560, 300] },
+    { "name": "Smugglers' Cove", "kind": "bandit", "at": [120, 1365] },
+    { "name": "Lizardfolk Mound", "kind": "lizard", "at": [-700, 900] }
+  ],
+
+  "dungeons": [
+    { "name": "Sunken Archive", "at": [-24, 150], "level": "5-8", "region": "Meadow Valley" },
+    { "name": "Old Ruins Undercroft", "at": [92, 58], "level": "6-9", "region": "Meadow Valley" },
+    { "name": "Goblin Warren", "at": [84, -92], "level": "7-10", "region": "Meadow Valley" },
+    { "name": "Greyfang Den", "at": [236, 228], "level": "6-9", "region": "Meadow Valley" },
+    { "name": "Thornwood Barrows", "at": [-860, -360], "level": "9-12", "region": "Thornwood" },
+    { "name": "Moonfell Hollow", "at": [-480, 580], "level": "11-15", "region": "Moonfell Downs" },
+    { "name": "Ironjaw Deep", "at": [1010, -860], "level": "13-16", "region": "Ironjaw Highlands" },
+    { "name": "Tanner's Drop", "at": [-1080, 30], "level": "10-14", "region": "Riverlands" },
+    { "name": "Drowned Abbey", "at": [-780, 1010], "level": "14-18", "region": "Marshes of Ell" },
+    { "name": "Saltdeeps", "at": [-290, 1240], "level": "18-23", "region": "Salt Coast" },
+    { "name": "Undercanals", "at": [-1650, -720], "level": "18-24", "region": "Crownlands" },
+    { "name": "Wyrm Hollow", "at": [-2240, -900], "level": "22-26", "region": "Greyspine" },
+    { "name": "Heart Lantern", "at": [-300, -1700], "level": "28+", "region": "Blight Frontier" }
+  ],
+
+  "landmarks": [
+    { "name": "Stone Circle", "at": [-90, 120] },
+    { "name": "Silver Falls", "at": [-24, 118] },
+    { "name": "Mirror Lake", "at": [70, 132] },
+    { "name": "Hanging Bridge", "at": [-1240, -640] },
+    { "name": "Lantern of Brightwater", "at": [-1450, -900] },
+    { "name": "Giant's Stair", "at": [-150, 1330] },
+    { "name": "Shipwreck Shore", "at": [260, 1345] },
+    { "name": "Saltmere Lighthouse", "at": [-540, 1460] },
+    { "name": "Salt Flats", "at": [-120, 1160] },
+    { "name": "Sunken Bell", "at": [-860, 930] },
+    { "name": "Ancestor Mound", "at": [1180, -640] },
+    { "name": "The Watchers", "at": [150, -1430] },
+    { "name": "Blight Scar", "at": [-560, -1180] },
+    { "name": "Field of Banners", "at": [-1950, -120] },
+    { "name": "Moonfell Tarn", "at": [-470, 540] }
+  ],
+
+  "waystones": [
+    [0, 0, "Hearthmere"], [124, -4, "East Watch"], [70, 150, "Mirror Lake"], [-680, -170, "Fernhollow"],
+    [-1100, 0, "Varn's Crossing"], [-1350, 350, "Oakhurst"], [-950, 780, "Reedmoor"], [-450, 1330, "Saltmere"],
+    [550, 1290, "Gull's Rest"], [-1650, -760, "Highcrest"], [700, -420, "Fort Ironwatch"], [-900, -1250, "Lantern Watch"],
+    [-2330, -300, "Greyspine Gate"], [-470, 500, "Moonfell Downs"]
+  ],
+
+  "crossings": [
+    { "name": "Barge: Varn's Crossing to Saltmere", "kind": "boat", "points": [[-1100, 0], [-1000, 450], [-900, 820], [-700, 1120], [-470, 1390]] },
+    { "name": "Ship: Saltmere to Gull's Rest", "kind": "boat", "points": [[-470, 1420], [-100, 1500], [300, 1470], [560, 1360]] }
+  ],
+
+  "underground": [
+    { "name": "The Old Way", "points": [[92, 58], [-300, -150], [-700, -260], [-1080, 30], [-1400, -450], [-1650, -720]] },
+    { "name": "Warren tunnels", "points": [[84, -92], [260, -230], [480, -360]] },
+    { "name": "Smugglers' Path", "points": [[-850, 860], [-650, 1100], [-450, 1330]] }
+  ],
+
+  "forests": [
+    { "name": "Thornwood", "centre": [-650, -250], "radius": [300, 260] },
+    { "name": "Greyfang Forest", "centre": [230, 240], "radius": [120, 90] },
+    { "name": "Moonfell Woods", "centre": [-470, 470], "radius": [200, 170] },
+    { "name": "Calderwood", "centre": [-1550, -250], "radius": [220, 160] },
+    { "name": "Pinehold", "centre": [700, -900], "radius": [250, 150] }
+  ],
+
+  "seas": [
+    { "name": "Sea of Sails", "at": [100, 1640] },
+    { "name": "The Saltreach", "at": [-1600, 1480] }
+  ],
+
+  "regions": [
+    { "name": "Meadow Valley", "centre": [0, 0], "radius": [340, 340], "level": "1-8", "colour": "#7ec850" },
+    { "name": "Thornwood", "centre": [-650, -260], "radius": [330, 300], "level": "6-12", "colour": "#3f7a3a" },
+    { "name": "Moonfell Downs", "centre": [-500, 520], "radius": [260, 230], "level": "10-16", "colour": "#5c6f8a", "label": [-300, 430] },
+    { "name": "Mirror Coast", "centre": [330, 1000], "radius": [380, 320], "level": "6-11", "colour": "#7fb3a8" },
+    { "name": "Ironjaw Highlands", "centre": [880, -620], "radius": [470, 340], "level": "11-17", "colour": "#a0663a", "label": [760, -1010] },
+    { "name": "Riverlands", "centre": [-1130, 120], "radius": [380, 560], "level": "9-15", "colour": "#b3c25a" },
+    { "name": "Marshes of Ell", "centre": [-860, 900], "radius": [330, 250], "level": "13-19", "colour": "#5d6b3e" },
+    { "name": "Salt Coast", "centre": [-300, 1270], "radius": [420, 170], "level": "16-23", "colour": "#d9c79a" },
+    { "name": "Crownlands", "centre": [-1650, -700], "radius": [430, 420], "level": "16-24", "colour": "#c7b8e0", "label": [-1880, -1040] },
+    { "name": "Greyspine", "centre": [-2250, -400], "radius": [230, 900], "level": "22-28", "colour": "#8a8f9a", "label": [-2120, 300] },
+    { "name": "Blight Frontier", "centre": [-500, -1450], "radius": [1700, 300], "level": "25+", "colour": "#7a7268", "label": [-450, -1580] }
+  ]
+}

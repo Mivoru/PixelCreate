@@ -19,7 +19,7 @@ environment, world building, monsters, fighting, mechanics and movement, with le
 simple jobs. Keep: the intro film, the look creator, the capture by the finders and the goblin ambush, then the road
 to Hearthmere and Mira, who signs the player up. No companions, no story quest chains, no dialogue trees: only the
 people who serve (Mira, Hollis, Wren, the job board, the Anchor Stone) can be spoken to; everyone else only talks in
-passing or among themselves. The direction, what was learned and what comes next: `design/direction.md`. The MMORPG goal is dropped; co-op for 2 to 4 players may come later. Do not tune difficulty
+passing or among themselves. The direction, what was learned and what comes next: `design/direction.md`. The world plan (regions, towns, dungeons, travel, styles, build order): `design/world-plan.md`, data in `design/world/layout.json`, maps by `python tools/world_map.py` into `design/maps/`. The MMORPG goal is dropped; co-op for 2 to 4 players may come later. Do not tune difficulty
 or balance yet. Start a session with `design/handoff.md`. Godot 4.7 with C#; the server does not use Godot.
 The story documents in `design/` (story, factions, stages 1 to 4, repair plan R4) describe the dropped direction.
 

@@ -59,6 +59,9 @@ Mohou sloužit jako zásoba nápadů pro svět (místa, frakce, monstra), ne jak
 
 ## 5. Jak hra pokračuje
 
+Celý svět je naplánovaný v `design/world-plan.md` (mapy v `design/maps/`, data v `design/world/layout.json`).
+
+
 Pořadí určuje autor; toto je nabídka podle pilířů.
 
 **Prostředí a svět**
