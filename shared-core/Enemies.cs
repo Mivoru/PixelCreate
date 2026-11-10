@@ -259,6 +259,7 @@ public sealed partial class Enemy
         Returning = false;
         Routed = false;
         RoutTicks = 0;
+        PackLed = false;
     }
 
     private EnemyDef Choose(Random random)

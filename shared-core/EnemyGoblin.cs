@@ -128,6 +128,31 @@ public sealed partial class Enemy
     /// <summary>Set once a goblin has fled: it runs only once in its life.</summary>
     public bool Routed;
 
+    /// <summary>Whether this wolf ran with a living leader of its camp, which has since fallen.</summary>
+    private bool LeaderFell()
+    {
+        var led = false;
+        foreach (var other in Crowd)
+        {
+            if (other.Alive && other.Def.Leader && other.Home == Home)
+            {
+                led = true;
+                break;
+            }
+        }
+
+        if (led)
+        {
+            PackLed = true;
+            return false;
+        }
+
+        return PackLed;
+    }
+
+    /// <summary>Set once a pack wolf has run with a living leader; cleared when it respawns.</summary>
+    public bool PackLed;
+
     /// <summary>A goblin below this share of its health breaks off and runs.</summary>
     public const float RoutHealth = 0.25f;
 
@@ -140,8 +165,14 @@ public sealed partial class Enemy
     /// </summary>
     private bool LosesHeart(Target target, IEnemyEvents events)
     {
-        if (Routed || Staged || Def.Kind != "goblin" || Def.Behavior == "brute" || TrialOf >= 0 || TargetId >= CreatureBase ||
-            Health > MaxHealth * RoutHealth)
+        if (Routed || Staged || TrialOf >= 0 || TargetId >= CreatureBase)
+        {
+            return false;
+        }
+
+        var goblinBreaks = Def.Kind == "goblin" && Def.Behavior != "brute" && Health <= MaxHealth * RoutHealth;
+        var packBreaks = Def.Kind == "wolf" && !Def.Leader && SummonedBy < 0 && LeaderFell() && Health <= MaxHealth / 2;
+        if (!goblinBreaks && !packBreaks)
         {
             return false;
         }

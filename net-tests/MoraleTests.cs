@@ -70,6 +70,44 @@ public class MoraleTests
         Assert.Equal(0, goblin.RoutTicks);
     }
 
+    [Fact]
+    public void Pack_LosesHeart_WhenItsLeaderFalls()
+    {
+        // The camp draws each member from its types by chance: take the first seed that gives one leader and a wolf.
+        var camp = new EnemySpawn(new Vector3(0, 0, 7f), 1f, 3, Types: new[] { "alpha_wolf", "wolf", "wolf" });
+        var world = new World(Array.Empty<Aabb>(), null, Vector3.Zero, new[] { camp });
+        SimNetwork network = null!;
+        GameServer server = null!;
+        for (var seed = 1; seed < 40; seed++)
+        {
+            network = new SimNetwork(1, 0, 0, 0);
+            server = new GameServer(network.Connect(0), world, new ServerOptions { Seed = seed });
+            if (server.Enemies.Count(e => e.Def.Leader) == 1 && server.Enemies.Any(e => !e.Def.Leader))
+            {
+                break;
+            }
+        }
+
+        var client = new ClientPrediction(network.Connect(1), world);
+        var leader = server.Enemies.FirstOrDefault(e => e.Def.Leader);
+        var wolf = server.Enemies.FirstOrDefault(e => !e.Def.Leader);
+        Assert.True(leader is not null && wolf is not null, "the camp needs a leader and a wolf");
+        for (var i = 0; i < Tuning.TickRate * 10 && wolf!.TargetId != 1; i++)
+        {
+            Play(server, client, network, 1);
+        }
+
+        // Hurt but led: it fights on.
+        wolf!.Health = (short)(wolf.MaxHealth * 0.4f);
+        Play(server, client, network, Tuning.TickRate * 2);
+        Assert.False(wolf.Routed, "a wounded wolf stays while its leader lives");
+
+        leader!.Health = 0;
+        leader.Action = EnemyAction.Dead;
+        Play(server, client, network, Tuning.TickRate * 2);
+        Assert.True(wolf.Routed, $"with its leader dead, a wounded wolf must run (target {wolf.TargetId}, {wolf.Action}, led {wolf.PackLed}, health {wolf.Health}/{wolf.MaxHealth})");
+    }
+
     [Theory]
     [InlineData("goblin_brute")]
     [InlineData("orc_warrior")]

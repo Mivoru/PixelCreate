@@ -46,8 +46,8 @@ ovlivňují čitelnost, je jen návrh.
    Návrh: salva dostane kruh v místě dopadu, kopí nad hlavou už viditelná jsou (tam stačí zvuk).
 4. **Chybějící zvuky:** vlk nemá zvuk kousnutí ani smrti (používá growl/hurt), šaman nemá vlastní
    hlas, prase nemá útok. Návrh: `wolf_bite`, `wolf_die` (dva krátké zvuky z ElevenLabs).
-5. **Smečka bez vůdce:** když padne alpha_wolf, zbytek smečky bojuje stejně. Návrh: zranění vlci
-   (pod polovinou) po smrti vůdce utečou, zdraví zůstanou a vyjí.
+5. **Smečka bez vůdce:** když padne alpha_wolf, zbytek smečky bojoval stejně. **Opraveno:** vlk pod
+   polovinou zdraví po smrti vůdce svého tábora jednou uteče (`MoraleTests.Pack_LosesHeart_WhenItsLeaderFalls`).
 6. **Šaman jako support** se drží za linií, ale neléčí ani nepovzbuzuje. Návrh: tanec, který na 5 s
    zrychlí blízké gobliny (čitelné: zelené plameny kolem nich).
 7. **Orkové** jsou čitelní (každý těžký útok má varování 34 až 44 t a vlastní zvuk). Bez změn.
@@ -55,7 +55,6 @@ ovlivňují čitelnost, je jen návrh.
 
 ## Pořadí dalších vylepšení (návrh)
 
-1. Ústup smečky po smrti vůdce (bod 5): malá změna v `EnemyWolf.cs`, test jako `MoraleTests`.
 2. Varování u salvy (bod 3).
 3. Zvuky vlka (bod 4), až bude dovoleno platit generování.
 4. Šamanův tanec (bod 6).
