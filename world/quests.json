@@ -1,8 +1,248 @@
 [
-  {"id": "prologue_fallen", "name": "Fallen", "kind": "story", "giver": "mira", "journal": "I died, and woke falling out of the sky. Men with nets were waiting.", "steps": [{"text": "Locked in the finders' cage.", "goal": {"talk": "mira"}, "route": false}, {"text": "The bars are broken. Take Hanne's sword from where she fell and fight off the goblins.", "goal": {"talk": "mira"}, "route": false}, {"text": "Follow the road west to Hearthmere and find Mira at the Adventurers Guild.", "goal": {"talk": "mira"}}]},
-  {"id": "slime_cull", "name": "Clear the Slimes", "kind": "job", "giver": "board", "repeatable": true, "brief": "kill 5 slimes", "gold": 40, "xp": 60, "journal": "Slimes crowd the roads again. The Guild pays for every five cleared.", "steps": [{"text": "Kill slimes on the roads.", "goal": {"kill": "slime", "count": 5}}, {"text": "Return to the Guild and report to Mira.", "goal": {"talk": "mira"}, "route": false}]},
-  {"id": "goblin_bounty", "name": "Goblin Bounty", "kind": "job", "giver": "board", "repeatable": true, "brief": "kill 3 goblins", "gold": 120, "xp": 180, "journal": "A bounty on goblins south of the village.", "steps": [{"text": "Kill goblins.", "goal": {"kill": "goblin_*", "count": 3}}, {"text": "Return to the Guild and report to Mira.", "goal": {"talk": "mira"}, "route": false}]},
-  {"id": "gel_for_alchemist", "name": "Gel for the Alchemist", "kind": "job", "giver": "board", "repeatable": true, "brief": "bring 6 Slime Gel", "gold": 45, "xp": 50, "journal": "Wren needs slime gel for her potions.", "steps": [{"text": "Bring Slime Gel to Mira.", "goal": {"bring": {"id": "slime_gel", "count": 6}}}]},
-  {"id": "hides_for_tanner", "name": "Hides for the Tanner", "kind": "job", "giver": "board", "repeatable": true, "brief": "bring 2 Deer Hides", "gold": 60, "xp": 70, "journal": "The tanner wants deer hides.", "steps": [{"text": "Bring Deer Hides to Mira.", "goal": {"bring": {"id": "deer_hide", "count": 2}}}]},
-  {"id": "proof_of_hunt", "name": "Proof of the Hunt", "kind": "job", "giver": "board", "repeatable": true, "brief": "bring 4 Goblin Teeth", "gold": 90, "xp": 120, "journal": "The Guild wants goblin teeth as proof of the hunt.", "steps": [{"text": "Bring Goblin Teeth to Mira.", "goal": {"bring": {"id": "goblin_tooth", "count": 4}}}]}
+  {
+    "id": "prologue_fallen",
+    "name": "Fallen",
+    "kind": "story",
+    "giver": "mira",
+    "journal": "I died, and woke falling out of the sky. Men with nets were waiting.",
+    "steps": [
+      {
+        "text": "Locked in the finders' cage.",
+        "goal": {
+          "talk": "mira"
+        },
+        "route": false
+      },
+      {
+        "text": "The bars are broken. Take Hanne's sword from where she fell and fight off the goblins.",
+        "goal": {
+          "talk": "mira"
+        },
+        "route": false
+      },
+      {
+        "text": "Follow the road west to Hearthmere and find Mira at the Adventurers Guild.",
+        "goal": {
+          "talk": "mira"
+        }
+      }
+    ]
+  },
+  {
+    "id": "slime_cull",
+    "name": "Clear the Slimes",
+    "kind": "job",
+    "giver": "board",
+    "repeatable": true,
+    "brief": "kill 5 slimes",
+    "gold": 40,
+    "xp": 60,
+    "journal": "Pip's notice: the slimes have crept out of the Slime Fields onto the north road and eat through his sacks of seed. The Guild pays for every five cleared.",
+    "steps": [
+      {
+        "text": "Kill slimes in the Slime Fields north-west of the village.",
+        "goal": {
+          "kill": "slime",
+          "count": 5
+        }
+      },
+      {
+        "text": "Return to the Guild and report to Mira.",
+        "goal": {
+          "talk": "mira"
+        },
+        "route": false
+      }
+    ],
+    "poster": "Pip, farmer",
+    "place": "the Slime Fields north-west of the village"
+  },
+  {
+    "id": "goblin_bounty",
+    "name": "Goblin Bounty",
+    "kind": "job",
+    "giver": "board",
+    "repeatable": true,
+    "brief": "kill 3 goblins",
+    "gold": 120,
+    "xp": 180,
+    "journal": "Garrick's notice: goblins from Goblin Hollow have been robbing carts on the north road. A bounty on every three.",
+    "steps": [
+      {
+        "text": "Kill goblins at Goblin Hollow, north-east of the village.",
+        "goal": {
+          "kill": "goblin_*",
+          "count": 3
+        }
+      },
+      {
+        "text": "Return to the Guild and report to Mira.",
+        "goal": {
+          "talk": "mira"
+        },
+        "route": false
+      }
+    ],
+    "poster": "Garrick, village guard",
+    "place": "Goblin Hollow north-east of the village"
+  },
+  {
+    "id": "gel_for_alchemist",
+    "name": "Gel for the Alchemist",
+    "kind": "job",
+    "giver": "board",
+    "repeatable": true,
+    "brief": "bring 6 Slime Gel",
+    "gold": 45,
+    "xp": 50,
+    "journal": "Wren's notice: her potions need slime gel, and she has run out. Slimes drop it in the Slime Fields north-west of the village.",
+    "steps": [
+      {
+        "text": "Gather Slime Gel from slimes in the Slime Fields and bring it to Mira.",
+        "goal": {
+          "bring": {
+            "id": "slime_gel",
+            "count": 6
+          }
+        }
+      }
+    ],
+    "poster": "Wren, alchemist",
+    "place": "the Slime Fields"
+  },
+  {
+    "id": "hides_for_tanner",
+    "name": "Hides for Harrow Farm",
+    "kind": "job",
+    "giver": "board",
+    "repeatable": true,
+    "brief": "bring 2 Deer Hides",
+    "gold": 60,
+    "xp": 70,
+    "journal": "Hamm's notice: winter is coming and Harrow Farm needs deer hides for coats. Deer graze the meadows round the village; they bolt, so come at them quietly.",
+    "steps": [
+      {
+        "text": "Hunt deer in the meadows and bring their hides to Mira.",
+        "goal": {
+          "bring": {
+            "id": "deer_hide",
+            "count": 2
+          }
+        }
+      }
+    ],
+    "poster": "Hamm, Harrow Farm",
+    "place": "the meadows round the village"
+  },
+  {
+    "id": "proof_of_hunt",
+    "name": "Proof of the Hunt",
+    "kind": "job",
+    "giver": "board",
+    "repeatable": true,
+    "brief": "bring 4 Goblin Teeth",
+    "gold": 90,
+    "xp": 120,
+    "journal": "Corwin's notice: the Guild wants goblin teeth as proof that the camps at Goblin Hollow are being thinned.",
+    "steps": [
+      {
+        "text": "Take goblin teeth at Goblin Hollow and bring them to Mira.",
+        "goal": {
+          "bring": {
+            "id": "goblin_tooth",
+            "count": 4
+          }
+        }
+      }
+    ],
+    "poster": "Corwin Hale, branch master",
+    "place": "Goblin Hollow"
+  },
+  {
+    "id": "wolf_cull",
+    "name": "Wolves at Greyfang",
+    "kind": "job",
+    "giver": "board",
+    "repeatable": true,
+    "brief": "kill 4 wolves",
+    "gold": 150,
+    "xp": 220,
+    "poster": "Garrick, village guard",
+    "place": "Greyfang Forest south-east of the valley",
+    "journal": "Garrick's notice: the Greyfang pack has taken sheep from the south pastures twice this week. Thin the pack in Greyfang Forest.",
+    "steps": [
+      {
+        "text": "Kill wolves in Greyfang Forest, south-east of the valley.",
+        "goal": {
+          "kill": "wolf",
+          "count": 4
+        }
+      },
+      {
+        "text": "Return to the Guild and report to Mira.",
+        "goal": {
+          "talk": "mira"
+        },
+        "route": false
+      }
+    ]
+  },
+  {
+    "id": "orc_scouts",
+    "name": "Orc Scouts at the Outpost",
+    "kind": "job",
+    "giver": "board",
+    "repeatable": true,
+    "brief": "kill 2 orcs",
+    "gold": 260,
+    "xp": 400,
+    "poster": "Corwin Hale, branch master",
+    "place": "Ironjaw Outpost by East Watch",
+    "journal": "Corwin's notice: orc scouts from the Ironjaw Warcamp have set up an outpost past East Watch. Drive them off before more come.",
+    "steps": [
+      {
+        "text": "Kill orcs at the Ironjaw Outpost, north-east past East Watch.",
+        "goal": {
+          "kill": "orc_*",
+          "count": 2
+        }
+      },
+      {
+        "text": "Return to the Guild and report to Mira.",
+        "goal": {
+          "talk": "mira"
+        },
+        "route": false
+      }
+    ]
+  },
+  {
+    "id": "moonfell_howls",
+    "name": "Something Howls in Moonfell",
+    "kind": "job",
+    "giver": "board",
+    "repeatable": true,
+    "brief": "kill a werewolf",
+    "gold": 320,
+    "xp": 520,
+    "poster": "Old Bram, village elder",
+    "place": "Moonfell south-west of the valley",
+    "journal": "Old Bram's notice: something howls in the ruins of Moonfell at night, and a shepherd did not come home. Find it and kill it.",
+    "steps": [
+      {
+        "text": "Kill a werewolf in the ruins of Moonfell, south-west of the valley.",
+        "goal": {
+          "kill": "werewolf*",
+          "count": 1
+        }
+      },
+      {
+        "text": "Return to the Guild and report to Mira.",
+        "goal": {
+          "talk": "mira"
+        },
+        "route": false
+      }
+    ]
+  }
 ]

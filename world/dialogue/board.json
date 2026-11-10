@@ -39,10 +39,10 @@
       ]
     },
     "jobs": {
-      "text": "Notices flutter on the board. Some ask for heads, some only for what the beasts leave behind.",
+      "text": "Notices flutter on the board, each signed by whoever posted it. Harder work goes up as the Guild trusts you with it.",
       "options": [
         {
-          "text": "Clear the Slimes: kill 5 slimes (40 gold)",
+          "text": "Clear the Slimes (Pip): kill 5 slimes in the Slime Fields. 40 gold",
           "effects": [
             {
               "quest": {
@@ -52,7 +52,7 @@
           ]
         },
         {
-          "text": "Goblin Bounty: kill 3 goblins (120 gold)",
+          "text": "Goblin Bounty (Garrick): kill 3 goblins at Goblin Hollow. 120 gold",
           "effects": [
             {
               "quest": {
@@ -62,7 +62,7 @@
           ]
         },
         {
-          "text": "Gel for the Alchemist: bring 6 Slime Gel (45 gold)",
+          "text": "Gel for the Alchemist (Wren): bring 6 Slime Gel from the Slime Fields. 45 gold",
           "effects": [
             {
               "quest": {
@@ -72,7 +72,7 @@
           ]
         },
         {
-          "text": "Hides for the Tanner: bring 2 Deer Hides (60 gold)",
+          "text": "Hides for Harrow Farm (Hamm): bring 2 Deer Hides from the meadows. 60 gold",
           "effects": [
             {
               "quest": {
@@ -82,7 +82,7 @@
           ]
         },
         {
-          "text": "Proof of the Hunt: bring 4 Goblin Teeth (90 gold)",
+          "text": "Proof of the Hunt (Corwin Hale): bring 4 Goblin Teeth from Goblin Hollow. 90 gold",
           "effects": [
             {
               "quest": {
@@ -90,6 +90,51 @@
               }
             }
           ]
+        },
+        {
+          "text": "Wolves at Greyfang (Garrick): kill 4 wolves in Greyfang Forest. 150 gold",
+          "effects": [
+            {
+              "quest": {
+                "start": "wolf_cull"
+              }
+            }
+          ],
+          "when": {
+            "level": {
+              "min": 4
+            }
+          }
+        },
+        {
+          "text": "Orc Scouts at the Outpost (Corwin Hale): kill 2 orcs at the Ironjaw Outpost. 260 gold",
+          "effects": [
+            {
+              "quest": {
+                "start": "orc_scouts"
+              }
+            }
+          ],
+          "when": {
+            "level": {
+              "min": 7
+            }
+          }
+        },
+        {
+          "text": "Something Howls in Moonfell (Old Bram): kill a werewolf in Moonfell. 320 gold",
+          "effects": [
+            {
+              "quest": {
+                "start": "moonfell_howls"
+              }
+            }
+          ],
+          "when": {
+            "level": {
+              "min": 9
+            }
+          }
         },
         {
           "text": "Leave"
