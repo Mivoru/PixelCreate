@@ -72,6 +72,7 @@ public sealed partial class Minimap : Control
                 "windmill" => ("mill", "Mill"),
                 "watchtower" => ("tower", ""),
                 "chapel" => ("chapel", "Chapel"),
+                "waystone" => ("waystone", ""),
                 _ => ("", ""),
             };
             if (mark.Item1.Length > 0)
@@ -323,6 +324,7 @@ public sealed partial class Minimap : Control
             "potion" => new Color("b55088"),
             "shop" => new Color("63c74d"),
             "inn" => new Color("f77622"),
+            "waystone" => new Color("2ce8f5"),
             _ => new Color("c0cbdc"),
         };
         DrawCircle(at, 8.5f, new Color("181425"));
@@ -345,6 +347,10 @@ public sealed partial class Minimap : Control
             case "inn":
                 DrawRect(new Rect2(at + new Vector2(-3, -4), 6, 8), ink);
                 DrawRect(new Rect2(at + new Vector2(3, -2), 2, 4), ink);
+                break;
+            case "waystone":
+                // A standing stone.
+                DrawColoredPolygon(new[] { at + new Vector2(0, -5), at + new Vector2(2.5f, 3.5f), at + new Vector2(-2.5f, 3.5f) }, ink);
                 break;
             case "chapel":
                 // A cross.

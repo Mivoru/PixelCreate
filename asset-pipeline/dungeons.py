@@ -258,7 +258,26 @@ def warren_hole(h):
         h.blob(f"stone{i}", (rng.uniform(-3, 3), rng.uniform(-0.8, -0.2), 0.1), rng.uniform(0.15, 0.3), "den_rock", 660 + i, 0.6, 1)
 
 
+def waystone(h):
+    """An Auren waystone: a tall tapering pillar of white stone on a stepped base, azure runes running
+    up its faces and a pale crystal set in its crown. Touching one binds it; from one bound stone a
+    traveller can step to any other."""
+    h.box("step_low", (0, 0, 0.1), (2.2, 2.2, 0.2), "auren_dark")
+    h.box("step_high", (0, 0, 0.3), (1.6, 1.6, 0.2), "auren")
+    h.loft("pillar", [(0.4, 0.5, 0.5), (1.6, 0.42, 0.42), (2.6, 0.32, 0.32), (2.9, 0.2, 0.2)], "auren", 4)
+    for side in range(4):
+        a = side * math.pi / 2 + math.pi / 4
+        for k in range(5):
+            z = 0.7 + k * 0.42
+            r = 0.5 - (z - 0.4) * 0.07 + 0.01
+            h.box("rune", (math.cos(a) * r * 0.72, math.sin(a) * r * 0.72, z), (0.1, 0.1, 0.24 if k % 2 else 0.14), "rune")
+    h.blob("crystal", (0, 0, 3.1), 0.22, "rune", 670, 1.6, 2)
+    for i in range(3):
+        h.blob(f"moss{i}", (math.cos(i * 2.1) * 0.9, math.sin(i * 2.1) * 0.9, 0.25), 0.2, "moss", 671 + i, 0.4, 1)
+
+
 BUILDERS = {
+    "waystone": waystone,
     "warren_floor": warren_floor,
     "warren_ceiling": warren_ceiling,
     "warren_wall": warren_wall,

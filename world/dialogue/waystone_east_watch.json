@@ -1,0 +1,134 @@
+{
+  "npc": "waystone_east_watch",
+  "entries": [
+    {
+      "node": "stone"
+    }
+  ],
+  "nodes": {
+    "stone": {
+      "text": "An Auren waystone, cold and humming. Azure runes run up its faces, and beneath them the names of other stones glow faintly, those you have touched brightest.",
+      "options": [
+        {
+          "text": "Lay your hand on the stone.",
+          "when": {
+            "notFlag": "waystone.waystone_east_watch"
+          },
+          "effects": [
+            {
+              "setFlag": "waystone.waystone_east_watch"
+            }
+          ],
+          "next": "stone"
+        },
+        {
+          "text": "Travel to the Hearthmere Waystone (15 gold)",
+          "when": {
+            "all": [
+              {
+                "flag": "waystone.waystone_east_watch"
+              },
+              {
+                "flag": "waystone.waystone_hearthmere"
+              },
+              {
+                "gold": {
+                  "min": 15
+                }
+              }
+            ]
+          },
+          "effects": [
+            {
+              "gold": -15
+            },
+            {
+              "action": "travel:waystone_hearthmere"
+            }
+          ]
+        },
+        {
+          "text": "Travel to the Silver Falls Waystone (15 gold)",
+          "when": {
+            "all": [
+              {
+                "flag": "waystone.waystone_east_watch"
+              },
+              {
+                "flag": "waystone.waystone_falls"
+              },
+              {
+                "gold": {
+                  "min": 15
+                }
+              }
+            ]
+          },
+          "effects": [
+            {
+              "gold": -15
+            },
+            {
+              "action": "travel:waystone_falls"
+            }
+          ]
+        },
+        {
+          "text": "Travel to the Greyfang Waystone (15 gold)",
+          "when": {
+            "all": [
+              {
+                "flag": "waystone.waystone_east_watch"
+              },
+              {
+                "flag": "waystone.waystone_greyfang"
+              },
+              {
+                "gold": {
+                  "min": 15
+                }
+              }
+            ]
+          },
+          "effects": [
+            {
+              "gold": -15
+            },
+            {
+              "action": "travel:waystone_greyfang"
+            }
+          ]
+        },
+        {
+          "text": "Travel to the Moonfell Waystone (15 gold)",
+          "when": {
+            "all": [
+              {
+                "flag": "waystone.waystone_east_watch"
+              },
+              {
+                "flag": "waystone.waystone_moonfell"
+              },
+              {
+                "gold": {
+                  "min": 15
+                }
+              }
+            ]
+          },
+          "effects": [
+            {
+              "gold": -15
+            },
+            {
+              "action": "travel:waystone_moonfell"
+            }
+          ]
+        },
+        {
+          "text": "Leave"
+        }
+      ]
+    }
+  }
+}

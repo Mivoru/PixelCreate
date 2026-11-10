@@ -329,7 +329,8 @@ public class DialogueDataTests
             Assert.True(Story.Dialogues.ContainsKey(id), $"{id} has no dialogue in world/dialogue");
         }
 
-        Assert.Empty(Story.Dialogues.Keys.Except(speakers));
+        // Waystones speak too, in the sense that their runes offer the trip to other stones.
+        Assert.Empty(Story.Dialogues.Keys.Except(speakers).Where(k => !k.StartsWith("waystone_", StringComparison.Ordinal)));
     }
 
     [Fact]

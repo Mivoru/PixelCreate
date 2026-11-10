@@ -269,10 +269,10 @@ public partial class GameClient : Node
                     _propViews.Add(actor.Id, node);
                 }
             }
-            else if (actor.Role is "storage" or "anchor_stone" or "quest_board")
+            else if (actor.Role is "storage" or "anchor_stone" or "quest_board" or Waystones.Role)
             {
                 // Things you can use, like the Guild chest and the job board, carry a floating sign so players see them.
-                var height = actor.Role == "quest_board" ? 2.7f : 1.25f;
+                var height = actor.Role == "quest_board" ? 2.7f : actor.Role == Waystones.Role ? 3.7f : 1.25f;
                 _hud.Signs.Add((ToGodot(actor.Home) + Vector3.Up * height, actor.Role == "quest_board" ? "Quest Board: jobs" : actor.Name));
             }
         }
@@ -1068,6 +1068,7 @@ public partial class GameClient : Node
         var door = doorAt < Guild.DoorRange;
         _hud.Prompt = door && (nearest is null || doorAt < best) ? "[E] Use door"
             : nearest is { Role: "storage" } chest ? $"[E] Open the {chest.Name}"
+            : nearest is { Role: Waystones.Role } stone ? $"[E] Touch the {stone.Name}"
             : nearest is { } target ? $"[E] Talk to {target.Name}" : "";
         if (_hud.DialogOpen && nearest is null && !_hud.SceneDialog)
         {

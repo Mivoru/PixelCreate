@@ -581,6 +581,9 @@ public sealed partial class GameServer : IEnemyEvents
     /// <summary>Hands a player gold. For tests and tools.</summary>
     public void GiveGold(int id, int gold) => _players[id].Gold += gold;
 
+    /// <summary>Sets a world flag directly, for tests.</summary>
+    public void SetFlag(string flag) => _story.SetFlag(flag);
+
     /// <summary>Sets a player's health. For tests and tools.</summary>
     public void SetHealth(int id, short health) => _players[id].State.Health = health;
 
@@ -1528,6 +1531,19 @@ public sealed partial class GameServer : IEnemyEvents
     /// <summary>The server actions that story data can name. Each checks what it needs by itself.</summary>
     private void RunAction(Player player, string action)
     {
+        if (action.StartsWith(Waystones.TravelPrefix, StringComparison.Ordinal))
+        {
+            // From one bound waystone to another: only standing by a stone, and only to a stone already bound.
+            var to = action[Waystones.TravelPrefix.Length..];
+            if (Near(player, Waystones.Role) && _story.Has(Waystones.BoundFlag(to)) &&
+                _world.Npcs.FirstOrDefault(n => n.Id == to) is { Role: Waystones.Role } stone)
+            {
+                Move(player, Waystones.Arrival(stone));
+            }
+
+            return;
+        }
+
         switch (action)
         {
             case "register" when player.Rank == GuildRank.Newcomer && Near(player, "receptionist"):

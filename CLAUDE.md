@@ -123,6 +123,11 @@ Rules:
   blade along the game's -Z); `PlayerRig.WeaponModel` loads them and the worn item picks the model. Bows are
   `BowView` in code, so they can bend; `BowLook.For` gives each bow item its shape. `scripts/studio.ps1 -Jobs weapons`
   photographs every weapon up close. Dagger attacks and the bow place the hands with keys and reach (`PlayerRig.Reach`).
+- Waystones (`Waystones.cs`): NPCs of role `waystone` with a `waystone` prop and a dialogue in
+  `world/dialogue/waystone_<id>.json` (written by a script: bind with "Lay your hand on the stone", flag
+  `waystone.<id>`; travel to every other bound stone for 15 gold). Travel is only from stone to stone: the action
+  `travel:<id>` works only beside a waystone and only to a bound one, and lands `Waystones.ArrivalDistance` in front of
+  it. Five in Meadow Valley (Hearthmere, East Watch, Silver Falls, Greyfang, Moonfell). `net-tests/WaystoneTests.cs`.
 - Test a far area: set `PIXEL_SPAWN=x,z` before starting the server.
 - Enemy abilities and crystal drops are data in `world/enemies.json`; new effects go in `GameServer.Fire`.
 - Group AI (`EnemyTactics.cs`): fighters keep apart (`AllySpacing`), and a close blow needs a turn from the server
