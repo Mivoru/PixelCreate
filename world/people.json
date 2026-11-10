@@ -1,0 +1,217 @@
+{
+  "elder": {
+    "age": 78,
+    "summary": "Old Bram. The oldest man in Hearthmere. He sits by the well and watches who comes down the road, and says less than he knows.",
+    "traits": ["watchful", "plain-spoken", "tired"],
+    "tones": { "compassionate": 2, "pragmatic": 1, "hard": -1 },
+    "bonds": { "elda": 35, "mira": 25, "smith": 20, "lina": -15, "garrick": 5, "kai": -10, "sora": 15 },
+    "about": {
+      "elda": "Feeds half the village and scolds the other half. Her boy is with the levy. Don't ask her about him unless you mean to listen.",
+      "lina": "Counts other people's coin and calls it trade. She was not always so. Debt does that.",
+      "mira": "Runs the Guild while Corwin drinks it. She came here at eight years old with nothing. Ask her where from and watch her smile go flat.",
+      "garrick": "A tired man doing two men's work. Tired men look the other way. Remember that.",
+      "smith": "Tess. Her husband went to the salt pits to pay a debt. Three years. She still sets two cups.",
+      "kai": "One of yours. Thinks none of this is real. The day he learns better, somebody else will pay for the lesson.",
+      "sora": "Another of yours, and the only one who reads. She asks me about the old stones. I tell her less than she'd like.",
+      "wren": "Good hands, old fear. She left the Church, and the Church does not like to be left."
+    },
+    "moods": [
+      { "when": { "time": { "from": 1080, "to": 1320 } }, "face": "smile" }
+    ],
+    "barks": [
+      { "when": { "time": { "from": 360, "to": 720 } }, "text": "Three this year. Three." },
+      { "when": { "time": { "from": 720, "to": 1080 } }, "text": "Well's low. It was never low in my day." },
+      { "when": { "time": { "from": 1080, "to": 1320 } }, "text": "Sit, if you're sitting. Standing makes the ale nervous." }
+    ]
+  },
+  "elda": {
+    "age": 51,
+    "summary": "Elda the baker. Up before the sun, feeds anyone who looks thin, and has opinions about all of them. Her son Jory serves in the margravine's levy.",
+    "traits": ["warm", "blunt", "worried"],
+    "tones": { "compassionate": 3, "pragmatic": 0, "hard": -2 },
+    "bonds": { "elder": 30, "pip": 20, "smith": 25, "lina": -10, "garrick": 10, "mira": 20 },
+    "about": {
+      "elder": "Bram was old when I was a girl. He knows every grave in the yard by name. Bring him bread and he pretends he didn't want it.",
+      "pip": "Good boy. Works that farm like it was three of him. His father owes the Company and thinks nobody knows.",
+      "lina": "She sells flour at a price that makes me want to spit in it. But she pays on the day. I'll say that.",
+      "garrick": "He eats here every morning and has not paid since the thaw. I let him. Somebody has to stand at that gate.",
+      "smith": "Tess keeps her fire lit and her mouth shut. I'd take one of her over ten of most people."
+    },
+    "moods": [
+      { "when": { "time": { "from": 300, "to": 480 } }, "face": "tired" }
+    ],
+    "barks": [
+      { "when": { "time": { "from": 300, "to": 600 } }, "text": "First loaves are out! Don't all stand there." },
+      { "when": { "time": { "from": 600, "to": 1200 } }, "text": "You're thin. Everyone who falls here is thin." }
+    ]
+  },
+  "smith": {
+    "age": 34,
+    "summary": "Tess, who keeps the forge. Her husband Orrin was bonded to the Saltdeeps three years ago for a debt. She has had no word since.",
+    "traits": ["quiet", "stubborn", "proud"],
+    "tones": { "compassionate": 1, "pragmatic": 2, "hard": 0 },
+    "bonds": { "elda": 25, "elder": 20, "lina": -35, "garrick": 0 },
+    "about": {
+      "lina": "Ask her what a husband costs. She'll have the figure.",
+      "elda": "She leaves a loaf on my anvil when she thinks I'm not eating. I'm not, mostly.",
+      "elder": "He sits. He watches. When my Orrin was taken he was the only one who said it was wrong, out loud, in the square.",
+      "garrick": "He was at the gate the day they took Orrin through it. He opened it."
+    },
+    "moods": [
+      { "when": { "time": { "from": 1140, "to": 1320 } }, "face": "sad" }
+    ],
+    "barks": [
+      { "when": { "time": { "from": 360, "to": 1140 } }, "text": "Iron's dear this year. Ask the goblins where it all goes." },
+      { "when": { "time": { "from": 1140, "to": 1320 } }, "text": "..." }
+    ]
+  },
+  "lina": {
+    "age": 38,
+    "summary": "Lina, who trades from the stall by the square. Everything she sells comes through the Halveth Company, and so does everything she owes.",
+    "traits": ["sharp", "charming", "cornered"],
+    "tones": { "compassionate": -1, "pragmatic": 3, "hard": 1 },
+    "bonds": { "smith": -20, "elda": 5, "elder": -10, "garrick": 15, "wren": -5 },
+    "about": {
+      "smith": "Tess blames me for a contract her husband put his own mark to. I only carried the paper.",
+      "elder": "The old man thinks the village ran better before coin. It ran hungrier.",
+      "garrick": "A reasonable man. Reasonable men are worth cultivating.",
+      "wren": "She undersells the Company's tonics and thinks nobody in East Watch has noticed. Somebody has.",
+      "elda": "She would give the bakery away loaf by loaf if nobody stopped her."
+    },
+    "moods": [
+      { "when": { "time": { "from": 420, "to": 1140 } }, "face": "smirk" }
+    ],
+    "barks": [
+      { "when": { "time": { "from": 420, "to": 1140 } }, "text": "Company goods, Company prices. Fresh off the East Watch road." }
+    ]
+  },
+  "wren": {
+    "age": 29,
+    "summary": "Wren the alchemist, with a stall by the Guild road. She trained under the Church of the Pale Lantern and left without leave.",
+    "traits": ["careful", "kind", "afraid"],
+    "tones": { "compassionate": 2, "pragmatic": 1, "hard": -3 },
+    "bonds": { "mira": 30, "lina": -15, "sora": 20, "elder": 10 },
+    "about": {
+      "mira": "She gave me this pitch when nobody else would rent to a woman with no past. I don't forget it.",
+      "lina": "She has asked twice where I learned my craft. She smiles when she asks.",
+      "sora": "She brings me rubbings from the old stones and asks what the marks do. I tell her the truth: I was never taught that far.",
+      "elder": "He looks at my hands, not my face. He knows whose hands were trained like these."
+    },
+    "moods": [],
+    "barks": [
+      { "when": { "time": { "from": 420, "to": 1200 } }, "text": "Red for wounds. Don't drink two at once, whatever Kai says." }
+    ]
+  },
+  "garrick": {
+    "age": 44,
+    "summary": "Garrick, the village guard. One man for a gate, a road and the nights. He takes what he is offered, and he is offered things.",
+    "traits": ["weary", "easygoing", "compromised"],
+    "tones": { "compassionate": 1, "pragmatic": 2, "hard": -2 },
+    "bonds": { "lina": 15, "elda": 20, "smith": -5, "elder": 5, "kai": -15 },
+    "about": {
+      "kai": "Your kind die and get up again. He acts like it. One night he'll start something in that yard that a village man has to finish.",
+      "elda": "Best bread in the March. I owe her since the thaw. She hasn't asked.",
+      "lina": "Pays her dues, keeps her stall tidy. I don't ask what's in the crates. That isn't my post.",
+      "smith": "She hasn't spoken a civil word to me in three years. She has her reasons.",
+      "elder": "Knows more than he says. Lets you find out the hard way."
+    },
+    "moods": [
+      { "when": { "time": { "from": 1200, "to": 1380 } }, "face": "smile" }
+    ],
+    "barks": [
+      { "when": { "time": { "from": 360, "to": 1200 } }, "text": "Road's quiet. I like it quiet." },
+      { "when": { "time": { "from": 1380, "to": 1439 } }, "text": "Nights are long at this gate." }
+    ]
+  },
+  "pip": {
+    "age": 17,
+    "summary": "Pip of Harrow Farm. Works the fields with his father Hamm, and keeps a pitchfork by the door since the goblins grew bold.",
+    "traits": ["earnest", "jumpy", "loyal"],
+    "tones": { "compassionate": 2, "pragmatic": 0, "hard": -2 },
+    "bonds": { "elda": 25, "elder": 15, "garrick": 5 },
+    "about": {
+      "elda": "She used to give me the burnt ends when I was small. Still does. Don't tell her I said still.",
+      "garrick": "He's one man. One. You count the goblins and tell me that's enough.",
+      "elder": "Da says Old Bram fell out of the sky same as you, and Bram says Da talks too much."
+    },
+    "moods": [],
+    "barks": [
+      { "when": { "time": { "from": 360, "to": 1140 } }, "text": "Walk past the sheep, don't run. They bolt." }
+    ]
+  },
+  "mira": {
+    "age": 24,
+    "summary": "Mira, receptionist of the Hearthmere Guild, who runs it in all but name. Cheerful with everyone. She came to the village as a child, from the north.",
+    "traits": ["bright", "capable", "guarded"],
+    "tones": { "compassionate": 2, "pragmatic": 1, "hard": -1 },
+    "bonds": { "wren": 30, "elder": 25, "hollis": 20, "kai": -5, "sora": 15 },
+    "about": {
+      "hollis": "Twenty years with the Company before he came to us. He reads a ledger the way priests read scripture.",
+      "kai": "He brings in more crystals than anyone and more trouble than the rest together.",
+      "sora": "She pays her dues and asks for the keys to the old records. I've stopped asking why.",
+      "wren": "The best alchemist this side of East Watch, and she charges like the worst. Buy from her.",
+      "elder": "Bram found me on the north road when I was eight. He has never once asked me about it."
+    },
+    "moods": [],
+    "barks": []
+  },
+  "hollis": {
+    "age": 58,
+    "summary": "Hollis, the Guild's appraiser. Kept the Halveth Company's books in East Watch for twenty years before he came to Hearthmere.",
+    "traits": ["exact", "dry", "honest"],
+    "tones": { "compassionate": 0, "pragmatic": 2, "hard": -1 },
+    "bonds": { "mira": 25, "lina": -10, "kai": -5 },
+    "about": {
+      "mira": "She adds faster than I do and pretends she doesn't. Sensible girl.",
+      "lina": "She trades on Holt's paper. I wrote that paper for twenty years. I know what the small script says.",
+      "kai": "Brings me pelts hacked to ribbons and argues the price. Every time."
+    },
+    "moods": [],
+    "barks": []
+  },
+  "kai": {
+    "age": 19,
+    "summary": "Kai, a Lightborn who fell a year ago. A fine swordsman who treats the world as a game he is winning.",
+    "traits": ["cocky", "generous", "careless"],
+    "tones": { "compassionate": 0, "pragmatic": 1, "hard": 2 },
+    "bonds": { "sora": 10, "garrick": -10, "mira": 15 },
+    "about": {
+      "sora": "She thinks there's a way home. I tell her this is the better server. She doesn't laugh.",
+      "garrick": "Level nothing, guards a gate. Why do they even give him a name?",
+      "mira": "Best quest-giver in the zone. I mean that as a compliment. She doesn't take it as one."
+    },
+    "moods": [
+      { "when": { "time": { "from": 1080, "to": 1320 } }, "face": "laugh" }
+    ],
+    "barks": [
+      { "when": { "time": { "from": 1080, "to": 1320 } }, "text": "Next round's on whoever died last. Not me, then." }
+    ]
+  },
+  "sora": {
+    "age": 22,
+    "summary": "Sora, a Lightborn who fell a year ago. She studies the old Auren stones and believes there is a way back.",
+    "traits": ["studious", "homesick", "stubborn"],
+    "tones": { "compassionate": 2, "pragmatic": 1, "hard": -2 },
+    "bonds": { "kai": 5, "wren": 20, "elder": 15, "mira": 15 },
+    "about": {
+      "kai": "He stopped counting the days. I think that is how it gets you.",
+      "wren": "She was taught to read part of the old script and forbidden the rest. She helps me anyway.",
+      "elder": "He answers my questions with questions. But they are always the right questions."
+    },
+    "moods": [],
+    "barks": []
+  },
+  "nell": {
+    "age": 13,
+    "summary": "Nell of Westwood, bonded to the Halveth Company for her father's debt of fifteen crowns. She was in the cage with you.",
+    "traits": ["quick", "frightened", "brave"],
+    "tones": {},
+    "judges": { "vosk.defied": 4 },
+    "bonds": { "mira": 20 },
+    "about": {},
+    "moods": [
+      { "when": { "notFlag": "nell.hidden" }, "face": "afraid" }
+    ],
+    "barks": []
+  }
+}

@@ -254,6 +254,9 @@ public partial class Hud : Control
     /// <summary>Signs over things a player can use: where they float and what they say.</summary>
     public List<(Vector3 At, string Text)> Signs { get; } = new();
 
+    /// <summary>Lines people say in passing: where they float, the words and how solid they are (0 to 1).</summary>
+    public List<(Vector3 At, string Text, float Alpha)> Barks { get; } = new();
+
     public string Objective { get; set; } = "";
 
     public bool DialogOpen => _dialogName.Length > 0;
@@ -2083,6 +2086,23 @@ public partial class Hud : Control
             }
 
             DrawTag(ToHud(head), enemy, def);
+        }
+
+        foreach (var (at, text, alpha) in Barks)
+        {
+            if (Camera.IsPositionBehind(at) || Camera.GlobalPosition.DistanceTo(at) > 22f)
+            {
+                continue;
+            }
+
+            // Spoken words: a soft dark plate with a small tail, cream letters. No key beside it: it is not an offer.
+            var point = ToHud(at);
+            var width = Width(text, 17, _font);
+            var plate = new Rect2(point.X - width / 2f - 14, point.Y - 34, width + 28, 30);
+            Rounded(plate, 10, new Color(0.06f, 0.05f, 0.09f, 0.78f * alpha), new Color(1, 1, 1, 0.1f * alpha));
+            DrawColoredPolygon(new[] { new Vector2(point.X - 6, plate.End.Y - 1), new Vector2(point.X + 6, plate.End.Y - 1), new Vector2(point.X, plate.End.Y + 7) },
+                new Color(0.06f, 0.05f, 0.09f, 0.78f * alpha));
+            Label(text, new Vector2(plate.Position.X + 14, plate.Position.Y + 21), 17, new Color("ead4aa") with { A = alpha }, _font);
         }
 
         foreach (var (at, text) in Signs)

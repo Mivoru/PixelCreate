@@ -200,6 +200,11 @@ public partial class GameClient : Node
         _minimap = new Minimap(zone);
         _hud.AddChild(_minimap);
         _actors = Actors.For(_world);
+        foreach (var actor in _actors)
+        {
+            Dialogues.Names[actor.Id] = actor.Name;
+        }
+
         _actorAt = _actors.Select(a => ToGodot(a.Home)).ToArray();
         _actorPresent = _actors.Select(a => a.Resident).ToArray();
         foreach (var actor in _actors)
@@ -623,6 +628,15 @@ public partial class GameClient : Node
             _actorAt[index] = appeared || before.DistanceTo(target) > 8f ? target : before.Lerp(target, 1f - Mathf.Exp(-delta * 14f));
             var speed = before.DistanceTo(_actorAt[index]) / Mathf.Max(delta, 0.001f);
             _actorWalking[index] = speed > 0.4f;
+            if (!present && _actorPresent[index] && actor.Role == "lost")
+            {
+                // An unbound Lightborn who dies goes out in light, which rises and is gone.
+                var chest = before + Vector3.Up * 1.1f;
+                _fx.Burst(chest, new Color("ffffff"), 46, 2.2f, 1.6f, 0.09f, 2.6f, 180f);
+                _fx.Burst(chest, new Color("2ce8f5"), 30, 1.2f, 2.2f, 0.07f, 3.4f, 180f);
+                _fx.Ring(before + Vector3.Up * 0.1f, new Color("c0cbdc"), 2.4f, 0.7f);
+            }
+
             _actorPresent[index] = present;
             _actorPose[index] = pose;
             if (!_npcs.TryGetValue(actor.Id, out var rig))
@@ -636,6 +650,7 @@ public partial class GameClient : Node
                 continue;
             }
 
+            Temper(actor, rig, index, delta);
             rig.Root.Position = _actorAt[index];
             rig.Sitting = pose == ActorPose.Sit && !_actorWalking[index];
             // Someone at rest looks the way their day says, unless the player stands by (then they turn to them, below).
@@ -651,6 +666,74 @@ public partial class GameClient : Node
             }
 
             rig.Animate(new MotionState(_actorWalking[index] ? Mathf.Min(speed, Tuning.MoveSpeed) : 0f, true, 0f, false, AttackKind.None, 0), delta);
+        }
+
+        // Lines said in passing float over their speaker's head for a few seconds, fading at both ends.
+        _hud.Barks.Clear();
+        for (var i = _barks.Count - 1; i >= 0; i--)
+        {
+            var (who, text, left) = _barks[i];
+            left -= delta;
+            if (left <= 0f || !_actorPresent[who] || _hud.DialogOpen)
+            {
+                _barks.RemoveAt(i);
+                continue;
+            }
+
+            _barks[i] = (who, text, left);
+            var height = _actorPose[who] == ActorPose.Sit ? 1.55f : 2.05f;
+            _hud.Barks.Add((_actorAt[who] + Vector3.Up * height, text, Mathf.Clamp(Mathf.Min(left, 4.5f - left) * 3f, 0f, 1f)));
+        }
+    }
+
+    private float[] _barkWait = Array.Empty<float>();
+    private readonly Dictionary<int, string> _drawnMood = new();
+    private readonly List<(int Actor, string Text, float Left)> _barks = new();
+
+    /// <summary>
+    /// What makes one person unlike the next, from world/people.json: the face they wear for how things
+    /// stand, and what they mutter as the player passes. Checked now and then, not every frame.
+    /// </summary>
+    private void Temper(Actor actor, PlayerRig rig, int index, float delta)
+    {
+        if (_barkWait.Length != _actors.Count)
+        {
+            _barkWait = _actors.Select(_ => 4f + Random.Shared.NextSingle() * 20f).ToArray();
+        }
+
+        if (People.Of(actor.Id) is not { } person)
+        {
+            return;
+        }
+
+        _barkWait[index] -= delta;
+        if (_barkWait[index] > 0f)
+        {
+            return;
+        }
+
+        var story = _restStory ??= new ClientStory(_client, _hud.Items);
+        if (rig.Face is { } face)
+        {
+            _drawnMood.TryAdd(index, face.Resting);
+            face.Resting = person.Mood(story) ?? _drawnMood[index];
+            if (_speaking != rig)
+            {
+                face.Expression = face.Resting;
+            }
+        }
+
+        // A line in passing, when the player is near, nobody is talking, and they are not asleep on their feet.
+        var near = new Vector2(_actorAt[index].X - _client.State.Position.X, _actorAt[index].Z - _client.State.Position.Z).Length() < 9f;
+        var lines = person.BarksNow(story).ToArray();
+        if (near && lines.Length > 0 && !_hud.DialogOpen && _barks.Count < 2 && _client.Latest?.Scene == Snapshot.NoScene)
+        {
+            _barks.Add((index, lines[Random.Shared.Next(lines.Length)], 4.5f));
+            _barkWait[index] = 28f + Random.Shared.NextSingle() * 30f;
+        }
+        else
+        {
+            _barkWait[index] = 3f + Random.Shared.NextSingle() * 3f;
         }
     }
 

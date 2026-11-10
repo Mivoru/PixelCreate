@@ -410,7 +410,44 @@ public static class Dialogues
         }
 
         hud.DialogRole = Title(npc.Role);
-        Show(hud, npc, dialogue, node, context, snapshot);
+        Show(hud, npc, dialogue, node, context, snapshot, true);
+    }
+
+    /// <summary>Everyone's name by id, set by the game, for asking one person about another.</summary>
+    public static Dictionary<string, string> Names { get; } = new();
+
+    /// <summary>
+    /// "What do you make of ...?": what this person thinks of their neighbours, from world/people.json.
+    /// Nothing is sent to the server: it is only talk. The dead and the gone are not asked about here;
+    /// what people say of them is the story's to write.
+    /// </summary>
+    private static void ShowAbout(Hud hud, Npc npc, PersonDef person, System.Action back, IStoryContext context)
+    {
+        var role = hud.DialogRole;
+        var choices = new List<DialogChoice>();
+        foreach (var (other, line) in person.About)
+        {
+            if (!Names.TryGetValue(other, out var name) || context.World.Fate(other) is not (NpcFate.Alive or NpcFate.Moved))
+            {
+                continue;
+            }
+
+            choices.Add(new DialogChoice(name, Command.None, 0, () =>
+            {
+                hud.ShowDialog(npc.Name, line, new[]
+                {
+                    new DialogChoice("Ask about someone else.", Command.None, 0, () => ShowAbout(hud, npc, person, back, context)),
+                    new DialogChoice("That's all.", Command.None, 0, back, Muted: true),
+                });
+                hud.DialogRole = role;
+                hud.Speaker = npc.Id;
+            }));
+        }
+
+        choices.Add(new DialogChoice("Never mind.", Command.None, 0, back, Muted: true));
+        hud.ShowDialog(npc.Name, "Who?", choices.ToArray());
+        hud.DialogRole = role;
+        hud.Speaker = npc.Id;
     }
 
     /// <summary>Opens a given node of someone's dialogue, as a scene asks.</summary>
@@ -423,7 +460,7 @@ public static class Dialogues
         }
     }
 
-    private static void Show(Hud hud, Npc npc, DialogueDef dialogue, DialogueNode node, IStoryContext context, Snapshot? snapshot)
+    private static void Show(Hud hud, Npc npc, DialogueDef dialogue, DialogueNode node, IStoryContext context, Snapshot? snapshot, bool opening = false)
     {
         var choices = new List<DialogChoice>();
         if (node.Shop is { } shop)
@@ -444,6 +481,15 @@ public static class Dialogues
                 ? () => Show(hud, npc, dialogue, nextNode, context, snapshot)
                 : null;
             choices.Add(new DialogChoice(Fill(option.Text, context, snapshot), command, (ushort)option.Index, then, Muted: option.Effects.Length == 0 && option.Next is null));
+        }
+
+        if (opening && People.Of(npc.Id) is { About.Count: > 0 } person)
+        {
+            // Asked at the start of a talk, before the goodbye: what they make of the others.
+            var ask = new DialogChoice("What do you make of...?", Command.None, 0,
+                () => ShowAbout(hud, npc, person, () => Show(hud, npc, dialogue, node, context, snapshot, true), context));
+            var goodbye = choices.FindLastIndex(c => c.Muted);
+            choices.Insert(goodbye < 0 ? choices.Count : goodbye, ask);
         }
 
         hud.ShowDialog(npc.Name, Fill(node.Text, context, snapshot), choices.ToArray());

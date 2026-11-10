@@ -234,6 +234,12 @@ public static class Story
                 }
             }
         }
+
+        // What people are like and how their days go read the world state too: their flags must reach the client.
+        foreach (var r in People.References().Concat(Schedules.References()))
+        {
+            yield return r;
+        }
     }
 
     public static int ActiveJobs(WorldState world) =>

@@ -51,6 +51,9 @@ public sealed class WorldState
     public readonly HashSet<string> AgendaFoiled = new(StringComparer.Ordinal);
     public readonly Dictionary<string, QuestState> Quests = new(StringComparer.Ordinal);
 
+    /// <summary>Off while a save is read back or a client mirrors the server: those flags were judged when they were first set.</summary>
+    public bool Judging = true;
+
     public bool Has(string flag) => Flags.Contains(flag);
 
     public int Rep(string faction) => Reputation.GetValueOrDefault(faction);
@@ -73,6 +76,11 @@ public sealed class WorldState
         if (set ? Flags.Add(flag) : Flags.Remove(flag))
         {
             Changed.Add((StoryKind.Flag, flag));
+            if (set && Judging)
+            {
+                // People hear of what happens and think what they think of it.
+                People.Judge(this, flag);
+            }
         }
     }
 

@@ -213,6 +213,15 @@ Rules:
   (Elda waits up in the prologue). A figure's front is -Z at yaw 0 (`Actor.Facing`): the other sign walked backwards.
   Door points must lie about a metre clear of the house's boxes; `net-tests/ScheduleTests.cs` checks every place.
   The tavern yard (tables and benches east of the tavern door, footpath from the south road) fills from six.
+- People (`world/people.json`, `People.cs`): what someone is like, apart from what they say. `tones` is the trust an
+  answer's tone earns with them, once per answer (`People.HearTone` in `GameServer.Choose`; a `said.*` flag marks it);
+  `judges` is trust for a flag when it is set (`People.Judge` from `WorldState.SetFlag`, off while a save loads and
+  on the client's mirror); `bonds` what they feel for others; `about` what they say when asked about someone (the
+  client adds "What do you make of...?" to an opening node, nothing goes to the server); `moods` the face they wear
+  while a condition holds; `barks` lines said in passing, drawn over their head (`Hud.Barks`, `GameClient.Temper`).
+  Give every new person an entry: it is how one villager differs from the next. `PeopleTests`.
+- On the prologue's first night (until `prologue.slept`) only what a scene sends comes for the player; the wild
+  leaves them be unless struck first. An unbound Lightborn (role `lost`) who vanishes goes out in rising light.
 - A weapon picked up with empty hands is worn at once (the prologue's player has none until the wooden sword).
 - Interiors live outside the map on platforms (the guild at x 420, the trial ground at x 480). Doors are portals.
 - Character models come from Blender (`anime_*`) and use `toon.gdshader`, which also bends hair and cloth.

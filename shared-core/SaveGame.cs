@@ -74,10 +74,13 @@ public sealed class SavedWorld
     public void Into(WorldState world)
     {
         world.Time = new GameTime(Day, Minute);
+        world.Judging = false;
         foreach (var flag in Flags)
         {
             world.SetFlag(flag);
         }
+
+        world.Judging = true;
 
         foreach (var (key, value) in Reputation)
         {

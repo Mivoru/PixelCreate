@@ -47,7 +47,7 @@ public sealed class ClientPrediction
     public Snapshot? Latest { get; private set; }
 
     /// <summary>The client's copy of the story state, built from the entries in snapshots.</summary>
-    public WorldState Story { get; } = new();
+    public WorldState Story { get; } = new() { Judging = false };
 
     /// <summary>The gear list as the server last described each place of it.</summary>
     public IReadOnlyCollection<GearEntry> Gear => _gear.Values;

@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Godot;
 using PixelCreate.Core;
 
@@ -1516,9 +1516,9 @@ public sealed class PlayerRig
     private void SitPose()
     {
         var breath = Mathf.Sin(_phase);
-        _target[Bob] = -0.46f + breath * 0.008f;
-        _target[ThighL] = -1.48f;
-        _target[ThighR] = -1.48f;
+        _target[Bob] = -0.37f + breath * 0.008f;
+        _target[ThighL] = 1.48f;
+        _target[ThighR] = 1.48f;
         _target[ShinL] = 1.5f;
         _target[ShinR] = 1.5f;
         _target[ArmL] = -0.55f;

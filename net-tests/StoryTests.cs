@@ -246,7 +246,7 @@ public class DialogueDataTests
         {
             var ok = kind switch
             {
-                "npc" => npcs.Contains(name),
+                "npc" or "person" => npcs.Contains(name),
                 "item" => ItemDef.TryIndex(name, out _),
                 "enemy" => name.EndsWith('*') ? enemies.Any(e => e.StartsWith(name[..^1], StringComparison.Ordinal)) : enemies.Contains(name),
                 "region" => regions.Contains(name),

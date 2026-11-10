@@ -652,10 +652,15 @@ public sealed class GameServer : IEnemyEvents
             var held = _sceneLocked && !_sceneApart;
             var targets = _players.Values.Where(p => !held).OrderBy(p => p.Id)
                 .Select(p => new Target(p.Id, p.State.Position, p.State.Velocity, p.State.Attack != AttackKind.None)).Concat(CreatureTargets()).ToArray();
+            // The first night is the story's: from the cage to the morning in Hearthmere only what a scene
+            // sends comes for the player. The wild leaves them be unless they strike it first.
+            var firstNight = _story.Has("prologue.started") && !_story.Has("prologue.slept");
+            var unseen = firstNight ? CreatureTargets().ToArray() : targets;
             foreach (var enemy in _enemies)
             {
                 enemy.Crowd = _enemies;
-                enemy.Step(_world, _random, targets, this);
+                var wild = firstNight && !_enemyTags.ContainsKey(enemy.Id) && enemy.Health >= enemy.MaxHealth;
+                enemy.Step(_world, _random, wild ? unseen : targets, this);
             }
 
             _enemies.AddRange(_summons);
@@ -1442,6 +1447,8 @@ public sealed class GameServer : IEnemyEvents
         }
 
         Effect.ApplyAll(option.Effects, context);
+        // How the answer was said matters to whoever heard it, each in their own way.
+        People.HearTone(_story, option);
         if (talk is not null && option.Next is null)
         {
             _sceneTalked = true;
