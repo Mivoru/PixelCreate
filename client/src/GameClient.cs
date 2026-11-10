@@ -100,6 +100,8 @@ public partial class GameClient : Node
     // Things scenes move about that are not people (the finders' net), by actor id.
     private readonly Dictionary<string, Node3D> _propViews = new();
     private IntroVideo _introVideo = null!;
+    private Navigator _navigator = null!;
+    private WorldMap _worldMap = null!;
 
     // Set while a thrown net holds the player (a scene's throw has landed), for the objective.
     private bool _sceneRooted;
@@ -215,6 +217,9 @@ public partial class GameClient : Node
         _hud.AddChild(_minimap);
         _introVideo = new IntroVideo();
         _hud.AddChild(_introVideo);
+        _navigator = new Navigator(_world, _stage.View) { TrailEnabled = !PixelStage.Off("trail") };
+        _worldMap = new WorldMap(zone, _navigator);
+        _hud.AddChild(_worldMap);
         _actors = Actors.For(_world);
         foreach (var actor in _actors)
         {
@@ -320,9 +325,9 @@ public partial class GameClient : Node
             {
                 _hud.ShowPosition = !_hud.ShowPosition;
             }
-            else if (key.Keycode == Key.M)
+            else if (key.Keycode == Key.M && !_hud.DialogOpen && _videoStep < 0)
             {
-                _sfx.Muted = !_sfx.Muted;
+                _hud.ToggleMap();
             }
             else if (key.Keycode == Key.I || key.Keycode == Key.Tab)
             {
@@ -1310,6 +1315,24 @@ public partial class GameClient : Node
         _minimap.Player = new Vector2(shown.X, shown.Z);
         _minimap.Yaw = _yaw;
 
+        // Where the player is led: the own mark or the quest's target, by the roads, on both maps and on the ground.
+        _navigator.Update(delta, _client.State.Position, new ClientStory(_client, _hud.Items));
+        _minimap.Route = _navigator.Route;
+        _minimap.Target = _navigator.Target;
+        _worldMap.Player = new Vector2(shown.X, shown.Z);
+        _worldMap.Yaw = _yaw;
+        if (_worldMap.Visible != _hud.MapOpen)
+        {
+            if (_hud.MapOpen)
+            {
+                _worldMap.Open();
+            }
+            else
+            {
+                _worldMap.Visible = false;
+            }
+        }
+
         _region = region.Length > 0 ? region : _region;
     }
 
@@ -1449,6 +1472,11 @@ public partial class GameClient : Node
         if (mode == "prologue")
         {
             return PrologueBot();
+        }
+
+        if (mode == "map")
+        {
+            return MapBot();
         }
 
         if (mode == "creator")
@@ -2001,6 +2029,52 @@ public partial class GameClient : Node
     /// <summary>Whether the prologue bot plays contrary this way (<c>PIXEL_CONTRARY=flee</c>: runs from the finders).</summary>
     private static bool Contrary(string way) =>
         (OS.GetEnvironment("PIXEL_CONTRARY") ?? "").Split(',', StringSplitOptions.TrimEntries).Contains(way);
+
+    /// <summary>
+    /// Checks the way-finding (PIXEL_BOT=map): sets a mark at the Old Ruins, follows the trail on the
+    /// ground for a while (the minimap shows the way), then opens the big map with the mark and the way.
+    /// </summary>
+    private (sbyte X, sbyte Z, Buttons Buttons) MapBot()
+    {
+        var tick = _client.Tick;
+        if (tick < 60)
+        {
+            return (0, 0, Buttons.None);
+        }
+
+        if (_navigator.Waypoint is null && tick < 70)
+        {
+            var ruins = _zone.Places.First(p => p.Name == "Old Ruins");
+            _navigator.SetWaypoint(new Vector2(ruins.X, ruins.Z));
+            BotStage("mark the Old Ruins");
+        }
+
+        if (tick < 600)
+        {
+            // Walk the way the trail shows (the first frames work it out).
+            if (_navigator.Route.Count < 2)
+            {
+                return (0, 0, Buttons.None);
+            }
+
+            BotStage("follow the trail");
+            var next = _navigator.Route[1];
+            return BotWalk(new Vector3(next.X, 0, next.Y), 0.5f, Buttons.None);
+        }
+
+        if (!_hud.MapOpen && tick < 760)
+        {
+            _hud.ToggleMap();
+            BotStage("open the map");
+        }
+        else if (_hud.MapOpen && tick >= 760)
+        {
+            _hud.ToggleMap();
+            return BotDone();
+        }
+
+        return (0, 0, Buttons.None);
+    }
 
     private (sbyte X, sbyte Z, Buttons Buttons) BotDone()
     {

@@ -28,6 +28,14 @@ public sealed partial class Minimap : Control
     public Vector2 Player { get; set; }
     public float Yaw { get; set; }
 
+    /// <summary>The way being led along (metres, the player first) and its end, from the <see cref="Navigator"/>.</summary>
+    public IReadOnlyList<Vector2> Route { get; set; } = System.Array.Empty<Vector2>();
+    public (Vector2 At, string Label, bool Own)? Target { get; set; }
+
+    /// <summary>The gold of the way and of the quest's target; the player's own point is cyan.</summary>
+    public static readonly Color RouteColour = new("ffd25a");
+    public static readonly Color OwnColour = new("2ce8f5");
+
     public Minimap(Zone zone)
     {
         _zoneSize = zone.Size;
@@ -51,7 +59,7 @@ public sealed partial class Minimap : Control
     }
 
     /// <summary>What a building or stand is called on the map, by its model; others are not marked.</summary>
-    private static IEnumerable<(Vector2, string, string)> Landmarks(Zone zone)
+    public static IEnumerable<(Vector2, string, string)> Landmarks(Zone zone)
     {
         foreach (var prop in zone.Props)
         {
@@ -160,6 +168,11 @@ public sealed partial class Minimap : Control
             }
         }
 
+        if (_picture.Visible)
+        {
+            DrawRoute(centre, radius, scale);
+        }
+
         // The player: an arrow that points where the camera looks; north is up.
         var forward = new Vector2(-Mathf.Sin(Yaw), -Mathf.Cos(Yaw));
         var side = new Vector2(-forward.Y, forward.X);
@@ -174,6 +187,94 @@ public sealed partial class Minimap : Control
             DrawCircle(at, 11, new Color(0.07f, 0.07f, 0.1f, 0.95f));
             Text(letter, at + new Vector2(0, 5), 14, letter == "N" ? new Color("ff6b6b") : new Color("f2d080"), true);
         }
+    }
+
+    /// <summary>
+    /// The way as a line inside the disc, and the target: a diamond where it lies, or, beyond the rim,
+    /// an arrow on the rim pointing to it with the metres left.
+    /// </summary>
+    private void DrawRoute(Vector2 centre, float radius, float scale)
+    {
+        if (Target is not { } target)
+        {
+            return;
+        }
+
+        var colour = target.Own ? OwnColour : RouteColour;
+        var inner = radius - 6f;
+        var points = new List<Vector2>();
+        for (var i = 0; i < Route.Count; i++)
+        {
+            var point = centre + (Route[i] - Player) * scale;
+            if (point.DistanceTo(centre) <= inner)
+            {
+                points.Add(point);
+                continue;
+            }
+
+            // The line leaves the disc here: end it at the rim.
+            if (i > 0)
+            {
+                var from = centre + (Route[i - 1] - Player) * scale;
+                if (from.DistanceTo(centre) <= inner)
+                {
+                    points.Add(RimCrossing(centre, inner, from, point));
+                }
+            }
+
+            break;
+        }
+
+        if (points.Count >= 2)
+        {
+            DrawPolyline(points.ToArray(), new Color(0.05f, 0.05f, 0.08f, 0.8f), 5f, true);
+            DrawPolyline(points.ToArray(), colour, 2.5f, true);
+        }
+
+        var at = centre + (target.At - Player) * scale;
+        if (at.DistanceTo(centre) <= inner)
+        {
+            Diamond(at, 7f, colour);
+            return;
+        }
+
+        var direction = (at - centre).Normalized();
+        var tip = centre + direction * (radius - 3f);
+        var side = new Vector2(-direction.Y, direction.X);
+        var arrow = new[] { tip, tip - direction * 11f + side * 7f, tip - direction * 11f - side * 7f };
+        DrawColoredPolygon(arrow, new Color("181425"));
+        DrawColoredPolygon(new[] { tip - direction * 1.5f, tip - direction * 10f + side * 5f, tip - direction * 10f - side * 5f }, colour);
+        var metres = Mathf.RoundToInt(target.At.DistanceTo(Player));
+        Text($"{metres} m", centre + direction * (radius - 26f) + new Vector2(0, 4), 11, colour, true);
+    }
+
+    /// <summary>Where the line from a point inside a circle to one outside crosses it.</summary>
+    private static Vector2 RimCrossing(Vector2 centre, float radius, Vector2 inside, Vector2 outside)
+    {
+        var low = 0f;
+        var high = 1f;
+        for (var i = 0; i < 12; i++)
+        {
+            var mid = (low + high) / 2f;
+            if (inside.Lerp(outside, mid).DistanceTo(centre) <= radius)
+            {
+                low = mid;
+            }
+            else
+            {
+                high = mid;
+            }
+        }
+
+        return inside.Lerp(outside, low);
+    }
+
+    /// <summary>The target's mark: a gold diamond with a dark edge.</summary>
+    private void Diamond(Vector2 at, float size, Color colour)
+    {
+        var edge = size + 2f;
+        DrawColoredPolygon(new[] { at + new Vector2(0, -edge), at + new Vector2(edge, 0), at + new Vector2(0, edge), at + new Vector2(-edge, 0) }, new Color("181425"));
+        DrawColoredPolygon(new[] { at + new Vector2(0, -size), at + new Vector2(size, 0), at + new Vector2(0, size), at + new Vector2(-size, 0) }, colour);
     }
 
     /// <summary>A small round badge with a picture for a kind of place.</summary>

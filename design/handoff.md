@@ -15,25 +15,27 @@ Smazán obsah, kód zůstal: rozhovory 22 lidí, scény 4 až 10, drby, plány f
 poznámky deníku, Nell a Haruto. Dokumenty v `design/` o příběhu (story, factions, stage 1 až 4,
 repair-plan R1 a R4) popisují opuštěný směr.
 
+## Hotovo 2026-11-10 večer: mapa a navigace
+
+Velká mapa na M (posun, přiblížení, klik = vlastní značka, klik na ni nebo pravé tlačítko = zrušit),
+cesta po silnicích na minimapě, na velké mapě a jako zlaté šipky na zemi (40 m dopředu), cíl z kroku
+questu nebo jobu. Značka se drží v `user://waypoints.cfg` po savech a zmizí po příchodu. Šipky na
+zemi nic neměřitelného nestojí (10,0 proti 10,3 ms). Čeká na zahrání autorem.
+
 ## Co dělat jako první
 
-**Mapa a navigace** (autor o ni žádal několikrát, nesmí znovu sklouznout):
-1. Velká mapa na klávese M: celá obrazovka, posun a přiblížení myší, objevená místa se jmény, hráč.
-2. Klik na místo položí vlastní bod a zapne navigaci (další klik ho zruší). Bod patří k savu.
-3. Cesta od hráče k cíli přes `RoadMap.Route`: čára na minimapě i velké mapě a ve světě řada značek
-   na zemi před hráčem (prvních zhruba 40 m, přepočet při odbočení).
-4. Questy (krok `prologue_fallen` k Miře, joby z nástěnky) cíl nastaví samy: cíl z `goal` (postava,
-   nepřítel, předmět) nebo z nového `at`.
-5. Měřit `frameMs` se zapnutou a vypnutou cestou.
-
-Pak podle autora: prostředí, monstra, boj, pohyb.
+Zeptat se autora, co si zahrál, a podle `design/direction.md` oddíl 5 vybrat další kus: prostředí,
+monstra, boj, mechaniky nebo pohyb. Nové joby rovnou s cílem pro navigaci.
 
 ## Na co si dát pozor
 
 - Než posuneš rekvizitu, změř terén pod jejími rohy a zkontroluj vodu (vůz se jednou zabořil do břehu).
 - Kolize podmíněných rekvizit se řídí jejich flagem (`World.HasFlag`).
 - Server se v Debug buildu startuje 34 s (pomalé `Zone.Scatter`), v Release 19 s; menu používá Release.
-- `Select-Object -First N` za během hry utrhne výpis a běh pak nikdy neskončí: výstup piš do souboru.
+- `Select-Object -First N` za během hry utrhne výpis a běh pak nikdy neskončí. Spolehlivé je
+  `play.ps1 ... | Select-String -Pattern "BOT|STATS|ERROR"`; přesměrování `*>` do souboru u přímého
+  `play.ps1` jednou nechalo hru běžet bez výstupu i snímků.
+- Hra nekreslí poloprůhledné materiály (alpha); efekty používají stipple shader (`Fx.Stipple`).
 - Skripty přes heredoc v Bash nástroji se rozbíjejí; jednorázový Python piš do scratchpadu.
 
 ## Užitečné příkazy

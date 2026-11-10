@@ -1,5 +1,7 @@
 # Výchozí časová osa aktu I
 
+> **Opuštěný směr (2026-11-10).** Hra už není příběhová. Tento dokument popisuje plán, který neplatí; může sloužit jako zásoba nápadů pro svět. Platí `design/direction.md`.
+
 Co se stane, když hráč **nic neudělá**. Tohle je páteř aktu I: každá situace v `design/plot.md` je
 odbočka od této osy. Plány frakcí běží samy, hráč je může zdržet, překazit, urychlit, nebo jim pomoci.
 

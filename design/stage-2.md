@@ -1,5 +1,7 @@
 # Etapa 2: Hráčská postava a lidé
 
+> **Pozor (2026-11-10).** Hra už není příběhová. Mimika, portrét a úprava vzhledu platí dál; části o rozhovorech a postavách příběhu neplatí. Směr: `design/direction.md`.
+
 Cíl: lepší postava, čitelná mimika a úprava vzhledu. Hráč je vždy muž (rozhodnuto). Všechno, co tu
 vznikne, používají i NPC.
 

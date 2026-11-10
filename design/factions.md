@@ -1,5 +1,7 @@
 # Frakce a politika
 
+> **Opuštěný směr (2026-11-10).** Hra už není příběhová. Tento dokument popisuje plán, který neplatí; může sloužit jako zásoba nápadů pro svět. Platí `design/direction.md`.
+
 Kdo chce co, co skrývá a jak reaguje na hráče. Žádná frakce není čistě dobrá. Každá má pravdu,
 každá má zločin. Přehled designu je v `design/story.md`, svět v `design/world.md`.
 

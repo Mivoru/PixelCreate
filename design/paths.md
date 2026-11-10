@@ -1,5 +1,7 @@
 # Cesty hráče
 
+> **Opuštěný směr (2026-11-10).** Hra už není příběhová. Tento dokument popisuje plán, který neplatí; může sloužit jako zásoba nápadů pro svět. Platí `design/direction.md`.
+
 Jak se hráč může zařadit do světa. Cesty nejsou oddělené příběhy: jsou to **sady nástrojů** na stejné
 situace (peníze, zákon, násilí, pašování, víra, přátelé) a **postoje** ve čtyřech proudech
 (`design/story.md`). Situací je v aktu I asi dvanáct. Každá cesta je řeší jinak.

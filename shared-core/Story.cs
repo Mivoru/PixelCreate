@@ -15,7 +15,9 @@ public sealed record QuestGoal(string Kind, string Target, int Count)
         (Target.EndsWith('*') ? enemyId.StartsWith(Target[..^1], StringComparison.Ordinal) : enemyId == Target);
 }
 
-public sealed record QuestStep(string Text, QuestGoal Goal);
+/// <param name="At">Where the step leads, when not worked out from its goal (metres; y is ignored).</param>
+/// <param name="Route">False for a step the player cannot walk anywhere for (locked in the cage, a fight in place).</param>
+public sealed record QuestStep(string Text, QuestGoal Goal, System.Numerics.Vector3? At = null, bool Route = true);
 
 /// <summary>A quest from world/quests.json.</summary>
 /// <param name="Kind">job, story, personal, faction or contract.</param>
@@ -506,7 +508,9 @@ public static class Story
                 var target = goal.Value.ValueKind == JsonValueKind.String ? goal.Value.GetString()! : Str(goal.Value, "id");
                 var count = s.GetProperty("goal").TryGetProperty("count", out var c) ? c.GetInt32()
                     : goal.Value.ValueKind == JsonValueKind.Object ? Int(goal.Value, "count", 1) : 1;
-                return new QuestStep(Str(s, "text"), new QuestGoal(goal.Name, target, count));
+                System.Numerics.Vector3? at = s.TryGetProperty("at", out var a) ? new System.Numerics.Vector3(a[0].GetSingle(), 0, a[1].GetSingle()) : null;
+                var route = !s.TryGetProperty("route", out var r) || r.GetBoolean();
+                return new QuestStep(Str(s, "text"), new QuestGoal(goal.Name, target, count), at, route);
             }).ToArray();
             var deadline = Opt(q, "deadline");
             list.Add(new StoryQuest(

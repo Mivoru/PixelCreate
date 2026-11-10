@@ -19,8 +19,7 @@ environment, world building, monsters, fighting, mechanics and movement, with le
 simple jobs. Keep: the intro film, the look creator, the capture by the finders and the goblin ambush, then the road
 to Hearthmere and Mira, who signs the player up. No companions, no story quest chains, no dialogue trees: only the
 people who serve (Mira, Hollis, Wren, the job board, the Anchor Stone) can be spoken to; everyone else only talks in
-passing or among themselves. Next big piece: the map on M with click-to-navigate, the route on the minimap and on the
-ground, set by jobs too. The MMORPG goal is dropped; co-op for 2 to 4 players may come later. Do not tune difficulty
+passing or among themselves. The direction, what was learned and what comes next: `design/direction.md`. The MMORPG goal is dropped; co-op for 2 to 4 players may come later. Do not tune difficulty
 or balance yet. Start a session with `design/handoff.md`. Godot 4.7 with C#; the server does not use Godot.
 The story documents in `design/` (story, factions, stages 1 to 4, repair plan R4) describe the dropped direction.
 
@@ -302,6 +301,16 @@ Rules:
 - Minimap (`Minimap.cs`, top right, north = -Z up): the studio's `map` job renders `client/assets/ui/minimap.png`;
   run it again after changing terrain, roads or buildings. Buildings are marked by model (`Minimap.Landmarks`), and
   places appear once found (`Settings.Discovered`, saved in `user://settings.cfg`).
+- Navigation: `Navigation` (shared) gives the target of the tracked quest step (the prologue first, then jobs): a
+  person's place for `talk`, the nearest camp for `kill`, where the item drops for `bring` (then Mira once the bag
+  holds enough), or the step's `at`; `"route": false` shows nothing (in the cage, in the fight). A place behind a door
+  is reached through the door (`Navigation.Reachable`). `Navigator` (client) adds the player's own mark (kept per
+  save in `user://waypoints.cfg`, cleared on arrival), works out the way with `RoadMap.Route` (again when the target
+  moves or the player strays 6 m) and lays gold chevrons on the ground for 40 m ahead (opaque: the game does not draw
+  alpha materials; `PIXEL_OFF=trail` turns them off, measured at no cost). The minimap draws the way and the target,
+  or an arrow on its rim with the metres. M opens the big map (`WorldMap.cs`, `Hud.MapOpen`): wheel zooms, drag
+  moves, a click sets the mark, a click on it or a right click clears it. `PIXEL_BOT=map` marks the Old Ruins, follows
+  the trail and opens the map. `NavigationTests` check that every quest step with a route has a place.
 - Esc opens the menu (`HudMenu.cs`): Resume, Settings (sound effects, music, mouse and bow aim sensitivity, saved by `Settings.cs` to `user://settings.cfg`) and Quit Game. Sounds play on the `SFX` bus; music belongs on `Music`. `PIXEL_BOT=menu` shows both pages.
 - `PIXEL_BOT` picks the bot: `hunt` kills animals near the spawn, loots, eats and opens the bag; `guild` plays the Guild story through the real interface and prints `BOT` stages,
   with `PIXEL_FRAIL=1` making the examiner frail. The examiner is a level 5 `duelist`:

@@ -1,5 +1,7 @@
 # Herní systémy pro příběh
 
+> **Pozor (2026-11-10).** Hra už není příběhová: části o příběhu, frakcích, rozhovorech a postavách neplatí. Svět, mechaniky a systémy platí dál. Směr: `design/direction.md`.
+
 Tutoriál, Guilda, questy, vyšetřování, stav světa, růst vesnice, postup hrou, lokace, monstra,
 bossové, dungeony a technický plán. Děj je v `design/plot.md`.
 

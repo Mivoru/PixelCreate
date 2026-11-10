@@ -1,5 +1,7 @@
 # Plán oprav po prvním hraní (2026-11-10)
 
+> **Opuštěný směr (2026-11-10).** Hra už není příběhová. Tento dokument popisuje plán, který neplatí; může sloužit jako zásoba nápadů pro svět. Platí `design/direction.md`.
+
 Hráč (autor hry) poprvé prošel prolog a vesnici a výsledek označil za otřesný. Testy a boti přitom
 procházeli. Tento plán má přednost před zbytkem etapy 4. Nový obsah (ranky, questy, další lidé) se
 nepřidává, dokud fáze R1 až R4 nejsou zahrané a schválené autorem.

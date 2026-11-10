@@ -1,5 +1,7 @@
 # Etapa 1: Základy živého světa
 
+> **Opuštěný směr (2026-11-10).** Hra už není příběhová. Tento dokument popisuje plán, který neplatí; může sloužit jako zásoba nápadů pro svět. Platí `design/direction.md`.
+
 Cíl: hra funguje jako dnes, ale z dat, s kalendářem, ukládáním a stavem světa. Žádný nový příběhový
 obsah. Všechno, co je tu popsané, musí běžet v `shared-core` bez enginu a projít `dotnet test`.
 

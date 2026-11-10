@@ -1,5 +1,7 @@
 # Etapa 4: Živá vesnice (dny 3 až 10)
 
+> **Opuštěný směr (2026-11-10).** Hra už není příběhová. Tento dokument popisuje plán, který neplatí; může sloužit jako zásoba nápadů pro svět. Platí `design/direction.md`.
+
 Cíl: pět dní v Hearthmere působí živě i bez příběhu. Lidé mají den, mluví o tom, co se děje, a svět
 se hne, i když hráč jen loví. Hlavní test celé vize.
 

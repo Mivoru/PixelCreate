@@ -1,5 +1,7 @@
 # Postavy
 
+> **Opuštěný směr (2026-11-10).** Hra už není příběhová. Tento dokument popisuje plán, který neplatí; může sloužit jako zásoba nápadů pro svět. Platí `design/direction.md`.
+
 Každá důležitá postava má: co ukazuje, co skrývá, svůj oblouk a možné konce podle hráče.
 Postavy s † mohou zemřít trvale. Postavy, které ve hře už existují, jsou označené (ve hře).
 

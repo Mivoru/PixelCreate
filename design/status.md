@@ -1,6 +1,8 @@
 # Stav: co je hotové, co je jen návrh, co je otevřené
 
 Audit designu z 2026-11-09. Odděluje to, co **ve hře běží**, od toho, co je **jen v návrhu**.
+Od 2026-11-10 hra není příběhová (`design/direction.md`): návrhy příběhu, frakcí a rozhovorů v oddílech níže
+jsou opuštěné.
 Udržovat při každé větší změně: posunout řádek z „navrženo" do „hotovo", když to projde testy.
 
 ---
@@ -17,13 +19,14 @@ Hra už je hratelný prototyp akční části. Zdroj pravdy je kód a `CLAUDE.md
 | Předměty | batoh, gear s raritou a affixy, jídlo, lektvary, obchod (Wren), truhla v Guildě, odkupník |
 | Nepřátelé | slimáci, 6 druhů goblinů, 7 orků (3 vzácní), 5 vlků (2 vzácní), 4 vlkodlaci (2 vzácní), Rhea |
 | AI | skupinová taktika (role, tahy na blízko, kruh), hlídky, lov zvířat, stáda zvířat |
-| Svět | zóna Meadow Valley 600 m, 21 oblastí, hřebeny, lesy, tábory, interiéry (Guilda, aréna), minimapa |
-| Guilda | registrace, zkouška u Rhey, tabule s 5 joby (jeden aktivní), prodej krystalů a kořisti |
-| NPC | 24 postav s povahou (`people.json`), rozvrhem dne a rozhovorem; noví z etapy 4: Corwin, Tam, Brightwater Four (Edwin, Moss, Fen, Rook), Osric, Anwen, Hamm, Maddy, Tobias |
-| Ostatní | menu a nastavení, zvuky, foto studio, boti pro živé testy, síťový simulátor |
+| Svět | zóna Meadow Valley 600 m, 21 oblastí, hřebeny, lesy, tábory, interiéry (Guilda, aréna), minimapa; kolize podmíněných rekvizit podle flagu |
+| Guilda | registrace rozhovorem u Miry (rank F), zkouška u Rhey jako postup na rank E od levelu 5, tabule s 5 joby (jeden aktivní), prodej krystalů a kořisti |
+| NPC | 24 postav s rozvrhem dne a hláškami nad hlavou; mluví jen Mira, Hollis, Wren, nástěnka a Anchor Stone (od 2026-11-10) |
+| Ostatní | hlavní menu (savy, nastavení, návrat ze hry), menu ve hře, zvuky, foto studio, boti pro živé testy, síťový simulátor |
 | Postava (etapa 2) | mimika (12 výrazů z dat), živý portrét v dialogu, pohyb úst, výrazy v boji, úprava vzhledu (11 voleb, 10 účesů, 6 vousů), výchozí výrazy NPC |
-| Prolog (etapa 3) | úvodní obrázky, pád, lovci, klec, přepadení u ruin, cesta s Nell, Pip, Elda, Bram, Guilda, Anchor Stone, zkouška ve třech kolech; herci, scény, podmíněné rekvizity; bot `prologue` projde celý |
-| Základy příběhu (etapa 1) | kalendář s dnem a nocí, spánek, stav světa, questy a dialogy z dat, plány frakcí (engine), ukládání každé ráno, smrt stojí 10 % krystalů, deník (L) |
+| Začátek hry | úvodní video, výběr vzhledu, lovci jdou k hráči, síť jako schopnost, pevná klec, přepadení se skutečným bojem lovců, Hannin meč, cesta k Miře; bot `prologue` i `-Contrary` projdou |
+| Systémy z etapy 1 | kalendář s dnem a nocí, spánek, stav světa, questy a dialogy z dat, ukládání každé ráno, smrt stojí 10 % krystalů, deník (L); obsah příběhu odstraněn 2026-11-10 |
+| Mapa a navigace | velká mapa na M (posun, přiblížení, vlastní značka kliknutím), cesta po silnicích na minimapě, velké mapě a jako šipky na zemi, cíl z kroku questu nebo jobu (`Navigation`, `Navigator`, `WorldMap`) |
 
 ## 2. Navrženo, ale neexistuje
 

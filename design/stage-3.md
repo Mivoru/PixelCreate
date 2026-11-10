@@ -1,5 +1,7 @@
 # Etapa 3: Prolog „Fallen"
 
+> **Opuštěný směr (2026-11-10).** Hra už není příběhová. Tento dokument popisuje plán, který neplatí; může sloužit jako zásoba nápadů pro svět. Platí `design/direction.md`.
+
 Cíl: hratelný prolog od úvodního videa po rank F, 25 až 35 minut. Dny 1 a 2 kalendáře.
 Návaznost: `design/plot.md` (prolog), `design/systems.md` (tutoriál), etapy 1 a 2 (data, kalendář,
 dialogy, mimika, úprava vzhledu).

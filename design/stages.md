@@ -1,5 +1,7 @@
 # Etapy výroby
 
+> **Opuštěný směr (2026-11-10).** Hra už není příběhová. Tento dokument popisuje plán, který neplatí; může sloužit jako zásoba nápadů pro svět. Platí `design/direction.md`.
+
 Akt I se staví po etapách. Každá etapa je hratelná a projde stejným cyklem:
 
 1. **Návrh do detailu:** situace, výchozí vývoj, možnosti cest, koncepty dialogů, seznam postav,

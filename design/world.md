@@ -1,5 +1,7 @@
 # Svět Velmory
 
+> **Pozor (2026-11-10).** Hra už není příběhová: části o příběhu, frakcích, rozhovorech a postavách neplatí. Svět, mechaniky a systémy platí dál. Směr: `design/direction.md`.
+
 Jak svět funguje: metafyzika, dějiny, zeměpis, společnost a všední život. Jména ve hře anglicky,
 popis česky. Přehled celého designu je v `design/story.md`.
 

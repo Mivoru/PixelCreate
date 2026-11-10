@@ -1,5 +1,7 @@
 # Forty Crowns: vize, principy a mapa designu
 
+> **Opuštěný směr (2026-11-10).** Hra už není příběhová. Tento dokument popisuje plán, který neplatí; může sloužit jako zásoba nápadů pro svět. Platí `design/direction.md`.
+
 Název hry je **Forty Crowns**: tolik stojí Skyfallen na trhu (Vosk: "Forty crowns, that one. Don't damage
 the face."). Hned říká, že svět je krutý a hráč je pro něj zboží, ne vyvolený.
 

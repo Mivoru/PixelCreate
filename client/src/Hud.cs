@@ -573,7 +573,18 @@ public partial class Hud : Control
     }
 
     /// <summary>Whether the bag, the character or the mastery window is open. Only one is at a time.</summary>
-    public bool WindowOpen => InventoryOpen || CharacterOpen || MasteryOpen || JournalOpen || CreatorOpen;
+    public bool WindowOpen => InventoryOpen || CharacterOpen || MasteryOpen || JournalOpen || CreatorOpen || MapOpen;
+
+    /// <summary>The big map on M (<see cref="WorldMap"/>, drawn by its own control over the HUD).</summary>
+    public bool MapOpen { get; private set; }
+
+    public void ToggleMap()
+    {
+        var open = !MapOpen;
+        CloseWindows();
+        MapOpen = open;
+        UpdateMouse();
+    }
 
     /// <summary>Closes the bag, the character and the mastery window, so opening one never lays it over another.</summary>
     public void CloseWindows()
@@ -586,6 +597,7 @@ public partial class Hud : Control
         CharacterOpen = false;
         MasteryOpen = false;
         JournalOpen = false;
+        MapOpen = false;
         UpdateMouse();
     }
 

@@ -1,5 +1,7 @@
 # Vztahy: přátelé, společníci, sólo a romance
 
+> **Opuštěný směr (2026-11-10).** Hra už není příběhová. Tento dokument popisuje plán, který neplatí; může sloužit jako zásoba nápadů pro svět. Platí `design/direction.md`.
+
 Hráč si může udělat přátele, najít lásku, mít nepřátele, nebo zůstat sám. Nic z toho není povinné
 a žádná cesta není lepší. Postavy jsou v `design/characters.md`.
 
