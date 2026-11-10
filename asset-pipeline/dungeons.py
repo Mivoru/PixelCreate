@@ -172,7 +172,98 @@ def archive_cave(h):
         h.blob(f"moss{i}", (rng.choice((-1, 1)) * rng.uniform(2.2, 3.8), 0.4, rng.uniform(0.1, 3.0)), rng.uniform(0.3, 0.5), "moss", 560 + i, 0.4, 1)
 
 
+WARREN_H = 4.6
+
+
+def warren_floor(h):
+    """The Goblin Warren's floor: trodden earth, patches of rotten straw where goblins sleep, puddles,
+    gnawed bones and scraps."""
+    rng = random.Random(601)
+    h.box("earth", (0, 0, -0.25), (46, 34, 0.5), "dirt_dark")
+    for i in range(40):
+        x, y = rng.uniform(-22, 22), rng.uniform(-16, 16)
+        h.box("clod", (x, y, 0.01), (rng.uniform(1.5, 4), rng.uniform(1.2, 3), 0.02), rng.choice(("path", "dirt_dark", "hide_dark")))
+    for i in range(12):
+        x, y = rng.uniform(-21, 21), rng.uniform(-15, 15)
+        h.box("straw", (x, y, 0.03), (rng.uniform(1.2, 2.4), rng.uniform(0.9, 1.8), 0.04), "hay")
+    for i in range(8):
+        x, y = rng.uniform(-21, 21), rng.uniform(-15, 15)
+        h.box("puddle", (x, y, 0.035), (rng.uniform(0.6, 1.6), rng.uniform(0.5, 1.2), 0.01), "deep_water")
+    for i in range(30):
+        x, y = rng.uniform(-21, 21), rng.uniform(-15, 15)
+        a = rng.uniform(0, math.pi)
+        h.timber("bone", (x - math.cos(a) * 0.25, y - math.sin(a) * 0.25, 0.05), (x + math.cos(a) * 0.25, y + math.sin(a) * 0.25, 0.06), 0.06, "bone_old")
+
+
+def warren_ceiling(h):
+    """A low roof of packed earth held up by heavy beams, roots poking through between them."""
+    rng = random.Random(602)
+    h.box("roof", (0, 0, WARREN_H + 0.4), (50, 38, 1.0), "dirt_dark")
+    for i in range(10):
+        x = -22 + i * 44 / 9
+        h.box("beam", (x, 0, WARREN_H - 0.15), (0.45, 34, 0.4), "wood_dark")
+    for i in range(24):
+        x, y = rng.uniform(-22, 22), rng.uniform(-16, 16)
+        length = rng.uniform(0.5, 1.6)
+        h.timber("root", (x, y, WARREN_H), (x + rng.uniform(-0.2, 0.2), y + rng.uniform(-0.2, 0.2), WARREN_H - length), 0.05, "bark_dark")
+
+
+def warren_wall(h):
+    """Six metres of tunnel wall: lumpy earth and stones, shored up with two timber posts and planks,
+    a torch bracket and the scratches of goblin claws."""
+    rng = random.Random(603)
+    length = 6.0
+    h.box("earth", (0, 0.3, WARREN_H / 2), (length, 1.0, WARREN_H), "dirt_dark")
+    for i in range(9):
+        x = -2.7 + i * 0.68 + rng.uniform(-0.2, 0.2)
+        z = rng.uniform(0.4, WARREN_H - 0.6)
+        h.blob(f"lump{i}", (x, -0.15, z), rng.uniform(0.45, 0.8), rng.choice(("dirt_dark", "den_rock_dark", "hide_dark")), 610 + i, 0.7, 1)
+    for x in (-1.8, 1.8):
+        h.timber("post", (x, -0.35, 0), (x, -0.35, WARREN_H), 0.26, "wood_dark")
+    h.timber("cap", (-2.4, -0.35, WARREN_H - 0.2), (2.4, -0.35, WARREN_H - 0.2), 0.24, "wood_dark")
+    for k in range(4):
+        h.box("plank", (0, -0.25, 0.6 + k * 0.9), (3.4, 0.08, 0.32), "wood")
+    h.timber("bracket", (0, -0.45, 2.4), (0, -0.8, 2.6), 0.06, "iron")
+    h.blob("torch", (0, -0.82, 2.75), 0.12, "ember", 620, 1.4, 1)
+    for i in range(3):
+        h.box("scratch", (-2.4 + i * 0.12, -0.55, 1.4), (0.03, 0.02, 0.5), "cave_dark")
+
+
+def warren_post(h):
+    """A lone shoring post with a short beam on top, wrapped in rope, a skull nailed to it."""
+    h.timber("post", (0, 0, 0), (0, 0, WARREN_H), 0.32, "wood_dark")
+    h.timber("head", (-0.9, 0, WARREN_H - 0.15), (0.9, 0, WARREN_H - 0.15), 0.26, "wood_dark")
+    for z in (0.9, 1.0, 1.1):
+        h.box("rope", (0, 0, z), (0.36, 0.36, 0.05), "sack")
+    h.blob("skull", (0, -0.2, 1.7), 0.15, "bone_old", 630, 0.9, 1)
+
+
+def warren_hole(h):
+    """A burrow mouth: a mound of earth and stones round a black hole, framed with two crooked timber
+    posts and a lintel hung with bones and a skull."""
+    rng = random.Random(604)
+    for i, (x, y, z, r) in enumerate(((-2.6, 1.0, 0.9, 1.6), (2.6, 1.0, 0.9, 1.6), (0, 1.8, 2.6, 2.0), (-1.6, 2.0, 2.2, 1.4),
+                                      (1.7, 2.0, 2.2, 1.4), (-3.6, 1.6, 0.4, 1.1), (3.6, 1.5, 0.4, 1.1))):
+        h.blob(f"mound{i}", (x, y, z), r, "dirt_dark" if i % 2 else "den_rock_dark", 640 + i, 0.75, 2)
+    h.box("hole", (0, 0.7, 1.1), (2.4, 1.4, 2.2), "cave_dark")
+    h.timber("post_l", (-1.35, -0.2, 0), (-1.25, -0.2, 2.5), 0.24, "wood_dark")
+    h.timber("post_r", (1.35, -0.2, 0), (1.3, -0.2, 2.45), 0.24, "wood_dark")
+    h.timber("lintel", (-1.7, -0.2, 2.5), (1.7, -0.2, 2.35), 0.24, "wood_dark")
+    h.blob("skull", (0, -0.4, 2.45), 0.2, "bone_old", 650, 0.9, 1)
+    for i in range(4):
+        x = -1.0 + i * 0.66
+        h.timber(f"string{i}", (x, -0.35, 2.35), (x, -0.35, 1.9), 0.02, "sack")
+        h.timber(f"dangle{i}", (x, -0.35, 1.9), (x + 0.05, -0.35, 1.65), 0.05, "bone_old")
+    for i in range(4):
+        h.blob(f"stone{i}", (rng.uniform(-3, 3), rng.uniform(-0.8, -0.2), 0.1), rng.uniform(0.15, 0.3), "den_rock", 660 + i, 0.6, 1)
+
+
 BUILDERS = {
+    "warren_floor": warren_floor,
+    "warren_ceiling": warren_ceiling,
+    "warren_wall": warren_wall,
+    "warren_post": warren_post,
+    "warren_hole": warren_hole,
     "archive_floor": archive_floor,
     "archive_ceiling": archive_ceiling,
     "archive_wall": archive_wall,

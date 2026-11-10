@@ -277,5 +277,38 @@
         "route": false
       }
     ]
+  },
+  {
+    "id": "warren_brutes",
+    "name": "Into the Warren",
+    "kind": "job",
+    "giver": "board",
+    "repeatable": true,
+    "brief": "kill 2 goblin brutes",
+    "gold": 240,
+    "xp": 380,
+    "poster": "Corwin Hale, branch master",
+    "place": "the Goblin Warren under Goblin Hollow",
+    "journal": "Corwin's notice: the goblins of the Hollow have a burrow beside their fort, and their brutes come up out of it to raid. Go down and break them.",
+    "steps": [
+      {
+        "text": "Go down the burrow beside the goblin fort and kill brutes in the Goblin Warren.",
+        "goal": {
+          "kill": "goblin_brute",
+          "count": 2
+        },
+        "at": [
+          640,
+          -8
+        ]
+      },
+      {
+        "text": "Return to the Guild and report to Mira.",
+        "goal": {
+          "talk": "mira"
+        },
+        "route": false
+      }
+    ]
   }
 ]

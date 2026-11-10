@@ -132,7 +132,7 @@ public sealed class Zone
     private static readonly HashSet<string> NonSolid = new()
     {
         "twigs", "berry_bush", "tall_bush", "reeds", "grass_tuft", "field", "pier", "fern", "bridge", "bridge_stone",
-        "guild_interior", "trial_arena", "flowers", "mushroom", "bush", "archive_floor", "archive_ceiling",
+        "guild_interior", "trial_arena", "flowers", "mushroom", "bush", "archive_floor", "archive_ceiling", "warren_floor", "warren_ceiling",
     };
 
     /// <summary>One collision box of a model, around its origin in its own axes: x, z and the top.</summary>
