@@ -8,9 +8,11 @@ uniform sampler2D dirt_tex : source_color, filter_linear_mipmap_anisotropic, rep
 uniform sampler2D rock_tex : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
 
 varying vec3 world_position;
+varying vec3 world_normal;
 
 void vertex() {
 	world_position = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	world_normal = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
 }
 
 void fragment() {
@@ -44,11 +46,17 @@ void fragment() {
 		vec2 side = vec2(world_position.x + world_position.z, world_position.y * 1.4) / 9.0;
 		vec2 wide = vec2(world_position.x * 0.7 - world_position.z * 0.7, world_position.y) / 31.0;
 		color = mix(texture(rock_tex, side + large * 0.6).rgb, texture(rock_tex, wide).rgb, 0.55) * vec3(1.06, 1.02, 0.96);
-		// Bands of harder and softer rock, and snow on the high ground.
-		color *= 0.9 + 0.14 * sin(world_position.y * 0.8 + large * 7.0);
-		if (world_position.y + grain * 9.0 + large * 8.0 > 42.0) {
-			color = vec3(0.9, 0.94, 0.98);
-		}
+		// Bands of harder and softer rock, warmer and cooler, so a cliff face shows its layers.
+		float strata = sin(world_position.y * 0.8 + large * 7.0);
+		color *= 0.88 + 0.16 * strata;
+		color *= mix(vec3(0.94, 0.97, 1.04), vec3(1.07, 1.0, 0.9), smoothstep(-0.4, 0.6, sin(world_position.y * 0.23 + large * 3.0)));
+	}
+	// Snow settles on the ledges and only covers the tops: steep faces stay bare rock. High ledges
+	// are flat enough to count as grass, so this runs on any ground.
+	float high = world_position.y + grain * 7.0 + large * 6.0;
+	float level = world_normal.y;
+	if ((high > 46.0 && level > 0.8) || (high > 56.0 && level > 0.6) || high > 68.0) {
+		color = vec3(0.9, 0.94, 0.98) * (0.93 + 0.07 * grain);
 	}
 	if (COLOR.r + (grain - 0.5) * 0.45 > 0.5) {
 		color = texture(dirt_tex, uv).rgb;

@@ -635,7 +635,19 @@ public sealed class Zone
 
         var rise = (edge - RimStart) / (1f - RimStart);
         var ridges = MathF.Sin(x * 0.11f) * MathF.Cos(z * 0.13f) + MathF.Sin(x * 0.043f + z * 0.031f) * 1.6f + MathF.Sin(z * 0.27f - x * 0.19f) * 0.35f;
-        var wall = rise * rise * 50f + ridges * 6f * rise;
+        // Sharp crests where a wave turns over, at three scales running different ways: a skyline of
+        // peaks and notches instead of a row of soft domes.
+        var crest = Crest(x * 0.031f + z * 0.017f + 0.4f) * 0.5f + Crest(z * 0.043f - x * 0.029f + 1.1f) * 0.33f + Crest(x * 0.091f + z * 0.077f) * 0.17f;
+        var wall = rise * rise * 46f + rise * (crest * crest * 28f + ridges * 3f);
+        // Cliff bands: the wall gathers into ledges with steep steps between them, so its sides read as
+        // rock faces. The ledges are where the snow settles.
+        // The bands tilt and wander along the wall, so they never line up into rings like a stadium.
+        var warp = MathF.Sin(x * 0.047f - z * 0.029f) * 3.5f + MathF.Sin(z * 0.081f + x * 0.063f) * 1.8f;
+        var band = (wall + warp) / CliffBand;
+        var level = MathF.Floor(band);
+        var t = band - level;
+        var terraced = (level + t * t * t * (t * (t * 6f - 15f) + 10f)) * CliffBand - warp;
+        wall += (terraced - wall) * 0.6f * Math.Clamp(rise * 3f, 0f, 1f);
         var open = 0f;
         var floor = 0f;
         foreach (var pass in data.Passes ?? Array.Empty<PassData>())
@@ -660,6 +672,12 @@ public sealed class Zone
 
         return height + wall * (1f - open) + floor * rise * open;
     }
+
+    /// <summary>The height of one cliff band on the mountain wall, in metres.</summary>
+    private const float CliffBand = 7f;
+
+    /// <summary>A ridged wave between 0 and 1, sharp at its crests.</summary>
+    private static float Crest(float v) => 1f - MathF.Abs(MathF.Sin(v));
 
     private static float PolylineDistance(float[][] points, float x, float z) => NearestOnPolyline(points, x, z).Distance;
 
