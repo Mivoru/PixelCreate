@@ -10,6 +10,7 @@ COLORS = {
     "cave_dark": "141218", "den_rock": "6A6C78", "den_rock_dark": "4A4C58", "lichen": "8A9A5A",
     "pelt_grey": "7E8494", "pelt_pale": "D6D2C8", "branch": "5A3E30", "bone_old": "D8CCB0",
     "char": "2A2224", "stone_old": "7A7884", "thatch_rot": "6A5A3E", "shutter_old": "3A4A50", "dirt_dark": "4A3E34", "bronze": "8A6A3A",
+    "ash": "57514F", "wax": "EEE2C4", "flesh_dry": "7A3A2E", "antler": "C8B898",
 }
 
 
@@ -436,7 +437,208 @@ def rockfall(h):
         h.blob(f"lichen{i}", (-3.0 + i * 3.1, -1.5, 1.3 + (i % 2) * 0.5), 0.5, "lichen", 170 + i, 0.25, 1)
 
 
+def burned_barn(h):
+    """A barn burnt down to its frame: a low stone footing, charred posts (some whole, some snapped),
+    one end's rafters still standing as an A against the sky, the ridge beam fallen across the floor,
+    a loft floor slumped at an angle, blackened hay and drifts of ash."""
+    rng = random.Random(131)
+    w, d = 4.2, 2.8
+    # The footing: knee-high stone, broken low in places.
+    broken_wall(h, "foot_n", -w, d, w, d, 0.8, 132)
+    broken_wall(h, "foot_s", -w, -d, w, -d, 0.8, 133, gap=(0.38, 0.62))
+    broken_wall(h, "foot_e", w, -d, w, d, 0.8, 134)
+    broken_wall(h, "foot_w", -w, -d, -w, d, 0.8, 135, gap=(0.3, 0.55))
+    # Posts along both long sides: the west end burnt worst, so its posts are stumps.
+    for i, x in enumerate((-w + 0.3, -1.4, 1.4, w - 0.3)):
+        for side in (-1, 1):
+            top = 0.9 + rng.uniform(0, 0.8) if x < -1.0 else rng.uniform(2.8, 3.6)
+            lean = rng.uniform(-0.15, 0.15)
+            h.timber(f"post{i}{side}", (x, side * (d - 0.3), 0.5), (x + lean, side * (d - 0.3), top), 0.24, "char")
+    # The east end keeps its frame: wall plates, a tie beam and a pair of rafters meeting at the top.
+    x = w - 0.3
+    for side in (-1, 1):
+        h.timber(f"plate{side}", (1.4, side * (d - 0.3), 3.3), (x, side * (d - 0.3), 3.4), 0.2, "char")
+        h.timber(f"rafter_e{side}", (x, side * (d - 0.3), 3.4), (x, 0, 5.2), 0.2, "char")
+        h.timber(f"rafter_m{side}", (1.4, side * (d - 0.3), 3.3), (1.3, side * 0.4, 4.6), 0.18, "char")
+    h.timber("tie", (x, -d + 0.3, 3.2), (x, d - 0.3, 3.2), 0.2, "char")
+    h.timber("king_post", (x, 0, 3.2), (x, 0, 5.2), 0.16, "char")
+    # The ridge beam came down: one end on the ground, the other still caught on the east frame.
+    h.timber("ridge", (-2.6, 0.4, 0.2), (x, 0, 5.1), 0.24, "char")
+    # The loft floor slumped from the east end down to the ground.
+    for i in range(7):
+        y = -1.8 + i * 0.6
+        h.timber(f"loft{i}", (-0.6, y, 0.2), (2.4, y + rng.uniform(-0.1, 0.1), 2.0), 0.14, "char" if i % 2 else "wood_dark")
+    # Boards, ash and burnt hay over the floor.
+    for i in range(10):
+        bx, by = rng.uniform(-w + 0.7, w - 0.8), rng.uniform(-d + 0.6, d - 0.6)
+        a = rng.uniform(0, math.pi)
+        h.timber(f"board{i}", (bx - math.cos(a) * 0.8, by - math.sin(a) * 0.8, 0.05), (bx + math.cos(a) * 0.8, by + math.sin(a) * 0.8, 0.08), 0.13, "char")
+    for i in range(5):
+        h.blob(f"ash{i}", (rng.uniform(-w + 1, w - 1), rng.uniform(-d + 0.8, d - 0.8), 0.02), rng.uniform(0.6, 1.1), "ash", 140 + i, 0.08, 1)
+    h.blob("hay", (-2.4, 1.3, 0.3), 0.9, "char", 150, 0.4, 2)
+    h.blob("hay_b", (-1.6, 1.7, 0.25), 0.7, "thatch_rot", 151, 0.35, 2)
+
+
+def cart_wreck(h):
+    """A farm cart turned over by the road: its bed on its side, one wheel still on the axle and one
+    lying in the grass with broken spokes, a snapped shaft, spilt sacks, and goblin arrows in the boards."""
+    rng = random.Random(161)
+    # The bed on its side: planks standing on edge, the rails top and bottom.
+    for i in range(5):
+        z = 0.15 + i * 0.27
+        h.timber(f"plank{i}", (-1.3, 0, z), (1.3, 0.02 * (i % 2), z), 0.26, "wood" if i % 2 else "wood_dark")
+    for z in (0.05, 1.38):
+        h.timber(f"rail{z}", (-1.35, 0.2, z), (1.35, 0.2, z), 0.12, "wood_dark")
+    # A wheel on the axle, sticking up from the bed into the air.
+    def wheel(name, centre, axis_up):
+        cx, cy, cz = centre
+        for k in range(12):
+            a0, a1 = k / 12 * math.tau, (k + 1) / 12 * math.tau
+            if axis_up:
+                p0 = (cx + math.cos(a0) * 0.6, cy + math.sin(a0) * 0.6, cz)
+                p1 = (cx + math.cos(a1) * 0.6, cy + math.sin(a1) * 0.6, cz)
+            else:
+                p0 = (cx + math.cos(a0) * 0.6, cy, cz + math.sin(a0) * 0.6)
+                p1 = (cx + math.cos(a1) * 0.6, cy, cz + math.sin(a1) * 0.6)
+            h.timber(f"{name}_rim{k}", p0, p1, 0.1, "wood_dark")
+        for k in range(0, 6 if not axis_up else 4):
+            a = k / 6 * math.tau
+            end = (cx + math.cos(a) * 0.55, cy + math.sin(a) * 0.55, cz) if axis_up else (cx + math.cos(a) * 0.55, cy, cz + math.sin(a) * 0.55)
+            h.timber(f"{name}_spoke{k}", centre, end, 0.06, "wood")
+        h.blob(f"{name}_hub", centre, 0.13, "iron", 160 + len(name), 1.0, 1)
+    h.timber("axle", (-0.4, 0.1, 0.62), (-0.4, 0.9, 0.62), 0.1, "wood_dark")
+    wheel("wheel_up", (-0.4, 0.95, 0.62), False)
+    wheel("wheel_down", (1.3, 1.8, 0.08), True)
+    # The shaft snapped off and lying alone.
+    h.timber("shaft", (1.4, 0.6, 0.6), (2.2, 0.9, 0.08), 0.09, "wood")
+    h.timber("shaft_end", (2.6, -0.4, 0.06), (3.6, -0.7, 0.06), 0.09, "wood")
+    # Sacks spilt out of the bed, one torn open over its grain.
+    for i, (x, y) in enumerate(((0.3, -0.8), (-0.6, -1.0), (0.9, -1.3))):
+        h.blob(f"sack{i}", (x, y, 0.28), 0.36, "sack", 170 + i, 0.75, 2)
+    h.blob("grain", (1.5, -1.6, 0.03), 0.5, "hay", 175, 0.12, 1)
+    # Goblin arrows: crooked shafts with red rag fletching, stuck in the boards and the ground.
+    for i, (x, z, y) in enumerate(((-0.8, 0.9, -0.05), (0.2, 0.5, -0.05), (0.7, 1.1, -0.05))):
+        h.timber(f"arrow{i}", (x, y, z), (x + 0.1, y - 0.55, z + 0.18), 0.025, "wood_dark")
+        h.box(f"fletch{i}", (x + 0.1, y - 0.55, z + 0.18), (0.03, 0.1, 0.08), "cloth_red")
+    for i in range(2):
+        x, y = rng.uniform(-2.0, 2.0), rng.uniform(-2.2, -1.6)
+        h.timber(f"ground_arrow{i}", (x, y, 0.0), (x + 0.12, y - 0.1, 0.5), 0.025, "wood_dark")
+        h.box(f"ground_fletch{i}", (x + 0.12, y - 0.1, 0.5), (0.03, 0.08, 0.08), "cloth_red")
+
+
+def bridge_broken_end(h):
+    """One end of a stone bridge whose middle fell into the river: the abutment on the bank, a stub of
+    deck reaching out over the water and ending in a broken edge, the pier under it standing in the
+    riverbed, broken parapets, and the fallen blocks of the span lying in the water beyond.
+    Its origin is on the bank and the stub reaches along +X."""
+    rng = random.Random(181)
+    half = 1.8
+    # The abutment, built into the bank.
+    h.box("abutment", (-0.8, 0, 0.9), (2.4, half * 2 + 0.4, 2.6), "stone_old")
+    for course in range(1, 5):
+        h.box(f"abut_course{course}", (-0.8, 0, course * 0.55 - 0.3), (2.46, half * 2 + 0.46, 0.08), "stone_dark")
+    # The deck stub: paving on a thick slab, the end broken off stone by stone.
+    h.box("slab", (1.4, 0, 2.05), (2.2, half * 2, 0.5), "stone_old")
+    for i in range(6):
+        y = -half + 0.3 + i * 0.6
+        reach = 2.4 + rng.uniform(0.0, 1.0)
+        h.box(f"pave{i}", ((0.3 + reach) / 2, y, 2.38), (reach - 0.3, 0.56, 0.16), "stone_old" if i % 2 else "stone_dark")
+    # The arch's springing under the stub, and the pier that carried it, standing in the riverbed.
+    for k in range(5):
+        t = k / 4
+        h.box(f"arch{k}", (0.4 + t * 1.6, 0, 1.75 - t * t * 1.2), (0.6, half * 2 - 0.1, 0.45), "stone_dark")
+    h.box("pier", (2.2, 0, -0.6), (1.2, half * 2 - 0.2, 4.6), "stone_old")
+    h.box("cutwater", (2.2, 0, -1.2), (0.9, half * 2 + 0.5, 3.0), "stone_dark")
+    # Parapets: low walls along both sides, broken to an uneven top.
+    for side in (-1, 1):
+        for i in range(6):
+            x = -1.6 + i * 0.85
+            if x > 2.6:
+                break
+            top = rng.uniform(0.35, 0.95) if x > 1.0 else rng.uniform(0.8, 1.0)
+            h.box(f"parapet{side}{i}", (x, side * (half - 0.15), 2.46 + top / 2), (0.84, 0.3, top), "stone_old" if i % 2 else "stone_dark")
+    # The fallen span: big blocks lying in the water beyond the break, moss on the oldest.
+    for i in range(7):
+        x = 3.4 + rng.uniform(0, 2.2)
+        y = rng.uniform(-2.0, 2.0)
+        size = rng.uniform(0.45, 0.85)
+        h.blob(f"fallen{i}", (x, y, -1.7 + size * 0.4), size, "stone_old" if i % 2 else "stone_dark", 190 + i, 0.65, 1)
+    for i in range(3):
+        h.blob(f"moss{i}", (-0.8 + i * 0.6, rng.uniform(-1.2, 1.2), 2.25), 0.35, "moss", 200 + i, 0.25, 1)
+
+
+def wayside_shrine(h):
+    """A pilgrims' shrine by the pass road: two worn steps, a stone niche under a little slate roof,
+    a weathered figure inside, candle stubs and wilted flowers on the ledge, and a cairn of stones that
+    travellers add to as they pass."""
+    rng = random.Random(211)
+    h.box("step_low", (0, 0.2, 0.12), (1.8, 1.6, 0.24), "stone_dark")
+    h.box("step_high", (0, 0.05, 0.34), (1.4, 1.1, 0.22), "stone_old")
+    # The niche: back, two sides and a ledge, under a pitched roof.
+    h.box("back", (0, -0.42, 1.25), (1.0, 0.2, 1.6), "stone_old")
+    for x in (-0.45, 0.45):
+        h.box(f"side{x}", (x, -0.15, 1.25), (0.14, 0.7, 1.6), "stone_old")
+    h.box("ledge", (0, 0.05, 0.72), (1.1, 0.5, 0.12), "stone_dark")
+    h.box("lintel", (0, -0.15, 2.1), (1.1, 0.8, 0.14), "stone_dark")
+    for side in (-1, 1):
+        quad(h, f"roof{side}", [(side * 0.68, -0.62, 2.15), (side * 0.68, 0.38, 2.15), (0, 0.38, 2.62), (0, -0.62, 2.62)], "roof_slate")
+    h.timber("ridge", (0, -0.65, 2.63), (0, 0.42, 2.63), 0.08, "stone_dark")
+    # The figure: a robed shape with its hands together, its face worn smooth.
+    h.loft("figure", [(0.78, 0.22, 0.17, 0, -0.1), (1.25, 0.17, 0.13, 0, -0.1), (1.6, 0.13, 0.11, 0, -0.1), (1.66, 0.08, 0.07, 0, -0.1)], "stone_old", 8)
+    h.blob("head", (0, -0.1, 1.8), 0.13, "stone_old", 212, 1.15, 1)
+    h.blob("hood", (0, -0.14, 1.84), 0.15, "stone_dark", 216, 1.1, 1)
+    h.blob("hands", (0, 0.05, 1.38), 0.07, "stone_old", 213, 1.0, 1)
+    # Candles and flowers on the ledge.
+    for i, x in enumerate((-0.35, -0.2, 0.28)):
+        tall = 0.08 + i * 0.04
+        h.cylinder(f"candle{i}", (x, 0.15, 0.78 + tall / 2), 0.035, tall, "wax", 6)
+        h.blob(f"wick{i}", (x, 0.15, 0.8 + tall), 0.02, "ember", 214 + i, 1.4, 1)
+    for i in range(4):
+        x = 0.05 + i * 0.05
+        h.timber(f"stem{i}", (x, 0.2, 0.78), (x + 0.08 * (i - 1.5), 0.32, 0.86), 0.015, "moss")
+        h.blob(f"bloom{i}", (x + 0.08 * (i - 1.5), 0.32, 0.87), 0.03, "flower" if i % 2 else "flower_b", 220 + i, 0.7, 1)
+    # The cairn beside it.
+    for i in range(7):
+        r = 0.32 - i * 0.035
+        h.blob(f"cairn{i}", (1.5 + rng.uniform(-0.05, 0.05), 0.3 + rng.uniform(-0.05, 0.05), r * 0.6 + sum(0.32 - k * 0.035 for k in range(i)) * 0.95), r,
+               "stone_old" if i % 2 else "stone_dark", 230 + i, 0.6, 1)
+
+
+def hunters_rack(h):
+    """Where the hunters dried their meat and hides: a smoking rack on two tripods with strips hanging
+    from it, a deer skull with its antlers nailed to a post, and a hide laced into a frame of sticks."""
+    # The two tripods and the bar between them.
+    for x in (-1.4, 1.4):
+        for k in range(3):
+            a = k / 3 * math.tau + 0.4
+            h.timber(f"tripod{x}{k}", (x + math.cos(a) * 0.5, math.sin(a) * 0.5, 0), (x, 0, 1.75), 0.07, "branch")
+    h.timber("bar", (-1.6, 0, 1.7), (1.6, 0, 1.7), 0.06, "branch")
+    # Strips of meat, long gone dark and dry.
+    for i in range(7):
+        x = -1.05 + i * 0.35
+        length = 0.4 + (i % 3) * 0.12
+        h.box(f"strip{i}", (x, 0, 1.68 - length / 2), (0.1, 0.03, length), "flesh_dry" if i % 2 else "hide_dark")
+    # The skull post.
+    h.timber("skull_post", (2.4, 0.4, 0), (2.4, 0.4, 1.9), 0.12, "branch")
+    h.blob("skull", (2.4, 0.5, 1.95), 0.17, "bone_old", 241, 1.3, 2)
+    for side in (-1, 1):
+        h.timber(f"antler{side}", (2.4 + side * 0.08, 0.45, 2.05), (2.4 + side * 0.45, 0.45, 2.55), 0.04, "antler")
+        h.timber(f"tine{side}", (2.4 + side * 0.28, 0.45, 2.3), (2.4 + side * 0.32, 0.55, 2.6), 0.03, "antler")
+        h.timber(f"brow{side}", (2.4 + side * 0.14, 0.45, 2.12), (2.4 + side * 0.2, 0.62, 2.25), 0.03, "antler")
+    # The hide in its frame of sticks, leaning on the rack.
+    frame = [(-1.0, -0.9, 0.05), (0.8, -0.9, 0.05), (0.8, -0.5, 1.5), (-1.0, -0.5, 1.5)]
+    for a, b in zip(frame, frame[1:] + frame[:1]):
+        h.timber(f"frame{a[0]}{a[2]}", a, b, 0.05, "branch")
+    quad(h, "hide", [(-0.85, -0.86, 0.2), (0.65, -0.86, 0.2), (0.65, -0.54, 1.35), (-0.85, -0.54, 1.35)], "hide")
+    quad(h, "hide_back", [(-0.85, -0.87, 0.2), (-0.85, -0.55, 1.35), (0.65, -0.55, 1.35), (0.65, -0.87, 0.2)], "hide")
+
+
 BUILDERS = {
+    "burned_barn": burned_barn,
+    "cart_wreck": cart_wreck,
+    "bridge_broken_end": bridge_broken_end,
+    "wayside_shrine": wayside_shrine,
+    "hunters_rack": hunters_rack,
     "rockfall": rockfall,
     "wolf_den": wolf_den,
     "hunters_lean_to": hunters_lean_to,

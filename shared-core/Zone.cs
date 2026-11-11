@@ -833,7 +833,7 @@ public sealed class Zone
     private static float Settle(World ground, string model, float x, float z, float yaw)
     {
         var centre = ground.GroundHeight(x, z);
-        if (model is "bridge" or "bridge_stone" or "pier" or "field" || CollisionOf(model) is not { } shape)
+        if (model is "bridge" or "bridge_stone" or "bridge_broken_end" or "pier" or "field" || CollisionOf(model) is not { } shape)
         {
             return centre;
         }
