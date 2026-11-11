@@ -136,8 +136,24 @@
           }
         },
         "text": "You're thin. Everyone who falls here is thin."
+      },
+      {
+        "when": {
+          "time": {
+            "from": 600,
+            "to": 1200
+          }
+        },
+        "text": "Tobb wants bread for fish. I want fish for bread. We get on."
       }
-    ]
+    ],
+    "voice": {
+      "id": "Xb7hH8MSUJpSbSDYk0k2",
+      "name": "Alice",
+      "stability": 0.5,
+      "similarity_boost": 0.75,
+      "style": 0.4
+    }
   },
   "smith": {
     "age": 34,
@@ -178,12 +194,6 @@
     "barks": [
       {
         "when": {
-          "flag": "news.saltmere"
-        },
-        "text": "Saltmere. He's at Saltmere."
-      },
-      {
-        "when": {
           "time": {
             "from": 360,
             "to": 1140
@@ -194,13 +204,29 @@
       {
         "when": {
           "time": {
+            "from": 360,
+            "to": 1140
+          }
+        },
+        "text": "Bring me orc iron from the warcamp and I'll make you something worth the walk."
+      },
+      {
+        "when": {
+          "time": {
             "from": 1140,
             "to": 1320
           }
         },
-        "text": "..."
+        "text": "Hammer's cold. So am I."
       }
-    ]
+    ],
+    "voice": {
+      "id": "CwhRBWXzGAHq8TQ4Fs17",
+      "name": "Roger",
+      "stability": 0.55,
+      "similarity_boost": 0.75,
+      "style": 0.25
+    }
   },
   "lina": {
     "age": 38,
@@ -243,9 +269,12 @@
     "barks": [
       {
         "when": {
-          "flag": "council.met"
+          "time": {
+            "from": 420,
+            "to": 1140
+          }
         },
-        "text": "A reeve who can read a contract. That's all I say."
+        "text": "Fresh off the East Watch road. Prices are what the road makes them."
       },
       {
         "when": {
@@ -254,9 +283,16 @@
             "to": 1140
           }
         },
-        "text": "Company goods, Company prices. Fresh off the East Watch road."
+        "text": "The inn on Mirror Way buys my salt. Marta haggles like a goblin."
       }
-    ]
+    ],
+    "voice": {
+      "id": "FGY2WhTYpPnrIDTdsKH5",
+      "name": "Laura",
+      "stability": 0.45,
+      "similarity_boost": 0.75,
+      "style": 0.35
+    }
   },
   "wren": {
     "age": 29,
@@ -344,12 +380,6 @@
     "barks": [
       {
         "when": {
-          "flag": "harrow.raided"
-        },
-        "text": "Boars. I told him boars."
-      },
-      {
-        "when": {
           "time": {
             "from": 360,
             "to": 1200
@@ -360,13 +390,29 @@
       {
         "when": {
           "time": {
+            "from": 360,
+            "to": 1200
+          }
+        },
+        "text": "Crows on Crowfield went for a carter last week. Crows!"
+      },
+      {
+        "when": {
+          "time": {
             "from": 1380,
             "to": 1439
           }
         },
         "text": "Nights are long at this gate."
       }
-    ]
+    ],
+    "voice": {
+      "id": "IKne3meq5aSn9XLyUdCD",
+      "name": "Charlie",
+      "stability": 0.55,
+      "similarity_boost": 0.75,
+      "style": 0.25
+    }
   },
   "pip": {
     "age": 17,
@@ -395,9 +441,12 @@
     "barks": [
       {
         "when": {
-          "flag": "harrow.raided"
+          "time": {
+            "from": 360,
+            "to": 1140
+          }
         },
-        "text": "I heard her shout. I heard her."
+        "text": "Walk past the sheep, don't run. They bolt."
       },
       {
         "when": {
@@ -406,9 +455,16 @@
             "to": 1140
           }
         },
-        "text": "Walk past the sheep, don't run. They bolt."
+        "text": "Slimes ate a whole sack of seed. A whole sack!"
       }
-    ]
+    ],
+    "voice": {
+      "id": "iP95p4xoKVk53GoZ742B",
+      "name": "Chris",
+      "stability": 0.45,
+      "similarity_boost": 0.75,
+      "style": 0.35
+    }
   },
   "mira": {
     "age": 24,
@@ -524,7 +580,14 @@
         },
         "text": "Next round's on whoever died last. Not me, then."
       }
-    ]
+    ],
+    "voice": {
+      "id": "SOYHLrjzK2X1ezoPC6cr",
+      "name": "Harry",
+      "stability": 0.45,
+      "similarity_boost": 0.75,
+      "style": 0.4
+    }
   },
   "sora": {
     "age": 22,
@@ -717,9 +780,16 @@
             "to": 1080
           }
         },
-        "text": "Tower is East Watch. Three waves is Saltmere..."
+        "text": "Wisp embers glow for a week. Hollis says they're worth more than they look."
       }
-    ]
+    ],
+    "voice": {
+      "id": "bIHbv24MWmeRgasZH58o",
+      "name": "Will",
+      "stability": 0.5,
+      "similarity_boost": 0.75,
+      "style": 0.3
+    }
   },
   "edwin": {
     "age": 19,
@@ -780,7 +850,14 @@
         },
         "text": "To Brightwater! And to whoever's buying."
       }
-    ]
+    ],
+    "voice": {
+      "id": "TX3LPaxmHKxFdv7VOQHJ",
+      "name": "Liam",
+      "stability": 0.45,
+      "similarity_boost": 0.75,
+      "style": 0.4
+    }
   },
   "moss": {
     "age": 20,
@@ -824,9 +901,16 @@
             "to": 1320
           }
         },
-        "text": "...Heel first. Every one of them."
+        "text": "Stand by the stones and the lights go dim. Old Bram swears it."
       }
-    ]
+    ],
+    "voice": {
+      "id": "onwK4e9ZLuTAKqWW03F9",
+      "name": "Daniel",
+      "stability": 0.55,
+      "similarity_boost": 0.75,
+      "style": 0.2
+    }
   },
   "fen": {
     "age": 19,
@@ -884,7 +968,14 @@
         },
         "text": "Rook. Sleeve. Show me the arm."
       }
-    ]
+    ],
+    "voice": {
+      "id": "pFZP5JQG7iQjIQuC4Bku",
+      "name": "Lily",
+      "stability": 0.5,
+      "similarity_boost": 0.75,
+      "style": 0.35
+    }
   },
   "rook": {
     "age": 21,
@@ -959,7 +1050,14 @@
         },
         "text": "And then it hit the shield. BANG. Like that."
       }
-    ]
+    ],
+    "voice": {
+      "id": "IKne3meq5aSn9XLyUdCD",
+      "name": "Charlie",
+      "stability": 0.35,
+      "similarity_boost": 0.75,
+      "style": 0.55
+    }
   },
   "osric": {
     "age": 56,
@@ -1009,7 +1107,14 @@
         },
         "text": "Twenty-four sacks. I counted twenty-four."
       }
-    ]
+    ],
+    "voice": {
+      "id": "nPczCjzI2devNBz1zQrb",
+      "name": "Brian",
+      "stability": 0.55,
+      "similarity_boost": 0.75,
+      "style": 0.25
+    }
   },
   "anwen": {
     "age": 20,
@@ -1066,8 +1171,24 @@
           }
         },
         "text": "The road looks longer at dusk."
+      },
+      {
+        "when": {
+          "time": {
+            "from": 360,
+            "to": 1080
+          }
+        },
+        "text": "Father says the mill wheel sings. It squeaks."
       }
-    ]
+    ],
+    "voice": {
+      "id": "EXAVITQu4vr4xnSDxMaL",
+      "name": "Sarah",
+      "stability": 0.45,
+      "similarity_boost": 0.75,
+      "style": 0.35
+    }
   },
   "hamm": {
     "age": 51,
@@ -1102,12 +1223,6 @@
     "barks": [
       {
         "when": {
-          "flag": "harrow.raided"
-        },
-        "text": "Two of mine. Out of my own yard."
-      },
-      {
-        "when": {
           "time": {
             "from": 360,
             "to": 720
@@ -1123,8 +1238,24 @@
           }
         },
         "text": "Rain by week's end, or we carry water."
+      },
+      {
+        "when": {
+          "time": {
+            "from": 360,
+            "to": 1080
+          }
+        },
+        "text": "Oswin's lad brought the fence posts. Good wood, that."
       }
-    ]
+    ],
+    "voice": {
+      "id": "pqHfZKP75CvOlQylNhV4",
+      "name": "Bill",
+      "stability": 0.55,
+      "similarity_boost": 0.75,
+      "style": 0.3
+    }
   },
   "maddy": {
     "age": 17,
@@ -1172,7 +1303,14 @@
         },
         "text": "One day. Straight down that road."
       }
-    ]
+    ],
+    "voice": {
+      "id": "cgSgspJ2msm6clMCkdW9",
+      "name": "Jessica",
+      "stability": 0.4,
+      "similarity_boost": 0.75,
+      "style": 0.45
+    }
   },
   "tobias": {
     "age": 30,
@@ -1208,8 +1346,24 @@
           }
         },
         "text": "Hm."
+      },
+      {
+        "when": {
+          "time": {
+            "from": 360,
+            "to": 720
+          }
+        },
+        "text": "Cows first. Then breakfast. Then cows."
       }
-    ]
+    ],
+    "voice": {
+      "id": "cjVigY5qzO86Huf0OWal",
+      "name": "Eric",
+      "stability": 0.6,
+      "similarity_boost": 0.75,
+      "style": 0.2
+    }
   },
   "vosk": {
     "age": 46,
