@@ -197,6 +197,10 @@
     {"x": -230, "z": 210, "radius": 110, "height": 6}
   ],
   "paths": [
+    { "width": 3, "points": [[-70, 20], [-100, 6], [-135, -14], [-175, -34], [-215, -40], [-255, -36], [-284, -31]] },
+    { "width": 3, "points": [[183, -15], [215, -16], [250, -18], [284, -21]] },
+    { "width": 2.5, "points": [[112, 156], [108, 190], [100, 225], [97, 260], [96, 282]] },
+    { "width": 2.5, "points": [[-172, 202], [-170, 216], [-178, 240], [-196, 254], [-225, 257], [-255, 252], [-281, 248]] },
     { "width": 1.4, "points": [[4, -13], [10, -11.2], [18.8, -9], [20.3, -4.5], [20.3, 2.2]] },
     { "width": 1.6, "points": [[-11.6, -38], [-4, -38.5], [2.9, -38]] },
     { "width": 1.4, "points": [[-12, -50], [-8, -49.8], [-2.9, -49.6]] },
@@ -284,6 +288,14 @@
     { "x": 656, "z": 8, "radius": 1.5, "count": 1, "respawnTicks": 18000, "rare": true, "types": ["goblin_shaman"] }
   ],
   "props": [
+    { "model": "rockfall", "x": -286, "z": -30, "yaw": 1.45 },
+    { "model": "signpost", "x": -268, "z": -27, "yaw": 1.4 },
+    { "model": "rockfall", "x": 286, "z": -21, "yaw": 1.6 },
+    { "model": "signpost", "x": 268, "z": -15.5, "yaw": -1.5 },
+    { "model": "rockfall", "x": 96, "z": 284, "yaw": 0.0 },
+    { "model": "signpost", "x": 101.5, "z": 266, "yaw": 3.1 },
+    { "model": "rockfall", "x": -283, "z": 248, "yaw": 1.35 },
+    { "model": "signpost", "x": -263, "z": 244, "yaw": 1.9 },
     {"model": "cage_cart", "x": 69.9, "z": 101, "yaw": 1.5708, "unless": "prologue.moved"},
     {"model": "cage_cart", "x": 71.5, "z": 72, "yaw": 1.5708, "flag": "prologue.moved", "unless": "prologue.cage_broken"},
     {"model": "cage_cart_broken", "x": 71.5, "z": 72, "yaw": 1.5708, "flag": "prologue.cage_broken"},

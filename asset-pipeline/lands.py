@@ -414,7 +414,30 @@ def moon_altar(h):
     h.blob("skull", (0.5, 1.3, 0.15), 0.2, "bone_old", 62, 0.85, 2)
 
 
+def rockfall(h):
+    """A slide of boulders across a road: big blocks heaped in the middle, smaller ones spilling out to
+    both ends, rubble at the foot, and a pine the slide brought down lying over it."""
+    rng = random.Random(83)
+    for i in range(15):
+        x = -6.5 + i * 0.93 + rng.uniform(-0.3, 0.3)
+        middle = 1.0 - abs(x) / 8.5
+        size = 0.9 + middle * 1.3 + rng.uniform(-0.15, 0.25)
+        h.blob(f"boulder{i}", (x, rng.uniform(-1.3, 1.3), size * 0.55), size, "den_rock" if i % 3 else "den_rock_dark", 90 + i, rng.uniform(0.7, 0.95), 2)
+    for i in range(6):
+        x = rng.uniform(-4.0, 4.0)
+        h.blob(f"top{i}", (x, rng.uniform(-0.6, 0.6), 2.2 + (1.0 - abs(x) / 5.0) * 1.2), rng.uniform(0.8, 1.15), "den_rock_dark" if i % 2 else "den_rock", 120 + i, 0.8, 2)
+    for i in range(16):
+        h.blob(f"rubble{i}", (rng.uniform(-8.0, 8.0), rng.choice((-1, 1)) * rng.uniform(2.0, 3.4), 0.12), rng.uniform(0.22, 0.45), "den_rock", 140 + i, 0.7, 1)
+    h.tube("trunk", [(-5.5, 2.6, 0.5), (-2.0, 1.2, 2.4), (1.5, 0.2, 3.9), (4.2, -0.8, 4.6)], [0.3, 0.26, 0.2, 0.08], "branch")
+    for i, t in enumerate((0.45, 0.62, 0.78)):
+        x, y, z = -5.5 + 9.7 * t, 2.6 - 3.4 * t, 0.5 + 4.1 * t
+        h.timber(f"stub{i}", (x, y, z), (x + 0.3, y + (0.9 if i % 2 else -0.9), z + 0.5), 0.07, "branch")
+    for i in range(3):
+        h.blob(f"lichen{i}", (-3.0 + i * 3.1, -1.5, 1.3 + (i % 2) * 0.5), 0.5, "lichen", 170 + i, 0.25, 1)
+
+
 BUILDERS = {
+    "rockfall": rockfall,
     "wolf_den": wolf_den,
     "hunters_lean_to": hunters_lean_to,
     "orc_tent": orc_tent,

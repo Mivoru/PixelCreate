@@ -166,8 +166,15 @@ public class ZoneAuditTests
     [Fact]
     public void Roads_AreNotBlockedBySolidThings()
     {
+        // A rockfall closes the road through a pass on purpose, until the region beyond is built.
+        var slides = Valley.Props.Where(p => p.Model == "rockfall").Select(p => new Vector2(p.Position.X, p.Position.Z)).ToArray();
         foreach (var (x, z) in RoadPoints())
         {
+            if (slides.Any(slide => Vector2.Distance(slide, new Vector2(x, z)) < 10f))
+            {
+                continue;
+            }
+
             var y = Valley.World.GroundHeight(x, z) + 0.05f;
             Assert.False(Valley.World.OverlapsPlayer(new Vector3(x, y, z)), $"something stands on the road at {x:F0}, {z:F0}");
         }
