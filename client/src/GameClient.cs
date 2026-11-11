@@ -2557,6 +2557,19 @@ public partial class GameClient : Node
                 _hud.AddFloating("Staggered!", position + Vector3.Up * (def.TagHeight > 0 ? def.TagHeight : 2f), new Color("feae34"));
             }
 
+            // A thornback paws up dirt before it charges, and reels in a cloud of it when it rams a trunk.
+            if (slime is AnimalView { PawDust: true })
+            {
+                _fx.Burst(position + Vector3.Up * 0.1f, new Color("8a6a4a"), 6, 2.5f, 0.45f, 0.08f, -6f, 50f);
+            }
+
+            if (slime is AnimalView { Stunned: true })
+            {
+                _sfx.Play("club_thud", position + Vector3.Up);
+                _hud.AddFloating("Stunned!", position + Vector3.Up * (def.TagHeight > 0 ? def.TagHeight : 2f), new Color("feae34"));
+                _fx.Burst(position + Vector3.Up * 0.6f, new Color("b86f50"), 26, 6f, 0.6f, 0.12f, -8f, 80f);
+            }
+
             if (slime is GoblinView { DrumStarted: true })
             {
                 _hud.AddFloating("War drum!", position + Vector3.Up * (def.TagHeight > 0 ? def.TagHeight + 0.4f : 2.4f), new Color("f77622"));
@@ -2717,7 +2730,7 @@ public partial class GameClient : Node
         }
         else if (ability.Telegraph == "circle")
         {
-            telegraph.ShowCircle(ability.Effect is "spin" or "tornado" ? position : target, ability.Radius, 0.5f);
+            telegraph.ShowCircle(ability.Effect is "spin" or "tornado" or "quillBurst" ? position : target, ability.Radius, 0.5f);
         }
         else
         {
@@ -2849,7 +2862,7 @@ public partial class GameClient : Node
                     _sfx.Play("spear_summon", ball.Position, -8f);
                 }
                 else if (spit.Kind is not (ProjectileKind.PlayerArrow or ProjectileKind.AirSlash or ProjectileKind.AirSlashWide or ProjectileKind.ThrownSpear
-                    or ProjectileKind.FangSlash or ProjectileKind.Knife or ProjectileKind.ThrownAxe or ProjectileKind.WispBolt))
+                    or ProjectileKind.FangSlash or ProjectileKind.Knife or ProjectileKind.ThrownAxe or ProjectileKind.WispBolt or ProjectileKind.Thorn))
                 {
                     _sfx.Play(spit.Kind switch
                     {
@@ -2873,7 +2886,7 @@ public partial class GameClient : Node
             }
             if (spit.Kind is ProjectileKind.Arrow or ProjectileKind.PowerArrow or ProjectileKind.PlayerArrow or ProjectileKind.AirSlash
                     or ProjectileKind.AirSlashWide or ProjectileKind.ThrownSpear or ProjectileKind.SummonedSpear or ProjectileKind.FangSlash
-                    or ProjectileKind.Knife or ProjectileKind.Meteor
+                    or ProjectileKind.Knife or ProjectileKind.Meteor or ProjectileKind.Thorn
                 && motion.LengthSquared() > 0.0001f)
             {
                 // A shot falling straight down (the rain of arrows) needs another up, or LookAt
@@ -2968,6 +2981,17 @@ public partial class GameClient : Node
 
     private MeshInstance3D BuildProjectile(ProjectileKind kind, Vector3 position)
     {
+        if (kind == ProjectileKind.Thorn)
+        {
+            // A Briarking's thorn: a long dark green spike.
+            return new MeshInstance3D
+            {
+                Mesh = new BoxMesh { Size = new Vector3(0.07f, 0.07f, 0.55f) },
+                MaterialOverride = _fx.Stipple(new Color("265c42"), 1f),
+                Position = position,
+            };
+        }
+
         if (kind == ProjectileKind.WispBolt)
         {
             // A barrow wisp's bolt: a small cold light trailing pale motes, slow enough to watch it turn.

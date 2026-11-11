@@ -106,6 +106,9 @@ public enum ProjectileKind : byte
 
     /// <summary>A barrow wisp's bolt: a slow pale light that turns after its player and fizzles at a standing stone.</summary>
     WispBolt = 15,
+
+    /// <summary>One of the thorns a Briarking shakes off its back in a ring.</summary>
+    Thorn = 16,
 }
 
 /// <summary>What a ground hazard is: the shaman's burning V or a player's strip of fire, an orc's crack in the earth,
@@ -3397,6 +3400,22 @@ public sealed partial class GameServer : IEnemyEvents
             case "wispSplit":
                 SplitLantern(enemy, target);
                 break;
+            case "charge":
+                // A charging thornback gores whoever it runs into and throws them aside.
+                Area(enemy.Position + Facing(enemy) * 0.8f, ability.Radius, ability.Damage, enemy);
+                break;
+            case "quillBurst":
+                // The Briarking shakes its back and its thorns fly out all round.
+                for (var i = 0; i < QuillCount; i++)
+                {
+                    var angle = enemy.Facing + i * MathF.Tau / QuillCount;
+                    var quillWay = new Vector3(-MathF.Sin(angle), 0, -MathF.Cos(angle));
+                    var quill = Shoot(ProjectileKind.Thorn, enemy.Position + Vector3.UnitY * (enemy.Def.Size * 0.7f) + quillWay * 0.8f, quillWay * QuillSpeed, ability.Damage);
+                    quill.Life = (int)(ability.Radius / QuillSpeed * Tuning.TickRate);
+                    quill.Radius = 0.6f;
+                }
+
+                break;
             case "dive":
                 // The crow strikes where its dive comes down.
                 Area(enemy.Position, ability.Radius, ability.Damage, enemy);
@@ -3542,6 +3561,9 @@ public sealed partial class GameServer : IEnemyEvents
             _summons.Add(decoy);
         }
     }
+
+    public const int QuillCount = 14;
+    private const float QuillSpeed = 13f;
 
     /// <summary>How many crows the Gallows Rook calls, and how long apart they dive.</summary>
     public const int RookFlock = 5;

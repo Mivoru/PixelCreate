@@ -24,6 +24,22 @@ public sealed class AnimalView : IEnemyView
     private readonly Node3D? _jaw;
     private readonly bool _hunter;
     private float _snarl;
+
+    /// <summary>A thornback: it paws the ground before a charge, runs head down, tosses its tusks up on a gore.</summary>
+    private readonly bool _charger;
+    private readonly Ability[]? _abilities;
+    private float _tuskPitch;
+    private float _tuskWeight;
+    private float _shake;
+    private float _pawTimer;
+    private float _daze;
+
+    /// <summary>Set for one frame when a pawing hoof throws up dirt, or a charge breaks on something solid.</summary>
+    public bool PawDust { get; private set; }
+
+    public bool Stunned { get; private set; }
+
+    private EnemyAction _lastChargerAction;
     private readonly List<(Node3D Leg, Node3D? Shin, float Phase, bool Front)> _legs = new();
     private readonly List<(Node3D Ear, float Side)> _ears = new();
     private readonly List<(Node3D Wing, float Side)> _wings = new();
@@ -140,6 +156,8 @@ public sealed class AnimalView : IEnemyView
         _tail = Part(scene, "tail");
         _jaw = Part(scene, "jaw");
         _hunter = def.Kind == "wolf";
+        _charger = def.Behavior == "charger";
+        _abilities = def.Abilities;
         _bodyRest = _body.Position;
         foreach (var (name, phase) in new[] { ("fl", 0f), ("br", 0f), ("fr", Mathf.Pi), ("bl", Mathf.Pi) })
         {
@@ -261,7 +279,7 @@ public sealed class AnimalView : IEnemyView
         // In a pounce the body tips up as it rises and down as it drops, legs reaching out.
         var climb = (position.Y - _lastY) / Mathf.Max(delta, 0.001f);
         _lastY = position.Y;
-        var leaping = enemy.Action == EnemyAction.Leap && _hunter;
+        var leaping = enemy.Action == EnemyAction.Leap && _hunter && !_charger;
         _airPitch = Mathf.Lerp(_airPitch, leaping ? Mathf.Clamp(-climb * 0.08f, -0.45f, 0.45f) : 0f, 1f - Mathf.Exp(-12f * delta));
         Root.Position = position;
         Root.Rotation = new Vector3(_airPitch, enemy.Facing, _fall * Mathf.Pi / 2f);
@@ -307,8 +325,14 @@ public sealed class AnimalView : IEnemyView
             }
         }
 
+        if (_charger)
+        {
+            AnimateCharger(enemy, delta);
+        }
+
         var bob = moving ? Mathf.Abs(Mathf.Sin(_phase)) * (_bird ? 0.03f : 0.03f + gallop * 0.08f) : Mathf.Sin(_clock * 1.6f) * 0.006f;
         var shake = enemy.HitFlash > 0 ? (float)GD.RandRange(-0.04, 0.04) : 0f;
+        shake += _shake > 0f ? (float)GD.RandRange(-_shake, _shake) : 0f;
         // The crouch tips the shoulders down a little; legs keep their length, so the body barely sinks.
         _body.Position = _bodyRest + new Vector3(shake, bob - crouch * 0.03f * _snarl, 0);
         _body.Rotation = new Vector3(gallop * Mathf.Sin(_phase * 2f) * 0.05f - crouch * _snarl * 0.06f, 0, 0);
@@ -465,6 +489,72 @@ public sealed class AnimalView : IEnemyView
 
     private bool _clockStart = true;
 
+    /// <summary>
+    /// A thornback's fighting moves on top of the walk: head low and a hoof scraping the dirt as it winds up a
+    /// charge, head down through the run, the tusks tossed up on a gore, its whole back shaking before the
+    /// Briarking's thorns fly, and its head swinging dazed after it rams something.
+    /// </summary>
+    private void AnimateCharger(in EnemyView enemy, float delta)
+    {
+        PawDust = false;
+        Stunned = false;
+        var effect = _abilities is { } list && enemy.Ability < list.Length ? list[enemy.Ability].Effect : "";
+        var started = enemy.Action != _lastChargerAction;
+        _lastChargerAction = enemy.Action;
+        var wantPitch = 0f;
+        var wantWeight = 0f;
+        var daze = 0f;
+        _shake = 0f;
+        switch (enemy.Action)
+        {
+            case EnemyAction.Cast when effect == "charge":
+                wantPitch = -0.6f;
+                wantWeight = 1f;
+                // One front hoof scrapes back and forth, throwing dirt.
+                if (_legs.FirstOrDefault(l => l.Front) is { Leg: { } hoof })
+                {
+                    hoof.Rotation = new Vector3(Mathf.Sin(_clock * 13f) * 0.7f - 0.2f, 0, 0);
+                }
+
+                _pawTimer -= delta;
+                if (_pawTimer <= 0f)
+                {
+                    _pawTimer = 0.28f;
+                    PawDust = true;
+                }
+
+                break;
+            case EnemyAction.Leap when effect == "charge":
+                wantPitch = -0.55f;
+                wantWeight = 1f;
+                break;
+            case EnemyAction.Cast when effect == "melee":
+                wantPitch = -0.5f;
+                wantWeight = 1f;
+                break;
+            case EnemyAction.Strike when effect == "melee":
+                wantPitch = 0.55f;
+                wantWeight = 1f;
+                break;
+            case EnemyAction.Cast when effect == "quillBurst":
+                _shake = 0.05f;
+                wantPitch = -0.3f;
+                wantWeight = 0.7f;
+                break;
+            case EnemyAction.Stagger when effect == "charge":
+                Stunned = started;
+                wantPitch = -0.2f;
+                wantWeight = 0.6f;
+                daze = Mathf.Sin(_clock * 9f) * 0.5f;
+                break;
+        }
+
+        _daze = daze;
+        var rate = enemy.Action == EnemyAction.Strike ? 22f : 10f;
+        _tuskPitch = Mathf.Lerp(_tuskPitch, wantPitch, 1f - Mathf.Exp(-rate * delta));
+        _tuskWeight = Mathf.Lerp(_tuskWeight, wantWeight, 1f - Mathf.Exp(-rate * delta));
+    }
+
     private void PoseHead(bool moving, float gallop)
     {
         float pitch;
@@ -486,7 +576,13 @@ public sealed class AnimalView : IEnemyView
             }
         }
 
+        if (_tuskWeight > 0.01f)
+        {
+            pitch = Mathf.Lerp(pitch, _tuskPitch, _tuskWeight);
+        }
+
         var look = moving || _graze > 0.5f ? 0f : Mathf.Sin(_clock * 0.5f) * 0.35f * (1f - _alert);
+        look += _daze;
         var bob = moving ? Mathf.Sin(_phase * 2f) * 0.05f : Mathf.Sin(_clock * 2.1f) * 0.02f;
         if (_neck is null)
         {

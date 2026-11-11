@@ -36,6 +36,7 @@ public sealed partial class Enemy
             _cooldowns[i] = Math.Max(0, _cooldowns[i] - (HasteTicks > 0 ? 2 : 1));
         }
 
+        Rammed = false;
         if (RoutTicks > 0) RoutTicks--;
         if (HasteTicks > 0) HasteTicks--;
         if (!Enraged && Def.EnrageAt > 0f && Alive && Health <= MaxHealth * Def.EnrageAt)
@@ -76,6 +77,9 @@ public sealed partial class Enemy
                     Release(events, targets);
                 }
 
+                break;
+            case EnemyAction.Leap when CurrentAbility?.Effect == "charge":
+                StepCharge(targets, events);
                 break;
             case EnemyAction.Leap:
                 if (ActionTicks <= 0)
@@ -433,6 +437,12 @@ public sealed partial class Enemy
         {
             ShadowSlides = 0;
             Submerge(targets);
+            return;
+        }
+
+        if (ability.Effect == "charge")
+        {
+            StartCharge();
             return;
         }
 

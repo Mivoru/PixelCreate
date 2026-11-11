@@ -153,6 +153,12 @@ public sealed partial class Enemy
             return;
         }
 
+        if (role == "charger")
+        {
+            Pace(world, random, target, distance);
+            return;
+        }
+
         if (role == "flock")
         {
             Orbit(world, target);

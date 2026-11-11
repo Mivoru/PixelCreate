@@ -321,22 +321,22 @@
     "loot": [{"item": "goat_meat", "chance": 1, "min": 1, "max": 1}, {"item": "goat_horn", "chance": 0.45, "min": 1, "max": 1}]
   },
   {
-    "id": "thornback", "behavior": "brute", "name": "Thornback", "kind": "wolf", "defense": 4,
-    "minLevel": 4, "maxLevel": 6, "health": 130, "healthPerLevel": 24, "speed": 4.6, "size": 1.25, "aggroRange": 9, "preferredRange": 1.6, "tagHeight": 1.7,
+    "id": "thornback", "behavior": "charger", "name": "Thornback", "kind": "wolf", "defense": 4,
+    "minLevel": 4, "maxLevel": 6, "health": 130, "healthPerLevel": 24, "speed": 4.6, "size": 1.25, "aggroRange": 10, "preferredRange": 1.6, "tagHeight": 1.7,
     "abilities": [
-      { "effect": "melee", "range": 2.0, "windupTicks": 20, "recoverTicks": 18, "cooldownTicks": 44, "damage": 11, "radius": 1.5 },
-      { "effect": "dashStrike", "range": 11, "minRange": 4, "windupTicks": 36, "recoverTicks": 64, "cooldownTicks": 260, "damage": 20, "radius": 2.0, "telegraph": "line" }
+      { "effect": "melee", "range": 2.2, "windupTicks": 22, "recoverTicks": 20, "cooldownTicks": 50, "damage": 11, "radius": 1.6 },
+      { "effect": "charge", "range": 12, "minRange": 4.5, "windupTicks": 42, "recoverTicks": 70, "cooldownTicks": 200, "damage": 20, "radius": 1.4, "telegraph": "line" }
     ],
     "drops": [{ "rarity": 0, "chance": 1 }, { "rarity": 1, "chance": 0.04 }],
     "loot": [{"item": "boar_meat", "chance": 1, "min": 1, "max": 2}, {"item": "boar_tusk", "chance": 0.8, "min": 1, "max": 2}, {"item": "boar_hide", "chance": 0.8, "min": 1, "max": 1}]
   },
   {
-    "id": "briarking", "behavior": "brute", "name": "Briarking", "kind": "wolf", "rare": true, "defense": 8,
-    "minLevel": 8, "maxLevel": 8, "health": 380, "healthPerLevel": 30, "speed": 4.8, "size": 1.6, "aggroRange": 11, "preferredRange": 1.8, "tagHeight": 2.2,
+    "id": "briarking", "behavior": "charger", "name": "Briarking", "kind": "wolf", "rare": true, "defense": 8,
+    "minLevel": 8, "maxLevel": 8, "health": 380, "healthPerLevel": 30, "speed": 4.8, "size": 1.6, "aggroRange": 12, "preferredRange": 1.8, "tagHeight": 2.2,
     "abilities": [
-      { "effect": "melee", "range": 2.4, "windupTicks": 20, "recoverTicks": 18, "cooldownTicks": 44, "damage": 16, "radius": 1.8 },
-      { "effect": "dashStrike", "range": 13, "minRange": 4, "windupTicks": 34, "recoverTicks": 56, "cooldownTicks": 220, "damage": 28, "radius": 2.4, "telegraph": "line" },
-      { "effect": "spin", "range": 3.4, "windupTicks": 46, "recoverTicks": 36, "cooldownTicks": 320, "damage": 24, "radius": 3.8, "telegraph": "circle" }
+      { "effect": "melee", "range": 2.6, "windupTicks": 22, "recoverTicks": 20, "cooldownTicks": 46, "damage": 16, "radius": 1.9 },
+      { "effect": "charge", "range": 14, "minRange": 4.5, "windupTicks": 38, "recoverTicks": 60, "cooldownTicks": 180, "damage": 28, "radius": 1.7, "telegraph": "line" },
+      { "effect": "quillBurst", "range": 9, "windupTicks": 50, "recoverTicks": 34, "cooldownTicks": 300, "damage": 14, "radius": 9, "telegraph": "circle" }
     ],
     "drops": [{ "rarity": 1, "chance": 1 }, { "rarity": 2, "chance": 0.2 }],
     "loot": [{"item": "boar_meat", "chance": 1, "min": 2, "max": 3}, {"item": "boar_tusk", "chance": 1, "min": 2, "max": 3}, {"item": "boar_hide", "chance": 1, "min": 1, "max": 2}]

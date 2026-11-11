@@ -394,9 +394,12 @@ Rules:
   of the wolf, goat, deer and sheep specs; `AnimalView` maps each to the kind it moves and sounds like. Give a new
   one loot from items that exist. Thematic plants: `giant_mushroom` (Whispering Woods, Emerald Jungle), `heather`
   (Moonfell, the southern foothills). A `rockfall` closes each pass road until the region beyond is built.
-  Thornbacks (Emerald Jungle; kind `wolf`, behaviour `brute`, the boar's build with thorns): a gore and a charge
-  (`dashStrike` with a line warning) that leaves them winded; the rare Briarking also thrashes (`spin`).
-  `net-tests/ThornbackTests.cs`.
+  Thornbacks (Emerald Jungle; kind `wolf`, behaviour `charger`, the boar's build with thorns, `EnemyCharge.cs`): a gore
+  and a real `charge` that runs the whole way at `Enemy.ChargeSpeed`, gores once on the way, runs on past and leaves
+  them winded; a charge that rams something solid stuns them (`Enemy.RamStunTicks`, client "Stunned!"). Without a
+  turn they pace at `Enemy.ChargeRing` for a run-up (a charge needs no turn). The client paws dirt in the wind-up,
+  runs head down and tosses the tusks on a gore (`AnimalView.AnimateCharger`). The rare Briarking's `quillBurst`
+  throws `GameServer.QuillCount` thorns (`ProjectileKind.Thorn`) all round. `net-tests/ThornbackTests.cs`.
   Auren sentinels (kind `sentinel`, `PlayerRig.BuildSentinel`, parts from `asset-pipeline/sentinels.py`, the greatsword
   `weapon_sentinel_blade`): `statue` enemies stand still on their `Post` facing the camp's `yaw` until a player comes
   within `aggroRange`, never flinch or slide when struck, and freeze in the client (`GoblinView`) while asleep.
