@@ -825,9 +825,23 @@ public partial class GameClient : Node
                 rig.Root.Position += Vector3.Up * 0.15f;
             }
 
-            // A blow in a scene's fight: the weapon in hand swings once while the pose lasts.
-            _actorStrike[index] = pose == ActorPose.Strike ? _actorStrike[index] + delta : 0f;
-            var strike = pose == ActorPose.Strike ? AttackKind.Light : AttackKind.None;
+            // A blow in a scene's fight: the weapon in hand swings once while the pose lasts. At work the tool
+            // swings again and again, each swing landing with a thud the player hears close by.
+            var working = pose == ActorPose.Work && !_actorWalking[index];
+            rig.Quiet = working;
+            var look = rig.Look;
+            var swungBefore = _actorStrike[index];
+            _actorStrike[index] = pose == ActorPose.Strike ? _actorStrike[index] + delta
+                : working ? (_actorStrike[index] + delta) % look.WorkEvery : 0f;
+            var swing = look.WorkHeavy ? AttackKind.Heavy : AttackKind.Light;
+            var lands = Tuning.Attack(swing).HitAt * Tuning.TickSeconds;
+            var strike = pose == ActorPose.Strike ? AttackKind.Light
+                : working && _actorStrike[index] < Tuning.Attack(swing).Total * Tuning.TickSeconds ? swing : AttackKind.None;
+            if (working && swungBefore < lands && _actorStrike[index] >= lands && _actorAt[index].DistanceTo(ToGodot(_client.State.Position)) < 24f)
+            {
+                _sfx.Play("club_thud", _actorAt[index] + Vector3.Up, -12f);
+            }
+
             rig.Animate(new MotionState(_actorWalking[index] ? Mathf.Min(speed, Tuning.MoveSpeed) : 0f, true, 0f, false, strike,
                 (int)(_actorStrike[index] * Tuning.TickRate)), delta);
         }

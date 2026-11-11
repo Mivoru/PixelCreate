@@ -123,6 +123,12 @@ public sealed record RigLook(string Kind, Color Skin, float Scale, string Weapon
 
     /// <summary>The item whose model the hand holds, when not the kind's default (Hanne's own short sword).</summary>
     public string? Item { get; init; }
+
+    /// <summary>At work (<c>ActorPose.Work</c>), seconds from one swing of the tool to the next.</summary>
+    public float WorkEvery { get; init; } = 1.8f;
+
+    /// <summary>Whether the work swing is a heavy overhead blow (an axe splitting wood) rather than a light one.</summary>
+    public bool WorkHeavy { get; init; }
 }
 
 /// <summary>
@@ -168,6 +174,22 @@ public sealed class PlayerRig
     private readonly CpuParticles3D _sparks;
     private readonly CpuParticles3D _wind;
     private RigLook _look = RigLook.Player;
+
+    /// <summary>The look this figure was built with.</summary>
+    public RigLook Look => _look;
+
+    /// <summary>Swings without the slash trail and sparks: a woodcutter at work is not fighting.</summary>
+    public bool Quiet
+    {
+        get => _quiet;
+        set
+        {
+            _quiet = value;
+            _sparks.Visible = !value;
+        }
+    }
+
+    private bool _quiet;
     private readonly System.Collections.Generic.List<ClothChain> _cloth = new();
     private readonly Node3D _hairRoot = new();
     private readonly Node3D _cape = new();
@@ -1996,7 +2018,7 @@ public sealed class PlayerRig
         _target[ShinR] = swung ? 0.6f : 0.9f;
         _target[Bob] = swung ? 0.02f : -0.24f;
         var progress = (tick - (attack.HitAt - 4)) / 11f;
-        _slash.Visible = progress is >= 0f and <= 1.6f;
+        _slash.Visible = progress is >= 0f and <= 1.6f && !Quiet;
         if (_slash.Visible)
         {
             _slashMaterial.SetShaderParameter("head", Mathf.Min(progress * 1.5f, 1.8f));
@@ -2007,7 +2029,7 @@ public sealed class PlayerRig
             _slash.Scale = Vector3.One * 1.3f;
         }
 
-        if (tick >= attack.HitAt && _lastAttackTick < attack.HitAt)
+        if (tick >= attack.HitAt && _lastAttackTick < attack.HitAt && !Quiet)
         {
             _sparks.Amount = 40;
             _sparks.Restart();
@@ -2043,7 +2065,7 @@ public sealed class PlayerRig
         var first = attack.HitAt - 4;
         var length = heavy ? 13f : 10f;
         var progress = (tick - first) / length;
-        _slash.Visible = progress is >= 0f and <= 1.6f;
+        _slash.Visible = progress is >= 0f and <= 1.6f && !Quiet;
         if (_slash.Visible)
         {
             _slashMaterial.SetShaderParameter("head", Mathf.Min(progress * 1.5f, 1.8f));

@@ -249,6 +249,11 @@ Rules:
   `by` lists points walked last on the way in and first on the way out (`Schedules.Way`): round a table to the far
   bench, round the end of a fence, into Wren's stall by its open end. `ScheduleTests` walks every leg of every day
   and fails when one crosses something solid, so give a new seat or a fenced place its `by`.
+  A block's `pose` may be `work`: the person swings the item in hand again and again (`RigLook.WorkEvery`,
+  `WorkHeavy`, quiet: no slash trail, `PlayerRig.Quiet`), with a thud close by. The Woodcutters' Camp east of East Watch
+  (a track from the East Watch road) has Oswin and his nephew Jory chopping at their blocks and the sawbuck, eating
+  at the fire at noon and in the evening and sleeping in their cabin; the yard in the middle is kept open so their
+  walks go round the props (`by` through it).
   The tavern yard (three tables east of the tavern door, footpath from the south road) fills from six: Corwin keeps
   his bench all day, the Brightwater Four (Edwin, Moss, Fen, Rook) have the south table. Mornings the Four meet by
   the Guild door, Osric and Anwen are at the mill, Hamm, Maddy and Tobias on Harrow Farm, Tam by Hollis's counter.

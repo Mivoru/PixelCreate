@@ -646,6 +646,52 @@ public static class NpcLooks
             ["anime_glove"] = new("c08a64"),
         },
     };
+    /// <summary>Oswin: a broad greying woodcutter with a full beard and rolled sleeves, a felling axe always in hand.</summary>
+    private static readonly RigLook Woodcutter = new("woodcutter", new Color("d8a07a"), 1.06f, "axe")
+    {
+        Hair = "short",
+        Cloak = false,
+        Mood = "neutral",
+        Item = "wood_axe",
+        WorkEvery = 2.1f,
+        WorkHeavy = true,
+        Extras = new[] { "beard", "vest" },
+        Eyes = new Color("4a5a3a"),
+        Brows = new Color("5a5a5a"),
+        FaceStyle = new FaceStyle(2, 0, 1),
+        Palette = new Dictionary<string, Color>
+        {
+            ["anime_hair"] = new("6a6a6a"),
+            ["anime_shirt"] = new("a84a3a"),
+            ["anime_trousers"] = new("4a4038"),
+            ["anime_dark"] = new("3a2a20"),
+            ["anime_vest"] = new("5a4a30"),
+            ["anime_glove"] = new("6a4a30"),
+        },
+    };
+
+    /// <summary>Jory: Oswin's lanky young nephew, freckled and quick, swinging smaller and faster.</summary>
+    private static readonly RigLook WoodcutterB = new("woodcutter_b", new Color("f0c8a0"), 0.96f, "axe")
+    {
+        Hair = "spiky",
+        Cloak = false,
+        Mood = "happy",
+        Item = "wood_axe",
+        WorkEvery = 1.5f,
+        WorkHeavy = true,
+        Eyes = new Color("3a6a8a"),
+        Brows = new Color("a85a2a"),
+        FaceStyle = new FaceStyle(0, 1, 0),
+        Palette = new Dictionary<string, Color>
+        {
+            ["anime_hair"] = new("c86a3a"),
+            ["anime_shirt"] = new("6a8a5a"),
+            ["anime_trousers"] = new("5a4a3a"),
+            ["anime_dark"] = new("3a2a20"),
+            ["anime_glove"] = new("f0c8a0"),
+        },
+    };
+
     /// <summary>Every person with a name, for the photo studio.</summary>
     public static readonly (string Name, RigLook Look)[] All =
     {
@@ -654,7 +700,7 @@ public static class NpcLooks
         ("nell", Captive), ("haruto", Lost), ("vosk", FinderCaptain), ("gil", FinderGil), ("hanne", FinderHanne), ("corb", FinderCorb),
         ("corwin", BranchMaster), ("tam", Apprentice), ("edwin", PartySword), ("moss", PartyBow), ("fen", PartyHealer),
         ("rook", PartyShield), ("osric", Miller), ("anwen", MillerDaughter), ("hamm", FarmElder), ("maddy", FarmGirl),
-        ("tobias", Farmhand),
+        ("tobias", Farmhand), ("oswin", Woodcutter), ("jory", WoodcutterB),
     };
 
     public static RigLook? For(string role) => role switch
@@ -688,6 +734,8 @@ public static class NpcLooks
         "farm_elder" => FarmElder,
         "farm_girl" => FarmGirl,
         "farmhand" => Farmhand,
+        "woodcutter" => Woodcutter,
+        "woodcutter_b" => WoodcutterB,
         _ => null,
     };
 }
@@ -717,6 +765,7 @@ public static class Dialogues
         "miller_daughter" => "Miller's Daughter",
         "farm_elder" => "Farmer",
         "farm_girl" or "farmhand" => "Farmhand",
+        "woodcutter" or "woodcutter_b" => "Woodcutter",
         "captive" => "Bonded Girl",
         "lost" => "Lightborn",
         "finder_captain" => "Finder Captain",

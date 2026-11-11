@@ -17,6 +17,9 @@ public enum ActorPose : byte
 
     /// <summary>A blow in a fight: the client swings the weapon in hand once while it lasts.</summary>
     Strike = 3,
+
+    /// <summary>At work: the client swings the tool in hand again and again (an axe at the chopping block).</summary>
+    Work = 4,
 }
 
 /// <summary>An actor's state as the client hears it. Only actors away from their resting state are sent.</summary>

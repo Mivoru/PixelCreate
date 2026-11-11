@@ -1319,5 +1319,78 @@
     "about": {},
     "moods": [],
     "barks": []
+  },
+  "oswin": {
+    "barks": [
+      {
+        "when": {
+          "time": {
+            "from": 360,
+            "to": 720
+          }
+        },
+        "text": "Mind the chips. They fly."
+      },
+      {
+        "when": {
+          "time": {
+            "from": 360,
+            "to": 720
+          }
+        },
+        "text": "Forty cords before the frost, and the Guild hall burns twenty of them."
+      },
+      {
+        "when": {
+          "time": {
+            "from": 780,
+            "to": 1140
+          }
+        },
+        "text": "Saw a thornback's tracks by the creek. Walk wide of the jungle, lad."
+      },
+      {
+        "when": {
+          "time": {
+            "from": 1140,
+            "to": 1320
+          }
+        },
+        "text": "Good fire. Best part of the day, this."
+      }
+    ],
+    "moods": []
+  },
+  "jory": {
+    "barks": [
+      {
+        "when": {
+          "time": {
+            "from": 360,
+            "to": 1140
+          }
+        },
+        "text": "Uncle says I swing like a goose. Geese don't swing!"
+      },
+      {
+        "when": {
+          "time": {
+            "from": 360,
+            "to": 1140
+          }
+        },
+        "text": "One day I'll take a job off the Guild board. Just you watch."
+      },
+      {
+        "when": {
+          "time": {
+            "from": 1140,
+            "to": 1320
+          }
+        },
+        "text": "Is that stew? Tell me that's stew."
+      }
+    ],
+    "moods": []
   }
 }

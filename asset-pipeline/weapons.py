@@ -293,6 +293,21 @@ def orc_battle_axe(k):
     k.cone((0, 1.05, 0), (0, 1.16, 0), 0.026, "wpn_iron")
 
 
+def wood_axe(k):
+    """A woodcutter's felling axe: a long pale ash haft worn dark where the hands go, a wedge of an iron head
+    with a bright edge, and a poll on the back for driving wedges."""
+    k.tube([(0, -0.3, 0), (0, 0.85, 0)], [0.024, 0.02], [0.03, 0.026], "wpn_wood_pale", sides=8)
+    k.wrap(-0.28, -0.12, 0.026, "wpn_wood_dark", "wpn_wood", 5)
+    head_y = 0.78
+    # The wedge: thick at the haft, thin and wide at the edge.
+    k.faceted([(0.02, head_y - 0.06, -0.03), (0.02, head_y + 0.06, -0.03), (0.02, head_y + 0.06, 0.03), (0.02, head_y - 0.06, 0.03),
+               (0.22, head_y - 0.1, -0.006), (0.22, head_y + 0.1, -0.006), (0.22, head_y + 0.1, 0.006), (0.22, head_y - 0.1, 0.006)],
+              [(0, 1, 2, 3), (4, 7, 6, 5), (0, 4, 5, 1), (1, 5, 6, 2), (2, 6, 7, 3), (3, 7, 4, 0)], "wpn_iron")
+    k.box((0.225, head_y, 0), (0.012, 0.2, 0.014), "wpn_edge")
+    k.box((0, head_y, 0), (0.07, 0.13, 0.065), "wpn_iron")
+    k.box((-0.06, head_y, 0), (0.05, 0.09, 0.055), "wpn_steel_deep")
+
+
 def sentinel_blade(k):
     """An Auren sentinel's greatsword: a broad, straight blade of grey marble longer than a man's arm,
     a rune channel glowing down its middle, a bronze guard like spread wings and a long bronze-bound grip."""
@@ -312,6 +327,7 @@ BUILDERS = {
     "orc_longsword": orc_longsword,
     "orc_spear": orc_spear,
     "orc_battle_axe": orc_battle_axe,
+    "wood_axe": wood_axe,
     "twin_daggers": twin_daggers,
     "rusty_dagger": rusty_dagger,
     "wooden_sword": wooden_sword,

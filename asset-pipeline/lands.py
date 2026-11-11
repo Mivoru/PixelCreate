@@ -692,7 +692,46 @@ def fallen_banner(h):
         h.blob(f"stone{i}", (math.cos(a) * 0.35, math.sin(a) * 0.35, 0.12), 0.2, "stone_old", 321 + i, 0.7, 1)
 
 
+def chopping_block(h):
+    """A woodcutter's chopping block: a broad oak stump with an axe bitten into its top, split logs and chips
+    round its foot and a short stack of finished billets beside it."""
+    rng = random.Random(341)
+    h.loft("block", [(0, 0.42, 0.4), (0.55, 0.38, 0.37), (0.6, 0.36, 0.35)], "bark", 12)
+    h.loft("top", [(0.6, 0.35, 0.34), (0.62, 0.35, 0.34)], "wood", 12)
+    for k in range(3):
+        h.box(f"ring{k}", (0, 0, 0.625 + k * 0.001), (0.5 - k * 0.14, 0.03, 0.002), "bark_dark")
+    # The axe left in the block, haft angled up.
+    h.box("bitten_head", (0.05, 0, 0.66), (0.08, 0.22, 0.14), "iron")
+    h.timber("haft", (0.05, 0, 0.66), (0.62, 0.05, 1.05), 0.05, "wood")
+    for i in range(8):
+        x, y = rng.uniform(-0.9, 0.9), rng.uniform(-0.9, 0.9)
+        if abs(x) < 0.45 and abs(y) < 0.45:
+            continue
+        h.box(f"chip{i}", (x, y, 0.02), (rng.uniform(0.08, 0.18), rng.uniform(0.04, 0.1), 0.03), "wood")
+    for i in range(3):
+        a = rng.uniform(0, math.tau)
+        h.box(f"split{i}", (math.cos(a) * 0.75, math.sin(a) * 0.75, 0.1), (0.4, 0.14, 0.18), "wood")
+    for row in range(3):
+        for col in range(3 - row):
+            h.timber(f"billet_len{row}{col}", (0.85, -0.35 + col * 0.24 + row * 0.12, 0.1 + row * 0.2), (1.35, -0.35 + col * 0.24 + row * 0.12, 0.1 + row * 0.2), 0.19, "wood")
+
+
+def sawhorse(h):
+    """A sawbuck: two crossed frames of poles holding a log, a long two-man saw resting in a half-made cut."""
+    for x in (-0.9, 0.9):
+        h.timber(f"a{x}", (x, -0.5, 0), (x, 0.35, 1.0), 0.08, "wood_dark")
+        h.timber(f"b{x}", (x, 0.5, 0), (x, -0.35, 1.0), 0.08, "wood_dark")
+    h.timber("rail", (-1.0, 0, 0.45), (1.0, 0, 0.45), 0.07, "wood_dark")
+    h.timber("log", (-1.5, 0, 0.92), (1.5, 0, 0.92), 0.4, "bark")
+    h.box("cut", (0.25, 0, 1.0), (0.03, 0.5, 0.2), "wood")
+    h.box("saw", (0.25, 0, 1.18), (0.01, 1.6, 0.12), "iron")
+    for y in (-0.85, 0.85):
+        h.timber(f"handle{y}", (0.25, y, 1.1), (0.25, y, 1.42), 0.05, "wood")
+
+
 BUILDERS = {
+    "chopping_block": chopping_block,
+    "sawhorse": sawhorse,
     "battle_debris": battle_debris,
     "fallen_banner": fallen_banner,
     "burned_barn": burned_barn,
