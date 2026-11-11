@@ -73,6 +73,7 @@ public sealed partial class Minimap : Control
                 "watchtower" => ("tower", ""),
                 "chapel" => ("chapel", "Chapel"),
                 "waystone" => ("waystone", ""),
+                "smithy" => ("smithy", "Smithy"),
                 _ => ("", ""),
             };
             if (mark.Item1.Length > 0)

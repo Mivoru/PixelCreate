@@ -993,7 +993,7 @@ def timber(name, start, end, size, material="wood"):
 
 houses.bind({"box": box, "timber": timber, "blob": blob, "add_object": add_object, "mesh_from": mesh_from})
 cottage, cottage_b, tavern = houses.cottage, houses.cottage_b, houses.tavern
-chapel, village_graves = houses.chapel, houses.village_graves
+chapel, village_graves, smithy, laundry_line = houses.chapel, houses.village_graves, houses.smithy, houses.laundry_line
 landmarks.bind({"box": box, "timber": timber, "blob": blob, "loft": loft, "add_object": add_object, "mesh_from": mesh_from})
 houses.bind({"round_log": lambda *a: round_log(*a)})
 windmill, watchtower, well, stall = landmarks.windmill, landmarks.watchtower, landmarks.well, landmarks.stall
@@ -1937,6 +1937,8 @@ MODELS = {
     "cottage": cottage,
     "chapel": chapel,
     "village_graves": village_graves,
+    "smithy": smithy,
+    "laundry_line": laundry_line,
     "tree_a": oak,
     "tree_b": oak_b,
     "birch": birch,

@@ -20,6 +20,7 @@ public partial class Ambient : Node3D
         ["cottage"] = new(1.6f, 6.9f, -0.48f),
         ["cottage_b"] = new(1.4f, 6.3f, -0.46f),
         ["tavern"] = new(2.3f, 10.5f, -0.6f),
+        ["smithy"] = new(-1.4f, 4.6f, -1.4f),
     };
 
     private sealed class Bird

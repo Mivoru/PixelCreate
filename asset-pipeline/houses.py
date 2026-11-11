@@ -342,6 +342,81 @@ def chapel():
         obj.matrix_world = turn @ obj.matrix_world
 
 
+def smithy():
+    """Tess's smithy: an open-fronted workshop under a lean-to roof of planks on heavy posts, a stone
+    forge with a glowing hearth and a chimney, an anvil on a stump, a quench barrel, a grindstone and
+    tools hung on the back wall. The open side is the front (-y)."""
+    import bpy
+
+    w, d = 5.2, 4.0
+    box("floor", (0, 0, -0.05), (w + 0.3, d + 0.3, 0.5), "stone_dark")
+    low, high = 2.5, 3.4
+    for x in (-w / 2, w / 2):
+        timber("post_front", (x, -d / 2, 0.1), (x, -d / 2, low), 0.22, "wood_dark")
+        timber("post_back", (x, d / 2, 0.1), (x, d / 2, high), 0.22, "wood_dark")
+        timber("tie", (x, -d / 2, low - 0.1), (x, d / 2, high - 0.1), 0.16, "wood_dark")
+    timber("beam_front", (-w / 2 - 0.2, -d / 2, low), (w / 2 + 0.2, -d / 2, low), 0.2, "wood_dark")
+    timber("beam_back", (-w / 2 - 0.2, d / 2, high), (w / 2 + 0.2, d / 2, high), 0.2, "wood_dark")
+    # The roof slopes down to the front and hangs over it.
+    verts = [(-w / 2 - 0.4, -d / 2 - 0.6, low - 0.05), (w / 2 + 0.4, -d / 2 - 0.6, low - 0.05), (w / 2 + 0.4, d / 2 + 0.3, high + 0.12), (-w / 2 - 0.4, d / 2 + 0.3, high + 0.12)]
+    top = [(x, y, z + 0.14) for x, y, z in verts]
+    faces = [(0, 1, 2, 3), (7, 6, 5, 4), (0, 4, 5, 1), (1, 5, 6, 2), (2, 6, 7, 3), (3, 7, 4, 0)]
+    add_object("roof", mesh_from("roof", verts + top, faces), "wood")
+    for k in range(7):
+        x = -w / 2 + 0.2 + k * (w - 0.4) / 6
+        timber("batten", (x, -d / 2 - 0.55, low + 0.12), (x, d / 2 + 0.25, high + 0.29), 0.05, "wood_dark")
+    # Back wall of planks and a half wall on the left; the right stays open to the street.
+    box("back_wall", (0, d / 2 - 0.05, high / 2), (w, 0.1, high), "wood")
+    box("side_wall", (-w / 2 + 0.05, 0.4, 0.6), (0.1, d - 0.8, 1.2), "wood")
+    # The forge: stone hearth with embers, a hood and a chimney through the roof.
+    fx, fy = -1.4, 1.2
+    box("forge", (fx, fy, 0.5), (1.6, 1.2, 1.0), "stone")
+    box("hearth", (fx, fy - 0.1, 1.02), (1.0, 0.7, 0.06), "ember")
+    for k in range(5):
+        blob(f"coal{k}", (fx - 0.3 + k * 0.15, fy - 0.1, 1.07), 0.08, "char" if k % 2 else "ember", 700 + k, 0.7, 1)
+    box("hood", (fx, fy + 0.1, 2.0), (1.4, 1.0, 0.5), "stone_dark")
+    box("chimney", (fx, fy + 0.2, 3.2), (0.6, 0.6, 2.4), "stone")
+    box("chimney_cap", (fx, fy + 0.2, 4.45), (0.8, 0.8, 0.12), "stone_dark")
+    timber("bellows", (fx + 1.0, fy, 0.75), (fx + 1.5, fy - 0.3, 0.85), 0.28, "hide")
+    # Anvil on a stump, a quench barrel, a grindstone.
+    ax, ay = 0.6, -0.6
+    timber("stump", (ax, ay, 0.1), (ax, ay, 0.65), 0.5, "wood")
+    box("anvil_foot", (ax, ay, 0.72), (0.34, 0.24, 0.14), "iron")
+    box("anvil_body", (ax, ay, 0.86), (0.22, 0.18, 0.16), "iron")
+    box("anvil_face", (ax, ay, 0.98), (0.62, 0.24, 0.1), "iron")
+    blob("anvil_horn", (ax + 0.38, ay, 0.98), 0.1, "iron", 710, 0.6, 1)
+    timber("barrel", (1.8, 1.2, 0.1), (1.8, 1.2, 0.8), 0.6, "wood")
+    box("water", (1.8, 1.2, 0.78), (0.42, 0.42, 0.02), "water")
+    timber("wheel_axle", (1.7, -0.2, 0.7), (2.1, -0.2, 0.7), 0.06, "wood_dark")
+    timber("wheel", (1.9, -0.2, 0.35), (1.9, -0.2, 1.05), 0.12, "stone")
+    for side in (-1, 1):
+        timber("wheel_leg", (1.9 + side * 0.25, -0.35, 0.1), (1.9 + side * 0.25, -0.2, 0.72), 0.06, "wood_dark")
+    # Tools on the back wall.
+    for k, (x, length) in enumerate(((0.3, 0.7), (0.6, 0.6), (0.9, 0.75), (1.2, 0.5))):
+        timber("handle", (x, d / 2 - 0.14, 1.9), (x, d / 2 - 0.14, 1.9 - length), 0.04, "wood_dark")
+        box("head", (x, d / 2 - 0.14, 1.9 - length), (0.16, 0.08, 0.08), "iron")
+    box("rack", (0.75, d / 2 - 0.12, 1.92), (1.4, 0.06, 0.08), "wood_dark")
+
+
+def laundry_line():
+    """Washing hung out to dry: two T-shaped posts and a sagging line between, with sheets, shirts and
+    a pair of trousers pegged along it."""
+    span = 4.0
+    for x in (-span / 2, span / 2):
+        timber("post", (x, 0, 0), (x, 0, 2.0), 0.1, "wood_dark")
+        timber("arm", (x, -0.3, 1.95), (x, 0.3, 1.95), 0.07, "wood_dark")
+    for y in (-0.25, 0.25):
+        for k in range(6):
+            x0 = -span / 2 + k * span / 6
+            x1 = x0 + span / 6
+            sag = lambda x: 1.95 - 0.18 * (1 - (2 * x / span) ** 2)
+            timber("line", (x0, y, sag(x0)), (x1, y, sag(x1)), 0.015, "sack")
+    for x, y, width, length, color in ((-1.3, -0.25, 0.8, 0.9, "paper"), (-0.25, -0.25, 0.5, 0.55, "cloth_purple"), (0.6, -0.25, 0.7, 0.9, "cloth_red"),
+                                       (-0.8, 0.25, 0.45, 0.6, "sack"), (0.2, 0.25, 0.9, 1.0, "paper"), (1.25, 0.25, 0.4, 0.75, "anime_trousers")):
+        z = 1.95 - 0.18 * (1 - (2 * x / span) ** 2)
+        box("cloth", (x, y, z - length / 2), (width, 0.02, length), color)
+
+
 def village_graves():
     """A tended row of graves in the churchyard: upright headstones and wooden crosses, each with a
     low kerb of stones, and flowers laid on a few."""

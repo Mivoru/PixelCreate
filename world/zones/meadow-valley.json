@@ -63,6 +63,7 @@
   ],
   "yards": [
     [21, -16.5, 6],
+    [-2, 19, 3.6],
     [90, -66, 10],
     [84, -114, 7.5],
     [101, -95, 5],
@@ -586,6 +587,9 @@
     { "model": "lantern_post", "x": -205, "z": 207, "yaw": 0.0 },
     { "model": "signpost", "x": -168, "z": 208, "yaw": 1.4 },
     { "model": "chapel", "x": -18, "z": -38, "yaw": 1.5708 },
+    { "model": "smithy", "x": -2, "z": 19, "yaw": 1.5708 },
+    { "model": "laundry_line", "x": -19, "z": -6, "yaw": 0.3 },
+    { "model": "laundry_line", "x": 18, "z": 17, "yaw": -0.4 },
     { "model": "lantern_post", "x": -11, "z": -35 },
     { "model": "village_graves", "x": -18, "z": -49 },
     { "model": "village_graves", "x": -17, "z": -53.5 },
