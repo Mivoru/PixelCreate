@@ -2299,7 +2299,7 @@ public sealed partial class GameServer : IEnemyEvents
             }
         }
 
-        if (player.State.DashTicks > 0)
+        if (player.State.Dodging)
         {
             player.Dodges++;
             Stats.Dodges++;
@@ -3705,7 +3705,12 @@ public sealed partial class GameServer : IEnemyEvents
             person.StrikeCooldown = 36 + _random.Next(30);
             person.StrikeTicks = 22;
             person.Pose = ActorPose.Strike;
-            foe.TakeHit(person.Damage, person.Position);
+            // The finders wear the goblins down but leave the finishing to the player.
+            var blow = (short)Math.Min(person.Damage, foe.Health - foe.MaxHealth / 3);
+            if (blow > 0)
+            {
+                foe.TakeHit(blow, person.Position);
+            }
             if (!foe.Returning && foe.TargetId < 0)
             {
                 // Struck, it turns on whoever struck it.

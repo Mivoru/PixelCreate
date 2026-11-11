@@ -69,6 +69,27 @@
     "loot": [{"item": "goblin_tooth", "chance": 0.5, "min": 1, "max": 1}, {"item": "hawk_feather", "chance": 0.6, "min": 1, "max": 2}, {"item": "leather_scrap", "chance": 0.4, "min": 1, "max": 1}]
   },
   {
+    "id": "goblin_raider", "behavior": "skirmisher", "name": "Goblin Raider", "kind": "goblin", "weapon": "dagger",
+    "minLevel": 1, "maxLevel": 1, "health": 34, "healthPerLevel": 6, "speed": 4.6, "size": 0.85,
+    "aggroRange": 11, "preferredRange": 1.6,
+    "abilities": [
+      { "effect": "melee", "range": 2.2, "windupTicks": 20, "recoverTicks": 18, "cooldownTicks": 40, "damage": 4, "radius": 1.4 },
+      { "effect": "dashStrike", "range": 8, "minRange": 3, "windupTicks": 30, "recoverTicks": 26, "cooldownTicks": 300, "damage": 7, "radius": 1.6, "telegraph": "line" }
+    ],
+    "drops": [{ "rarity": 0, "chance": 1 }],
+    "loot": [{"item": "goblin_tooth", "chance": 0.6, "min": 1, "max": 1}, {"item": "tattered_cloth", "chance": 0.5, "min": 1, "max": 1}]
+  },
+  {
+    "id": "goblin_raider_archer", "behavior": "ranged", "name": "Goblin Archer", "kind": "goblin", "weapon": "bow",
+    "minLevel": 1, "maxLevel": 1, "health": 28, "healthPerLevel": 5, "speed": 3.4, "size": 0.85,
+    "aggroRange": 16, "preferredRange": 10,
+    "abilities": [
+      { "effect": "arrow", "range": 15, "windupTicks": 56, "recoverTicks": 30, "cooldownTicks": 170, "damage": 6 }
+    ],
+    "drops": [{ "rarity": 0, "chance": 1 }],
+    "loot": [{"item": "goblin_tooth", "chance": 0.5, "min": 1, "max": 1}, {"item": "crude_arrow", "chance": 0.7, "min": 2, "max": 4}]
+  },
+  {
     "id": "guild_examiner", "name": "Examiner Rhea", "kind": "human", "weapon": "sword", "behavior": "duelist", "defense": 4,
     "minLevel": 5, "maxLevel": 5, "health": 340, "healthPerLevel": 0, "speed": 5.4, "size": 1.0,
     "aggroRange": 40, "preferredRange": 2,

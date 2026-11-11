@@ -567,6 +567,7 @@ public static class Protocol
         writer.Write(state.BoltCooldown);
         writer.Write(state.HeavyCooldown);
         writer.Write(state.HeavyHeld);
+        writer.Write(state.DashHeld);
     }
 
     private static PlayerState ReadState(BinaryReader reader) => new()
@@ -598,5 +599,6 @@ public static class Protocol
         BoltCooldown = reader.ReadByte(),
         HeavyCooldown = reader.ReadByte(),
         HeavyHeld = reader.ReadBoolean(),
+        DashHeld = reader.ReadBoolean(),
     };
 }

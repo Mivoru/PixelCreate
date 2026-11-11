@@ -133,6 +133,12 @@ public static class Tuning
     public const float DashSpeed = 20f;
     public const byte DashTicks = 9;
     public const byte DashCooldownTicks = 45;
+
+    /// <summary>
+    /// How long after a dash starts blows pass through the player: the dash itself and a few ticks more, so a dodge
+    /// timed just before the blow lands is forgiven by a hair.
+    /// </summary>
+    public const byte DodgeTicks = 15;
     public const short PlayerHealth = 100;
 
     public const float MaxStamina = 100f;
@@ -446,6 +452,12 @@ public struct PlayerState
 
     /// <summary>Whether the heavy button was down last tick, so a club spin needs a fresh press.</summary>
     public bool HeavyHeld;
+
+    /// <summary>Whether the dash button was down last tick: each dash needs a fresh press, so holding Shift does not chain them.</summary>
+    public bool DashHeld;
+
+    /// <summary>Whether a blow landing now would pass through: the dash has only just begun.</summary>
+    public readonly bool Dodging => DashTicks > 0 || DashCooldown > Tuning.DashCooldownTicks - Tuning.DodgeTicks;
 
     public static PlayerState Spawn(Vector3 position, short health = Tuning.PlayerHealth) => new()
     {
@@ -984,7 +996,9 @@ public static class Movement
 
     private static void StepDash(ref PlayerState state, in InputCmd input, Vector2 wish)
     {
-        if (!input.Buttons.HasFlag(Buttons.Dash) || state.DashCooldown > 0 || state.Stamina < Tuning.DashStamina)
+        var fresh = !state.DashHeld;
+        state.DashHeld = input.Buttons.HasFlag(Buttons.Dash);
+        if (!state.DashHeld || !fresh || state.DashCooldown > 0 || state.Stamina < Tuning.DashStamina)
         {
             return;
         }

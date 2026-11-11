@@ -120,7 +120,48 @@ public static class ZoneView
             }
         }
 
+        SplitLayers(root);
         return root;
+    }
+
+    /// <summary>Render layer of the static world outdoors; the game camera leaves it out while the player is inside.</summary>
+    public const uint OutdoorLayer = 1u << 2;
+
+    /// <summary>Render layer of the interiors and dungeons on their platforms off the map; left out while the player is outdoors.</summary>
+    public const uint InteriorLayer = 1u << 1;
+
+    /// <summary>Interiors start past this x; the map itself ends at 300.</summary>
+    public const float InteriorX = 380f;
+
+    /// <summary>
+    /// Puts every static piece of the zone on the outdoor or the interior layer by where it stands. Without this the
+    /// guild hall and the dungeon platforms hung in the sky beyond the eastern mountains.
+    /// </summary>
+    private static void SplitLayers(Node3D root)
+    {
+        foreach (var child in root.GetChildren())
+        {
+            var x = child switch
+            {
+                GeometryInstance3D geometry when geometry.GetAabb().Size != Vector3.Zero => (geometry.Transform * geometry.GetAabb()).GetCenter().X,
+                Node3D node => node.Position.X,
+                _ => 0f,
+            };
+            SetLayer(child, x > InteriorX ? InteriorLayer : OutdoorLayer);
+        }
+    }
+
+    private static void SetLayer(Node node, uint layer)
+    {
+        if (node is VisualInstance3D visual)
+        {
+            visual.Layers = layer;
+        }
+
+        foreach (var child in node.GetChildren())
+        {
+            SetLayer(child, layer);
+        }
     }
 
     private static void BuildWater(Zone zone, Node3D root)

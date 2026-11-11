@@ -16,6 +16,8 @@ COLORS = {
 }
 
 FLOOR_W, FLOOR_D = 50.0, 36.0
+# The floor reaches under the alcove by the door too (to z 20.5), or the void showed below it.
+FLOOR_REACH = 42.0
 HALL_H = 6.5
 
 
@@ -35,7 +37,7 @@ def archive_floor(h):
     """The hall's floor: worn slabs in a grid with dark joints, a sunken channel of black water down the
     middle with a kerb either side, puddles, loose pages and rubble."""
     rng = random.Random(501)
-    h.box("base", (0, 0, -0.25), (FLOOR_W, FLOOR_D, 0.5), "auren_dark")
+    h.box("base", (0, 0, -0.25), (FLOOR_W + 2, FLOOR_REACH, 0.5), "auren_dark")
     for i in range(int(FLOOR_W / 2)):
         for j in range(int(FLOOR_D / 2)):
             x = -FLOOR_W / 2 + 1 + i * 2
@@ -62,7 +64,7 @@ def archive_floor(h):
 def archive_ceiling(h):
     """A dark vault overhead: a slab carried on heavy ribs, with roots hanging through the cracks."""
     rng = random.Random(502)
-    h.box("vault", (0, 0, HALL_H + 0.1), (FLOOR_W + 4, FLOOR_D + 4, 1.0), "auren_wet")
+    h.box("vault", (0, 0, HALL_H + 0.1), (FLOOR_W + 4, FLOOR_REACH + 4, 1.0), "auren_wet")
     for i in range(9):
         x = -FLOOR_W / 2 + 3 + i * (FLOOR_W - 6) / 8
         h.box("rib", (x, 0, HALL_H - 0.2), (0.7, FLOOR_D, 0.5), "auren_dark")
@@ -179,7 +181,7 @@ def warren_floor(h):
     """The Goblin Warren's floor: trodden earth, patches of rotten straw where goblins sleep, puddles,
     gnawed bones and scraps."""
     rng = random.Random(601)
-    h.box("earth", (0, 0, -0.25), (46, 34, 0.5), "dirt_dark")
+    h.box("earth", (0, 0, -0.25), (50, 40, 0.5), "dirt_dark")
     for i in range(40):
         x, y = rng.uniform(-22, 22), rng.uniform(-16, 16)
         h.box("clod", (x, y, 0.01), (rng.uniform(1.5, 4), rng.uniform(1.2, 3), 0.02), rng.choice(("path", "dirt_dark", "hide_dark")))
@@ -198,7 +200,7 @@ def warren_floor(h):
 def warren_ceiling(h):
     """A low roof of packed earth held up by heavy beams, roots poking through between them."""
     rng = random.Random(602)
-    h.box("roof", (0, 0, WARREN_H + 0.4), (50, 38, 1.0), "dirt_dark")
+    h.box("roof", (0, 0, WARREN_H + 0.4), (54, 44, 1.0), "dirt_dark")
     for i in range(10):
         x = -22 + i * 44 / 9
         h.box("beam", (x, 0, WARREN_H - 0.15), (0.45, 34, 0.4), "wood_dark")

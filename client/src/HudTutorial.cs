@@ -15,7 +15,7 @@ public partial class Hud
         ("Light attack", "Strike Rhea with quick light blows", "Left mouse"),
         ("Heavy attack", "Put your weight into a heavy blow", "Right mouse"),
         ("Block", "Hold your guard and take her blows on it", "Hold mouse wheel"),
-        ("Dash", "When the ground goes red, dash through the blow", "Shift"),
+        ("Dash", "When the ground goes red, wait, then dash just as the blow falls", "Shift"),
         ("Slide", "Run, then slide low and fast", "Ctrl while running"),
     };
 

@@ -49,6 +49,22 @@ rozdělí na tři (pravou prozradí stín). Podrobnosti a co nebylo ověřeno: `
 Vrány na novém bojišti Crowfield na okraji Moonfell, nálety, rozprášení hejna, vzácný Gallows Rook s řadou pěti
 vran. Podrobnosti: `design/monster-audit.md`, poslední oddíl. Autor zatím nic nehrál (2026-11-11).
 
+## Noc 2026-11-11 až 6:00: seznam z hraní autora (pracovat samostatně)
+
+Autor si zahrál a chce samostatnou práci do 6:00. Zaškrtávat, co je hotové:
+
+- [x] Podzemí: mezery ve stěnách a mezi stěnou a podlahou, je vidět prázdno.
+- [ ] Zkontrolovat hitboxy a dosah všech útoků (lehký útok mečem často netrefí).
+- [x] Kliknutí v dialogu zároveň zaútočí.
+- [x] Interiéry (Guilda, podzemí) jsou z okraje mapy vidět, jak levitují.
+- [x] Goblini na začátku (prolog) slabší.
+- [x] Trial v Guildě: úskok platí jen načasovaný, hráči to nikdo neřekne a Shift jde mačkat pořád.
+- [ ] Thornback a Briarking: útoky, animace a AI (zasekávání).
+- [ ] Bludičky: zblízka přestanou svítit a jsou slabé.
+- [ ] Mapa místy prázdná a nudná: víc prvků, terén, stavby, obydlí, monstra, zvířata.
+- [ ] Pak dál ladit startovní lokaci: chytřejší NPC, kteří žijí normálně, namluvené hlášky, postupné joby,
+      animace; ptát se, co jde logicky nebo graficky zlepšit, inspirace z jiných RPG a MMORPG.
+
 ## Co dělat jako první
 
 Zeptat se autora, co si zahrál. Pokud nic jiného neurčí, pokračovat schváleným plánem níže (autor schválil

@@ -504,6 +504,9 @@ public partial class GameClient : Node
         }
 
         _stage.Underground = shown.X > ArchiveX ? 1f : 0f;
+        // Indoors the outdoor world is not drawn, and outdoors the interiors on their platforms off the map are not.
+        var inside = shown.X > ZoneView.InteriorX;
+        _stage.Camera.CullMask = (_stage.Camera.CullMask | ZoneView.OutdoorLayer | ZoneView.InteriorLayer) & ~(inside ? ZoneView.OutdoorLayer : ZoneView.InteriorLayer);
         _stage.SetGloom(_gloom);
         _stage.PlaceMoon();
         // A staff shows the crosshair all the time, as its fireballs fly to whatever lies under it.
@@ -1138,7 +1141,7 @@ public partial class GameClient : Node
 
         if (snapshot.Rank == GuildRank.InTrial)
         {
-            return "Defeat Examiner Rhea";
+            return "Defeat Examiner Rhea. Block her quick blows; when the ground goes red, dash (Shift) just as it falls";
         }
 
         var story = new ClientStory(_client, _hud.Items);
@@ -1546,11 +1549,22 @@ public partial class GameClient : Node
         _stage.Camera.Fov = BaseFov - eased * (7f + 7f * Tuning.Drawn(state.DrawTicks));
     }
 
+    /// <summary>A mouse button pressed while a window or dialogue was open, still held: it is not an attack until let go.</summary>
+    private bool _mouseHeldFromUi;
+
     private (sbyte X, sbyte Z, Buttons Buttons) ReadInput()
     {
+        var mouseDown = Input.IsMouseButtonPressed(MouseButton.Left) || Input.IsMouseButtonPressed(MouseButton.Right);
         if (_hud.WindowOpen || _hud.DialogOpen || _hud.MenuOpen)
         {
+            // The click that picks a dialogue choice or closes a window must not land as a blow once it closes.
+            _mouseHeldFromUi = true;
             return (0, 0, _hud.DialogOpen || _hud.MenuOpen || _hud.CreatorOpen ? Buttons.Reading : Buttons.None);
+        }
+
+        if (!mouseDown)
+        {
+            _mouseHeldFromUi = false;
         }
 
         if (_sceneLocked)
@@ -1563,8 +1577,8 @@ public partial class GameClient : Node
         var buttons = Buttons.None;
         if (Input.IsKeyPressed(Key.Space)) buttons |= Buttons.Jump;
         if (Input.IsKeyPressed(Key.Shift)) buttons |= Buttons.Dash;
-        if (Input.IsMouseButtonPressed(MouseButton.Left)) buttons |= Buttons.Light;
-        if (Input.IsMouseButtonPressed(MouseButton.Right)) buttons |= Buttons.Heavy;
+        if (Input.IsMouseButtonPressed(MouseButton.Left) && !_mouseHeldFromUi) buttons |= Buttons.Light;
+        if (Input.IsMouseButtonPressed(MouseButton.Right) && !_mouseHeldFromUi) buttons |= Buttons.Heavy;
         if (Input.IsMouseButtonPressed(MouseButton.Middle)) buttons |= Buttons.Block;
         if (Input.IsKeyPressed(Key.Ctrl)) buttons |= Buttons.Slide;
         return ToMove(side, forward, buttons);
