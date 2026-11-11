@@ -556,7 +556,7 @@
     { "model": "chopping_block", "x": 215, "z": 69.3, "yaw": 1.9 },
     { "model": "sawhorse", "x": 220.4, "z": 71.5, "yaw": 0.3 },
     { "model": "log_pile", "x": 206.5, "z": 77.5, "yaw": 1.5708 },
-    { "model": "log_pile", "x": 207.5, "z": 66.5, "yaw": 0.6 },
+    { "model": "log_pile", "x": 204.5, "z": 70.5, "yaw": 0.6 },
     { "model": "log_pile", "x": 223.5, "z": 69.5, "yaw": 0.2 },
     { "model": "cart", "x": 213, "z": 62.5, "yaw": 1.0 },
     { "model": "camp_fire", "x": 214.5, "z": 80.8 },
