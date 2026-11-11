@@ -294,7 +294,14 @@
         },
         "text": "Red for wounds. Don't drink two at once, whatever Kai says."
       }
-    ]
+    ],
+    "voice": {
+      "id": "XrExE9yKIg1WjnnlVkGX",
+      "name": "Matilda",
+      "stability": 0.5,
+      "similarity_boost": 0.75,
+      "style": 0.35
+    }
   },
   "garrick": {
     "age": 44,
@@ -464,7 +471,14 @@
       "kai": "Brings me pelts hacked to ribbons and argues the price. Every time."
     },
     "moods": [],
-    "barks": []
+    "barks": [],
+    "voice": {
+      "id": "cjVigY5qzO86Huf0OWal",
+      "name": "Eric",
+      "stability": 0.55,
+      "similarity_boost": 0.75,
+      "style": 0.3
+    }
   },
   "kai": {
     "age": 19,
@@ -1359,7 +1373,14 @@
         "text": "Good fire. Best part of the day, this."
       }
     ],
-    "moods": []
+    "moods": [],
+    "voice": {
+      "id": "JBFqnCBsd6RMkjVDRZzb",
+      "name": "George",
+      "stability": 0.55,
+      "similarity_boost": 0.75,
+      "style": 0.3
+    }
   },
   "jory": {
     "barks": [
@@ -1391,7 +1412,14 @@
         "text": "Is that stew? Tell me that's stew."
       }
     ],
-    "moods": []
+    "moods": [],
+    "voice": {
+      "id": "bIHbv24MWmeRgasZH58o",
+      "name": "Will",
+      "stability": 0.4,
+      "similarity_boost": 0.75,
+      "style": 0.45
+    }
   },
   "tobb": {
     "barks": [
@@ -1432,7 +1460,14 @@
         "text": "Gut, salt, hang. Gut, salt, hang. The fish don't thank you."
       }
     ],
-    "moods": []
+    "moods": [],
+    "voice": {
+      "id": "onwK4e9ZLuTAKqWW03F9",
+      "name": "Daniel",
+      "stability": 0.6,
+      "similarity_boost": 0.75,
+      "style": 0.25
+    }
   },
   "brin": {
     "barks": [
@@ -1473,6 +1508,13 @@
         "text": "If you're going west, keep to the road. The burnt farm isn't empty."
       }
     ],
-    "moods": []
+    "moods": [],
+    "voice": {
+      "id": "pFZP5JQG7iQjIQuC4Bku",
+      "name": "Lily",
+      "stability": 0.5,
+      "similarity_boost": 0.75,
+      "style": 0.3
+    }
   }
 }

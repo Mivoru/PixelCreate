@@ -1,175 +1,260 @@
 {
-  "npc": "board",
-  "entries": [
-    {
-      "when": {
-        "rank": {
-          "max": 0
-        }
-      },
-      "node": "closed"
-    },
-    {
-      "when": {
-        "activeJobs": {
-          "min": 1
-        }
-      },
-      "node": "busy"
-    },
-    {
-      "node": "jobs"
+ "npc": "board",
+ "entries": [
+  {
+   "when": {
+    "rank": {
+     "max": 0
     }
-  ],
-  "nodes": {
-    "closed": {
-      "text": "Only registered adventurers may take jobs.",
-      "options": [
-        {
-          "text": "Leave"
-        }
-      ]
-    },
-    "busy": {
-      "text": "You already have a job. Finish it first.",
-      "options": [
-        {
-          "text": "Leave"
-        }
-      ]
-    },
-    "jobs": {
-      "text": "Notices flutter on the board, each signed by whoever posted it. Harder work goes up as the Guild trusts you with it.",
-      "options": [
-        {
-          "text": "Clear the Slimes (Pip): kill 5 slimes in the Slime Fields. 40 gold",
-          "effects": [
-            {
-              "quest": {
-                "start": "slime_cull"
-              }
-            }
-          ]
-        },
-        {
-          "text": "Goblin Bounty (Garrick): kill 3 goblins at Goblin Hollow. 120 gold",
-          "effects": [
-            {
-              "quest": {
-                "start": "goblin_bounty"
-              }
-            }
-          ]
-        },
-        {
-          "text": "Gel for the Alchemist (Wren): bring 6 Slime Gel from the Slime Fields. 45 gold",
-          "effects": [
-            {
-              "quest": {
-                "start": "gel_for_alchemist"
-              }
-            }
-          ]
-        },
-        {
-          "text": "Hides for Harrow Farm (Hamm): bring 2 Deer Hides from the meadows. 60 gold",
-          "effects": [
-            {
-              "quest": {
-                "start": "hides_for_tanner"
-              }
-            }
-          ]
-        },
-        {
-          "text": "Proof of the Hunt (Corwin Hale): bring 4 Goblin Teeth from Goblin Hollow. 90 gold",
-          "effects": [
-            {
-              "quest": {
-                "start": "proof_of_hunt"
-              }
-            }
-          ]
-        },
-        {
-          "text": "Wolves at Greyfang (Garrick): kill 4 wolves in Greyfang Forest. 150 gold",
-          "effects": [
-            {
-              "quest": {
-                "start": "wolf_cull"
-              }
-            }
-          ],
-          "when": {
-            "level": {
-              "min": 4
-            }
-          }
-        },
-        {
-          "text": "Orc Scouts at the Outpost (Corwin Hale): kill 2 orcs at the Ironjaw Outpost. 260 gold",
-          "effects": [
-            {
-              "quest": {
-                "start": "orc_scouts"
-              }
-            }
-          ],
-          "when": {
-            "level": {
-              "min": 7
-            }
-          }
-        },
-        {
-          "text": "Something Howls in Moonfell (Old Bram): kill a werewolf in Moonfell. 320 gold",
-          "effects": [
-            {
-              "quest": {
-                "start": "moonfell_howls"
-              }
-            }
-          ],
-          "when": {
-            "level": {
-              "min": 9
-            }
-          }
-        },
-        {
-          "text": "Fire in the Archive (Wren): kill the goblin shaman in the Sunken Archive. 300 gold",
-          "effects": [
-            {
-              "quest": {
-                "start": "archive_shaman"
-              }
-            }
-          ],
-          "when": {
-            "level": {
-              "min": 6
-            }
-          }
-        },
-        {
-          "text": "Into the Warren (Corwin Hale): kill 2 goblin brutes in the Goblin Warren. 240 gold",
-          "effects": [
-            {
-              "quest": {
-                "start": "warren_brutes"
-              }
-            }
-          ],
-          "when": {
-            "level": {
-              "min": 7
-            }
-          }
-        },
-        {
-          "text": "Leave"
-        }
-      ]
+   },
+   "node": "closed"
+  },
+  {
+   "when": {
+    "activeJobs": {
+     "min": 1
     }
+   },
+   "node": "busy"
+  },
+  {
+   "node": "jobs"
   }
+ ],
+ "nodes": {
+  "closed": {
+   "text": "Only registered adventurers may take jobs.",
+   "options": [
+    {
+     "text": "Leave"
+    }
+   ]
+  },
+  "busy": {
+   "text": "You already have a job. Finish it first.",
+   "options": [
+    {
+     "text": "Leave"
+    }
+   ]
+  },
+  "jobs": {
+   "text": "Notices flutter on the board, each signed by whoever posted it. Harder work goes up as the Guild trusts you with it.",
+   "options": [
+    {
+     "text": "Clear the Slimes (Pip): kill 5 slimes in the Slime Fields. 40 gold",
+     "effects": [
+      {
+       "quest": {
+        "start": "slime_cull"
+       }
+      }
+     ]
+    },
+    {
+     "text": "Goblin Bounty (Garrick): kill 3 goblins at Goblin Hollow. 120 gold",
+     "effects": [
+      {
+       "quest": {
+        "start": "goblin_bounty"
+       }
+      }
+     ]
+    },
+    {
+     "text": "Gel for the Alchemist (Wren): bring 6 Slime Gel from the Slime Fields. 45 gold",
+     "effects": [
+      {
+       "quest": {
+        "start": "gel_for_alchemist"
+       }
+      }
+     ]
+    },
+    {
+     "text": "Hides for Harrow Farm (Hamm): bring 2 Deer Hides from the meadows. 60 gold",
+     "effects": [
+      {
+       "quest": {
+        "start": "hides_for_tanner"
+       }
+      }
+     ]
+    },
+    {
+     "text": "Proof of the Hunt (Corwin Hale): bring 4 Goblin Teeth from Goblin Hollow. 90 gold",
+     "effects": [
+      {
+       "quest": {
+        "start": "proof_of_hunt"
+       }
+      }
+     ]
+    },
+    {
+     "text": "Wolves at Greyfang (Garrick): kill 4 wolves in Greyfang Forest. 150 gold",
+     "effects": [
+      {
+       "quest": {
+        "start": "wolf_cull"
+       }
+      }
+     ],
+     "when": {
+      "level": {
+       "min": 4
+      }
+     }
+    },
+    {
+     "text": "Orc Scouts at the Outpost (Corwin Hale): kill 2 orcs at the Ironjaw Outpost. 260 gold",
+     "effects": [
+      {
+       "quest": {
+        "start": "orc_scouts"
+       }
+      }
+     ],
+     "when": {
+      "level": {
+       "min": 7
+      }
+     }
+    },
+    {
+     "text": "Something Howls in Moonfell (Old Bram): kill a werewolf in Moonfell. 320 gold",
+     "effects": [
+      {
+       "quest": {
+        "start": "moonfell_howls"
+       }
+      }
+     ],
+     "when": {
+      "level": {
+       "min": 9
+      }
+     }
+    },
+    {
+     "text": "Fire in the Archive (Wren): kill the goblin shaman in the Sunken Archive. 300 gold",
+     "effects": [
+      {
+       "quest": {
+        "start": "archive_shaman"
+       }
+      }
+     ],
+     "when": {
+      "level": {
+       "min": 6
+      }
+     }
+    },
+    {
+     "text": "Into the Warren (Corwin Hale): kill 2 goblin brutes in the Goblin Warren. 240 gold",
+     "effects": [
+      {
+       "quest": {
+        "start": "warren_brutes"
+       }
+      }
+     ],
+     "when": {
+      "level": {
+       "min": 7
+      }
+     }
+    },
+    {
+     "text": "Hares for the Pot (Tobb): bring 3 Hare Meat from the meadows. 35 gold",
+     "effects": [
+      {
+       "quest": {
+        "start": "hare_stew"
+       }
+      }
+     ]
+    },
+    {
+     "text": "Raiders at the Fold (Brin): kill 3 goblins at the Westwood camp. 120 gold",
+     "effects": [
+      {
+       "quest": {
+        "start": "fold_raiders"
+       }
+      }
+     ],
+     "when": {
+      "level": {
+       "min": 3
+      }
+     }
+    },
+    {
+     "text": "Crows over Crowfield (Garrick): kill 4 carrion crows on Crowfield. 110 gold",
+     "effects": [
+      {
+       "quest": {
+        "start": "crowfield_crows"
+       }
+      }
+     ],
+     "when": {
+      "level": {
+       "min": 3
+      }
+     }
+    },
+    {
+     "text": "Lookout at the Old Watchtower (Garrick): kill 2 goblins at the Old Watchtower. 150 gold",
+     "effects": [
+      {
+       "quest": {
+        "start": "watchtower_lookout"
+       }
+      }
+     ],
+     "when": {
+      "level": {
+       "min": 4
+      }
+     }
+    },
+    {
+     "text": "Thornback Tracks (Oswin): kill 2 thornbacks in the Emerald Jungle. 180 gold",
+     "effects": [
+      {
+       "quest": {
+        "start": "thornback_tracks"
+       }
+      }
+     ],
+     "when": {
+      "level": {
+       "min": 5
+      }
+     }
+    },
+    {
+     "text": "Lights at the Stone Circle (Old Bram): put out 3 barrow wisps by night. 220 gold",
+     "effects": [
+      {
+       "quest": {
+        "start": "barrow_lights"
+       }
+      }
+     ],
+     "when": {
+      "level": {
+       "min": 6
+      }
+     }
+    },
+    {
+     "text": "Leave"
+    }
+   ]
+  }
+ }
 }

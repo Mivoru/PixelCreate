@@ -310,5 +310,194 @@
         "route": false
       }
     ]
+  },
+  {
+    "id": "hare_stew",
+    "name": "Hares for the Pot",
+    "kind": "job",
+    "giver": "board",
+    "repeatable": true,
+    "brief": "bring 3 Hare Meat",
+    "gold": 35,
+    "xp": 50,
+    "poster": "Tobb, fisherman",
+    "place": "the meadows round the valley",
+    "journal": "Tobb's notice, in a shaky hand: the perch have stopped biting and an old man cannot live on hope. Three hares for the pot, and he'll pay what he has.",
+    "steps": [
+      {
+        "text": "Hunt brown hares in the open meadows and bring their meat to Mira.",
+        "goal": {
+          "bring": {
+            "id": "hare_meat",
+            "count": 3
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "fold_raiders",
+    "name": "Raiders at the Fold",
+    "kind": "job",
+    "giver": "board",
+    "repeatable": true,
+    "brief": "kill 3 goblins at the Westwood camp",
+    "gold": 120,
+    "xp": 150,
+    "poster": "Brin, shepherd",
+    "place": "the goblin camp in Westwood, west along the King's Road",
+    "journal": "Brin's notice: goblins from the camp past the burnt farm took three of her ewes last spring and have been watching the fold again. Drive them off before they try.",
+    "steps": [
+      {
+        "text": "Kill goblins at the camp in Westwood, west along the King's Road past Shepherd's Croft.",
+        "goal": {
+          "kill": "goblin_*",
+          "count": 3
+        },
+        "at": [
+          -203,
+          -6
+        ]
+      },
+      {
+        "text": "Return to the Guild and report to Mira.",
+        "goal": {
+          "talk": "mira"
+        },
+        "route": false
+      }
+    ]
+  },
+  {
+    "id": "crowfield_crows",
+    "name": "Crows over Crowfield",
+    "kind": "job",
+    "giver": "board",
+    "repeatable": true,
+    "brief": "kill 4 carrion crows",
+    "gold": 110,
+    "xp": 150,
+    "poster": "Garrick, village guard",
+    "place": "Crowfield, on the road to Moonfell",
+    "journal": "Garrick's notice: the crows on the old battlefield have grown bold enough to go for travellers on the Moonfell road. Thin them out.",
+    "steps": [
+      {
+        "text": "Kill carrion crows on Crowfield, the old battlefield beside the Moonfell road. Strike them when they dive.",
+        "goal": {
+          "kill": "carrion_crow",
+          "count": 4
+        },
+        "at": [
+          -138,
+          166
+        ]
+      },
+      {
+        "text": "Return to the Guild and report to Mira.",
+        "goal": {
+          "talk": "mira"
+        },
+        "route": false
+      }
+    ]
+  },
+  {
+    "id": "watchtower_lookout",
+    "name": "Lookout at the Old Watchtower",
+    "kind": "job",
+    "giver": "board",
+    "repeatable": true,
+    "brief": "kill 2 goblins at the Old Watchtower",
+    "gold": 150,
+    "xp": 200,
+    "poster": "Garrick, village guard",
+    "place": "the Old Watchtower in the Northern Wilds",
+    "journal": "Garrick's notice: goblin archers have taken the old border tower in the north for a lookout and watch every road out of the valley. Pull them down.",
+    "steps": [
+      {
+        "text": "Kill the goblin archers who keep the Old Watchtower, far north in the Northern Wilds.",
+        "goal": {
+          "kill": "goblin_*",
+          "count": 2
+        },
+        "at": [
+          12,
+          -222
+        ]
+      },
+      {
+        "text": "Return to the Guild and report to Mira.",
+        "goal": {
+          "talk": "mira"
+        },
+        "route": false
+      }
+    ]
+  },
+  {
+    "id": "thornback_tracks",
+    "name": "Thornback Tracks",
+    "kind": "job",
+    "giver": "board",
+    "repeatable": true,
+    "brief": "kill 2 thornbacks",
+    "gold": 180,
+    "xp": 240,
+    "poster": "Oswin, woodcutter",
+    "place": "the Emerald Jungle north-west of the village",
+    "journal": "Oswin's notice: thornbacks have come out of the jungle as far as the creek. One charged his cart. Step aside when they charge, he says, and let them meet a tree.",
+    "steps": [
+      {
+        "text": "Kill thornbacks in the Emerald Jungle. Step aside from a charge, ideally in front of a tree.",
+        "goal": {
+          "kill": "thornback",
+          "count": 2
+        },
+        "at": [
+          -104,
+          -128
+        ]
+      },
+      {
+        "text": "Return to the Guild and report to Mira.",
+        "goal": {
+          "talk": "mira"
+        },
+        "route": false
+      }
+    ]
+  },
+  {
+    "id": "barrow_lights",
+    "name": "Lights at the Stone Circle",
+    "kind": "job",
+    "giver": "board",
+    "repeatable": true,
+    "brief": "kill 3 barrow wisps by night",
+    "gold": 220,
+    "xp": 300,
+    "poster": "Old Bram, elder",
+    "place": "the Stone Circle by night",
+    "journal": "Old Bram's notice: lights dance among the standing stones after dark again, as they did when he was a boy. Put them out. Stand by the stones when they shoot; the stones remember what they were raised for.",
+    "steps": [
+      {
+        "text": "Go to the Stone Circle after dark and put out three barrow wisps. Standing by a stone dims them.",
+        "goal": {
+          "kill": "barrow_wisp",
+          "count": 3
+        },
+        "at": [
+          -90,
+          121
+        ]
+      },
+      {
+        "text": "Return to the Guild and report to Mira.",
+        "goal": {
+          "talk": "mira"
+        },
+        "route": false
+      }
+    ]
   }
 ]
