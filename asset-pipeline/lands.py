@@ -752,6 +752,46 @@ def fish_rack(h):
     h.box("board", (-0.9, -0.6, 0.53), (0.6, 0.3, 0.04), "wood")
 
 
+def tower_ruin(h):
+    """An old border watchtower fallen in on itself: a ring of stone courses broken off at different heights,
+    a doorway on one side, a slab of the upper floor still clinging to the wall, rubble spilled round the foot
+    and a beam fallen across it."""
+    rng = random.Random(371)
+    radius, course, count = 3.2, 0.55, 26
+    for k in range(count):
+        a = k / count * math.tau
+        # The top breaks off unevenly: high on one side, low on the other, a few stones jagged.
+        top = 2.2 + 4.8 * (0.5 + 0.5 * math.cos(a - 0.6)) + rng.uniform(-0.6, 0.6)
+        door = abs(math.atan2(math.sin(a - math.pi), math.cos(a - math.pi))) < 0.28
+        layers = int(top / course)
+        for layer in range(layers):
+            if door and layer < 4:
+                continue
+            z = layer * course + course / 2
+            w = radius * math.tau / count * 1.04
+            h.box(f"stone{k}_{layer}", (math.cos(a) * radius, math.sin(a) * radius, z), (0.8, w, course * 0.96),
+                  "stone_old" if (k + layer) % 3 else "rock_dark")
+            for obj in list(h.bpy.context.scene.objects):
+                if obj.name == f"stone{k}_{layer}" or obj.name.startswith(f"stone{k}_{layer}."):
+                    obj.rotation_euler = (0, 0, a)
+    # The lintel over the doorway, and the slab of floor still on the high side.
+    h.box("lintel", (-radius, 0, 4 * course + 0.1), (1.0, 1.9, 0.3), "rock_dark")
+    h.box("floor_slab", (radius * 0.55, radius * 0.35, 4.2), (2.4, 2.2, 0.25), "wood_dark")
+    for i in range(3):
+        h.timber(f"joist{i}", (radius * 0.2, -0.6 + i * 0.7, 4.05), (radius * 0.95, -0.4 + i * 0.7, 4.05), 0.16, "wood_dark")
+    # Rubble round the foot, thickest where the wall fell lowest.
+    for i in range(16):
+        a = rng.uniform(-math.pi + 0.7, math.pi - 0.7)  # never in front of the doorway, which faces -X
+        r = radius + rng.uniform(0.6, 2.8)
+        weight = 0.5 - 0.5 * math.cos(a - 0.6)
+        h.blob(f"rubble{i}", (math.cos(a) * r, math.sin(a) * r, 0.15), 0.2 + weight * rng.uniform(0.2, 0.5),
+               "stone_old" if i % 2 else "rock", 380 + i, 0.6, 1)
+    h.timber("fallen_beam", (radius + 0.5, -2.5, 0.2), (radius + 3.5, 0.5, 0.15), 0.22, "wood_dark")
+    for i in range(5):
+        a = rng.uniform(0, math.tau)
+        h.blob(f"moss{i}", (math.cos(a) * radius * 1.03, math.sin(a) * radius * 1.03, rng.uniform(0.3, 2.0)), 0.3, "moss", 400 + i, 0.4, 1)
+
+
 def sawhorse(h):
     """A sawbuck: two crossed frames of poles holding a log, a long two-man saw resting in a half-made cut."""
     for x in (-0.9, 0.9):
@@ -767,6 +807,7 @@ def sawhorse(h):
 
 BUILDERS = {
     "chopping_block": chopping_block,
+    "tower_ruin": tower_ruin,
     "rowboat": rowboat,
     "fish_rack": fish_rack,
     "sawhorse": sawhorse,
