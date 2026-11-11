@@ -19,7 +19,7 @@ public sealed record EnemyDef(
     Ability[]? Abilities = null, DropEntry[]? Drops = null, string Temper = "hostile", LootEntry[]? Loot = null,
     float AlertRange = 0f, float TagHeight = 0f, GearTable? Gear = null, int Defense = 0, string? Behavior = null,
     bool Leader = false, bool Statue = false, float FrontGuard = 1f, float BackBonus = 1f,
-    float EnrageAt = 0f, float EnrageWindup = 1f, float EnrageRecover = 1f, float EnrageTaken = 1f)
+    float EnrageAt = 0f, float EnrageWindup = 1f, float EnrageRecover = 1f, float EnrageTaken = 1f, bool Decoy = false)
 {
     private static readonly Lazy<IReadOnlyList<EnemyDef>> Loaded = new(Load);
 
@@ -38,10 +38,13 @@ public sealed record EnemyDef(
 /// With a route it is a patrol: the group walks from point to point and back, resting at each.
 /// A camp that hunts goes after deer and boar now and then. Facing, when set, is the way its statues stand guard.
 /// Drum, when set, is the war drum the camp answers: whoever beats it calls every camp that shares it.
+/// A night camp is out only in the dark hours (<see cref="GameTime.IsDark"/>); wards are standing stones whose
+/// light puts its wisps out while a player stands by one.
 /// </summary>
 public readonly record struct EnemySpawn(
     Vector3 Center, float Radius, int Count, int MinLevel = 1, int MaxLevel = 3, int RespawnTicks = 240, bool Rare = false,
-    string[]? Types = null, Vector3[]? Route = null, bool Hunts = false, float? Facing = null, Vector3? Drum = null);
+    string[]? Types = null, Vector3[]? Route = null, bool Hunts = false, float? Facing = null, Vector3? Drum = null,
+    bool Night = false, Vector3[]? Wards = null);
 
 public enum EnemyAction : byte
 {
@@ -82,6 +85,9 @@ public enum EnemyAction : byte
 
     /// <summary>An orc beating its camp's war drum: when it finishes, the whole camp comes running.</summary>
     Drum = 18,
+
+    /// <summary>A wisp put out by a standing stone a player stands by: it cannot cast, drifts to the stone and takes more from blows.</summary>
+    Dim = 19,
 }
 
 /// <summary>The nametag colour rule: how an enemy compares with the player.</summary>
@@ -301,6 +307,10 @@ public sealed partial class Enemy
         if (LeapCooldown > 0) LeapCooldown--;
         if (SpitCooldown > 0) SpitCooldown--;
         ActionTicks--;
+        if (KeepsToTheNight(random))
+        {
+            return;
+        }
 
         // A summoned clone fades away when its time runs out; the server then removes it.
         if (SummonedBy >= 0 && Alive && --LifeTicks <= 0)
@@ -475,6 +485,17 @@ public sealed partial class Enemy
             GoingToDrum = false;
             Action = EnemyAction.Idle;
             ActionTicks = 6;
+        }
+
+        // A wisp a standing stone has put out is easy prey; a lantern's false light bursts at any touch.
+        if (Action == EnemyAction.Dim)
+        {
+            damage = (short)MathF.Round(damage * DimTaken);
+        }
+
+        if (Def.Decoy)
+        {
+            damage = Health;
         }
 
         // A berserker in its frenzy has given up guarding itself.

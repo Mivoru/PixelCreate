@@ -50,6 +50,9 @@ public readonly record struct GameTime(int Day, int Minute) : IComparable<GameTi
     /// <summary>Minutes since the first midnight, for comparing and adding.</summary>
     public long Total => (long)(Day - 1) * MinutesPerDay + Minute;
 
+    /// <summary>The dark hours, from eight in the evening to six in the morning, when night creatures are out.</summary>
+    public bool IsDark => Minute >= SleepFromMinute || Minute < DayStartMinute;
+
     public bool CanSleep => Minute >= SleepFromMinute || Minute < DayStartMinute;
 
     public GameTime AddMinutes(int minutes)

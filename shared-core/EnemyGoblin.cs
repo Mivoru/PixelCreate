@@ -9,7 +9,8 @@ namespace PixelCreate.Core;
 /// from above the head), tornado (a long spin that drifts after the player), fangSlash (three slanted red
 /// crescents side by side), superJump (a charged leap from far off that rolls on a miss) and runeWave (three
 /// straight lanes of rune light along the ground, with gaps to stand in) and warDance (a shaman's dance that
-/// hastens the goblins of its camp nearby) and axeThrow (a hand axe thrown end over end).</summary>
+/// hastens the goblins of its camp nearby) and axeThrow (a hand axe thrown end over end), wispBolt (a slow light
+/// that turns after the player) and wispSplit (a lantern becomes three, two of them false).</summary>
 public sealed record Ability(
     string Effect, float Range, int WindupTicks, int RecoverTicks, int CooldownTicks, short Damage,
     float Radius = 0f, float MinRange = 0f, string Telegraph = "none");
@@ -43,6 +44,12 @@ public sealed partial class Enemy
 
         StepTurn(events, Action == EnemyAction.Strike && _lastGoblinAction != EnemyAction.Strike);
         _lastGoblinAction = Action;
+        if (StepWard(world, targets))
+        {
+            Fall(world, random, events);
+            return;
+        }
+
         if (Action != EnemyAction.Stagger && DodgeIfAttacked(random, targets))
         {
             Fall(world, random, events);
@@ -269,6 +276,12 @@ public sealed partial class Enemy
 
             // A shaman dances only with goblins of its camp near enough to be stirred by it.
             if (ability.Effect == "warDance" && !AlliesNear(DanceRadius))
+            {
+                continue;
+            }
+
+            // A lantern splits only when no false light of its own still burns.
+            if (ability.Effect == "wispSplit" && HasDecoys())
             {
                 continue;
             }

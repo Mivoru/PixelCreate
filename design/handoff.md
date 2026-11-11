@@ -1,4 +1,4 @@
-# Předávka pro další session (stav 2026-11-11 večer)
+# Předávka pro další session (stav 2026-11-11 pozdě večer)
 
 ## Směr hry se změnil (rozhodnutí autora 2026-11-10)
 
@@ -39,6 +39,11 @@ Večer přibyly schválené úpravy goblinů a orků: šamanův tanec, rozzuřen
 a válečný buben v Ironjaw (`design/monster-audit.md`). Další na řadě: Barrow Wisp a Carrion Crow, dva noví vzácní
 goblini (Warchief, Trapper), pak vegetace a domy zblízka.
 
+## Hotovo 2026-11-11 pozdě večer: Barrow Wisp (krok 1 plánu)
+
+Bludičky u Stone Circle jen v noci, naváděná pomalá střela, zhasnutí u menhiru, vzácná Lantern of the Barrow se
+rozdělí na tři (pravou prozradí stín). Podrobnosti a co nebylo ověřeno: `design/monster-audit.md`, poslední oddíl.
+
 ## Co dělat jako první
 
 Zeptat se autora, co si zahrál. Pokud nic jiného neurčí, pokračovat schváleným plánem níže (autor schválil
@@ -51,9 +56,7 @@ Návrhy jsou v `design/meadow-valley-rework.md` (tabulka monster: kde, úroveň,
 `world/enemies.json` a zóně, efekt v `GameServer.Fire`, test v `net-tests/<Monstrum>Tests.cs`, model
 v `asset-pipeline/`, studio záběr (`PIXEL_MONSTERS=...`), dokumentace, commit a push.
 
-1. **Barrow Wisp** (Stone Circle, v noci, úroveň 6 až 8): drží odstup a krouží, pomalá zatáčející střela,
-   zhasne, když hráč stojí u menhiru. Vzácná **Lantern of the Barrow**: rozdělí se na tři, pravou prozradí
-   stín. Potřebuje nový pohyb (vznáší se) a podmínku „v noci“ pro tábor (zatím žádný tábor ji nemá).
+1. ~~**Barrow Wisp**~~ hotovo 2026-11-11.
 2. **Carrion Crow** (Moonfell, bojiště, úroveň 3 až 5): hejno tří až pěti, nálet z výšky, po zásahu jedné se
    hejno rozprchne a vrátí. Vzácný **Gallows Rook**: pět vran nalétá postupně v řadě.
 3. **Goblin Warchief** (Goblin Warren): roh svolá hlídku z nejbližší chodby (lze vyjít z `SoundAlarm`

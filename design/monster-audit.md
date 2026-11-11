@@ -146,3 +146,23 @@ Slabé: tábor je jen místo, kde stojí; nic nedělají společně.
 
 Neověřeno očima: zelené plameny a rudé jiskry ve hře (efekty jsou jen v klientu, ne ve studiu), letící sekera a
 bubeník u bubnu (živý záběr ukázal útok orků, ale buben byl mimo záběr). Zvuky jsou ze stávající sady.
+
+### Postaveno 2026-11-11 večer: Barrow Wisp a Lantern of the Barrow
+
+- **Barrow Wisp** (Stone Circle, úroveň 6 až 8, čtyři): jen v noci (20 až 6 h, `GameTime.IsDark`, tábor
+  `"night": true`); za svítání zhasne tam, kde je (bez kořisti a zkušeností) a vrátí se se soumrakem. Drží odstup
+  8 m a krouží (role `ranged`), střílí `wispBolt`: pomalé světlo (6,5 m/s), které se za hráčem stáčí 1,3 rad/s,
+  dá se mu uhnout úskokem a blok ho zastaví celé (lehká rána). Server je drží u země; klient je kreslí ve výšce
+  hrudi (`WispView`) a hitbox podle `size` 1 sahá dost vysoko.
+- **Menhiry** (`"wards"` u tábora, pět kamenů kruhu): když hráč stojí do 2,6 m od kamene, bludičky do 16 m od něj
+  zhasnou (`EnemyAction.Dim`): nestřílí, sklesnou, přiletí ke kameni na dosah čepele a berou 1,5násobek. Střela,
+  která doletí ke kameni, zhasne. Po odchodu od kamene se rozsvítí za půl sekundy.
+- **Lantern of the Barrow** (vzácná, úroveň 9, ve stejném kruhu, 5 min respawn): `wispSplit` ji rozdělí na tři
+  světla na kruhu 4,5 m; ona je v jednom z nich náhodně. Dvě falešná (`lantern_decoy`, `Decoy`) mají stejné jméno,
+  úroveň i zdraví, zhasnou po jediné ráně, nic nedají a za 12 s zmizí samy. Pravou prozradí jen stín na zemi.
+  Rozdělí se znovu, až falešná zhasnou. Kořist: `wisp_ember`, `barrow_glass`.
+- Testy `net-tests/WispTests.cs`. Studio `PIXEL_MONSTERS=barrow,lantern`. Živě ověřeno ve 22 h u kruhu: střely
+  zasahují, Lantern se rozdělila na tři, u menhiru bludičky zhasly a hráč zůstal na plném zdraví.
+
+Neověřeno: bludičky zhasínající za svítání ve hře, souboj s Lantern až do konce (rozbití falešných světel),
+jak se kruh hraje se čtyřmi bludičkami a Lantern naráz (síla nenastavena). Zvuky ze stávající sady.

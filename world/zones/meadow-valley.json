@@ -273,6 +273,8 @@
     { "x": 84, "z": -115, "radius": 7, "count": 6, "respawnTicks": 1800, "hunts": true, "types": ["goblin_brute", "goblin_skirmisher", "goblin_sharpshooter"] },
     { "x": 101, "z": -95, "radius": 3, "count": 1, "respawnTicks": 10800, "rare": true, "types": ["goblin_shaman"] },
     { "x": -96, "z": 46, "radius": 20, "count": 7, "minLevel": 2, "maxLevel": 4, "respawnTicks": 1200 },
+    { "x": -90, "z": 121, "radius": 9, "count": 4, "respawnTicks": 2400, "types": ["barrow_wisp"], "night": true, "wards": [[-90, 116], [-84, 120], [-86, 126], [-94, 126], [-96, 120]] },
+    { "x": -90, "z": 121, "radius": 1.5, "count": 1, "respawnTicks": 18000, "rare": true, "types": ["lantern_of_the_barrow"], "night": true, "wards": [[-90, 116], [-84, 120], [-86, 126], [-94, 126], [-96, 120]] },
     { "x": 104, "z": 57, "radius": 12, "count": 5, "respawnTicks": 1500, "hunts": true, "types": ["goblin_rapid_archer", "goblin_skirmisher"] },
     { "x": 84, "z": 77, "radius": 0.3, "count": 1, "respawnTicks": 5400, "types": ["auren_sentinel"], "yaw": 1.5708 },
     { "x": 80, "z": 62, "radius": 0.3, "count": 1, "respawnTicks": 5400, "types": ["auren_sentinel"], "yaw": 1.5708 },

@@ -401,6 +401,14 @@ Rules:
   Archive Warden (back wall of the archive) adds `runeWave`: three straight lanes (`RuneWave`, `HazardKind.RuneWave`,
   telegraph `lanes`, client `RuneWaveNode`) with gaps to stand in; enemy hazards with a `HalfWidth` hit as strips.
   `net-tests/SentinelTests.cs`. `PIXEL_MONSTERS=auren,archive` photographs only those monsters in the studio.
+  Barrow wisps (kind `wisp`, `WispView`, `EnemyWisp.cs`) haunt the Stone Circle at night only: a camp with
+  `"night": true` fades at dawn (`GameTime.IsDark`, no loot) and rises at dusk. They keep their distance and loose
+  `wispBolt` (`ProjectileKind.WispBolt`, `Projectile.Homing` turns it after its player). A camp's `wards` are its
+  standing stones: a player within `Enemy.WardReach` of one puts the wisps out (`EnemyAction.Dim`: no casting, they
+  drift to the stone, take `Enemy.DimTaken`), and bolts fizzle there. The server keeps wisps on the ground; the client
+  draws them at chest height. The rare Lantern of the Barrow's `wispSplit` makes it three lights, two false
+  (`lantern_decoy`, `EnemyDef.Decoy`: same name and health, gone at one touch); only the true one casts a shadow.
+  `net-tests/WispTests.cs`.
   Rage and dance (`net-tests/RageAndDanceTests.cs`): `enrageAt` (share of health) sets `Enemy.Enraged` once, then
   `enrageWindup`/`enrageRecover` scale its wind-ups and recoveries (never under `Enemy.MinWindupTicks`) and
   `enrageTaken` the damage it takes: the goblin brute winds up faster below a third, the orc berserker recovers twice

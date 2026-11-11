@@ -104,7 +104,8 @@ public sealed class Zone
 
     private sealed record EnemySpawnData(
         float X, float Z, float Radius, int Count, int MinLevel = 1, int MaxLevel = 3, int RespawnTicks = 900,
-        bool Rare = false, string[]? Types = null, float[][]? Route = null, bool Hunts = false, float? Yaw = null, float[]? Drum = null);
+        bool Rare = false, string[]? Types = null, float[][]? Route = null, bool Hunts = false, float? Yaw = null, float[]? Drum = null,
+        bool Night = false, float[][]? Wards = null);
 
     private sealed record RegionData(string Name, float X, float Z, float Radius);
 
@@ -249,7 +250,8 @@ public sealed class Zone
         var enemySpawns = (data.Enemies ?? Array.Empty<EnemySpawnData>())
             .Select(e => new EnemySpawn(new Vector3(e.X, terrain.At(e.X, e.Z), e.Z), e.Radius, e.Count, e.MinLevel, e.MaxLevel, e.RespawnTicks, e.Rare, e.Types,
                 e.Route?.Select(p => new Vector3(p[0], terrain.At(p[0], p[1]), p[1])).ToArray(), e.Hunts, e.Yaw,
-                e.Drum is { } drum ? new Vector3(drum[0], terrain.At(drum[0], drum[1]), drum[1]) : null)).ToArray();
+                e.Drum is { } drum ? new Vector3(drum[0], terrain.At(drum[0], drum[1]), drum[1]) : null, e.Night,
+                e.Wards?.Select(p => new Vector3(p[0], terrain.At(p[0], p[1]), p[1])).ToArray())).ToArray();
         _regions = data.Regions ?? Array.Empty<RegionData>();
         var boxes = BuildBoxes(props, data.Size);
         boxes.AddRange((data.Walls ?? Array.Empty<RectData>()).Select(w => new Aabb(new(w.X0, w.Bottom, w.Z0), new(w.X1, w.Height, w.Z1))));

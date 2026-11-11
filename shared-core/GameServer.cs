@@ -103,6 +103,9 @@ public enum ProjectileKind : byte
 
     /// <summary>An orc huntress's hand axe, thrown end over end in a shallow arc.</summary>
     ThrownAxe = 14,
+
+    /// <summary>A barrow wisp's bolt: a slow pale light that turns after its player and fizzles at a standing stone.</summary>
+    WispBolt = 15,
 }
 
 /// <summary>What a ground hazard is: the shaman's burning V or a player's strip of fire, an orc's crack in the earth,
@@ -401,6 +404,9 @@ public sealed partial class GameServer : IEnemyEvents
         /// <summary>For a conjured spear: ticks it still hangs in the air, and the player it then shoots at.</summary>
         public int Delay;
         public int TargetId = -1;
+
+        /// <summary>For a wisp's bolt: how fast it turns after <see cref="TargetId"/>, in radians a second; 0 flies straight.</summary>
+        public float Homing;
     }
 
     /// <summary>A crystal or item on the ground. Only the player who earned it sees it and can pick it up.</summary>
@@ -451,6 +457,9 @@ public sealed partial class GameServer : IEnemyEvents
 
     /// <summary>Clones called up during this tick's enemy steps; they join the enemies after the loop.</summary>
     private readonly List<Enemy> _summons = new();
+
+    /// <summary>Every standing stone that puts wisps out, from all the camps.</summary>
+    private Vector3[] _wards = Array.Empty<Vector3>();
 
     /// <summary>How long a shadow clone lasts, and how far to each side of its wolf it appears.</summary>
     private const int CloneLifeTicks = 60 * 14;
@@ -569,6 +578,7 @@ public sealed partial class GameServer : IEnemyEvents
 
         var spawns = world.EnemySpawns.Count > 0 ? world.EnemySpawns
             : new[] { new EnemySpawn(world.Spawn, 15f, options.EnemyCount) };
+        _wards = spawns.SelectMany(s => s.Wards ?? Array.Empty<Vector3>()).Distinct().ToArray();
         foreach (var spawn in spawns)
         {
             var herd = new List<Enemy>();
@@ -733,9 +743,11 @@ public sealed partial class GameServer : IEnemyEvents
             // sends comes for the player. The wild leaves them be unless they strike it first.
             var firstNight = _story.Has("prologue.started") && !_story.Has("prologue.done");
             var unseen = firstNight ? CreatureTargets().ToArray() : targets;
+            var night = _calendar.Now.IsDark;
             foreach (var enemy in _enemies)
             {
                 enemy.Crowd = _enemies;
+                enemy.Night = night;
                 var wild = firstNight && !_enemyTags.ContainsKey(enemy.Id) && enemy.Health >= enemy.MaxHealth;
                 enemy.Step(_world, _random, wild ? unseen : targets, this);
             }
@@ -3290,7 +3302,7 @@ public sealed partial class GameServer : IEnemyEvents
 
         for (var i = shotsBefore; i < _projectiles.Count; i++)
         {
-            _projectiles[i].Heavy = ability.Effect is not ("arrow" or "volley");
+            _projectiles[i].Heavy = ability.Effect is not ("arrow" or "volley" or "wispBolt");
         }
     }
 
@@ -3356,6 +3368,16 @@ public sealed partial class GameServer : IEnemyEvents
                 break;
             case "shadowClone":
                 Summon(enemy, target);
+                break;
+            case "wispBolt":
+                var wisp = Shoot(ProjectileKind.WispBolt, chest, direction * WispBoltSpeed, ability.Damage);
+                wisp.TargetId = target?.Id ?? enemy.TargetId;
+                wisp.Homing = WispBoltTurn;
+                wisp.Life = WispBoltLife;
+                wisp.Radius = WispBoltRadius;
+                break;
+            case "wispSplit":
+                SplitLantern(enemy, target);
                 break;
             case "airSlash":
                 // The crescent leaves the blade at chest height and dies after a few metres.
@@ -3433,6 +3455,66 @@ public sealed partial class GameServer : IEnemyEvents
                     Grow = EarthCrack.GrowTicks, Burn = EarthCrack.LingerTicks,
                 });
                 break;
+        }
+    }
+
+    private const float WispBoltSpeed = 6.5f;
+    private const float WispBoltTurn = 1.3f;
+    private const int WispBoltLife = Tuning.TickRate * 4;
+    private const float WispBoltRadius = 0.7f;
+
+    /// <summary>How far apart the three lights of a split lantern fly, in metres.</summary>
+    public const float LanternSpread = 4.5f;
+
+    /// <summary>How long a lantern's false lights burn before they go out by themselves.</summary>
+    private const int DecoyLifeTicks = Tuning.TickRate * 12;
+
+    /// <summary>
+    /// The Lantern of the Barrow becomes three lights on a ring round where it hung: two false ones
+    /// (<see cref="EnemyDef.Decoy"/>, gone at a touch) and itself in one of the three places at random.
+    /// Only the true one casts a shadow on the ground.
+    /// </summary>
+    private void SplitLantern(Enemy lantern, Target? target)
+    {
+        var type = (byte)EnemyDef.All.ToList().FindIndex(d => d.Id == "lantern_decoy");
+        var middle = lantern.Position;
+        var start = (float)(_random.NextDouble() * MathF.Tau);
+        var spots = new List<Vector3>();
+        for (var i = 0; i < 3; i++)
+        {
+            var angle = start + i * MathF.Tau / 3f;
+            var spot = middle + new Vector3(MathF.Cos(angle), 0, MathF.Sin(angle)) * LanternSpread;
+            spot.Y = _world.GroundHeight(spot.X, spot.Z);
+            spots.Add(_world.IsBlocked(spot + Vector3.UnitY * 0.6f) ? middle : spot);
+        }
+
+        var mine = _random.Next(3);
+        lantern.Position = spots[mine];
+        lantern.Velocity = Vector3.Zero;
+        for (var i = 0; i < 3; i++)
+        {
+            if (i == mine)
+            {
+                continue;
+            }
+
+            var decoy = new Enemy
+            {
+                Id = _nextEnemyId++,
+                Type = type,
+                Home = lantern.Home with { Types = new[] { "lantern_decoy" }, RespawnTicks = int.MaxValue },
+                SummonedBy = lantern.Id,
+                LifeTicks = DecoyLifeTicks,
+            };
+            decoy.Reset(_random, _world);
+            decoy.Position = spots[i];
+            decoy.Level = lantern.Level;
+            // The same health as the lantern, so the bars over them tell nothing.
+            decoy.Health = lantern.Health;
+            decoy.Facing = lantern.Facing;
+            decoy.TargetId = target?.Id ?? lantern.TargetId;
+            decoy.ActionTicks = 20;
+            _summons.Add(decoy);
         }
     }
 
@@ -3954,9 +4036,20 @@ public sealed partial class GameServer : IEnemyEvents
                 continue;
             }
 
+            if (shot.Homing > 0f)
+            {
+                Home(shot);
+            }
+
             shot.Velocity.Y -= shot.Gravity * Tuning.TickSeconds;
             shot.Position += shot.Velocity * Tuning.TickSeconds;
             shot.Life--;
+            if (shot.Kind == ProjectileKind.WispBolt && _wards.Any(w => Vector3.Distance(w + Vector3.UnitY * 1.2f, shot.Position) < Enemy.WardReach))
+            {
+                // The light of a standing stone puts a wisp's bolt out.
+                shot.Life = 0;
+                continue;
+            }
             var struck = !shot.Pierces && _world.IsBlocked(shot.Position);
             if (shot.Shooter >= 0 && shot.Skill >= 0 && shot.Kind != ProjectileKind.PlayerFireball)
             {
@@ -4034,6 +4127,36 @@ public sealed partial class GameServer : IEnemyEvents
         }
 
         _projectiles.RemoveAll(s => s.Life <= 0);
+    }
+
+    /// <summary>Turns a homing shot a little towards its player's chest, never more than its turn rate allows.</summary>
+    private void Home(Projectile shot)
+    {
+        if (!_players.TryGetValue(shot.TargetId, out var quarry))
+        {
+            return;
+        }
+
+        var speed = shot.Velocity.Length();
+        var wanted = quarry.State.Position + Vector3.UnitY - shot.Position;
+        if (speed < 0.01f || wanted == Vector3.Zero)
+        {
+            return;
+        }
+
+        var now = shot.Velocity / speed;
+        wanted = Vector3.Normalize(wanted);
+        var angle = MathF.Acos(Math.Clamp(Vector3.Dot(now, wanted), -1f, 1f));
+        var step = shot.Homing * Tuning.TickSeconds;
+        if (angle <= step)
+        {
+            shot.Velocity = wanted * speed;
+            return;
+        }
+
+        var axis = Vector3.Cross(now, wanted);
+        axis = axis.LengthSquared() < 1e-6f ? Vector3.UnitY : Vector3.Normalize(axis);
+        shot.Velocity = Vector3.Normalize(Vector3.Transform(now, Quaternion.CreateFromAxisAngle(axis, step))) * speed;
     }
 
     private bool TouchesEnemy(Projectile shot) => _enemies.Any(e => e.Alive &&

@@ -2519,6 +2519,7 @@ public partial class GameClient : Node
                 {
                     "slime" => new SlimeView(),
                     "animal" or "wolf" => new AnimalView(def, enemy.Id),
+                    "wisp" => new WispView(def),
                     _ => new GoblinView(def),
                 };
                 _enemies.Add(enemy.Id, slime);
@@ -2582,7 +2583,7 @@ public partial class GameClient : Node
                 var heavy = _client.State.Attack == AttackKind.Heavy;
                 _sfx.Play(heavy ? "hit_heavy" : "hit", position + Vector3.Up, -3f);
                 _hud.AddFloating(slime.DamageTaken.ToString(), position + Vector3.Up * 1.6f, heavy ? new Color("feae34") : Colors.White);
-                var blood = def.Kind is "goblin" or "animal" or "wolf" or "orc" or "werewolf" ? "a22633" : def.Kind == "sentinel" ? "c8c8d0" : def.Rare ? "f6757a" : "63c74d";
+                var blood = def.Kind is "goblin" or "animal" or "wolf" or "orc" or "werewolf" ? "a22633" : def.Kind == "sentinel" ? "c8c8d0" : def.Kind == "wisp" ? "2ce8f5" : def.Rare ? "f6757a" : "63c74d";
                 _fx.Burst(position + Vector3.Up * 0.6f, new Color(blood), heavy ? 22 : 12, 6f, 0.5f, 0.09f);
                 // A blow on a guardian's armoured front rings off it in sparks; one on its back cracks the stone.
                 if (def.FrontGuard < 1f)
@@ -2833,7 +2834,7 @@ public partial class GameClient : Node
                     _sfx.Play("spear_summon", ball.Position, -8f);
                 }
                 else if (spit.Kind is not (ProjectileKind.PlayerArrow or ProjectileKind.AirSlash or ProjectileKind.AirSlashWide or ProjectileKind.ThrownSpear
-                    or ProjectileKind.FangSlash or ProjectileKind.Knife or ProjectileKind.ThrownAxe))
+                    or ProjectileKind.FangSlash or ProjectileKind.Knife or ProjectileKind.ThrownAxe or ProjectileKind.WispBolt))
                 {
                     _sfx.Play(spit.Kind switch
                     {
@@ -2915,6 +2916,10 @@ public partial class GameClient : Node
             case ProjectileKind.FangSlash:
                 _fx.Burst(last, new Color("e43b44"), 12, 4f, 0.3f, 0.07f, 0f, 120f);
                 break;
+            case ProjectileKind.WispBolt:
+                _fx.Burst(last, new Color("2ce8f5"), 14, 3f, 0.5f, 0.06f, 1f, 120f);
+                _fx.Burst(last, new Color("ffffff"), 6, 2f, 0.3f, 0.05f, 0f, 120f);
+                break;
             case ProjectileKind.Meteor:
                 _sfx.Play("explosion", last);
                 _sfx.Play("earth_crack", last, -4f);
@@ -2948,6 +2953,24 @@ public partial class GameClient : Node
 
     private MeshInstance3D BuildProjectile(ProjectileKind kind, Vector3 position)
     {
+        if (kind == ProjectileKind.WispBolt)
+        {
+            // A barrow wisp's bolt: a small cold light trailing pale motes, slow enough to watch it turn.
+            var light = new MeshInstance3D
+            {
+                Mesh = new SphereMesh { Radius = 0.16f, Height = 0.32f, RadialSegments = 8, Rings = 5 },
+                MaterialOverride = new StandardMaterial3D
+                {
+                    AlbedoColor = Colors.White, EmissionEnabled = true, Emission = new Color("2ce8f5"), EmissionEnergyMultiplier = 2.5f,
+                    ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
+                },
+                Position = position,
+            };
+            light.AddChild(Trail(new Color("2ce8f5"), 16, 0.5f, 0.07f));
+            light.AddChild(new OmniLight3D { LightColor = new Color("2ce8f5"), OmniRange = 3.5f, LightEnergy = 1.2f });
+            return light;
+        }
+
         if (kind == ProjectileKind.Spit)
         {
             return BuildSpit(position);
