@@ -11,7 +11,7 @@ COLORS = {
     "pelt_grey": "7E8494", "pelt_pale": "D6D2C8", "branch": "5A3E30", "bone_old": "D8CCB0",
     "char": "2A2224", "stone_old": "7A7884", "thatch_rot": "6A5A3E", "shutter_old": "3A4A50", "dirt_dark": "4A3E34", "bronze": "8A6A3A",
     "ash": "57514F", "wax": "EEE2C4", "flesh_dry": "7A3A2E", "antler": "C8B898",
-    "rust": "7A4A32", "rust_light": "9A6A48", "steel_old": "9AA0A8", "banner_faded": "4A5A7A", "banner_trim": "B8A060",
+    "fish": "9AA8B4", "fish_dark": "5A6878", "rust": "7A4A32", "rust_light": "9A6A48", "steel_old": "9AA0A8", "banner_faded": "4A5A7A", "banner_trim": "B8A060",
 }
 
 
@@ -716,6 +716,42 @@ def chopping_block(h):
             h.timber(f"billet_len{row}{col}", (0.85, -0.35 + col * 0.24 + row * 0.12, 0.1 + row * 0.2), (1.35, -0.35 + col * 0.24 + row * 0.12, 0.1 + row * 0.2), 0.19, "wood")
 
 
+def rowboat(h):
+    """A small clinker rowboat pulled up on the shore: a pointed bow, tarred planks in overlapping strakes,
+    two thwarts, oars shipped along the gunwales and a coil of rope in the stern."""
+    # The hull as stacked strakes, each a little wider than the one below, narrowing to the bow (+X).
+    for k in range(4):
+        z = 0.12 + k * 0.14
+        half_w = 0.45 + k * 0.12
+        for side in (-1, 1):
+            h.timber(f"strake{k}{side}", (-1.5, side * half_w, z), (1.0, side * half_w * 0.9, z), 0.14, "wood_dark" if k % 2 else "wood")
+            h.timber(f"bow{k}{side}", (1.0, side * half_w * 0.9, z), (1.7 + k * 0.08, 0, z + 0.04), 0.14, "wood_dark" if k % 2 else "wood")
+        h.timber(f"transom{k}", (-1.5, -half_w, z), (-1.5, half_w, z), 0.14, "wood_dark")
+    h.box("floor", (-0.2, 0, 0.08), (2.6, 0.9, 0.06), "wood_dark")
+    for x in (-0.6, 0.4):
+        h.box(f"thwart{x}", (x, 0, 0.45), (0.25, 1.15, 0.05), "wood")
+    for side in (-1, 1):
+        h.timber(f"oar{side}", (-1.2, side * 0.62, 0.62), (1.2, side * 0.55, 0.6), 0.04, "wood")
+        h.box(f"blade{side}", (1.3, side * 0.55, 0.6), (0.4, 0.14, 0.02), "wood")
+    h.loft("rope", [(0.14, 0.18, 0.18, -1.15, 0), (0.22, 0.18, 0.18, -1.15, 0)], "sack", 10)
+
+
+def fish_rack(h):
+    """A drying rack for the catch: two forked posts and a pole hung with gutted fish on strings, a basket
+    underneath and a gutting board on a stump."""
+    for x in (-1.2, 1.2):
+        h.timber(f"post{x}", (x, 0, 0), (x, 0, 1.75), 0.09, "branch")
+        h.timber(f"fork{x}", (x, 0, 1.6), (x + 0.12, 0, 1.85), 0.05, "branch")
+    h.timber("pole", (-1.35, 0, 1.75), (1.35, 0, 1.75), 0.06, "branch")
+    for i in range(8):
+        x = -1.0 + i * 0.28
+        h.timber(f"string{i}", (x, 0, 1.73), (x, 0, 1.5), 0.012, "sack")
+        h.blob(f"fish{i}", (x, 0, 1.32), 0.07, "fish" if i % 3 else "fish_dark", 350 + i, 3.2, 1)
+    h.loft("basket", [(0, 0.3, 0.3, 0.3, 0.3), (0.35, 0.36, 0.36, 0.3, 0.3)], "thatch", 10)
+    h.loft("stump", [(0, 0.28, 0.28, -0.9, -0.6), (0.5, 0.26, 0.26, -0.9, -0.6)], "bark", 9)
+    h.box("board", (-0.9, -0.6, 0.53), (0.6, 0.3, 0.04), "wood")
+
+
 def sawhorse(h):
     """A sawbuck: two crossed frames of poles holding a log, a long two-man saw resting in a half-made cut."""
     for x in (-0.9, 0.9):
@@ -731,6 +767,8 @@ def sawhorse(h):
 
 BUILDERS = {
     "chopping_block": chopping_block,
+    "rowboat": rowboat,
+    "fish_rack": fish_rack,
     "sawhorse": sawhorse,
     "battle_debris": battle_debris,
     "fallen_banner": fallen_banner,

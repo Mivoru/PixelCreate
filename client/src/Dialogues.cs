@@ -692,6 +692,30 @@ public static class NpcLooks
         },
     };
 
+    /// <summary>Tobb: a weathered old fisherman in an oilskin-coloured coat, white whiskers, a rod always out over the water.</summary>
+    private static readonly RigLook Fisher = new("fisher", new Color("c89070"), 0.94f, "staff")
+    {
+        Hair = "shaved",
+        Cloak = false,
+        Mood = "tired",
+        Item = "fishing_rod",
+        WorkEvery = 7f,
+        Stoop = 0.05f,
+        Extras = new[] { "beard_short", "apron" },
+        Eyes = new Color("4a6a8a"),
+        Brows = new Color("d8d8d8"),
+        FaceStyle = new FaceStyle(2, 0, 2, "none", true, new Color("d8d8d8")),
+        Palette = new Dictionary<string, Color>
+        {
+            ["anime_hair"] = new("d8d8d8"),
+            ["anime_shirt"] = new("5a6a5a"),
+            ["anime_trousers"] = new("3a4a5a"),
+            ["anime_dark"] = new("2a2a2a"),
+            ["anime_apron"] = new("8a7a4a"),
+            ["anime_glove"] = new("c89070"),
+        },
+    };
+
     /// <summary>Every person with a name, for the photo studio.</summary>
     public static readonly (string Name, RigLook Look)[] All =
     {
@@ -700,7 +724,7 @@ public static class NpcLooks
         ("nell", Captive), ("haruto", Lost), ("vosk", FinderCaptain), ("gil", FinderGil), ("hanne", FinderHanne), ("corb", FinderCorb),
         ("corwin", BranchMaster), ("tam", Apprentice), ("edwin", PartySword), ("moss", PartyBow), ("fen", PartyHealer),
         ("rook", PartyShield), ("osric", Miller), ("anwen", MillerDaughter), ("hamm", FarmElder), ("maddy", FarmGirl),
-        ("tobias", Farmhand), ("oswin", Woodcutter), ("jory", WoodcutterB),
+        ("tobias", Farmhand), ("oswin", Woodcutter), ("jory", WoodcutterB), ("tobb", Fisher),
     };
 
     public static RigLook? For(string role) => role switch
@@ -736,6 +760,7 @@ public static class NpcLooks
         "farmhand" => Farmhand,
         "woodcutter" => Woodcutter,
         "woodcutter_b" => WoodcutterB,
+        "fisher" => Fisher,
         _ => null,
     };
 }
@@ -766,6 +791,7 @@ public static class Dialogues
         "farm_elder" => "Farmer",
         "farm_girl" or "farmhand" => "Farmhand",
         "woodcutter" or "woodcutter_b" => "Woodcutter",
+        "fisher" => "Fisherman",
         "captive" => "Bonded Girl",
         "lost" => "Lightborn",
         "finder_captain" => "Finder Captain",

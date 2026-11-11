@@ -254,6 +254,8 @@ Rules:
   (a track from the East Watch road) has Oswin and his nephew Jory chopping at their blocks and the sawbuck, eating
   at the fire at noon and in the evening and sleeping in their cabin; the yard in the middle is kept open so their
   walks go round the props (`by` through it).
+  Fisher's Landing on Mirror Lake's east shore (a second pier, a rowboat, a fish rack, the hut over the road) has old
+  Tobb casting from the pier end with his rod (`work` every 7 s), resting on the bench at noon and gutting at the rack.
   The tavern yard (three tables east of the tavern door, footpath from the south road) fills from six: Corwin keeps
   his bench all day, the Brightwater Four (Edwin, Moss, Fen, Rook) have the south table. Mornings the Four meet by
   the Guild door, Osric and Anwen are at the mill, Hamm, Maddy and Tobias on Harrow Farm, Tam by Hollis's counter.

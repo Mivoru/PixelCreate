@@ -308,6 +308,15 @@ def wood_axe(k):
     k.box((-0.06, head_y, 0), (0.05, 0.09, 0.055), "wpn_steel_deep")
 
 
+def fishing_rod(k):
+    """A fisherman's rod: a long whippy hazel pole, thicker at the butt, with a cork grip and a line running
+    from the tip down to a float."""
+    k.tube([(0, -0.3, 0), (0, 2.2, 0)], [0.022, 0.006], [0.022, 0.006], "wpn_wood_light", sides=6)
+    k.wrap(-0.28, 0.0, 0.026, "wpn_wood_pale", "wpn_wood", 4)
+    k.tube([(0, 2.2, 0), (0.05, 1.2, 0.02)], [0.003, 0.003], [0.003, 0.003], "wpn_edge", sides=4, caps=False)
+    k.round((0.05, 1.18, 0.02), (0.025, 0.04, 0.025), "wpn_red")
+
+
 def sentinel_blade(k):
     """An Auren sentinel's greatsword: a broad, straight blade of grey marble longer than a man's arm,
     a rune channel glowing down its middle, a bronze guard like spread wings and a long bronze-bound grip."""
@@ -328,6 +337,7 @@ BUILDERS = {
     "orc_spear": orc_spear,
     "orc_battle_axe": orc_battle_axe,
     "wood_axe": wood_axe,
+    "fishing_rod": fishing_rod,
     "twin_daggers": twin_daggers,
     "rusty_dagger": rusty_dagger,
     "wooden_sword": wooden_sword,

@@ -1392,5 +1392,46 @@
       }
     ],
     "moods": []
+  },
+  "tobb": {
+    "barks": [
+      {
+        "when": {
+          "time": {
+            "from": 360,
+            "to": 720
+          }
+        },
+        "text": "Shh. You'll scare off the perch."
+      },
+      {
+        "when": {
+          "time": {
+            "from": 360,
+            "to": 1020
+          }
+        },
+        "text": "Forty years on this lake and it still won't tell me where the big one sleeps."
+      },
+      {
+        "when": {
+          "time": {
+            "from": 780,
+            "to": 1020
+          }
+        },
+        "text": "Something big rolled out by the reeds this morning. Not a fish, I'd wager."
+      },
+      {
+        "when": {
+          "time": {
+            "from": 1020,
+            "to": 1200
+          }
+        },
+        "text": "Gut, salt, hang. Gut, salt, hang. The fish don't thank you."
+      }
+    ],
+    "moods": []
   }
 }
