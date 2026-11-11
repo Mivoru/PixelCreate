@@ -30,6 +30,14 @@ v mezerách `spike_wall`, kůly s lebkami, hranice dřeva). Trámy palisády jso
 Ověřeno: 335 testů, studio záběry všech tří táborů z otevřených stran, jeden živý záběr u goblin campu.
 Neověřeno hraním: jak goblini a orkové průlomy používají v boji (vybíhají ven, hráč je láká po jednom).
 
+## Hotovo 2026-11-11 odpoledne: hory, opuštěná místa, Auren Sentinel
+
+Hory na okraji mají hřebeny, skalní pásy a sníh jen nahoře. Přibyla čtyři místa (Burnt Farm, Fallen Bridge,
+Hunters' Camp, Pilgrim Shrine) a kamenní strážci Auren Sentinel s vzácným Archive Warden. Podrobnosti a co
+nebylo ověřeno hraním: `design/meadow-valley-rework.md` (pátá část) a `design/monster-audit.md`.
+Další na řadě: schválené úpravy goblinů a orků (šamanův tanec, rozzuřený brute, berserker, vrhací sekera
+huntress, válečný buben), pak Barrow Wisp a Carrion Crow.
+
 ## Co dělat jako první
 
 Zeptat se autora, co si zahrál, a podle `design/direction.md` oddíl 5 vybrat další kus: prostředí,
