@@ -238,6 +238,7 @@ def blossom():
 def apple():
     broad_tree(51, "foliage_oak_b", 2.1, 2.1, 2.3, "bark", 0.3, "broad", 22, 0.5)
     rng = random.Random(52)
+    roots(bm, rng, 0.022, 17)
     for i in range(24):
         a = rng.uniform(0, math.tau)
         r = rng.uniform(0.9, 2.1)
@@ -502,22 +503,52 @@ def strand(bm, start, end, bend, width, sides=5, steps=6):
             bm.faces.new((rings[r][i], rings[r + 1][i], rings[r + 1][j], rings[r][j]))
 
 
-def hair_cap(bm, back=-0.42):
+def hairline(x):
+    """How high the hair starts over the brow at x, on the unit skull: highest in the middle of the forehead,
+    coming down towards the temples."""
+    return 0.36 - 0.3 * min(1.0, abs(x)) ** 1.7
+
+
+def brow_y(x, z):
+    """How far forward the forehead is at a point, in metres: where a lock must be to lie on the skin."""
+    return 0.135 * math.sqrt(max(0.03, 1 - (x / 0.128) ** 2 - (max(z, 0.0) / 0.15) ** 2)) + 0.011
+
+
+def hair_cap(bm, back=-0.42, fit=1.0):
     """
     The solid part of the hair: a shell over the skull, open over the face. It is its own object with
     its own material, anime_hair_cap, so the game keeps it still on the head while only the strands
     sway; a swaying shell slid off the skull and showed a bald patch. bm is the strands' mesh, untouched.
+    Its edge over the face is a hairline, not a level cut: an arc over the forehead that runs down past
+    the temples into the sides. A level edge read as the rim of a helmet. Fit below 1 lays it closer to
+    the skin, for hair cut short.
     """
     cap = bmesh.new()
-    made = bmesh.ops.create_icosphere(cap, subdivisions=4, radius=1)["verts"]
-    bmesh.ops.delete(cap, geom=[v for v in made if v.co.z < (0.18 if v.co.y > 0.2 else back)], context="VERTS")
+    made = bmesh.ops.create_icosphere(cap, subdivisions=5, radius=1)["verts"]
+
+    def cut(v):
+        t = min(1.0, max(0.0, (v.co.y + 0.1) / 0.4))
+        t = t * t * (3 - 2 * t)
+        return back + (hairline(v.co.x) - back) * t
+
+    bmesh.ops.delete(cap, geom=[v for v in made if v.co.z < cut(v)], context="VERTS")
     for vert in cap.verts:
-        vert.co = (vert.co.x * 0.141, vert.co.y * 0.148, vert.co.z * 0.166 + 0.008)
+        vert.co = (vert.co.x * 0.141 * fit, vert.co.y * 0.148 * fit, vert.co.z * 0.166 * fit + 0.008)
     mesh = bpy.data.meshes.new("hair_cap")
     cap.to_mesh(mesh)
     cap.free()
     smooth(mesh)
     add_object("hair_cap", mesh, "anime_hair_cap")
+
+
+def roots(bm, rng, length=0.03, count=17, sweep=0.0):
+    """Short locks along the hairline, lying on the forehead: they break the shell's edge into hair."""
+    for index in range(count):
+        x = -0.1 + index * 0.2 / (count - 1) + rng.uniform(-0.004, 0.004)
+        z = hairline(x / 0.141) * 0.166 + 0.014
+        drop = length * rng.uniform(0.6, 1.25)
+        tip = x + sweep * drop + rng.uniform(-0.006, 0.006)
+        strand(bm, (x, brow_y(x, z) + 0.004, z), (tip, brow_y(tip, z - drop) + 0.002, z - drop), (0, 0.005, 0), 0.015, steps=3)
 
 
 def finish_hair(bm, name="hair"):
@@ -529,10 +560,12 @@ def finish_hair(bm, name="hair"):
 
 
 def anime_hair_hero():
-    """A cap of hair and many sharp clumps that fall around the face and over the brow."""
+    """Shaggy hair in layers: sharp bangs over the brow, long locks framing the face, and a back that
+    lies in overlapping clumps instead of standing out like spines."""
     bm = bmesh.new()
     hair_cap(bm)
     rng = random.Random(14)
+    roots(bm, rng, 0.03)
     for index in range(11):
         # The fringe: uneven points over the forehead.
         x = -0.115 + index * 0.023
@@ -544,13 +577,13 @@ def anime_hair_hero():
         y = rng.uniform(-0.02, 0.09)
         drop = rng.uniform(0.15, 0.24)
         strand(bm, (side * 0.118, y, 0.08), (side * rng.uniform(0.13, 0.155), y + 0.01, -drop + 0.03), (side * 0.024, 0, 0), 0.027)
-    for index in range(26):
-        # The messy back and crown, pointing out and down.
-        angle = rng.uniform(0.15, math.pi - 0.15)
-        height = rng.uniform(-0.1, 0.13)
-        x, y = math.cos(angle) * 0.13, -math.sin(angle) * 0.13
-        length = rng.uniform(0.09, 0.17)
-        strand(bm, (x, y, height), (x * 1.5, y * 1.5, height - length), (x * 0.25, y * 0.25, 0.015), 0.034)
+    for layer, (height, reach, count) in enumerate(((0.1, 0.1, 11), (0.03, 0.12, 12), (-0.05, 0.13, 11))):
+        # The back in three layers, each lying over the one below and ending in a point.
+        for index in range(count):
+            angle = 0.12 + (index + rng.uniform(-0.3, 0.3)) / (count - 1) * (math.pi - 0.24)
+            x, y = math.cos(angle) * 0.132, -math.sin(angle) * 0.136
+            length = reach * rng.uniform(0.8, 1.2)
+            strand(bm, (x, y, height), (x * 1.16, y * 1.18, height - length), (x * 0.16, y * 0.16, 0.004), 0.033)
     for index in range(6):
         # Short tufts at the crown, swept back so the outline stays calm.
         angle = rng.uniform(0, math.tau)
@@ -625,6 +658,7 @@ def anime_hair_spiky():
     bm = bmesh.new()
     hair_cap(bm, -0.45)
     rng = random.Random(91)
+    roots(bm, rng, 0.03, 15)
     for index in range(9):
         x = -0.11 + index * 0.0275
         strand(bm, (x, 0.12, 0.12), (x * 1.3, 0.16, 0.02 - rng.uniform(0, 0.04)), (0, 0.02, 0.02), 0.03)
@@ -641,10 +675,14 @@ def anime_hair_short():
     bm = bmesh.new()
     hair_cap(bm, -0.55)
     rng = random.Random(93)
-    for index in range(14):
-        # The fringe falls on the forehead and is swept away from the parting, close to the skin.
-        x = -0.12 + index * 0.0185
-        strand(bm, (x - 0.015, 0.118, 0.125), (x + 0.025, 0.138, 0.035 - rng.uniform(0, 0.025)), (0.008, 0.009, 0), 0.022)
+    for index in range(13):
+        # The fringe lies on the forehead, combed away from the parting. It follows the skull: laid
+        # straight across it stood off the temple like a comb.
+        x = -0.092 + index * 0.0145
+        z = hairline(x / 0.141) * 0.166 + 0.03
+        drop = 0.05 + rng.uniform(0, 0.02) - abs(x) * 0.12
+        tip = x + 0.022
+        strand(bm, (x, brow_y(x, z) + 0.005, z), (tip, brow_y(tip, z - drop) + 0.004, z - drop), (0.006, 0.007, 0), 0.021)
     for side in (-1, 1):
         for index in range(4):
             # Short sides over the temples, down to the top of the ear.
@@ -712,6 +750,7 @@ def anime_hair_pip():
     bm = bmesh.new()
     hair_cap(bm, -0.48)
     rng = random.Random(97)
+    roots(bm, rng, 0.04, 15)
     for index in range(30):
         angle = rng.uniform(0, math.tau)
         x, y = math.cos(angle) * 0.12, math.sin(angle) * 0.12
@@ -740,6 +779,7 @@ def anime_hair_undercut():
     bm = bmesh.new()
     hair_cap(bm, -0.6)
     rng = random.Random(201)
+    roots(bm, rng, 0.02, 17, 0.9)
     for index in range(18):
         # The long top grows from the crown and falls over the brow to the right.
         x = -0.1 + index * 0.012
@@ -760,6 +800,7 @@ def anime_hair_topknot():
     for vert in made:
         vert.co = (vert.co.x, vert.co.y - 0.02, vert.co.z * 0.85 + 0.2)
     rng = random.Random(203)
+    roots(bm, rng, 0.014, 19)
     for index in range(10):
         angle = index / 10 * math.tau
         x, y = math.cos(angle) * 0.12, math.sin(angle) * 0.12
@@ -771,13 +812,17 @@ def anime_hair_topknot():
 
 
 def anime_hair_swept():
-    """Hair combed straight back from the brow, lifting a little at the front."""
+    """Hair combed straight back from the brow: each lock rises off the hairline, runs over the top of
+    the head and comes down behind the crown."""
     bm = bmesh.new()
     hair_cap(bm, -0.55)
     rng = random.Random(205)
-    for index in range(16):
-        x = -0.11 + index * 0.0147
-        strand(bm, (x, 0.118, 0.1), (x * 1.12, -0.09, 0.115 - rng.uniform(0, 0.03)), (0, 0.0, 0.032), 0.026)
+    for index in range(17):
+        x = -0.1 + index * 0.0125
+        z = hairline(x / 0.141) * 0.166 + 0.012
+        # Over the crown, not through it: the old locks ran under the shell and only a rim showed.
+        strand(bm, (x, brow_y(x, z) + 0.004, z), (x * 0.95 + rng.uniform(-0.01, 0.01), -0.11, 0.1 - rng.uniform(0, 0.03)),
+               (0, 0.012, 0.085 + rng.uniform(0, 0.012) - abs(x) * 0.25), 0.028, steps=8)
     for index in range(14):
         angle = rng.uniform(0.25, math.pi - 0.25)
         x, y = math.cos(angle) * 0.125, -math.sin(angle) * 0.125
@@ -786,11 +831,15 @@ def anime_hair_swept():
 
 
 def anime_hair_shaved():
-    """Hair cut almost to the skin: only the shell of the cap, and a few short bristles at the back."""
+    """Hair cut almost to the skin: the shell lies close on the skull with a hairline over the brow, and
+    bristles break its edge at the front and at the nape."""
     bm = bmesh.new()
-    hair_cap(bm, -0.62)
-    for side in (-1, 1):
-        strand(bm, (side * 0.05, -0.13, 0.02), (side * 0.055, -0.14, -0.01), (0, -0.003, 0), 0.01, steps=2)
+    hair_cap(bm, -0.5, 0.955)
+    rng = random.Random(211)
+    roots(bm, rng, 0.012, 21)
+    for index in range(9):
+        x = -0.07 + index * 0.0175
+        strand(bm, (x, -0.128, -0.05), (x * 1.04, -0.134, -0.075 - rng.uniform(0, 0.01)), (0, -0.003, 0), 0.012, steps=2)
     finish_hair(bm)
 
 

@@ -162,3 +162,18 @@ ani ve studiu, jen prošly testy (kámen stojí, cesta mezi kameny funguje).
 Účesy a jizvy hlavní postavy, hory na okraji (skály místo hladkých boulí), nová místa (vypálený
 statek, zborcený most, tábor lovců, kaplička u jižního sedla), stavba navržených monster, vegetace
 a domy zblízka, břehy pod mosty, zvuky a animace monster.
+
+### Hotovo 2026-11-11 (čtvrtá část): vlasy, jizvy, první monstrum
+
+- **Vlasy:** skořepina vlasů (`hair_cap`) má linii vlasů do oblouku místo vodorovného řezu a krátké
+  pramínky na čele (`roots`). „Shaved" přiléhá k lebce, „Tidy" má ofinu po čele místo hřebene,
+  „Swept back" vede prameny přes temeno, „Wild" má vzadu tři vrstvy místo střepů.
+  Nezměněno: Spiky, Messy, Undercut, Topknot, Tied back, Balding dostaly jen novou linii a pramínky.
+  Mira má pořád ofinu, která z boku odstává jako hřeben.
+- **Jizvy:** tenká světlá čára s tmavším okrajem.
+- **Thornback a Briarking** v Emerald Jungle; návrh vzácných variant a doladění goblinů a orků je
+  v `design/monster-audit.md`.
+
+Zbývá: hory na okraji, nová místa, šest dalších monster s vzácnými variantami, schválené návrhy pro
+gobliny a orky (tanec šamana, válečný buben, berserker, huntress), vegetace a domy zblízka, břehy
+pod mosty, zvuky a animace monster.
