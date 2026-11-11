@@ -1204,6 +1204,29 @@ def mushroom():
         blob(f"cap{i}", (x, y, h), 0.13 + h * 0.2, "flower_b" if i else "cloth_red", i, 0.55, 2)
 
 
+def giant_mushroom():
+    """Mushrooms taller than a man: a pale stem that swells at the foot, a red cap with pale warts high
+    enough to walk under, gills beneath it, and two young ones at its foot."""
+    for i, (x, y, tall, wide) in enumerate(((0, 0, 2.5, 1.15), (0.9, 0.5, 0.9, 0.42), (-0.7, 0.75, 0.55, 0.3))):
+        loft(f"stem{i}", [(-0.3, wide * 0.3, wide * 0.3, x, y), (tall * 0.3, wide * 0.2, wide * 0.2, x + 0.04, y), (tall, wide * 0.15, wide * 0.15, x + 0.1, y)], "wall_b", 9)
+        loft(f"gills{i}", [(tall - 0.02, wide * 0.2, wide * 0.2, x + 0.1, y), (tall + wide * 0.12, wide * 0.92, wide * 0.92, x + 0.1, y)], "paper", 12)
+        blob(f"cap{i}", (x + 0.1, y, tall + wide * 0.14), wide, "cloth_red", 40 + i, 0.42, 2)
+        for k in range(6):
+            a = k / 6 * math.tau + i
+            blob(f"wart{i}{k}", (x + 0.1 + math.cos(a) * wide * 0.55, y + math.sin(a) * wide * 0.55, tall + wide * 0.42), wide * 0.12, "paper", 50 + k, 0.5, 1)
+
+
+def heather():
+    """A clump of heather: low cushions of purple bloom over dark green."""
+    rng = random.Random(29)
+    for i in range(8):
+        a = i / 8 * math.tau + rng.uniform(-0.3, 0.3)
+        r = rng.uniform(0.0, 0.75)
+        size = rng.uniform(0.26, 0.42)
+        blob(f"leaf{i}", (math.cos(a) * r, math.sin(a) * r, size * 0.3), size, "moss", 60 + i, 0.55, 1)
+        blob(f"bloom{i}", (math.cos(a) * r, math.sin(a) * r, size * 0.52), size * 0.86, "cloth_purple", 70 + i, 0.5, 1)
+
+
 def camp_set():
     box("mat", (0, 0, 0.03), (1.5, 0.9, 0.05), "cloth_red")
     timber("tripod", (-0.5, -1.1, 0), (0, -1.5, 1.3), 0.07, "wood_dark")
@@ -1971,6 +1994,8 @@ MODELS = {
     "birch": birch,
     "blossom": blossom,
     "apple": apple,
+    "giant_mushroom": giant_mushroom,
+    "heather": heather,
     "pine": pine,
     "pine_b": pine_b,
     "willow": willow,

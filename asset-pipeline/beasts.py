@@ -436,6 +436,32 @@ SPECS["shadow_wolf"] = wolf_spec("shadow_coat", "shadow_dark", "shadow_pale", ey
                                  extras=[shadow_wisps("shadow_dark", "shadow_coat")])
 
 
+def recolour(spec, colours):
+    """A copy of a spec with some materials swapped: the same animal in another coat."""
+    def swap(value):
+        if isinstance(value, str):
+            return colours.get(value, value)
+        if isinstance(value, dict):
+            return {key: swap(item) for key, item in value.items()}
+        if isinstance(value, (list, tuple)):
+            return type(value)(swap(item) for item in value)
+        return value
+    return swap(spec)
+
+
+# A fox: the wolf's build in a red coat with pale socks; the game draws it at half the size.
+SPECS["fox"] = wolf_spec("fox_coat", "fox_dark", "fox_pale")
+# A mountain ram: a heavier goat in a grey-brown coat with horns curling round beside the head.
+SPECS["mountain_ram"] = dict(
+    recolour(SPECS["goat"], {"goat_coat": "ram_coat", "goat_dark": "ram_dark"}),
+    horns=[dict(points=[(0.05, 0.6, 1.16), (0.11, 0.5, 1.27), (0.16, 0.39, 1.21), (0.18, 0.4, 1.08), (0.16, 0.49, 1.03)],
+                radii=[0.042, 0.038, 0.031, 0.021, 0.008], material="horn_pale")])
+# The white hart of the Whispering Woods: a stag pale as milk.
+SPECS["white_hart"] = recolour(SPECS["deer"], {"deer_coat": "hart_coat", "deer_leg": "hart_leg", "deer_dark": "hart_leg", "deer_spots": "hart_coat", "deer_belly": "wool"})
+# Moor sheep: the flock Moonfell left behind, gone wild, in dark wool.
+SPECS["moor_sheep"] = recolour(SPECS["sheep"], {"wool": "moor_wool"})
+
+
 def chicken(b):
     """A plump hen: body, head with comb and beak, two wings and two legs."""
     def body():
@@ -487,7 +513,9 @@ COLORS = {
     "alpha_coat": "3E3A48", "alpha_dark": "1E1C26", "alpha_pale": "9A98A0",
     "mirror_coat": "5A6170", "mirror_dark": "2E3240", "mirror_pale": "A8ACB8", "mirror_rune": "F77622",
     "shadow_coat": "1C1A28", "shadow_dark": "0E0D14", "shadow_pale": "2E3048", "shadow_eye": "FFFFFF",
+    "fox_coat": "C8642C", "fox_dark": "5A2E20", "fox_pale": "F0E4D0",
+    "ram_coat": "8A7A6A", "ram_dark": "4A4038", "hart_coat": "F2EEE4", "hart_leg": "D8D0C0", "moor_wool": "5A5058",
     "eye_black": "15161C", "eye_glint": "FFFFFF", "antler": "D8C8A8", "ear_pink": "D89A92", "deer_leg": "8A5A34", "deer_dark": "7A4A26", "boar_belly": "7A5A4C",
 }
 
-NAMES = ["cow", "goat", "deer", "doe", "sheep", "pig", "chicken", "wolf", "alpha_wolf", "mirror_wolf", "shadow_wolf"]
+NAMES = ["cow", "goat", "deer", "doe", "sheep", "pig", "chicken", "wolf", "alpha_wolf", "mirror_wolf", "shadow_wolf", "fox", "mountain_ram", "white_hart", "moor_sheep"]

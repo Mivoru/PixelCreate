@@ -377,6 +377,10 @@ Rules:
   Beasts keep their parts (body, neck, head, ears, tail, legs) as separate nodes for AnimalView.
 - Animals live in herds (`EnemyAnimal.cs`): graze, watch (`alertRange`), bolt (`aggroRange`), and spread a
   scare through the herd. `net-tests/AnimalTests.cs` checks each behaviour on an empty field.
+  Harmless animals in another coat (`fox`, `mountain_ram`, `white_hart`, `moor_sheep`) are `beasts.recolour` copies
+  of the wolf, goat, deer and sheep specs; `AnimalView` maps each to the kind it moves and sounds like. Give a new
+  one loot from items that exist. Thematic plants: `giant_mushroom` (Whispering Woods, Emerald Jungle), `heather`
+  (Moonfell, the southern foothills). A `rockfall` closes each pass road until the region beyond is built.
 - Hair and cloth are `ClothChain` grids; the toon shader bends meshes along them. Rig looks live in `Dialogues.cs`.
 - The server waits for a late input instead of skipping it. Catching up spends only ticks missed while stalled,
   so no client can run faster than real time: extra inputs are thrown away.

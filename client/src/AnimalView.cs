@@ -65,7 +65,14 @@ public sealed class AnimalView : IEnemyView
 
     public AnimalView(EnemyDef def, int id)
     {
-        _kind = def.Id;
+        // Animals in another coat move and sound like the kind they are built from.
+        _kind = def.Id switch
+        {
+            "white_hart" => "deer",
+            "mountain_ram" => "goat",
+            "moor_sheep" => "sheep",
+            _ => def.Id,
+        };
         _bird = def.Id == "chicken";
         var model = def.Id switch
         {
@@ -377,7 +384,7 @@ public sealed class AnimalView : IEnemyView
         if (_callTimer <= 0f)
         {
             _callTimer = 9f + (float)GD.RandRange(0.0, 18.0);
-            if (_calmFor > 4f && !dead && _kind is not ("deer") && (!_hunter || _id % 3 == 0))
+            if (_calmFor > 4f && !dead && _kind is not ("deer" or "fox") && (!_hunter || _id % 3 == 0))
             {
                 sfx.Play(Sound("call"), at, -5f);
             }
@@ -399,6 +406,7 @@ public sealed class AnimalView : IEnemyView
         ("chicken", "call") => "chicken_cluck",
         ("chicken", _) => "chicken_squawk",
         ("deer", _) => "deer_hurt",
+        ("fox", _) => "wolf_hurt",
         (_, "call") when _hunter => "wolf_howl",
         (_, _) when _hunter => "wolf_hurt",
         (_, _) => $"{_kind}_hurt",
