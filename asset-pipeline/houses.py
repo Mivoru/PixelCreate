@@ -349,7 +349,7 @@ def smithy():
     import bpy
 
     w, d = 5.2, 4.0
-    box("floor", (0, 0, -0.05), (w + 0.3, d + 0.3, 0.5), "stone_dark")
+    box("floor", (0, 0, -0.14), (w + 0.3, d + 0.3, 0.5), "stone_dark")
     low, high = 2.5, 3.4
     for x in (-w / 2, w / 2):
         timber("post_front", (x, -d / 2, 0.1), (x, -d / 2, low), 0.22, "wood_dark")
