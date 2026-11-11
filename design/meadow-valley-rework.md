@@ -195,6 +195,6 @@ Neověřeno hraním: probuzení a boj strážce ve hře (bot v testovacím reži
 nepřátele, takže živý záběr ukazuje jen sochu, jak stojí), runová vlna ve hře (jen studio a testy), vzhled míst
 za šera a v noci.
 
-Zbývá: pět monster s variantami (Barrow Wisp, Carrion Crow, Stoneback, Vinelasher, Mirefin), schválené úpravy
-goblinů a orků (šamanův tanec, rozzuřený brute, berserker, vrhací sekera huntress, válečný buben), vegetace a domy
-zblízka, břehy pod mosty, zvuky.
+Zbývá: pět monster s variantami (Barrow Wisp, Carrion Crow, Stoneback, Vinelasher, Mirefin), dva noví vzácní
+goblini (Warchief, Trapper), vegetace a domy zblízka, břehy pod mosty, zvuky. Úpravy goblinů a orků jsou hotové
+(`design/monster-audit.md`, „Postaveno 2026-11-11: goblini a orkové“).

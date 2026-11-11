@@ -1,4 +1,4 @@
-# Předávka pro další session (stav 2026-11-10 večer)
+# Předávka pro další session (stav 2026-11-11 večer)
 
 ## Směr hry se změnil (rozhodnutí autora 2026-11-10)
 
@@ -41,8 +41,37 @@ goblini (Warchief, Trapper), pak vegetace a domy zblízka.
 
 ## Co dělat jako první
 
-Zeptat se autora, co si zahrál, a podle `design/direction.md` oddíl 5 vybrat další kus: prostředí,
-monstra, boj, mechaniky nebo pohyb. Nové joby rovnou s cílem pro navigaci.
+Zeptat se autora, co si zahrál. Pokud nic jiného neurčí, pokračovat schváleným plánem níže (autor schválil
+všechna navržená monstra, vzácné varianty i úpravy goblinů a orků: „souhlasím se všema“, 2026-11-11).
+
+## Schválený plán dalších kroků (v tomto pořadí)
+
+Návrhy jsou v `design/meadow-valley-rework.md` (tabulka monster: kde, úroveň, chování, schopnost) a
+`design/monster-audit.md` (tabulka vzácných variant a oddíl Goblini, bod 4). Každý krok: data v
+`world/enemies.json` a zóně, efekt v `GameServer.Fire`, test v `net-tests/<Monstrum>Tests.cs`, model
+v `asset-pipeline/`, studio záběr (`PIXEL_MONSTERS=...`), dokumentace, commit a push.
+
+1. **Barrow Wisp** (Stone Circle, v noci, úroveň 6 až 8): drží odstup a krouží, pomalá zatáčející střela,
+   zhasne, když hráč stojí u menhiru. Vzácná **Lantern of the Barrow**: rozdělí se na tři, pravou prozradí
+   stín. Potřebuje nový pohyb (vznáší se) a podmínku „v noci“ pro tábor (zatím žádný tábor ji nemá).
+2. **Carrion Crow** (Moonfell, bojiště, úroveň 3 až 5): hejno tří až pěti, nálet z výšky, po zásahu jedné se
+   hejno rozprchne a vrátí. Vzácný **Gallows Rook**: pět vran nalétá postupně v řadě.
+3. **Goblin Warchief** (Goblin Warren): roh svolá hlídku z nejbližší chodby (lze vyjít z `SoundAlarm`
+   válečného bubnu), rána štítem, která odhodí. **Goblin Trapper** (Old Ruins): klade viditelné nášlapné
+   sítě, které hráče na 1 s zpomalí (zpomalení musí jít přes `PlayerState`, aby ho klient předpověděl).
+4. **Stoneback** (předhůří a sedla) s **Mossback Elder** (roztočí se v krunýři a klouže).
+5. **Vinelasher** (Emerald Jungle, nehýbe se) se **Stranglethorn** a **Mirefin** (Mirror Lake, ve vodě)
+   s **Old Gulper**. Oba potřebují nový druh pohybu, proto až na konci.
+6. Vegetace a domy zblízka (kontrola každé budovy zblízka), břehy pod mosty.
+7. Volitelně knihy dovedností ze vzácných: Rune Ward, Wisp Bolt, Vine Pull.
+
+Zvuky monster: zatím ze stávající sady. Nové zvuky z ElevenLabs stojí peníze, generovat jen po souhlasu autora.
+
+## Neověřeno očima z posledních kroků
+
+Probuzení strážce a runová vlna ve hře, zelené plameny zrychlení a rudé jiskry rozzuření, letící sekera
+huntress (drží při hodu dál meč), bubeník u bubnu. Bot v testovacím režimu bez prologu nepřitahuje
+nepřátele: pro živý záběr boje postavit hráče do dosahu (`aggroRange`) nebo nechat bota zaútočit.
 
 ## Na co si dát pozor
 
