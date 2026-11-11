@@ -27,6 +27,8 @@
   { "id": "wolf_pelt", "name": "Wolf Pelt", "kind": "material", "tier": 0, "price": 12, "icon": "wolf_pelt", "description": "Thick grey fur, warm through the worst winter." },
   { "id": "wolf_fang", "name": "Wolf Fang", "kind": "material", "tier": 0, "price": 10, "icon": "wolf_fang", "description": "Long, curved and still sharp." },
   { "id": "feather", "name": "Feather", "kind": "material", "tier": 0, "price": 1, "icon": "feather", "description": "A small white feather. Good for arrows and pillows." },
+  { "id": "auren_marble", "name": "Auren Marble", "kind": "material", "tier": 1, "price": 22, "icon": "auren_marble", "description": "A chip of grey marble with a thread of blue still glowing in it." },
+  { "id": "rune_core", "name": "Rune Core", "kind": "material", "tier": 2, "price": 90, "icon": "rune_core", "description": "The stone heart that kept a sentinel awake. It hums when held." },
 
   { "id": "raw_beef", "name": "Raw Steak", "kind": "food", "tier": 0, "price": 6, "heal": 30, "icon": "raw_beef", "description": "A thick cut of beef. Better cooked, but it fills you up." },
   { "id": "goat_meat", "name": "Goat Meat", "kind": "food", "tier": 0, "price": 4, "heal": 20, "icon": "goat_meat", "description": "Lean and a little tough." },

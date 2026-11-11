@@ -21,6 +21,7 @@ COLORS = {
     "wpn_wood": "8A5A3C", "wpn_wood_light": "C28569", "wpn_wood_pale": "E4A672", "wpn_wood_dark": "4A3028",
     "wpn_bone": "EAD4AA", "wpn_bone_dark": "B89E7A", "wpn_iron": "4E4E5A", "wpn_ember": "F77622",
     "wpn_red": "E43B44", "wpn_feather": "3A4466", "wpn_gem": "2CE8F5",
+    "wpn_marble": "C8C8D0", "wpn_marble_dark": "8E909C", "wpn_bronze": "B8963C",
 }
 
 
@@ -292,7 +293,22 @@ def orc_battle_axe(k):
     k.cone((0, 1.05, 0), (0, 1.16, 0), 0.026, "wpn_iron")
 
 
+def sentinel_blade(k):
+    """An Auren sentinel's greatsword: a broad, straight blade of grey marble longer than a man's arm,
+    a rune channel glowing down its middle, a bronze guard like spread wings and a long bronze-bound grip."""
+    width = lambda s: 0.07 if s < 0.8 else 0.07 * (1 - (s - 0.8) / 0.2) + 0.006
+    k.blade(0.12, 1.25, width, width, lambda s: 0.016 * (1 - 0.3 * s), "wpn_marble_dark", "wpn_marble", ridge=0.2)
+    for side in (1, -1):
+        k.box((0, 0.7, side * 0.02), (0.016, 1.0, 0.006), "wpn_gem")
+    for side in (-1, 1):
+        k.tube([(0, 0.1, 0), (side * 0.12, 0.13, 0), (side * 0.2, 0.2, 0)], [0.03, 0.025, 0.01], [0.03, 0.025, 0.01], "wpn_bronze", sides=6)
+    k.round((0, 0.1, 0), (0.05, 0.04, 0.04), "wpn_bronze")
+    k.wrap(-0.22, 0.07, 0.024, "wpn_bronze", "wpn_marble_dark", 8)
+    k.round((0, -0.25, 0), (0.04, 0.04, 0.04), "wpn_gem")
+
+
 BUILDERS = {
+    "sentinel_blade": sentinel_blade,
     "orc_longsword": orc_longsword,
     "orc_spear": orc_spear,
     "orc_battle_axe": orc_battle_axe,

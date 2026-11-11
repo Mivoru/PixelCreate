@@ -299,7 +299,10 @@ public partial class Studio : Node
     {
         Floor();
         var sfx = new Sfx(this) { Muted = true };
-        var monsters = EnemyDef.All.Select((def, index) => (def, index)).Where(p => p.def.Kind is "slime" or "goblin" or "orc" or "werewolf").ToList();
+        // PIXEL_MONSTERS=auren,archive photographs only the monsters whose ids start with those words.
+        var only = (System.Environment.GetEnvironmentVariable("PIXEL_MONSTERS") ?? "").Split(',', System.StringSplitOptions.RemoveEmptyEntries);
+        var monsters = EnemyDef.All.Select((def, index) => (def, index))
+            .Where(p => p.def.Kind is "slime" or "goblin" or "orc" or "werewolf" or "sentinel" && (only.Length == 0 || only.Any(o => p.def.Id.StartsWith(o)))).ToList();
         foreach (var (def, index) in monsters)
         {
             IEnemyView view = def.Kind == "slime" ? new SlimeView() : new GoblinView(def);
@@ -312,7 +315,7 @@ public partial class Studio : Node
             };
 
             // Orcs also show each ability: the wind-up and the blow, from three quarters.
-            for (var a = 0; def.Kind is "orc" or "werewolf" && a < (def.Abilities?.Length ?? 0); a++)
+            for (var a = 0; def.Kind is "orc" or "werewolf" or "sentinel" && a < (def.Abilities?.Length ?? 0); a++)
             {
                 var effect = def.Abilities![a].Effect;
                 poses.Add(($"{effect}_cast", 1.0f, 4.6f, EnemyAction.Cast, (byte)a));

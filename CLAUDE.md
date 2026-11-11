@@ -365,6 +365,14 @@ Rules:
 - Collision is measured from the models: building a model writes its boxes to `world/collision.json`
   (`asset-pipeline/collision.py`). Never hand-size a hitbox; rebuild the model. Plants and models with
   platform floors are listed as non-solid in `Zone.NonSolid`. Grass never grows inside a solid box.
+- Places where something ended (`design/world-plan.md` 8.5), each a region found on the map and a `place_*` studio
+  shot: the Burnt Farm by the west pass (a charred `burned_barn`, a `cart_wreck` with goblin arrows, a farm track),
+  the Fallen Bridge on Silverbrook (`bridge_broken_end` on each bank, origin on the bank, stub along +X; `Zone.Settle`
+  keeps its origin height), the Hunters' Camp in Greyfang (`hunters_rack`) and the Pilgrim Shrine on Mirror Way
+  (`wayside_shrine`, a short track from the road). Studio shot `eye` and `at` heights are above the ground there.
+- The rim mountains (`Zone.Rim`) have ridged crests (`Crest`) and cliff bands (`CliffBand`, warped so they never ring
+  like a stadium); the terrain shader lays snow only on ledges and tops by the world normal. A GLSL variable cannot be
+  called `flat`.
 - Camp stockades are never a closed ring (author, 2026-11-11: closed camps looked like pens). Build them from
   arcs of `palisade` (9 m), `palisade_half` (ends a run; its snapped end is local +X, so it joins the piece on its
   -X side) and `palisade_broken` (a 3 m breach a walker fits through, `BrokenStockades_LetAWalkerThrough`), with
@@ -384,7 +392,16 @@ Rules:
   (Moonfell, the southern foothills). A `rockfall` closes each pass road until the region beyond is built.
   Thornbacks (Emerald Jungle; kind `wolf`, behaviour `brute`, the boar's build with thorns): a gore and a charge
   (`dashStrike` with a line warning) that leaves them winded; the rare Briarking also thrashes (`spin`).
-  `net-tests/ThornbackTests.cs`. A new monster can often be data: a kind picks the view (`animal` and `wolf` use
+  `net-tests/ThornbackTests.cs`.
+  Auren sentinels (kind `sentinel`, `PlayerRig.BuildSentinel`, parts from `asset-pipeline/sentinels.py`, the greatsword
+  `weapon_sentinel_blade`): `statue` enemies stand still on their `Post` facing the camp's `yaw` until a player comes
+  within `aggroRange`, never flinch or slide when struck, and freeze in the client (`GoblinView`) while asleep.
+  `frontGuard` scales blows from the front (client: sparks and "Guarded"), `backBonus` blows from behind
+  (`Enemy.GuardSide`, `Enemy.GuardCone`). Two flank the Sunken Archive's door, two stand in the Old Ruins. The rare
+  Archive Warden (back wall of the archive) adds `runeWave`: three straight lanes (`RuneWave`, `HazardKind.RuneWave`,
+  telegraph `lanes`, client `RuneWaveNode`) with gaps to stand in; enemy hazards with a `HalfWidth` hit as strips.
+  `net-tests/SentinelTests.cs`. `PIXEL_MONSTERS=auren,archive` photographs only those monsters in the studio.
+  A new monster can often be data: a kind picks the view (`animal` and `wolf` use
   `AnimalView`), abilities pick the attacks. Rare variants and goblin and orc proposals: `design/monster-audit.md`.
   No light blow has a wind-up under 16 ticks.
 - Hair and cloth are `ClothChain` grids; the toon shader bends meshes along them. Rig looks live in `Dialogues.cs`.

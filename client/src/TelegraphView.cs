@@ -56,6 +56,35 @@ public sealed class TelegraphView
         }
     }
 
+    /// <summary>Shows parallel strips side by side, the given distance apart from middle to middle, with the ground between them clear.</summary>
+    public void ShowLanes(Vector3 from, Vector3 to, float width, float spacing, int lanes, float progress)
+    {
+        _node.Visible = true;
+        _fill.SetShaderParameter("strength", 0.35f + progress * 0.35f);
+        if (from.DistanceSquaredTo(_lastCenter) > 0.01f || to.DistanceSquaredTo(_lastEnd) > 0.01f)
+        {
+            _lastCenter = from;
+            _lastEnd = to;
+            var flat = new Vector3(to.X - from.X, 0, to.Z - from.Z);
+            if (flat.LengthSquared() < 0.01f)
+            {
+                _node.Visible = false;
+                return;
+            }
+
+            var side = new Vector3(-flat.Z, 0, flat.X).Normalized();
+            var surface = new SurfaceTool();
+            surface.Begin(Mesh.PrimitiveType.Triangles);
+            for (var lane = 0; lane < lanes; lane++)
+            {
+                var offset = side * ((lane - (lanes - 1) / 2f) * spacing);
+                AddStrip(surface, from + offset, to + offset, width);
+            }
+
+            Commit(surface);
+        }
+    }
+
     /// <summary>Shows the filled V of a fire wall, up to the given length.</summary>
     public void ShowWedge(Vector3 origin, float yaw, float length, float strength, float halfAngle = FireWallHazard.HalfAngle)
     {
@@ -145,6 +174,14 @@ public sealed class TelegraphView
             return;
         }
 
+        AddStrip(surface, from, to, width);
+        Commit(surface);
+    }
+
+    private void AddStrip(SurfaceTool surface, Vector3 from, Vector3 to, float width)
+    {
+        var flat = new Vector3(to.X - from.X, 0, to.Z - from.Z);
+        var length = flat.Length();
         var forward = flat / length;
         var side = new Vector3(-forward.Z, 0, forward.X) * width / 2f;
         var steps = Mathf.Clamp((int)(length / 1.2f), 2, 40);
@@ -163,8 +200,6 @@ public sealed class TelegraphView
             surface.AddVertex(p2);
             surface.AddVertex(p3);
         }
-
-        Commit(surface);
     }
 
     private void Commit(SurfaceTool surface)

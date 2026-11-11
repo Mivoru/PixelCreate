@@ -121,3 +121,13 @@ Slabé: tábor je jen místo, kde stojí; nic nedělají společně.
 4. **Návrh, huntress:** flanker bez střelby. Dát jí vrhací sekeru na 8 m, aby hráč, který utíká
    od tábora, nebyl v bezpečí hned za palisádou.
 5. Orkové neustupují: nechat, sedí k nim.
+
+### Postaveno 2026-11-11: Auren Sentinel a Archive Warden
+
+- **Auren Sentinel** (úroveň 7 až 9, `kind: sentinel`): mramorový strážce s velkým mečem. Stojí jako socha
+  (`statue`) čelem, kam ukazuje tábor, a probudí se, když hráč přijde na 6 m nebo ho trefí. Zepředu bere 30 %
+  poškození (jiskry a „Guarded"), zezadu 150 % (modré úlomky): boj je o obcházení. Lehký úder 32 t, těžký
+  dopad 64 t s kruhem. Neucukne a neodletí po zásahu.
+- **Archive Warden** (vzácný, úroveň 10): k tomu runová vlna, tři rovné pruhy po 1,6 m se dvěma mezerami po
+  1,8 m, nápřah 70 t s varováním `lanes`. Kdo varování přečte, stoupne si do mezery.
+- Kniha dovednosti Rune Ward (z návrhu) zatím není; Warden dává Rune Core.

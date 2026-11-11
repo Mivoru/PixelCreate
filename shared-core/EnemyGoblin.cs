@@ -7,7 +7,8 @@ namespace PixelCreate.Core;
 /// pounce (a leap onto the player), shadowRun (a zigzag under the ground), shadowClone (two short-lived copies),
 /// combo (three blows in a row), airSlashWide (a flat crescent), summonSpears (three spears loosed one by one
 /// from above the head), tornado (a long spin that drifts after the player), fangSlash (three slanted red
-/// crescents side by side) and superJump (a charged leap from far off that rolls on a miss).</summary>
+/// crescents side by side), superJump (a charged leap from far off that rolls on a miss) and runeWave (three
+/// straight lanes of rune light along the ground, with gaps to stand in).</summary>
 public sealed record Ability(
     string Effect, float Range, int WindupTicks, int RecoverTicks, int CooldownTicks, short Damage,
     float Radius = 0f, float MinRange = 0f, string Telegraph = "none");
@@ -258,6 +259,23 @@ public sealed partial class Enemy
 
     private void Patrol(World world, Random random, float homeDistance)
     {
+        // A guardian stands on its plinth like the statue it looks like until someone comes close.
+        if (Def.Statue)
+        {
+            if (Flat(Post - Position).Length() > StatueSlack)
+            {
+                Walk(world, Post - Position, 0.7f);
+                return;
+            }
+
+            Action = EnemyAction.Idle;
+            Velocity.X = 0;
+            Velocity.Z = 0;
+            Facing = StatueFacing;
+            ActionTicks = 30;
+            return;
+        }
+
         if (homeDistance > Home.Radius)
         {
             Walk(world, Home.Center - Position, 0.7f);
@@ -276,6 +294,15 @@ public sealed partial class Enemy
             ActionTicks = random.Next(50, 160);
         }
     }
+
+    /// <summary>How far a statue may stand from its spot before it walks back onto it, in metres.</summary>
+    private const float StatueSlack = 0.8f;
+
+    /// <summary>Which way a statue faces while it stands guard: the way it faced when it rose.</summary>
+    public float StatueFacing;
+
+    /// <summary>Where a statue stands guard: the spot it rose on.</summary>
+    public Vector3 Post;
 
     private void Walk(World world, Vector3 direction, float speedFactor)
     {

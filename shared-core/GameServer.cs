@@ -99,11 +99,36 @@ public enum ProjectileKind : byte
     Meteor = 13,
 }
 
-/// <summary>What a ground hazard is: the shaman's burning V or a player's strip of fire, or an orc's crack in the earth.</summary>
+/// <summary>What a ground hazard is: the shaman's burning V or a player's strip of fire, an orc's crack in the earth,
+/// or one lane of an Archive Warden's rune wave.</summary>
 public enum HazardKind : byte
 {
     Fire = 0,
     EarthCrack = 1,
+    RuneWave = 2,
+}
+
+/// <summary>
+/// The Archive Warden charges its runes and sends a wave along the ground in three straight lanes with
+/// gaps between them: a player who reads the warning steps into a gap instead of running. Each lane
+/// hurts only while its front runs.
+/// </summary>
+public static class RuneWave
+{
+    public const int Lanes = 3;
+    public const float Length = 14f;
+
+    /// <summary>Half the width of a lane, in metres.</summary>
+    public const float HalfWidth = 0.8f;
+
+    /// <summary>From the middle of one lane to the middle of the next: the gap between them is this less a lane's width.</summary>
+    public const float Spacing = 3.4f;
+
+    public const int GrowTicks = 42;
+    public const int LingerTicks = 30;
+
+    /// <summary>The middle of each lane, across the wave's way, from left to right.</summary>
+    public static float Offset(int lane) => (lane - (Lanes - 1) / 2f) * Spacing;
 }
 
 /// <summary>An orc battle axe's heavy blow splits the ground in a small V ahead of it. It hurts only while the crack runs.</summary>
@@ -3308,6 +3333,21 @@ public sealed partial class GameServer : IEnemyEvents
                 spear.Gravity = Tuning.Gravity * 0.2f;
                 spear.Velocity.Y += spear.Gravity * 0.5f * (Vector3.Distance(aimPoint, chest) / SpearSpeed);
                 break;
+            case "runeWave":
+                var way = direction with { Y = 0 };
+                way = way == Vector3.Zero ? Facing(enemy) : Vector3.Normalize(way);
+                var beside = new Vector3(-way.Z, 0, way.X);
+                for (var lane = 0; lane < RuneWave.Lanes; lane++)
+                {
+                    _walls.Add(new FireWallHazard
+                    {
+                        Id = _nextId++, Origin = enemy.Position + way * 0.6f + beside * RuneWave.Offset(lane), Direction = way,
+                        Damage = ability.Damage, Kind = HazardKind.RuneWave, HalfWidth = RuneWave.HalfWidth, Span = RuneWave.Length,
+                        Grow = RuneWave.GrowTicks, Burn = RuneWave.LingerTicks,
+                    });
+                }
+
+                break;
             case "earthCrack":
                 var ahead = direction with { Y = 0 };
                 ahead = ahead == Vector3.Zero ? Facing(enemy) : Vector3.Normalize(ahead);
@@ -3541,15 +3581,17 @@ public sealed partial class GameServer : IEnemyEvents
                 continue;
             }
 
-            // A crack hurts only while it runs; the split ground left behind is harmless.
-            if (wall.Kind == HazardKind.EarthCrack && wall.Age > wall.Grow + 2)
+            // A crack or a rune wave hurts only while it runs; what it leaves behind is harmless.
+            if (wall.Kind is HazardKind.EarthCrack or HazardKind.RuneWave && wall.Age > wall.Grow + 2)
             {
                 continue;
             }
 
             foreach (var player in _players.Values)
             {
-                if (!wall.Struck.Contains(player.Id) && InWedge(wall, player.State.Position, length))
+                // A straight lane hurts only where its front has already run, and only across its own width.
+                var inside = wall.HalfWidth > 0f ? InStrip(wall, player.State.Position, length, FireWallHazard.Reach * 0.5f) : InWedge(wall, player.State.Position, length);
+                if (!wall.Struck.Contains(player.Id) && inside)
                 {
                     wall.Struck.Add(player.Id);
                     Hurt(player, wall.Damage, 0, heavy: true, from: wall.Origin);

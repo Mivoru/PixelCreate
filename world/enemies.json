@@ -317,6 +317,29 @@
     "loot": [{"item": "boar_meat", "chance": 1, "min": 2, "max": 3}, {"item": "boar_tusk", "chance": 1, "min": 2, "max": 3}, {"item": "boar_hide", "chance": 1, "min": 1, "max": 2}]
   },
   {
+    "id": "auren_sentinel", "behavior": "brute", "name": "Auren Sentinel", "kind": "sentinel", "weapon": "longsword", "defense": 12,
+    "statue": true, "frontGuard": 0.3, "backBonus": 1.5,
+    "minLevel": 7, "maxLevel": 9, "health": 300, "healthPerLevel": 36, "speed": 2.6, "size": 1.25, "aggroRange": 6, "preferredRange": 3, "tagHeight": 2.9,
+    "abilities": [
+      { "effect": "melee", "range": 3.4, "windupTicks": 32, "recoverTicks": 30, "cooldownTicks": 60, "damage": 22, "radius": 2.0 },
+      { "effect": "slam", "range": 4.4, "windupTicks": 64, "recoverTicks": 48, "cooldownTicks": 220, "damage": 36, "radius": 2.6, "telegraph": "circle" }
+    ],
+    "drops": [{ "rarity": 0, "chance": 1 }, { "rarity": 1, "chance": 0.1 }, { "rarity": 2, "chance": 0.02 }],
+    "loot": [{"item": "auren_marble", "chance": 0.8, "min": 1, "max": 2}, {"item": "rune_core", "chance": 0.06, "min": 1, "max": 1}]
+  },
+  {
+    "id": "archive_warden", "behavior": "brute", "name": "Archive Warden", "kind": "sentinel", "weapon": "longsword", "rare": true, "defense": 16,
+    "statue": true, "frontGuard": 0.3, "backBonus": 1.5,
+    "minLevel": 10, "maxLevel": 10, "health": 620, "healthPerLevel": 40, "speed": 2.8, "size": 1.45, "aggroRange": 7, "preferredRange": 3.2, "tagHeight": 3.3,
+    "abilities": [
+      { "effect": "melee", "range": 3.8, "windupTicks": 30, "recoverTicks": 28, "cooldownTicks": 56, "damage": 28, "radius": 2.2 },
+      { "effect": "slam", "range": 4.8, "windupTicks": 60, "recoverTicks": 44, "cooldownTicks": 240, "damage": 42, "radius": 2.8, "telegraph": "circle" },
+      { "effect": "runeWave", "range": 12, "minRange": 4, "windupTicks": 70, "recoverTicks": 40, "cooldownTicks": 300, "damage": 34, "telegraph": "lanes" }
+    ],
+    "drops": [{ "rarity": 1, "chance": 1 }, { "rarity": 2, "chance": 0.25 }],
+    "loot": [{"item": "auren_marble", "chance": 1, "min": 2, "max": 4}, {"item": "rune_core", "chance": 1, "min": 1, "max": 1}]
+  },
+  {
     "id": "fox", "name": "Fox", "kind": "animal", "temper": "passive",
     "minLevel": 1, "maxLevel": 1, "health": 18, "healthPerLevel": 0, "speed": 8.0, "size": 0.55, "aggroRange": 9, "alertRange": 18, "tagHeight": 1.0,
     "drops": [],

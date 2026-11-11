@@ -2559,8 +2559,26 @@ public partial class GameClient : Node
                 var heavy = _client.State.Attack == AttackKind.Heavy;
                 _sfx.Play(heavy ? "hit_heavy" : "hit", position + Vector3.Up, -3f);
                 _hud.AddFloating(slime.DamageTaken.ToString(), position + Vector3.Up * 1.6f, heavy ? new Color("feae34") : Colors.White);
-                var blood = def.Kind is "goblin" or "animal" or "wolf" or "orc" or "werewolf" ? "a22633" : def.Rare ? "f6757a" : "63c74d";
+                var blood = def.Kind is "goblin" or "animal" or "wolf" or "orc" or "werewolf" ? "a22633" : def.Kind == "sentinel" ? "c8c8d0" : def.Rare ? "f6757a" : "63c74d";
                 _fx.Burst(position + Vector3.Up * 0.6f, new Color(blood), heavy ? 22 : 12, 6f, 0.5f, 0.09f);
+                // A blow on a guardian's armoured front rings off it in sparks; one on its back cracks the stone.
+                if (def.FrontGuard < 1f)
+                {
+                    var me = ToGodot(_client.State.Position);
+                    var toward = new Vector3(me.X - position.X, 0, me.Z - position.Z);
+                    var facing = new Vector3(-Mathf.Sin(enemy.Facing), 0, -Mathf.Cos(enemy.Facing));
+                    var dot = toward.LengthSquared() > 0.01f ? toward.Normalized().Dot(facing) : 0f;
+                    if (dot > Enemy.GuardCone)
+                    {
+                        _sfx.Play("block", position + Vector3.Up);
+                        _fx.Burst(position + Vector3.Up * 1.3f + facing * 0.6f, new Color("feae34"), 14, 7f, 0.3f, 0.05f, -10f, 60f);
+                        _hud.AddFloating("Guarded", position + Vector3.Up * 2.6f, new Color("8b9bb4"));
+                    }
+                    else if (dot < -Enemy.GuardCone)
+                    {
+                        _fx.Burst(position + Vector3.Up * 1.2f - facing * 0.4f, new Color("2ce8f5"), 16, 5f, 0.45f, 0.07f, -8f, 70f);
+                    }
+                }
             }
         }
 
@@ -2589,12 +2607,17 @@ public partial class GameClient : Node
             if (!_walls.TryGetValue(wall.Id, out var node))
             {
                 var crack = wall.Kind == HazardKind.EarthCrack;
-                node = crack
-                    ? new EarthCrackNode(_world, _fx, ToGodot(wall.Origin), wall.Yaw)
+                var runes = wall.Kind == HazardKind.RuneWave;
+                node = crack ? new EarthCrackNode(_world, _fx, ToGodot(wall.Origin), wall.Yaw)
+                    : runes ? new RuneWaveNode(_world, _fx, ToGodot(wall.Origin), wall.Yaw)
                     : new FireWallNode(_world, _fx, ToGodot(wall.Origin), wall.Yaw, wall.HalfWidth);
                 _walls.Add(wall.Id, node);
                 _stage.View.AddChild(node.Root);
-                if (!crack)
+                if (runes)
+                {
+                    _sfx.Play("shockwave", ToGodot(wall.Origin));
+                }
+                else if (!crack)
                 {
                     _sfx.Play("fire_wall", ToGodot(wall.Origin));
                 }
@@ -2646,6 +2669,12 @@ public partial class GameClient : Node
             var crack = ability.Effect == "earthCrack";
             telegraph.ShowWedge(position, Mathf.Atan2(-flat.X, -flat.Y), crack ? EarthCrack.Length + 0.8f : FireWallHazard.MaxLength, 0.42f,
                 crack ? EarthCrack.HalfAngle : FireWallHazard.HalfAngle);
+        }
+        else if (ability.Telegraph == "lanes")
+        {
+            var along = (target - position) with { Y = 0 };
+            along = along.LengthSquared() < 0.01f ? new Vector3(-Mathf.Sin(enemy.Facing), 0, -Mathf.Cos(enemy.Facing)) : along.Normalized();
+            telegraph.ShowLanes(position, position + along * RuneWave.Length, RuneWave.HalfWidth * 2f, RuneWave.Spacing, RuneWave.Lanes, 0.5f);
         }
         else if (ability.Telegraph == "circle")
         {

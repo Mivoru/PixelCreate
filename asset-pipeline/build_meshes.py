@@ -22,6 +22,7 @@ import lands  # noqa: E402
 import dungeons  # noqa: E402
 import orcs  # noqa: E402
 import werewolves  # noqa: E402
+import sentinels  # noqa: E402
 import houses  # noqa: E402
 import landmarks  # noqa: E402
 import collision  # noqa: E402
@@ -46,6 +47,7 @@ COLORS.update(lands.COLORS)
 COLORS.update(dungeons.COLORS)
 COLORS.update(orcs.COLORS)
 COLORS.update(werewolves.COLORS)
+COLORS.update(sentinels.COLORS)
 MATERIALS = {}
 
 
@@ -2154,6 +2156,7 @@ MODELS.update(goblins.camp_models(box, timber, blob, cylinder, loft, tube))
 MODELS.update(weapons.models(add_object, smooth))
 MODELS.update(orcs.models(add_object, smooth))
 MODELS.update(werewolves.models(add_object, smooth))
+MODELS.update(sentinels.models(add_object, smooth))
 MODELS.update(lands.models(types.SimpleNamespace(box=box, timber=timber, blob=blob, cylinder=cylinder, loft=loft, tube=tube,
                                                   add_object=add_object, smooth=smooth, mesh_from=mesh_from, bpy=bpy)))
 MODELS.update(dungeons.models(types.SimpleNamespace(box=box, timber=timber, blob=blob, cylinder=cylinder, loft=loft, tube=tube,
@@ -2168,7 +2171,7 @@ for model_name, build in MODELS.items():
         continue
     start_scene()
     build()
-    if not model_name.startswith(("anime_", "beast_", "human_", "weapon_", "orc_head", "orc_torso", "orc_boot", "were_")):
+    if not model_name.startswith(("anime_", "beast_", "human_", "weapon_", "orc_head", "orc_torso", "orc_boot", "were_", "sentinel_")):
         trees = ("tree_a", "tree_b", "birch", "blossom", "apple", "pine", "pine_b", "willow", "dead_tree", "jungle_tree")
         collision.record(model_name, collision.measure(1.2 if model_name in trees else collision.HIGH))
     export(model_name)

@@ -767,6 +767,7 @@ ICONS = {
     "cowhide": ("spotted_hide", "cowhide"), "goat_horn": ("horn", "horn"), "deer_hide": ("hide", "deerhide"),
     "antler": ("antler", "antler"), "wool": ("wool", "wool"), "boar_tusk": ("tusk", "bone"),
     "boar_hide": ("hide", "boarhide"), "wolf_pelt": ("hide", "wolf"), "wolf_fang": ("tusk", "ivory"), "orc_tusk": ("tusk", "antler"), "feather": ("feather", "white"),
+    "auren_marble": ("shard", "bone"), "rune_core": ("gem", "blue"),
     "raw_beef": ("steak", "meat"), "goat_meat": ("steak", "goat"), "venison": ("steak", "venison"),
     "mutton": ("steak", "mutton"), "boar_meat": ("steak", "boar"), "raw_chicken": ("drumstick", "chicken"),
     "egg": ("egg", "egg"), "bread": ("loaf", "bread"), "bond": ("scroll", "paper"),

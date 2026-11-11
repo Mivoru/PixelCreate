@@ -80,7 +80,10 @@ public sealed record RigLook(string Kind, Color Skin, float Scale, string Weapon
     public bool Werewolf => Kind.StartsWith("werewolf");
 
     /// <summary>An orc: a goblin's rig at a man's height. Kind is orc_ and the head: warrior, berserker, spearwoman or huntress.</summary>
-    public bool Orc => Kind.StartsWith("orc_");
+    public bool Orc => Kind.StartsWith("orc_") || Sentinel;
+
+    /// <summary>An Auren sentinel: a carved guardian of marble on an orc's frame. Kind is sentinel or sentinel_warden.</summary>
+    public bool Sentinel => Kind.StartsWith("sentinel");
 
     public bool Female => Feminine || Kind is "orc_spearwoman" or "orc_huntress";
 
@@ -258,6 +261,10 @@ public sealed class PlayerRig
         if (look.Werewolf)
         {
             BuildWerewolf(skin);
+        }
+        else if (look.Sentinel)
+        {
+            BuildSentinel(skin);
         }
         else if (look.Orc)
         {
@@ -623,6 +630,24 @@ public sealed class PlayerRig
         BuildLeg(_thighR, _shinR, 0.12f, dark, leather, 1.2f, true);
         BuildArm(_armL, _forearmL, -width - 0.06f, skin, skin, leather);
         BuildArm(_armR, _forearmR, width + 0.06f, skin, skin, leather);
+    }
+
+    /// <summary>
+    /// An Auren sentinel: a carved chest and faceless helm from Blender, thick marble limbs on an orc's
+    /// frame, stone feet and gauntlets, bronze at the wrists. The warden wears a crest and a rune mantle.
+    /// </summary>
+    private void BuildSentinel(Color stone)
+    {
+        var warden = _look.Kind == "sentinel_warden";
+        var dark = stone.Darkened(0.3f);
+        var bronze = new Color("b8963c");
+        _hips.AddChild(Part(new BoxMesh { Size = new Vector3(0.34f, 0.14f, 0.24f) }, stone.Darkened(0.12f), Vector3.Zero));
+        _torso.AddChild(Model(warden ? "sentinel_torso_warden" : "sentinel_torso"));
+        _head.AddChild(Model(warden ? "sentinel_head_warden" : "sentinel_head"));
+        BuildLeg(_thighL, _shinL, -0.13f, stone, dark, 1.2f, true);
+        BuildLeg(_thighR, _shinR, 0.13f, stone, dark, 1.2f, true);
+        BuildArm(_armL, _forearmL, -0.33f, stone, stone, bronze);
+        BuildArm(_armR, _forearmR, 0.33f, stone, stone, bronze);
     }
 
     /// <summary>
@@ -2088,7 +2113,7 @@ public sealed class PlayerRig
             return;
         }
 
-        var clawed = Model(_look.Werewolf ? "were_paw" : _look.Orc ? "orc_boot" : "gob_foot");
+        var clawed = Model(_look.Werewolf ? "were_paw" : _look.Sentinel ? "sentinel_foot" : _look.Orc ? "orc_boot" : "gob_foot");
         clawed.Position = new Vector3(0, foot + 0.045f, 0);
         shin.AddChild(clawed);
     }
@@ -2120,7 +2145,7 @@ public sealed class PlayerRig
         forearm.AddChild(Part(new CylinderMesh { TopRadius = wrist + 0.018f, BottomRadius = wrist + 0.012f, Height = 0.1f, RadialSegments = 8 }, glove, new Vector3(0, -0.21f, 0)));
         if (goblin)
         {
-            var hand = Model(_look.Werewolf ? "were_hand" : "gob_hand");
+            var hand = Model(_look.Werewolf ? "were_hand" : _look.Sentinel ? "sentinel_hand" : "gob_hand");
             hand.Position = new Vector3(0, -0.22f, 0);
             forearm.AddChild(hand);
             return;

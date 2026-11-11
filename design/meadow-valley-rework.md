@@ -177,3 +177,24 @@ a domy zblízka, břehy pod mosty, zvuky a animace monster.
 Zbývá: hory na okraji, nová místa, šest dalších monster s vzácnými variantami, schválené návrhy pro
 gobliny a orky (tanec šamana, válečný buben, berserker, huntress), vegetace a domy zblízka, břehy
 pod mosty, zvuky a animace monster.
+
+### Hotovo 2026-11-11 (pátá část): hory, opuštěná místa, Auren Sentinel
+
+- **Hory na okraji:** ostré hřebeny místo boulí, skalní pásy s římsami (zvlněné, aby nedělaly prstence),
+  sníh jen na římsách a vrcholcích podle sklonu. Záběry `rim_*`, `pass_*`.
+- **Nová místa** (oblast na mapě po objevení, záběr `place_*`): vypálený statek u West Road (ohořelá stodola,
+  převrácený vůz s goblinskými šípy, zbořený dům, studna, polní cesta; goblinský tábor je hned vedle),
+  zborcený most na Silverbrooku (dva pahýly na březích, kvádry v řece), tábor lovců v Greyfangu přestěhovaný
+  na rovinu (přístřešek, stan, sušák s parožím, kosti; vlci kolem) a poutní kaplička u Mirror Way.
+- **Auren Sentinel** (úroveň 7 až 9): stojí jako socha, probudí se do 6 m, zepředu bere 30 % poškození,
+  zezadu 150 %, neucukne ani neodletí po zásahu. Dva u vchodu do Sunken Archive, dva v Old Ruins.
+  **Archive Warden** (vzácný, úroveň 10, u zadní zdi archivu): k tomu runová vlna ve třech pruzích s mezerami.
+  Kořist: Auren Marble, Rune Core. `net-tests/SentinelTests.cs`.
+
+Neověřeno hraním: probuzení a boj strážce ve hře (bot v testovacím režimu bez dokončeného prologu nepřitahuje
+nepřátele, takže živý záběr ukazuje jen sochu, jak stojí), runová vlna ve hře (jen studio a testy), vzhled míst
+za šera a v noci.
+
+Zbývá: pět monster s variantami (Barrow Wisp, Carrion Crow, Stoneback, Vinelasher, Mirefin), schválené úpravy
+goblinů a orků (šamanův tanec, rozzuřený brute, berserker, vrhací sekera huntress, válečný buben), vegetace a domy
+zblízka, břehy pod mosty, zvuky.

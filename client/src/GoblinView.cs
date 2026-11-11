@@ -60,6 +60,8 @@ public sealed class GoblinView : IEnemyView
             "goblin_rapid_archer" => ("archer", "3a5a7a"),
             "goblin_sharpshooter" => ("sharpshooter", "5a3a5a"),
             "goblin_shaman" => ("shaman", "733e39"),
+            "auren_sentinel" => ("sentinel", "8e909c"),
+            "archive_warden" => ("sentinel_warden", "6a6c78"),
             _ => ("skirmisher", "7a4a2e"),
         };
         // Each kind has its own shade of skin, so a camp reads as a crowd and not as copies.
@@ -80,11 +82,14 @@ public sealed class GoblinView : IEnemyView
             "goblin_sharpshooter" => "6aa07a",
             "goblin_shaman" => "8a9a6a",
             "goblin_rapid_archer" => "8ab04a",
+            "auren_sentinel" => "c8c8d0",
+            "archive_warden" => "b4b8c6",
             _ => "7fb04a",
         });
         var clothes = new Color(cloth);
         var look = def.Id == Guild.ExaminerId ? NpcLooks.Examiner : new RigLook(kind, skin, def.Size, def.Weapon)
         {
+            Item = def.Kind == "sentinel" ? "sentinel_blade" : null,
             Palette = new System.Collections.Generic.Dictionary<string, Color>
             {
                 ["gob_skin"] = skin,
@@ -151,8 +156,22 @@ public sealed class GoblinView : IEnemyView
         var dodging = enemy.Action == EnemyAction.Dodge;
         // In the air or rolling, the legs hold the pose instead of running.
         var flying = enemy.Action is EnemyAction.Leap or EnemyAction.Roll;
+        // A guardian that has not woken settles into its stance once and then stands as still as the
+        // statue it looks like, without breathing or shifting its weight.
+        var standing = _def.Statue && !enemy.Fighting && enemy.Action == EnemyAction.Idle && speed < 0.2f;
+        _stillFor = standing ? _stillFor + delta : 0f;
+        if (_stillFor > StatueSettle)
+        {
+            return;
+        }
+
         _rig.Animate(new MotionState(speed > 20f || flying ? 0f : speed, true, 0f, dodging, AttackKind.None, 0, dodging ? WeaponMove.None : MoveFor(enemy.Action, ability)), delta);
     }
+
+    private float _stillFor;
+
+    /// <summary>How long a statue eases into its stance before it freezes, in seconds.</summary>
+    private const float StatueSettle = 0.8f;
 
     /// <summary>Five turns in the server's tornado time, in radians a second.</summary>
     private const float TornadoTurnSpeed = 5f * Mathf.Tau / (Enemy.TornadoTicks * Tuning.TickSeconds);
@@ -238,6 +257,7 @@ public sealed class GoblinView : IEnemyView
             "spearThrow" => winding ? WeaponMove.ThrowBack : WeaponMove.Throw,
             "airSlashWide" => winding ? WeaponMove.SwingBack : WeaponMove.SwingAcross,
             "summonSpears" => winding ? WeaponMove.StaffRaise : WeaponMove.StaffThrust,
+            "runeWave" => winding ? WeaponMove.ClubRaise : WeaponMove.GroundChop,
             "tornado" => WeaponMove.SwingBack,
             _ => WeaponMove.None,
         };
@@ -265,13 +285,21 @@ public sealed class GoblinView : IEnemyView
             if (enemy.Health < _lastHealth)
             {
                 DamageTaken = _lastHealth - enemy.Health;
-                var voice = _def.Kind == "werewolf" ? "werewolf" : _def.Kind == "orc" ? (Female ? "orc_f" : "orc") : "goblin";
-                sfx.Play(enemy.Action == EnemyAction.Dead ? $"{voice}_die" : $"{voice}_hit", position + Vector3.Up);
+                if (_def.Kind == "sentinel")
+                {
+                    // Stone: a dull knock when struck, and a crash of falling masonry at the end.
+                    sfx.Play(enemy.Action == EnemyAction.Dead ? "earth_crack" : "club_thud", position + Vector3.Up);
+                }
+                else
+                {
+                    var voice = _def.Kind == "werewolf" ? "werewolf" : _def.Kind == "orc" ? (Female ? "orc_f" : "orc") : "goblin";
+                    sfx.Play(enemy.Action == EnemyAction.Dead ? $"{voice}_die" : $"{voice}_hit", position + Vector3.Up);
+                }
             }
 
             if (enemy.Fighting && !_lastFighting)
             {
-                sfx.Play(_def.Kind == "werewolf" ? "werewolf_roar" : _def.Kind == "orc" ? (Female ? "orc_f_alert" : "orc_alert") : "goblin_alert", position + Vector3.Up);
+                sfx.Play(_def.Kind == "sentinel" ? "shockwave" : _def.Kind == "werewolf" ? "werewolf_roar" : _def.Kind == "orc" ? (Female ? "orc_f_alert" : "orc_alert") : "goblin_alert", position + Vector3.Up);
             }
 
             if (enemy.Action != _lastAction && enemy.Action == EnemyAction.Strike && _def.Abilities is { } list)
@@ -289,7 +317,8 @@ public sealed class GoblinView : IEnemyView
                     "fangSlash" => "fang_slash",
                     "pounce" => "werewolf_swipe",
                     "superJump" => "earth_crack",
-                    "melee" or "dashStrike" => _def.Kind == "werewolf" ? "werewolf_swipe" : _def.Kind == "orc" ? "orc_swing" : "goblin_swing",
+                    "runeWave" => "swing_heavy",
+                    "melee" or "dashStrike" => _def.Kind == "werewolf" ? "werewolf_swipe" : _def.Kind == "orc" ? "orc_swing" : _def.Kind == "sentinel" ? "swing_heavy" : "goblin_swing",
                     _ => null,
                 };
                 if (sound is not null)
@@ -298,7 +327,7 @@ public sealed class GoblinView : IEnemyView
                 }
 
                 // Goblins scream as they strike, not only when struck.
-                if (_def.Kind is not ("orc" or "werewolf" or "animal" or "slime") && System.Random.Shared.NextDouble() < 0.5)
+                if (_def.Kind is not ("orc" or "werewolf" or "animal" or "slime" or "sentinel") && System.Random.Shared.NextDouble() < 0.5)
                 {
                     sfx.Play(System.Random.Shared.NextDouble() < 0.7 ? "goblin_shriek" : "goblin_cackle", position + Vector3.Up);
                 }

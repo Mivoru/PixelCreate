@@ -18,7 +18,7 @@ public sealed record EnemyDef(
     double RareChance = 0, string Kind = "slime", bool Rare = false, string Weapon = "", float PreferredRange = 2f,
     Ability[]? Abilities = null, DropEntry[]? Drops = null, string Temper = "hostile", LootEntry[]? Loot = null,
     float AlertRange = 0f, float TagHeight = 0f, GearTable? Gear = null, int Defense = 0, string? Behavior = null,
-    bool Leader = false)
+    bool Leader = false, bool Statue = false, float FrontGuard = 1f, float BackBonus = 1f)
 {
     private static readonly Lazy<IReadOnlyList<EnemyDef>> Loaded = new(Load);
 
@@ -35,11 +35,11 @@ public sealed record EnemyDef(
 /// <summary>
 /// A camp: a place enemies live, return to and respawn at. A rare camp holds only rare enemies.
 /// With a route it is a patrol: the group walks from point to point and back, resting at each.
-/// A camp that hunts goes after deer and boar now and then.
+/// A camp that hunts goes after deer and boar now and then. Facing, when set, is the way its statues stand guard.
 /// </summary>
 public readonly record struct EnemySpawn(
     Vector3 Center, float Radius, int Count, int MinLevel = 1, int MaxLevel = 3, int RespawnTicks = 240, bool Rare = false,
-    string[]? Types = null, Vector3[]? Route = null, bool Hunts = false);
+    string[]? Types = null, Vector3[]? Route = null, bool Hunts = false, float? Facing = null);
 
 public enum EnemyAction : byte
 {
@@ -248,6 +248,9 @@ public sealed partial class Enemy
         }
 
         Position = spot;
+        // A statue keeps the spot and the facing it rose with, and goes back to them after a fight.
+        Post = spot;
+        StatueFacing = Facing = Home.Facing ?? angle;
         Velocity = Vector3.Zero;
         Health = (short)MaxHealth;
         Action = EnemyAction.Idle;
@@ -451,6 +454,18 @@ public sealed partial class Enemy
             damage = (short)MathF.Round(damage * Tuning.StaggerDamageScale);
         }
 
+        // A guardian's front is armoured and its back is not: blows are worth going round for.
+        var side = GuardSide(from);
+        if (side > 0 && Def.FrontGuard < 1f && Action != EnemyAction.Stagger)
+        {
+            damage = (short)Math.Max(1, MathF.Round(damage * Def.FrontGuard));
+            Guarded = 8;
+        }
+        else if (side < 0 && Def.BackBonus > 1f)
+        {
+            damage = (short)MathF.Round(damage * Def.BackBonus);
+        }
+
         if (TaggedBy < 0)
         {
             TaggedBy = attackerId;
@@ -464,7 +479,7 @@ public sealed partial class Enemy
         Health -= damage;
         HitFlash = 10;
         var away = Flat(Position - from);
-        if (away != Vector3.Zero)
+        if (away != Vector3.Zero && !Def.Statue)
         {
             Velocity += Vector3.Normalize(away) * 5f + Vector3.UnitY * 3f;
         }
@@ -473,7 +488,7 @@ public sealed partial class Enemy
         {
             Action = EnemyAction.Hop;
         }
-        else if (Def.Kind != "slime" && Action is not (EnemyAction.Cast or EnemyAction.Leap or EnemyAction.Strike or EnemyAction.Stagger))
+        else if (Def.Kind != "slime" && !Def.Statue && Action is not (EnemyAction.Cast or EnemyAction.Leap or EnemyAction.Strike or EnemyAction.Stagger))
         {
             // A short stagger, then it turns on the attacker. Without this a grazing boar kept an
             // action the fighting code does not know and slid away on the knockback for good, still
@@ -497,6 +512,26 @@ public sealed partial class Enemy
         Velocity = Vector3.Zero;
         return true;
     }
+
+    /// <summary>Ticks left of the spark a guarded blow throws off, for the client.</summary>
+    public byte Guarded;
+
+    /// <summary>Whether a blow from a point lands on the front (1), the back (-1) or a flank (0).</summary>
+    public int GuardSide(Vector3 from)
+    {
+        var toward = Flat(from - Position);
+        if (toward == Vector3.Zero)
+        {
+            return 0;
+        }
+
+        var facing = new Vector3(-MathF.Sin(Facing), 0, -MathF.Cos(Facing));
+        var dot = Vector3.Dot(Vector3.Normalize(toward), facing);
+        return dot > GuardCone ? 1 : dot < -GuardCone ? -1 : 0;
+    }
+
+    /// <summary>How square in front or behind a blow must come to count as front or back (the cosine of the angle).</summary>
+    public const float GuardCone = 0.4f;
 
     /// <summary>
     /// Keeps the warning on the player while an attack winds up. It locks a moment before the attack
