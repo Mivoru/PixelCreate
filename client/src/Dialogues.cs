@@ -741,6 +741,75 @@ public static class NpcLooks
         },
     };
 
+    /// <summary>Marta: the round, brisk innkeeper of the Last Lantern, hair up in a bun, sleeves rolled, apron on.</summary>
+    private static readonly RigLook Innkeeper = new("innkeeper", new Color("e8b090"), 0.98f, "none")
+    {
+        Hair = "elda",
+        Feminine = true,
+        Cloak = false,
+        Mood = "happy",
+        Rest = "clasped",
+        Extras = new[] { "apron" },
+        Eyes = new Color("5a3a2a"),
+        Brows = new Color("6a4a2a"),
+        FaceWidth = 1.08f,
+        FaceStyle = new FaceStyle(1, 1, 1, "cheek"),
+        Palette = new Dictionary<string, Color>
+        {
+            ["anime_hair"] = new("8a5a3a"),
+            ["anime_shirt"] = new("c8a888"),
+            ["anime_trousers"] = new("6a3a3a"),
+            ["anime_dark"] = new("3a2a2a"),
+            ["anime_apron"] = new("f0e8d8"),
+            ["anime_glove"] = new("e8b090"),
+        },
+    };
+
+    /// <summary>Aldous: a thin old pilgrim in a grey robe with a long white beard, bound for the shrine each day.</summary>
+    private static readonly RigLook Pilgrim = new("pilgrim", new Color("d8a888"), 0.97f, "staff")
+    {
+        Hair = "shaved",
+        Cloak = true,
+        Mood = "tired",
+        Item = "shepherd_crook",
+        Stoop = 0.06f,
+        Extras = new[] { "robe", "beard" },
+        Eyes = new Color("6a7a8a"),
+        Brows = new Color("e0e0e0"),
+        FaceStyle = new FaceStyle(2, 0, 2),
+        Palette = new Dictionary<string, Color>
+        {
+            ["anime_hair"] = new("e8e8e8"),
+            ["anime_shirt"] = new("7a7a80"),
+            ["anime_trousers"] = new("5a5a60"),
+            ["anime_dark"] = new("3a3a40"),
+            ["anime_robe"] = new("8a8a90"),
+            ["anime_cloak"] = new("5a5a60"),
+            ["anime_glove"] = new("d8a888"),
+        },
+    };
+
+    /// <summary>Fennick: a quick-talking young peddler in a patched green coat, a satchel of odds and ends.</summary>
+    private static readonly RigLook Peddler = new("peddler", new Color("f0c8a8"), 0.93f, "none")
+    {
+        Hair = "swept",
+        Cloak = false,
+        Mood = "happy",
+        Extras = new[] { "vest" },
+        Eyes = new Color("4a7a3a"),
+        Brows = new Color("3a2a1a"),
+        FaceStyle = new FaceStyle(0, 2, 0),
+        Palette = new Dictionary<string, Color>
+        {
+            ["anime_hair"] = new("3a2a1a"),
+            ["anime_shirt"] = new("4a6a3a"),
+            ["anime_trousers"] = new("6a5a3a"),
+            ["anime_dark"] = new("2a2a1a"),
+            ["anime_vest"] = new("8a6a3a"),
+            ["anime_glove"] = new("f0c8a8"),
+        },
+    };
+
     /// <summary>Every person with a name, for the photo studio.</summary>
     public static readonly (string Name, RigLook Look)[] All =
     {
@@ -749,7 +818,7 @@ public static class NpcLooks
         ("nell", Captive), ("haruto", Lost), ("vosk", FinderCaptain), ("gil", FinderGil), ("hanne", FinderHanne), ("corb", FinderCorb),
         ("corwin", BranchMaster), ("tam", Apprentice), ("edwin", PartySword), ("moss", PartyBow), ("fen", PartyHealer),
         ("rook", PartyShield), ("osric", Miller), ("anwen", MillerDaughter), ("hamm", FarmElder), ("maddy", FarmGirl),
-        ("tobias", Farmhand), ("oswin", Woodcutter), ("jory", WoodcutterB), ("tobb", Fisher), ("brin", Shepherd),
+        ("tobias", Farmhand), ("oswin", Woodcutter), ("jory", WoodcutterB), ("tobb", Fisher), ("brin", Shepherd), ("marta", Innkeeper), ("aldous", Pilgrim), ("fennick", Peddler),
     };
 
     public static RigLook? For(string role) => role switch
@@ -787,6 +856,9 @@ public static class NpcLooks
         "woodcutter_b" => WoodcutterB,
         "fisher" => Fisher,
         "shepherd" => Shepherd,
+        "innkeeper" => Innkeeper,
+        "pilgrim" => Pilgrim,
+        "peddler" => Peddler,
         _ => null,
     };
 }
@@ -819,6 +891,9 @@ public static class Dialogues
         "woodcutter" or "woodcutter_b" => "Woodcutter",
         "fisher" => "Fisherman",
         "shepherd" => "Shepherd",
+        "innkeeper" => "Innkeeper",
+        "pilgrim" => "Pilgrim",
+        "peddler" => "Peddler",
         "captive" => "Bonded Girl",
         "lost" => "Lightborn",
         "finder_captain" => "Finder Captain",

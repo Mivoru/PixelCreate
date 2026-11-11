@@ -1516,5 +1516,122 @@
       "similarity_boost": 0.75,
       "style": 0.3
     }
+  },
+  "marta": {
+    "voice": {
+      "id": "hpp4J3VqNfWAUOO0d1Us",
+      "name": "Bella",
+      "stability": 0.5,
+      "similarity_boost": 0.75,
+      "style": 0.35
+    },
+    "moods": [],
+    "barks": [
+      {
+        "when": {
+          "time": {
+            "from": 360,
+            "to": 720
+          }
+        },
+        "text": "Kettle's on. Mind the step, it's been loose since my mother's day."
+      },
+      {
+        "when": {
+          "time": {
+            "from": 360,
+            "to": 1380
+          }
+        },
+        "text": "Last bed before the pass. Last ale too, so drink slow."
+      },
+      {
+        "when": {
+          "time": {
+            "from": 1080,
+            "to": 1380
+          }
+        },
+        "text": "Stew's thick tonight. Don't ask what's in it."
+      }
+    ]
+  },
+  "aldous": {
+    "voice": {
+      "id": "SAz9YHcvj6GT2YYXdXww",
+      "name": "River",
+      "stability": 0.6,
+      "similarity_boost": 0.75,
+      "style": 0.2
+    },
+    "moods": [],
+    "barks": [
+      {
+        "when": {
+          "time": {
+            "from": 360,
+            "to": 540
+          }
+        },
+        "text": "The shrine is a short walk. The prayer is the long part."
+      },
+      {
+        "when": {
+          "time": {
+            "from": 540,
+            "to": 900
+          }
+        },
+        "text": "Whoever raised this shrine knew the road would be hard."
+      },
+      {
+        "when": {
+          "time": {
+            "from": 900,
+            "to": 1320
+          }
+        },
+        "text": "Forty years walking, and every pass looks like the last one."
+      }
+    ]
+  },
+  "fennick": {
+    "voice": {
+      "id": "TX3LPaxmHKxFdv7VOQHJ",
+      "name": "Liam",
+      "stability": 0.4,
+      "similarity_boost": 0.75,
+      "style": 0.45
+    },
+    "moods": [],
+    "barks": [
+      {
+        "when": {
+          "time": {
+            "from": 360,
+            "to": 1200
+          }
+        },
+        "text": "Buckles, needles, a very lucky spoon. No? Your loss."
+      },
+      {
+        "when": {
+          "time": {
+            "from": 360,
+            "to": 1200
+          }
+        },
+        "text": "Rockfall's closed the pass. I'll sell to the trees if I have to."
+      },
+      {
+        "when": {
+          "time": {
+            "from": 1200,
+            "to": 1380
+          }
+        },
+        "text": "Marta waters the ale. Don't tell her I said so."
+      }
+    ]
   }
 }

@@ -258,6 +258,8 @@ Rules:
   Tobb casting from the pier end with his rod (`work` every 7 s), resting on the bench at noon and gutting at the rack.
   Shepherd's Croft north of the King's Road (a stone pen with a gate, sheep inside, a cottage and well) has Brin
   tending her flock with a crook. The Old Watchtower (`tower_ruin`) in the Northern Wilds is a goblin lookout.
+  The Last Lantern, an inn on Mirror Way before the south pass: Marta keeps it, Aldous the pilgrim walks to the
+  Pilgrim Shrine each morning and back, Fennick the peddler hangs about his cart. All the new people have voices.
   The tavern yard (three tables east of the tavern door, footpath from the south road) fills from six: Corwin keeps
   his bench all day, the Brightwater Four (Edwin, Moss, Fen, Rook) have the south table. Mornings the Four meet by
   the Guild door, Osric and Anwen are at the mill, Hamm, Maddy and Tobias on Harrow Farm, Tam by Hollis's counter.
