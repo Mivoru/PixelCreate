@@ -1433,5 +1433,46 @@
       }
     ],
     "moods": []
+  },
+  "brin": {
+    "barks": [
+      {
+        "when": {
+          "time": {
+            "from": 360,
+            "to": 780
+          }
+        },
+        "text": "Easy, Clover. Nobody's taking you."
+      },
+      {
+        "when": {
+          "time": {
+            "from": 360,
+            "to": 1200
+          }
+        },
+        "text": "Goblins took three of mine last spring. I count them twice a day now."
+      },
+      {
+        "when": {
+          "time": {
+            "from": 780,
+            "to": 900
+          }
+        },
+        "text": "Water's cold this morning. Good for the wool."
+      },
+      {
+        "when": {
+          "time": {
+            "from": 900,
+            "to": 1200
+          }
+        },
+        "text": "If you're going west, keep to the road. The burnt farm isn't empty."
+      }
+    ],
+    "moods": []
   }
 }

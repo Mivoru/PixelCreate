@@ -317,6 +317,13 @@ def fishing_rod(k):
     k.round((0.05, 1.18, 0.02), (0.025, 0.04, 0.025), "wpn_red")
 
 
+def shepherd_crook(k):
+    """A shepherd's crook: a tall straight staff of pale wood with a hook bent at the top, worn smooth."""
+    k.tube([(0, -0.35, 0), (0, 1.35, 0)], [0.022, 0.018], [0.022, 0.018], "wpn_wood_pale", sides=7)
+    hook = [(0, 1.35, 0), (0.05, 1.48, 0), (0.15, 1.53, 0), (0.24, 1.48, 0), (0.26, 1.38, 0), (0.22, 1.3, 0)]
+    k.tube(hook, [0.018] * len(hook), [0.018] * len(hook), "wpn_wood_pale", sides=7)
+
+
 def sentinel_blade(k):
     """An Auren sentinel's greatsword: a broad, straight blade of grey marble longer than a man's arm,
     a rune channel glowing down its middle, a bronze guard like spread wings and a long bronze-bound grip."""
@@ -338,6 +345,7 @@ BUILDERS = {
     "orc_battle_axe": orc_battle_axe,
     "wood_axe": wood_axe,
     "fishing_rod": fishing_rod,
+    "shepherd_crook": shepherd_crook,
     "twin_daggers": twin_daggers,
     "rusty_dagger": rusty_dagger,
     "wooden_sword": wooden_sword,
