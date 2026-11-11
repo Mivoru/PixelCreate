@@ -366,18 +366,20 @@
   },
   {
     "id": "barrow_wisp", "behavior": "ranged", "name": "Barrow Wisp", "kind": "wisp",
-    "minLevel": 6, "maxLevel": 8, "health": 70, "healthPerLevel": 10, "speed": 4.5, "size": 1.0, "aggroRange": 16, "preferredRange": 8, "tagHeight": 2.1,
+    "minLevel": 6, "maxLevel": 8, "health": 110, "healthPerLevel": 14, "speed": 4.5, "size": 1.0, "aggroRange": 16, "preferredRange": 8, "tagHeight": 2.1,
     "abilities": [
-      { "effect": "wispBolt", "range": 14, "windupTicks": 40, "recoverTicks": 24, "cooldownTicks": 130, "damage": 12, "telegraph": "none" }
+      { "effect": "wispBolt", "range": 14, "windupTicks": 40, "recoverTicks": 24, "cooldownTicks": 130, "damage": 12, "telegraph": "none" },
+      { "effect": "spin", "range": 3, "windupTicks": 30, "recoverTicks": 26, "cooldownTicks": 220, "damage": 12, "radius": 3.2, "telegraph": "circle" }
     ],
     "drops": [{ "rarity": 0, "chance": 1 }, { "rarity": 1, "chance": 0.08 }],
     "loot": [{"item": "wisp_ember", "chance": 0.7, "min": 1, "max": 2}]
   },
   {
     "id": "lantern_of_the_barrow", "behavior": "ranged", "name": "Lantern of the Barrow", "kind": "wisp", "rare": true,
-    "minLevel": 9, "maxLevel": 9, "health": 380, "healthPerLevel": 30, "speed": 4.8, "size": 1.25, "aggroRange": 18, "preferredRange": 9, "tagHeight": 2.4,
+    "minLevel": 9, "maxLevel": 9, "health": 480, "healthPerLevel": 30, "speed": 4.8, "size": 1.25, "aggroRange": 18, "preferredRange": 9, "tagHeight": 2.4,
     "abilities": [
       { "effect": "wispBolt", "range": 15, "windupTicks": 36, "recoverTicks": 22, "cooldownTicks": 100, "damage": 15, "telegraph": "none" },
+      { "effect": "spin", "range": 3.2, "windupTicks": 30, "recoverTicks": 24, "cooldownTicks": 200, "damage": 16, "radius": 3.6, "telegraph": "circle" },
       { "effect": "wispSplit", "range": 16, "windupTicks": 45, "recoverTicks": 20, "cooldownTicks": 540, "damage": 0, "telegraph": "none" }
     ],
     "drops": [{ "rarity": 1, "chance": 1 }, { "rarity": 2, "chance": 0.25 }],
@@ -385,7 +387,7 @@
   },
   {
     "id": "lantern_decoy", "behavior": "ranged", "name": "Lantern of the Barrow", "kind": "wisp", "rare": true, "decoy": true,
-    "minLevel": 9, "maxLevel": 9, "health": 380, "healthPerLevel": 30, "speed": 4.8, "size": 1.25, "aggroRange": 18, "preferredRange": 9, "tagHeight": 2.4,
+    "minLevel": 9, "maxLevel": 9, "health": 480, "healthPerLevel": 30, "speed": 4.8, "size": 1.25, "aggroRange": 18, "preferredRange": 9, "tagHeight": 2.4,
     "abilities": [
       { "effect": "wispBolt", "range": 15, "windupTicks": 36, "recoverTicks": 22, "cooldownTicks": 110, "damage": 5, "telegraph": "none" }
     ],

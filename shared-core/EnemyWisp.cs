@@ -14,7 +14,7 @@ public sealed partial class Enemy
     public bool Night;
 
     /// <summary>How close to a standing stone a player must stand for its light to put the wisps out, in metres.</summary>
-    public const float WardReach = 2.6f;
+    public const float WardReach = 1.6f;
 
     /// <summary>A put-out wisp drifts in this close to the stone, where a blade can reach it.</summary>
     private const float WardDrift = 1.8f;

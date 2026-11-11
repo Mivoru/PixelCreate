@@ -60,7 +60,7 @@ Autor si zahrál a chce samostatnou práci do 6:00. Zaškrtávat, co je hotové:
 - [x] Goblini na začátku (prolog) slabší.
 - [x] Trial v Guildě: úskok platí jen načasovaný, hráči to nikdo neřekne a Shift jde mačkat pořád.
 - [x] Thornback a Briarking: útoky, animace a AI (zasekávání).
-- [ ] Bludičky: zblízka přestanou svítit a jsou slabé.
+- [x] Bludičky: zblízka přestanou svítit a jsou slabé.
 - [ ] Mapa místy prázdná a nudná: víc prvků, terén, stavby, obydlí, monstra, zvířata.
 - [ ] Pak dál ladit startovní lokaci: chytřejší NPC, kteří žijí normálně, namluvené hlášky, postupné joby,
       animace; ptát se, co jde logicky nebo graficky zlepšit, inspirace z jiných RPG a MMORPG.
