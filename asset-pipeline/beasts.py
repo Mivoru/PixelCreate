@@ -490,6 +490,46 @@ def thornback_spec(coat, dark, belly, thorn, scale=1.0):
                             radii=[0.026, 0.021, 0.013, 0.004], material="tusk")])
 
 
+def rock_shell(shell, crag, moss, scale=1.0):
+    """A domed shell of rock: a broad low dome, crags and boulders grown into it, moss in the hollows, a rim
+    of plates round the edge."""
+    def build(b):
+        b.round((0, -0.05, 0.5 * scale), (0.6 * scale, 0.78 * scale, 0.36 * scale), shell, 2)
+        for k, (x, y, z, r) in enumerate(((0.18, 0.2, 0.78, 0.2), (-0.22, -0.1, 0.8, 0.22), (0.05, -0.38, 0.72, 0.18),
+                                           (-0.1, 0.35, 0.72, 0.15), (0.32, -0.25, 0.62, 0.16), (-0.35, 0.15, 0.62, 0.15))):
+            b.round((x * scale, y * scale, z * scale), (r * scale, r * 1.1 * scale, r * 0.8 * scale), crag, 1)
+        for k, (x, y, z) in enumerate(((0.0, 0.05, 0.86), (-0.28, -0.32, 0.66), (0.3, 0.3, 0.64), (0.1, -0.15, 0.82))):
+            b.round((x * scale, y * scale, z * scale), (0.13 * scale, 0.15 * scale, 0.05 * scale), moss, 1)
+        for k in range(12):
+            a = k / 12 * math.tau
+            b.round((math.cos(a) * 0.58 * scale, math.sin(a) * 0.76 * scale - 0.05, 0.3 * scale), (0.12 * scale, 0.14 * scale, 0.07 * scale), crag, 1)
+    return build
+
+
+def stoneback_spec(skin, shell, crag, moss, scale=1.0):
+    """A stoneback: a squat turtle carrying a dome of rock, on four thick legs, with a beaked head on a short neck."""
+    return dict(
+        height=0.42 * scale, coat=skin, face=skin, nose=skin, hoof="hoof", leg_radius=0.07 * scale, leg_coat=skin, shin_coat=skin,
+        ear_coat=skin, ear_inner=skin, eye="eye_black",
+        trunk=[(-0.55 * scale, 0.38 * scale, 0.25 * scale, 0.18 * scale), (-0.3 * scale, 0.42 * scale, 0.5 * scale, 0.24 * scale),
+               (0.1 * scale, 0.44 * scale, 0.52 * scale, 0.25 * scale), (0.45 * scale, 0.42 * scale, 0.4 * scale, 0.2 * scale),
+               (0.62 * scale, 0.4 * scale, 0.2 * scale, 0.14 * scale)],
+        neck=[(0.55 * scale, 0.42 * scale, 0.13 * scale, 0.12 * scale), (0.72 * scale, 0.46 * scale, 0.1 * scale, 0.1 * scale)],
+        head_pivot=(0.74 * scale, 0.47 * scale),
+        head=[(0.72 * scale, 0.5 * scale, 0.1 * scale, 0.1 * scale), (0.82 * scale, 0.5 * scale, 0.11 * scale, 0.1 * scale),
+              (0.92 * scale, 0.47 * scale, 0.08 * scale, 0.07 * scale), (0.99 * scale, 0.44 * scale, 0.04 * scale, 0.04 * scale)],
+        muzzle=(1.0 * scale, 0.44 * scale, 0.035 * scale), eyes=(0.075 * scale, 0.84 * scale, 0.53 * scale),
+        head_extras=[lambda b: b.tube([(0, 0.92 * scale, 0.45 * scale), (0, 1.02 * scale, 0.42 * scale)], [0.05 * scale, 0.01], [0.04 * scale, 0.01], "beak_bone", 6)],
+        ear=(0.06 * scale, 0.78 * scale, 0.55 * scale, 0.02, 0.02, 0.3), front=(0.32 * scale, 0.38 * scale, 0.34 * scale), back=(0.32 * scale, -0.35 * scale, 0.32 * scale),
+        tail=(-0.6 * scale, 0.36 * scale, 0.12 * scale, skin),
+        body_extras=[rock_shell(shell, crag, moss, scale)],
+    )
+
+
+SPECS["stoneback"] = stoneback_spec("stone_skin", "stone_shell", "stone_crag", "moss_shell")
+SPECS["mossback_elder"] = stoneback_spec("elder_skin", "elder_shell", "stone_crag", "moss_shell", 1.35)
+
+
 SPECS["thornback"] = thornback_spec("thorn_coat", "thorn_dark", "thorn_belly", "thorn_spine")
 # The Briarking: the oldest thornback of the jungle, black as wet bark, its thorns gone red.
 SPECS["briarking"] = thornback_spec("briar_coat", "briar_dark", "thorn_belly", "briar_spine", 1.35)
@@ -548,6 +588,8 @@ COLORS = {
     "deer_coat": "A8703C", "deer_belly": "EADCC8", "deer_spots": "C8905A",
     "wool": "F6F2EA", "sheep_face": "2A2628",
     "boar_coat": "5A4038", "boar_dark": "3A2A24", "boar_snout": "C08A80", "tusk": "F0E8D8",
+    "stone_skin": "6A7A5A", "stone_shell": "7A7884", "stone_crag": "5A5864", "moss_shell": "4E6E3C", "beak_bone": "C8B898",
+    "elder_skin": "4E6A4A", "elder_shell": "5E6A5A",
     "duck_body": "8A6A50", "duck_head": "2A6A3A", "duck_wing": "6A6A7A", "duck_bill": "E8C040",
     "hare_coat": "A8805A", "hare_dark": "6A4A30", "hare_belly": "EEE6D8",
     "chicken_white": "F4F0E8", "chicken_wing": "E4DCCE", "comb": "E43B44", "beak": "FEAE34", "chicken_leg": "F7A52A",
@@ -563,4 +605,4 @@ COLORS = {
     "eye_black": "15161C", "eye_glint": "FFFFFF", "antler": "D8C8A8", "ear_pink": "D89A92", "deer_leg": "8A5A34", "deer_dark": "7A4A26", "boar_belly": "7A5A4C",
 }
 
-NAMES = ["cow", "goat", "deer", "doe", "sheep", "pig", "chicken", "wolf", "alpha_wolf", "mirror_wolf", "shadow_wolf", "fox", "mountain_ram", "white_hart", "moor_sheep", "thornback", "briarking", "hare", "duck"]
+NAMES = ["cow", "goat", "deer", "doe", "sheep", "pig", "chicken", "wolf", "alpha_wolf", "mirror_wolf", "shadow_wolf", "fox", "mountain_ram", "white_hart", "moor_sheep", "thornback", "briarking", "hare", "duck", "stoneback", "mossback_elder"]

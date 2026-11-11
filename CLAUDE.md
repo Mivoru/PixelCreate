@@ -445,6 +445,11 @@ Rules:
   fighting comes) and `shieldBash` (throws the player back). Goblin Trappers (by the Old Ruins) `layTrap`: a snare
   (`HazardKind.Snare`, client `SnareNode`) partway to the player that holds whoever steps in it (`Snare.HoldTicks`
   of slow) and is spent; at most `Snare.PerTrapper` each, lifted when the trapper dies. `net-tests/GoblinChiefTests.cs`.
+  Stonebacks (northern foothills; kind `wolf`, `shells`, `EnemyShell.cs`): struck, one pulls into its shell
+  (`EnemyAction.Shell`, `Untouchable`), comes out once the player stands back `Enemy.ShellCalmDistance` for a moment and
+  lunges (`dashStrike`); the rare Mossback Elder's `shellSpin` slides at the player, glancing off what stops it
+  (`Enemy.Glanced`), then stands dizzy. The client tucks head, legs and tail in (`AnimalView.TuckIntoShell`).
+  `net-tests/StonebackTests.cs`.
   War drum (`net-tests/WarDrumTests.cs`): camps with a `drum` point (every Ironjaw camp) answer it. A fighter that
   notices a player within 45 m of the drum runs to it instead (`Enemy.RunsToDrum`, one at a time via
   `ClaimDrum`), beats it for `Enemy.DrumTicks` (`EnemyAction.Drum`), and then every camp of that drum within 60 m

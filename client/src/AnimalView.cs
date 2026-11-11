@@ -40,6 +40,11 @@ public sealed class AnimalView : IEnemyView
     public bool Stunned { get; private set; }
 
     private EnemyAction _lastChargerAction;
+
+    /// <summary>A stoneback: head, legs and tail pull into the shell when it hides or spins.</summary>
+    private readonly bool _shells;
+    private float _tuck;
+    private float _spin;
     private readonly List<(Node3D Leg, Node3D? Shin, float Phase, bool Front)> _legs = new();
     private readonly List<(Node3D Ear, float Side)> _ears = new();
     private readonly List<(Node3D Wing, float Side)> _wings = new();
@@ -159,6 +164,7 @@ public sealed class AnimalView : IEnemyView
         _jaw = Part(scene, "jaw");
         _hunter = def.Kind == "wolf";
         _charger = def.Behavior == "charger";
+        _shells = def.Shells;
         _abilities = def.Abilities;
         _bodyRest = _body.Position;
         foreach (var (name, phase) in new[] { ("fl", 0f), ("br", 0f), ("fr", Mathf.Pi), ("bl", Mathf.Pi) })
@@ -330,6 +336,11 @@ public sealed class AnimalView : IEnemyView
         if (_charger)
         {
             AnimateCharger(enemy, delta);
+        }
+
+        if (_shells)
+        {
+            TuckIntoShell(enemy, delta);
         }
 
         var bob = moving ? Mathf.Abs(Mathf.Sin(_phase)) * (_bird ? 0.03f : 0.03f + gallop * 0.08f) : Mathf.Sin(_clock * 1.6f) * 0.006f;
@@ -555,6 +566,36 @@ public sealed class AnimalView : IEnemyView
         var rate = enemy.Action == EnemyAction.Strike ? 22f : 10f;
         _tuskPitch = Mathf.Lerp(_tuskPitch, wantPitch, 1f - Mathf.Exp(-rate * delta));
         _tuskWeight = Mathf.Lerp(_tuskWeight, wantWeight, 1f - Mathf.Exp(-rate * delta));
+    }
+
+    /// <summary>
+    /// In its shell a stoneback draws in its head, legs and tail and sinks onto the ground; spinning, the whole
+    /// shell turns round and round. It all comes back out when it emerges.
+    /// </summary>
+    private void TuckIntoShell(in EnemyView enemy, float delta)
+    {
+        var hiding = enemy.Action is EnemyAction.Shell or EnemyAction.ShellSpin;
+        _tuck = Mathf.MoveToward(_tuck, hiding ? 1f : 0f, delta * 6f);
+        var out_ = Vector3.One * Mathf.Max(0.05f, 1f - _tuck);
+        _head.Scale = out_;
+        if (_neck is not null)
+        {
+            _neck.Scale = out_;
+        }
+
+        if (_tail is not null)
+        {
+            _tail.Scale = out_;
+        }
+
+        foreach (var (leg, _, _, _) in _legs)
+        {
+            leg.Scale = new Vector3(1f, Mathf.Max(0.15f, 1f - _tuck * 0.85f), 1f);
+        }
+
+        _spin = enemy.Action == EnemyAction.ShellSpin ? _spin + delta * 18f : Mathf.MoveToward(_spin, Mathf.Round(_spin / Mathf.Tau) * Mathf.Tau, delta * 6f);
+        _model.Rotation = new Vector3(0, _spin, 0);
+        _model.Position = new Vector3(0, -_tuck * 0.18f, 0);
     }
 
     private void PoseHead(bool moving, float gallop)

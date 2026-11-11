@@ -3421,6 +3421,10 @@ public sealed partial class GameServer : IEnemyEvents
             case "wispSplit":
                 SplitLantern(enemy, target);
                 break;
+            case "shellSpin":
+                // A spinning shell batters whoever it runs into.
+                Area(enemy.Position, ability.Radius, ability.Damage, enemy);
+                break;
             case "charge":
                 // A charging thornback gores whoever it runs into and throws them aside.
                 Area(enemy.Position + Facing(enemy) * 0.8f, ability.Radius, ability.Damage, enemy);

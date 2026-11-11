@@ -32,6 +32,8 @@
   { "id": "wisp_ember", "name": "Wisp Ember", "kind": "material", "tier": 1, "price": 16, "icon": "wisp_ember", "description": "A cold blue spark that will not go out. It gives no warmth." },
   { "id": "barrow_glass", "name": "Barrow Glass", "kind": "material", "tier": 2, "price": 85, "icon": "barrow_glass", "description": "A shard of the lantern's glass. The light inside still moves." },
   { "id": "war_horn", "name": "Warchief's Horn", "kind": "material", "tier": 2, "price": 75, "icon": "war_horn", "description": "A cracked ram's horn bound in brass. It still sounds, if badly." },
+  { "id": "stone_scute", "name": "Stone Scute", "kind": "material", "tier": 1, "price": 20, "icon": "stone_scute", "description": "A plate of a stoneback's shell, rock on the outside and horn underneath." },
+  { "id": "elder_moss", "name": "Elder Moss", "kind": "material", "tier": 2, "price": 80, "icon": "elder_moss", "description": "Moss that has grown on one shell for a hundred years. It smells of rain." },
   { "id": "crow_eye", "name": "Crow's Eye", "kind": "material", "tier": 0, "price": 6, "icon": "crow_eye", "description": "Black and glossy. Hedge witches pay for them by the dozen." },
   { "id": "black_quill", "name": "Black Quill", "kind": "material", "tier": 2, "price": 60, "icon": "black_quill", "description": "A long pinion from the Gallows Rook, black with a sheen of green." },
 

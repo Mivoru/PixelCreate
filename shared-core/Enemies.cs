@@ -19,7 +19,8 @@ public sealed record EnemyDef(
     Ability[]? Abilities = null, DropEntry[]? Drops = null, string Temper = "hostile", LootEntry[]? Loot = null,
     float AlertRange = 0f, float TagHeight = 0f, GearTable? Gear = null, int Defense = 0, string? Behavior = null,
     bool Leader = false, bool Statue = false, float FrontGuard = 1f, float BackBonus = 1f,
-    float EnrageAt = 0f, float EnrageWindup = 1f, float EnrageRecover = 1f, float EnrageTaken = 1f, bool Decoy = false)
+    float EnrageAt = 0f, float EnrageWindup = 1f, float EnrageRecover = 1f, float EnrageTaken = 1f, bool Decoy = false,
+    bool Shells = false)
 {
     private static readonly Lazy<IReadOnlyList<EnemyDef>> Loaded = new(Load);
 
@@ -88,6 +89,12 @@ public enum EnemyAction : byte
 
     /// <summary>A wisp put out by a standing stone a player stands by: it cannot cast, drifts to the stone and takes more from blows.</summary>
     Dim = 19,
+
+    /// <summary>A stoneback pulled into its shell: it cannot be hurt and waits for the player to back off.</summary>
+    Shell = 20,
+
+    /// <summary>A Mossback Elder spinning in its shell and sliding, glancing off what it meets.</summary>
+    ShellSpin = 21,
 }
 
 /// <summary>The nametag colour rule: how an enemy compares with the player.</summary>
@@ -531,6 +538,9 @@ public sealed partial class Enemy
         Health -= damage;
         HitFlash = 10;
 
+        // A stoneback struck pulls into its shell.
+        Withdraw();
+
         // One crow struck sends the whole flock up and away for a moment.
         if (Def.Kind == "crow" && Health > 0)
         {
@@ -547,7 +557,8 @@ public sealed partial class Enemy
         {
             Action = EnemyAction.Hop;
         }
-        else if (Def.Kind != "slime" && !Def.Statue && Action is not (EnemyAction.Cast or EnemyAction.Leap or EnemyAction.Strike or EnemyAction.Stagger))
+        else if (Def.Kind != "slime" && !Def.Statue && Action is not (EnemyAction.Cast or EnemyAction.Leap or EnemyAction.Strike or EnemyAction.Stagger
+                     or EnemyAction.Shell or EnemyAction.ShellSpin))
         {
             // A short stagger, then it turns on the attacker. Without this a grazing boar kept an
             // action the fighting code does not know and slid away on the knockback for good, still

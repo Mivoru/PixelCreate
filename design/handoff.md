@@ -82,7 +82,7 @@ v `asset-pipeline/`, studio záběr (`PIXEL_MONSTERS=...`), dokumentace, commit 
 3. ~~**Goblin Warchief** a **Goblin Trapper**~~ hotovo 2026-11-11 v noci. Původní zadání: (Goblin Warren): roh svolá hlídku z nejbližší chodby (lze vyjít z `SoundAlarm`
    válečného bubnu), rána štítem, která odhodí. **Goblin Trapper** (Old Ruins): klade viditelné nášlapné
    sítě, které hráče na 1 s zpomalí (zpomalení musí jít přes `PlayerState`, aby ho klient předpověděl).
-4. **Stoneback** (předhůří a sedla) s **Mossback Elder** (roztočí se v krunýři a klouže).
+4. ~~**Stoneback**~~ hotovo 2026-11-11 v noci (severní předhůří). Původně: (předhůří a sedla) s **Mossback Elder** (roztočí se v krunýři a klouže).
 5. **Vinelasher** (Emerald Jungle, nehýbe se) se **Stranglethorn** a **Mirefin** (Mirror Lake, ve vodě)
    s **Old Gulper**. Oba potřebují nový druh pohybu, proto až na konci.
 6. Vegetace a domy zblízka (kontrola každé budovy zblízka), břehy pod mosty.

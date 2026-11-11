@@ -46,7 +46,7 @@ public sealed partial class Enemy
 
         StepTurn(events, Action == EnemyAction.Strike && _lastGoblinAction != EnemyAction.Strike);
         _lastGoblinAction = Action;
-        if (StepWard(world, targets) || StepScatter(world, targets, events))
+        if (StepWard(world, targets) || StepScatter(world, targets, events) || StepShell(targets, world, random))
         {
             Fall(world, random, events);
             return;
@@ -77,6 +77,9 @@ public sealed partial class Enemy
                     Release(events, targets);
                 }
 
+                break;
+            case EnemyAction.ShellSpin:
+                StepSpin(targets, events);
                 break;
             case EnemyAction.Leap when CurrentAbility?.Effect == "charge":
                 StepCharge(targets, events);
@@ -437,6 +440,12 @@ public sealed partial class Enemy
         {
             ShadowSlides = 0;
             Submerge(targets);
+            return;
+        }
+
+        if (ability.Effect == "shellSpin")
+        {
+            StartSpin(targets);
             return;
         }
 
