@@ -2828,7 +2828,7 @@ public partial class GameClient : Node
                     _sfx.Play("spear_summon", ball.Position, -8f);
                 }
                 else if (spit.Kind is not (ProjectileKind.PlayerArrow or ProjectileKind.AirSlash or ProjectileKind.AirSlashWide or ProjectileKind.ThrownSpear
-                    or ProjectileKind.FangSlash or ProjectileKind.Knife))
+                    or ProjectileKind.FangSlash or ProjectileKind.Knife or ProjectileKind.ThrownAxe))
                 {
                     _sfx.Play(spit.Kind switch
                     {
@@ -2843,6 +2843,13 @@ public partial class GameClient : Node
 
             var motion = target - ball.Position;
             ball.Position = ball.Position.Lerp(target, spit.Kind == ProjectileKind.PowerArrow ? 1f : blend);
+            if (spit.Kind == ProjectileKind.ThrownAxe)
+            {
+                // End over end along its way: turned to face where it flies, then tumbling about its own axis.
+                var flat = new Vector2(motion.X, motion.Z);
+                var yaw = flat.LengthSquared() > 0.0001f ? Mathf.Atan2(-flat.X, -flat.Y) : ball.Rotation.Y;
+                ball.Rotation = new Vector3(-(float)(Time.GetTicksMsec() % 100000) / 1000f * AxeTumble, yaw, 0);
+            }
             if (spit.Kind is ProjectileKind.Arrow or ProjectileKind.PowerArrow or ProjectileKind.PlayerArrow or ProjectileKind.AirSlash
                     or ProjectileKind.AirSlashWide or ProjectileKind.ThrownSpear or ProjectileKind.SummonedSpear or ProjectileKind.FangSlash
                     or ProjectileKind.Knife or ProjectileKind.Meteor
@@ -2923,7 +2930,7 @@ public partial class GameClient : Node
                 _fx.Burst(last, new Color("c0cbdc"), 16, 5f, 0.35f, 0.07f, 0f, 120f);
                 _fx.Burst(last, new Color("ffffff"), 8, 3f, 0.25f, 0.05f, 0f, 120f);
                 break;
-            case ProjectileKind.ThrownSpear or ProjectileKind.SummonedSpear:
+            case ProjectileKind.ThrownSpear or ProjectileKind.SummonedSpear or ProjectileKind.ThrownAxe:
                 _sfx.Play("arrow_hit", last);
                 _fx.Burst(last, new Color("b86f50"), 10, 4f, 0.35f, 0.07f);
                 break;
@@ -3007,6 +3014,11 @@ public partial class GameClient : Node
         if (kind is ProjectileKind.ThrownSpear or ProjectileKind.SummonedSpear)
         {
             return BuildThrownSpear(position, kind == ProjectileKind.SummonedSpear);
+        }
+
+        if (kind == ProjectileKind.ThrownAxe)
+        {
+            return BuildThrownAxe(position);
         }
 
         if (kind is ProjectileKind.Arrow or ProjectileKind.PowerArrow)
@@ -3105,6 +3117,34 @@ public partial class GameClient : Node
     /// The spearwoman's spear in flight: a long dark shaft with an iron head, point first. A conjured
     /// spear glows: its head burns orange and it sheds embers.
     /// </summary>
+    private MeshInstance3D BuildThrownAxe(Vector3 position)
+    {
+        // The haft runs along the axe's own Y, so tumbling about X turns it end over end.
+        var haft = new MeshInstance3D
+        {
+            Mesh = new BoxMesh { Size = new Vector3(0.05f, 0.62f, 0.05f) },
+            MaterialOverride = _fx.Stipple(new Color("4a3028"), 1f),
+            Position = position,
+        };
+        haft.AddChild(new MeshInstance3D
+        {
+            Mesh = new BoxMesh { Size = new Vector3(0.04f, 0.2f, 0.26f) },
+            MaterialOverride = _fx.Stipple(new Color("8b9bb4"), 1f),
+            Position = new Vector3(0, 0.24f, -0.12f),
+        });
+        haft.AddChild(new MeshInstance3D
+        {
+            Mesh = new BoxMesh { Size = new Vector3(0.05f, 0.22f, 0.04f) },
+            MaterialOverride = _fx.Stipple(new Color("c0cbdc"), 1f),
+            Position = new Vector3(0, 0.24f, -0.25f),
+        });
+        haft.AddChild(Trail(new Color("c0cbdc"), 10, 0.16f, 0.04f));
+        return haft;
+    }
+
+    /// <summary>How fast a thrown axe tumbles, in radians a second.</summary>
+    private const float AxeTumble = 20f;
+
     private MeshInstance3D BuildThrownSpear(Vector3 position, bool conjured)
     {
         var shaft = new MeshInstance3D

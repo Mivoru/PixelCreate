@@ -136,7 +136,8 @@
     "aggroRange": 16, "preferredRange": 2.4, "tagHeight": 2.4,
     "abilities": [
       { "effect": "melee", "range": 2.8, "windupTicks": 16, "recoverTicks": 14, "cooldownTicks": 30, "damage": 16, "radius": 1.5 },
-      { "effect": "airSlash", "range": 9, "windupTicks": 34, "recoverTicks": 22, "cooldownTicks": 190, "damage": 24, "telegraph": "line" }
+      { "effect": "airSlash", "range": 9, "windupTicks": 34, "recoverTicks": 22, "cooldownTicks": 190, "damage": 24, "telegraph": "line" },
+      { "effect": "axeThrow", "range": 10, "minRange": 4, "windupTicks": 30, "recoverTicks": 20, "cooldownTicks": 220, "damage": 18, "telegraph": "line" }
     ],
     "drops": [{ "rarity": 0, "chance": 1 }, { "rarity": 1, "chance": 0.14 }, { "rarity": 2, "chance": 0.03 }],
     "gear": { "chance": 0.07, "rarity": [50, 32, 14, 4], "items": ["leather_jerkin", "patched_trousers", "boar_boots"] },

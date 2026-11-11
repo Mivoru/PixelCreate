@@ -97,6 +97,9 @@ public enum ProjectileKind : byte
 
     /// <summary>Staff mastery Meteor: a burning rock falling on the end of the line of fire.</summary>
     Meteor = 13,
+
+    /// <summary>An orc huntress's hand axe, thrown end over end in a shallow arc.</summary>
+    ThrownAxe = 14,
 }
 
 /// <summary>What a ground hazard is: the shaman's burning V or a player's strip of fire, an orc's crack in the earth,
@@ -212,6 +215,7 @@ public sealed partial class GameServer : IEnemyEvents
     /// <summary>When each conjured spear shoots, in ticks after they appear.</summary>
     private static readonly int[] SpearDelays = { 30, 46, 62 };
     private const float SpearSpeed = 24f;
+    private const float AxeSpeed = 17f;
     private const float SpitLead = 0.6f;
     private const float VolleySpread = 0.2f;
     private const float SplashPush = 4f;
@@ -3344,6 +3348,12 @@ public sealed partial class GameServer : IEnemyEvents
                     }
                 }
 
+                break;
+            case "axeThrow":
+                // A hand axe thrown end over end: slower than a spear, so a player who sees it go can still step aside.
+                var axe = Shoot(ProjectileKind.ThrownAxe, chest + Vector3.UnitY * 0.2f, direction * AxeSpeed, ability.Damage);
+                axe.Gravity = Tuning.Gravity * 0.25f;
+                axe.Velocity.Y += axe.Gravity * 0.5f * (Vector3.Distance(aimPoint, chest) / AxeSpeed);
                 break;
             case "runeWave":
                 var way = direction with { Y = 0 };

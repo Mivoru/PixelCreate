@@ -9,7 +9,7 @@ namespace PixelCreate.Core;
 /// from above the head), tornado (a long spin that drifts after the player), fangSlash (three slanted red
 /// crescents side by side), superJump (a charged leap from far off that rolls on a miss) and runeWave (three
 /// straight lanes of rune light along the ground, with gaps to stand in) and warDance (a shaman's dance that
-/// hastens the goblins of its camp nearby).</summary>
+/// hastens the goblins of its camp nearby) and axeThrow (a hand axe thrown end over end).</summary>
 public sealed record Ability(
     string Effect, float Range, int WindupTicks, int RecoverTicks, int CooldownTicks, short Damage,
     float Radius = 0f, float MinRange = 0f, string Telegraph = "none");

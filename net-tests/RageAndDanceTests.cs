@@ -82,6 +82,28 @@ public class RageAndDanceTests
         Assert.InRange(cast, Enemy.MinWindupTicks - 1, (int)MathF.Round(slam.WindupTicks * brute.Def.EnrageWindup));
     }
 
+    /// <summary>A player who backs off from an orc huntress is not safe at a few metres: she throws a hand axe.</summary>
+    [Fact]
+    public void Huntress_ThrowsAnAxe_AtAPlayerOutOfReachOfHerBlade()
+    {
+        var axe = EnemyDef.All.Single(d => d.Id == "orc_huntress").Abilities!.Single(a => a.Effect == "axeThrow");
+        Assert.Equal("line", axe.Telegraph);
+        Assert.True(axe.WindupTicks >= Enemy.MinWindupTicks);
+
+        var (server, client, network) = Start(7f, 1, "orc_huntress");
+        var huntress = server.Enemies[0];
+        var thrown = false;
+        for (var i = 0; i < Tuning.TickRate * 15 && !thrown; i++)
+        {
+            Play(server, client, network, 1);
+            thrown = huntress.CurrentAbility?.Effect == "axeThrow" && huntress.Action == EnemyAction.Strike;
+        }
+
+        Assert.True(thrown, "the huntress never threw her axe at a player seven metres away");
+        Play(server, client, network, Tuning.TickRate * 2);
+        Assert.True(server.Stats.PlayerHits > 0, "the thrown axe must hit a player who stands still");
+    }
+
     [Fact]
     public void Berserker_InItsFrenzy_TakesMoreFromEveryBlow()
     {
