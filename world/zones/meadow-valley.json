@@ -228,6 +228,9 @@
   ],
   "enemies": [
     { "x": 42.6, "z": -2, "radius": 5, "count": 4, "respawnTicks": 1800, "types": ["cow"] },
+    { "x": -104, "z": -128, "radius": 8, "count": 3, "respawnTicks": 2400, "types": ["thornback"] },
+    { "x": -76, "z": -146, "radius": 7, "count": 2, "respawnTicks": 2400, "types": ["thornback"] },
+    { "x": -124, "z": -150, "radius": 3, "count": 1, "respawnTicks": 9000, "types": ["briarking"] },
     { "x": -112, "z": 72, "radius": 12, "count": 2, "respawnTicks": 3000, "types": ["fox"] },
     { "x": -188, "z": 34, "radius": 12, "count": 2, "respawnTicks": 3000, "types": ["fox"] },
     { "x": -62, "z": -186, "radius": 12, "count": 2, "respawnTicks": 3000, "types": ["fox"] },

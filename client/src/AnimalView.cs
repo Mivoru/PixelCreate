@@ -71,6 +71,7 @@ public sealed class AnimalView : IEnemyView
             "white_hart" => "deer",
             "mountain_ram" => "goat",
             "moor_sheep" => "sheep",
+            "thornback" or "briarking" => "pig",
             _ => def.Id,
         };
         _bird = def.Id == "chicken";
@@ -405,6 +406,7 @@ public sealed class AnimalView : IEnemyView
         ("pig", "call") => "pig_grunt",
         ("chicken", "call") => "chicken_cluck",
         ("chicken", _) => "chicken_squawk",
+        ("pig", _) => "pig_hurt",
         ("deer", _) => "deer_hurt",
         ("fox", _) => "wolf_hurt",
         (_, "call") when _hunter => "wolf_howl",

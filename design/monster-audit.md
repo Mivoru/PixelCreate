@@ -59,3 +59,65 @@ ovlivňují čitelnost, je jen návrh.
 3. Zvuky vlka (bod 4), až bude dovoleno platit generování.
 4. Šamanův tanec (bod 6).
 5. Nápřahy lehkých útoků (bod 2): rozhodnutí autora.
+
+
+---
+
+## Nová monstra, vzácné varianty a doladění goblinů a orků (2026-11-11)
+
+Autor schválil všech sedm navržených monster (`design/meadow-valley-rework.md`) a chce ke každému
+vzácnou variantu se zvláštní schopností. Úrovně a čísla jsou výchozí odhad, ne balanc.
+
+### Postaveno
+
+- **Thornback** (Emerald Jungle, 4 až 6, tři a dva kusy): rýpnutí zblízka a rozběh po přímce
+  (`dashStrike`, nápřah 36 t s čárou na zemi). Po rozběhu stojí 64 t udýchaný: to je okno pro hráče.
+- **Briarking** (vzácný, úroveň 8, jeden kus hlouběji v džungli): delší a silnější rozběh a k tomu
+  zmítání (`spin`, kruh 3,8 m, nápřah 46 t), když ho hráč obstoupí zblízka.
+- Nepostaveno z návrhu: omráčení po nárazu do stromu (server nezná náraz do překážky při rozběhu).
+  `net-tests/ThornbackTests.cs`.
+
+### Vzácné varianty ostatních (návrh)
+
+| Monstrum | Vzácná varianta | Zvláštní schopnost | Kniha dovednosti pro hráče |
+|---|---|---|---|
+| Vinelasher | **Stranglethorn** | tři šlahouny naráz ve vějíři; kdo je chycen, je 1,5 s držen a ostatní šlahouny ho bijí | Vine Pull: přitáhne nepřítele k hráči |
+| Mirefin | **Old Gulper** | spolkne vodu a vychrlí proud po přímce, který odhodí hráče od břehu | žádná |
+| Barrow Wisp | **Lantern of the Barrow** | rozdělí se na tři menší bludičky; pravou prozradí, že jediná vrhá stín | Wisp Bolt: pomalá střela, která zatáčí za cílem |
+| Auren Sentinel | **Archive Warden** | nabije runy a pošle po zemi vlnu ve třech pruzích s mezerami, ve kterých se dá stát | Rune Ward: krátký štít zepředu |
+| Stoneback | **Mossback Elder** | v krunýři se roztočí a klouže po zemi jako kámen, odráží se od skal | žádná |
+| Carrion Crow | **Gallows Rook** | zavolá hejno: pět vran nalétá postupně v řadě, každou jde srazit jednou ranou | žádná |
+
+Pořadí stavby: Auren Sentinel a Archive Warden (ruiny a Sunken Archive nemají vlastního nepřítele),
+Barrow Wisp, Carrion Crow, Stoneback, nakonec Vinelasher a Mirefin (nový druh pohybu).
+
+### Goblini: co doladit
+
+Dobré: role ve skupině, morálka, hlídky, lov. Slabé: všichni vypadají a zní skoro stejně a šaman
+je jediný vzácný.
+
+1. **Uděláno:** lehký útok skirmishera má nápřah 16 t místo 10 (čtvrt sekundy, dá se na něj reagovat).
+   Stejně vlk, Mirrorfang a Shadowstalker (14 a 15 t na 16).
+2. **Uděláno:** salva rapid archera má čáru na zemi jako každý jiný těžký útok.
+3. **Návrh, šamanův tanec:** šaman místo třetí ohnivé zdi zatančí a blízcí goblini 5 s běhají
+   a útočí rychleji (zelené plameny kolem nich). Zabít šamana první pak dává smysl.
+4. **Návrh, dva noví vzácní goblini:** **Warchief** v Goblin Warren (roh, který svolá hlídku
+   z nejbližší chodby, a rána štítem, která odhodí) a **Trapper** u Old Ruins (klade nášlapné sítě,
+   které hráče na 1 s zpomalí; síť je na zemi vidět).
+5. **Návrh, brute:** dnes nikdy neutíká a nikdy se nerozzuří. Pod třetinou zdraví zařve a jeho
+   nápřahy se zkrátí o pětinu: hráč vidí, že se boj mění.
+
+### Orkové: co doladit
+
+Dobré: čtyři zbraně se čtyřmi styly, tři vzácní s vlastními schopnostmi, čitelné varování.
+Slabé: tábor je jen místo, kde stojí; nic nedělají společně.
+
+1. **Návrh, válečný buben:** v Ironjaw Warcampu buben stojí jako rekvizita. Když hráče uvidí hlídka
+   u brány, jeden ork k bubnu doběhne a po 3 s bubnování se seběhne celý tábor. Kdo bubeníka zastaví,
+   bojuje jen s hlídkou. Dává důvod plížit se průlomem v palisádě.
+2. **Návrh, summonSpears** spearcallerky: přidat zvuk nabíjení (kopí nad hlavou už vidět jsou).
+3. **Návrh, berserker:** jméno slibuje zuřivost, ale bojuje jako warrior se sekerou. Pod polovinou
+   zdraví přestane couvat po ráně a útočí bez přestávky (kratší prodleva), ale ztratí obranu.
+4. **Návrh, huntress:** flanker bez střelby. Dát jí vrhací sekeru na 8 m, aby hráč, který utíká
+   od tábora, nebyl v bezpečí hned za palisádou.
+5. Orkové neustupují: nechat, sedí k nim.

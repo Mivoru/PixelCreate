@@ -462,6 +462,32 @@ SPECS["white_hart"] = recolour(SPECS["deer"], {"deer_coat": "hart_coat", "deer_l
 SPECS["moor_sheep"] = recolour(SPECS["sheep"], {"wool": "moor_wool"})
 
 
+def spines(material, scale=1.0):
+    """Thorns standing along a boar's back in three rows, the middle one tallest, all raked backwards."""
+    def build(b):
+        for i, (along, top) in enumerate(((-0.4, 0.86), (-0.27, 0.92), (-0.13, 0.96), (0.0, 1.0), (0.13, 1.03), (0.26, 1.06), (0.38, 1.05), (0.48, 1.01))):
+            tall = (0.2 + 0.1 * math.sin(i * 1.9) + (0.08 if 2 <= i <= 5 else 0)) * scale
+            b.tube([(0, along, top - 0.06), (0, along - 0.05 * scale, top + tall * 0.55), (0, along - 0.14 * scale, top + tall)],
+                   [0.034, 0.022, 0.003], [0.034, 0.022, 0.003], material, 5)
+            for side in (-1, 1):
+                b.tube([(side * 0.13, along + 0.05, top - 0.12), (side * 0.19, along, top + tall * 0.3), (side * 0.25, along - 0.08 * scale, top + tall * 0.62)],
+                       [0.026, 0.017, 0.003], [0.026, 0.017, 0.003], material, 5)
+    return build
+
+
+def thornback_spec(coat, dark, belly, thorn, scale=1.0):
+    """A thornback: a boar grown heavy and mean, bark-coloured, with long tusks and thorns down its back."""
+    spec = recolour(SPECS["pig"], {"boar_coat": coat, "boar_dark": dark, "boar_belly": belly})
+    return dict(spec, body_extras=[mane, spines(thorn, scale)],
+                horns=[dict(points=[(0.05, 0.86, 0.44), (0.11, 0.9, 0.52), (0.12, 0.86, 0.64), (0.09, 0.8, 0.7)],
+                            radii=[0.026, 0.021, 0.013, 0.004], material="tusk")])
+
+
+SPECS["thornback"] = thornback_spec("thorn_coat", "thorn_dark", "thorn_belly", "thorn_spine")
+# The Briarking: the oldest thornback of the jungle, black as wet bark, its thorns gone red.
+SPECS["briarking"] = thornback_spec("briar_coat", "briar_dark", "thorn_belly", "briar_spine", 1.35)
+
+
 def chicken(b):
     """A plump hen: body, head with comb and beak, two wings and two legs."""
     def body():
@@ -515,7 +541,9 @@ COLORS = {
     "shadow_coat": "1C1A28", "shadow_dark": "0E0D14", "shadow_pale": "2E3048", "shadow_eye": "FFFFFF",
     "fox_coat": "C8642C", "fox_dark": "5A2E20", "fox_pale": "F0E4D0",
     "ram_coat": "8A7A6A", "ram_dark": "4A4038", "hart_coat": "F2EEE4", "hart_leg": "D8D0C0", "moor_wool": "5A5058",
+    "thorn_coat": "4E5238", "thorn_dark": "2E3024", "thorn_belly": "6E6A4C", "thorn_spine": "C8B88A",
+    "briar_coat": "2C2A2E", "briar_dark": "1A181C", "briar_spine": "B03A2E",
     "eye_black": "15161C", "eye_glint": "FFFFFF", "antler": "D8C8A8", "ear_pink": "D89A92", "deer_leg": "8A5A34", "deer_dark": "7A4A26", "boar_belly": "7A5A4C",
 }
 
-NAMES = ["cow", "goat", "deer", "doe", "sheep", "pig", "chicken", "wolf", "alpha_wolf", "mirror_wolf", "shadow_wolf", "fox", "mountain_ram", "white_hart", "moor_sheep"]
+NAMES = ["cow", "goat", "deer", "doe", "sheep", "pig", "chicken", "wolf", "alpha_wolf", "mirror_wolf", "shadow_wolf", "fox", "mountain_ram", "white_hart", "moor_sheep", "thornback", "briarking"]

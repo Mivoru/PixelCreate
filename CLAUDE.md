@@ -382,6 +382,11 @@ Rules:
   of the wolf, goat, deer and sheep specs; `AnimalView` maps each to the kind it moves and sounds like. Give a new
   one loot from items that exist. Thematic plants: `giant_mushroom` (Whispering Woods, Emerald Jungle), `heather`
   (Moonfell, the southern foothills). A `rockfall` closes each pass road until the region beyond is built.
+  Thornbacks (Emerald Jungle; kind `wolf`, behaviour `brute`, the boar's build with thorns): a gore and a charge
+  (`dashStrike` with a line warning) that leaves them winded; the rare Briarking also thrashes (`spin`).
+  `net-tests/ThornbackTests.cs`. A new monster can often be data: a kind picks the view (`animal` and `wolf` use
+  `AnimalView`), abilities pick the attacks. Rare variants and goblin and orc proposals: `design/monster-audit.md`.
+  No light blow has a wind-up under 16 ticks.
 - Hair and cloth are `ClothChain` grids; the toon shader bends meshes along them. Rig looks live in `Dialogues.cs`.
 - The server waits for a late input instead of skipping it. Catching up spends only ticks missed while stalled,
   so no client can run faster than real time: extra inputs are thrown away.
