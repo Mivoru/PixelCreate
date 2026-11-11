@@ -88,9 +88,11 @@ public sealed class AnimalView : IEnemyView
             "mountain_ram" => "goat",
             "moor_sheep" => "sheep",
             "thornback" or "briarking" => "pig",
+            "hare" => "fox",
+            "duck" => "chicken",
             _ => def.Id,
         };
-        _bird = def.Id == "chicken";
+        _bird = def.Id is "chicken" or "duck";
         var model = def.Id switch
         {
             "deer" when id % 2 == 1 => "doe",

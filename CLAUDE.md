@@ -400,7 +400,8 @@ Rules:
 - Animals live in herds (`EnemyAnimal.cs`): graze, watch (`alertRange`), bolt (`aggroRange`), and spread a
   scare through the herd. `net-tests/AnimalTests.cs` checks each behaviour on an empty field.
   Harmless animals in another coat (`fox`, `mountain_ram`, `white_hart`, `moor_sheep`) are `beasts.recolour` copies
-  of the wolf, goat, deer and sheep specs; `AnimalView` maps each to the kind it moves and sounds like. Give a new
+  of the wolf, goat, deer and sheep specs (brown hares are a fox build with long ears, mallards a hen in other
+  feathers: `beasts.chicken(duck=True)`, on the lake shores); `AnimalView` maps each to the kind it moves and sounds like. Give a new
   one loot from items that exist. Thematic plants: `giant_mushroom` (Whispering Woods, Emerald Jungle), `heather`
   (Moonfell, the southern foothills). A `rockfall` closes each pass road until the region beyond is built.
   Thornbacks (Emerald Jungle; kind `wolf`, behaviour `charger`, the boar's build with thorns, `EnemyCharge.cs`): a gore

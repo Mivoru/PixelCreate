@@ -35,6 +35,7 @@
   { "id": "black_quill", "name": "Black Quill", "kind": "material", "tier": 2, "price": 60, "icon": "black_quill", "description": "A long pinion from the Gallows Rook, black with a sheen of green." },
 
   { "id": "raw_beef", "name": "Raw Steak", "kind": "food", "tier": 0, "price": 6, "heal": 30, "icon": "raw_beef", "description": "A thick cut of beef. Better cooked, but it fills you up." },
+  { "id": "hare_meat", "name": "Hare Meat", "kind": "food", "tier": 0, "price": 4, "heal": 18, "icon": "hare_meat", "description": "Lean and dark. Best in a pot with an onion." },
   { "id": "goat_meat", "name": "Goat Meat", "kind": "food", "tier": 0, "price": 4, "heal": 20, "icon": "goat_meat", "description": "Lean and a little tough." },
   { "id": "venison", "name": "Venison", "kind": "food", "tier": 0, "price": 7, "heal": 28, "icon": "venison", "description": "Dark, rich deer meat." },
   { "id": "mutton", "name": "Mutton", "kind": "food", "tier": 0, "price": 5, "heal": 24, "icon": "mutton", "description": "Fatty and filling." },

@@ -429,6 +429,18 @@
     "loot": [{"item": "leather_scrap", "chance": 0.6, "min": 1, "max": 1}]
   },
   {
+    "id": "hare", "name": "Brown Hare", "kind": "animal", "temper": "passive",
+    "minLevel": 1, "maxLevel": 1, "health": 10, "healthPerLevel": 0, "speed": 9.0, "size": 0.62, "aggroRange": 8, "alertRange": 15, "tagHeight": 1.0,
+    "drops": [],
+    "loot": [{"item": "hare_meat", "chance": 1, "min": 1, "max": 1}, {"item": "leather_scrap", "chance": 0.4, "min": 1, "max": 1}]
+  },
+  {
+    "id": "duck", "name": "Mallard", "kind": "animal", "temper": "passive",
+    "minLevel": 1, "maxLevel": 1, "health": 8, "healthPerLevel": 0, "speed": 3.6, "size": 1.35, "aggroRange": 3.5, "alertRange": 7, "tagHeight": 0.9,
+    "drops": [],
+    "loot": [{"item": "raw_chicken", "chance": 1, "min": 1, "max": 1}, {"item": "feather", "chance": 1, "min": 1, "max": 2}]
+  },
+  {
     "id": "mountain_ram", "name": "Mountain Ram", "kind": "animal", "temper": "passive",
     "minLevel": 2, "maxLevel": 3, "health": 55, "healthPerLevel": 0, "speed": 5.2, "size": 1.25, "aggroRange": 5, "alertRange": 12, "tagHeight": 1.8,
     "drops": [],

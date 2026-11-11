@@ -460,6 +460,13 @@ SPECS["mountain_ram"] = dict(
 SPECS["white_hart"] = recolour(SPECS["deer"], {"deer_coat": "hart_coat", "deer_leg": "hart_leg", "deer_dark": "hart_leg", "deer_spots": "hart_coat", "deer_belly": "wool"})
 # Moor sheep: the flock Moonfell left behind, gone wild, in dark wool.
 SPECS["moor_sheep"] = recolour(SPECS["sheep"], {"wool": "moor_wool"})
+# A brown hare: the fox's lithe build in a dun coat, with long upright ears and a short white scut.
+SPECS["hare"] = dict(
+    wolf_spec("hare_coat", "hare_dark", "hare_belly", eye="eye_black"),
+    ear=(0.04, 0.8, 1.25, 0.28, 0.055, 1.4), tail=(-0.58, 0.8, 0.06, "hare_belly"),
+    neck_extras=[], head_extras=[])
+SPECS["hare"].pop("jaw")
+SPECS["hare"].pop("brush")
 
 
 def spines(material, scale=1.0):
@@ -488,28 +495,36 @@ SPECS["thornback"] = thornback_spec("thorn_coat", "thorn_dark", "thorn_belly", "
 SPECS["briarking"] = thornback_spec("briar_coat", "briar_dark", "thorn_belly", "briar_spine", 1.35)
 
 
-def chicken(b):
-    """A plump hen: body, head with comb and beak, two wings and two legs."""
+def chicken(b, duck=False):
+    """A plump hen: body, head with comb and beak, two wings and two legs. A mallard is the same bird in a
+    brown body with a green head, a flat yellow bill, orange feet and no comb."""
+    body_colour, head_colour, wing_colour = ("duck_body", "duck_head", "duck_wing") if duck else ("chicken_white", "chicken_white", "chicken_wing")
+
     def body():
-        b.round((0, 0, 0.36), (0.15, 0.2, 0.16), "chicken_white")
-        b.tube([(0, -0.14, 0.4), (0, -0.24, 0.52), (0, -0.26, 0.6)], [0.09, 0.08, 0.02], [0.05, 0.09, 0.04], "chicken_white", 8)
-        b.tube([(0, 0.1, 0.42), (0, 0.15, 0.52), (0, 0.16, 0.58)], [0.07, 0.06, 0.05], [0.08, 0.06, 0.05], "chicken_white", 10)
+        b.round((0, 0, 0.36), (0.15, 0.2, 0.16), body_colour)
+        b.tube([(0, -0.14, 0.4), (0, -0.24, 0.52), (0, -0.26, 0.6)] if not duck else [(0, -0.14, 0.38), (0, -0.24, 0.42), (0, -0.28, 0.45)],
+               [0.09, 0.08, 0.02], [0.05, 0.09, 0.04], body_colour, 8)
+        b.tube([(0, 0.1, 0.42), (0, 0.15, 0.52), (0, 0.16, 0.58)], [0.07, 0.06, 0.05], [0.08, 0.06, 0.05], head_colour if duck else body_colour, 10)
 
     b.part("body", (0, 0, 0.36), body)
 
     def head():
-        b.round((0, 0.17, 0.63), (0.055, 0.065, 0.06), "chicken_white", 2)
-        b.tube([(0, 0.21, 0.63), (0, 0.27, 0.61)], [0.022, 0.003], [0.016, 0.003], "beak", 6)
-        for k in range(3):
-            b.round((0, 0.13 + k * 0.035, 0.69 - abs(k - 1) * 0.01), (0.012, 0.022, 0.03), "comb", 1)
-        b.round((0, 0.215, 0.585), (0.012, 0.015, 0.025), "comb", 1)
+        b.round((0, 0.17, 0.63), (0.055, 0.065, 0.06), head_colour, 2)
+        if duck:
+            b.tube([(0, 0.21, 0.62), (0, 0.3, 0.6)], [0.03, 0.026], [0.012, 0.01], "duck_bill", 6)
+            b.round((0, 0.17, 0.575), (0.058, 0.03, 0.012), "chicken_white", 1)
+        else:
+            b.tube([(0, 0.21, 0.63), (0, 0.27, 0.61)], [0.022, 0.003], [0.016, 0.003], "beak", 6)
+            for k in range(3):
+                b.round((0, 0.13 + k * 0.035, 0.69 - abs(k - 1) * 0.01), (0.012, 0.022, 0.03), "comb", 1)
+            b.round((0, 0.215, 0.585), (0.012, 0.015, 0.025), "comb", 1)
         for side in (-1, 1):
             b.round((side * 0.045, 0.2, 0.645), (0.012, 0.012, 0.014), "eye_black", 1)
 
     b.part("head", (0, 0.15, 0.58), head, "body")
     for side, name in ((1, "wing_l"), (-1, "wing_r")):
         def wing(side=side):
-            b.round((side * 0.14, -0.02, 0.38), (0.035, 0.15, 0.09), "chicken_wing", 2)
+            b.round((side * 0.14, -0.02, 0.38), (0.035, 0.15, 0.09), wing_colour, 2)
         b.part(name, (side * 0.12, 0.06, 0.42), wing, "body")
     for side, name in ((1, "leg_fl"), (-1, "leg_fr")):
         def leg(side=side):
@@ -521,8 +536,8 @@ def chicken(b):
 
 def build(name, add_object, smooth):
     b = Builder(add_object, smooth)
-    if name == "chicken":
-        chicken(b)
+    if name in ("chicken", "duck"):
+        chicken(b, duck=name == "duck")
     else:
         quadruped(b, SPECS[name])
 
@@ -533,6 +548,8 @@ COLORS = {
     "deer_coat": "A8703C", "deer_belly": "EADCC8", "deer_spots": "C8905A",
     "wool": "F6F2EA", "sheep_face": "2A2628",
     "boar_coat": "5A4038", "boar_dark": "3A2A24", "boar_snout": "C08A80", "tusk": "F0E8D8",
+    "duck_body": "8A6A50", "duck_head": "2A6A3A", "duck_wing": "6A6A7A", "duck_bill": "E8C040",
+    "hare_coat": "A8805A", "hare_dark": "6A4A30", "hare_belly": "EEE6D8",
     "chicken_white": "F4F0E8", "chicken_wing": "E4DCCE", "comb": "E43B44", "beak": "FEAE34", "chicken_leg": "F7A52A",
     "wolf_coat": "7E8494", "wolf_dark": "3A4466", "wolf_pale": "D6D2C8", "wolf_nose": "181425", "wolf_paw": "8B8A94",
     "wolf_eye": "FEAE34", "wolf_ear": "5A4A50", "fang": "F4EEDC",
@@ -546,4 +563,4 @@ COLORS = {
     "eye_black": "15161C", "eye_glint": "FFFFFF", "antler": "D8C8A8", "ear_pink": "D89A92", "deer_leg": "8A5A34", "deer_dark": "7A4A26", "boar_belly": "7A5A4C",
 }
 
-NAMES = ["cow", "goat", "deer", "doe", "sheep", "pig", "chicken", "wolf", "alpha_wolf", "mirror_wolf", "shadow_wolf", "fox", "mountain_ram", "white_hart", "moor_sheep", "thornback", "briarking"]
+NAMES = ["cow", "goat", "deer", "doe", "sheep", "pig", "chicken", "wolf", "alpha_wolf", "mirror_wolf", "shadow_wolf", "fox", "mountain_ram", "white_hart", "moor_sheep", "thornback", "briarking", "hare", "duck"]

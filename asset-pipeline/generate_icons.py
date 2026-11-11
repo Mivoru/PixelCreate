@@ -774,7 +774,7 @@ ICONS = {
     "crow_eye": ("gem", "crow"), "black_quill": ("feather", "crow"),
     "raw_beef": ("steak", "meat"), "goat_meat": ("steak", "goat"), "venison": ("steak", "venison"),
     "mutton": ("steak", "mutton"), "boar_meat": ("steak", "boar"), "raw_chicken": ("drumstick", "chicken"),
-    "egg": ("egg", "egg"), "bread": ("loaf", "bread"), "bond": ("scroll", "paper"),
+    "egg": ("egg", "egg"), "hare_meat": ("drumstick", "venison"), "bread": ("loaf", "bread"), "bond": ("scroll", "paper"),
     "skillbook_fire": ("book", "fire"), "skillbook_wind": ("book", "blue"), "skillbook_earth": ("book", "leather"),
     "skillbook_spear": ("book", "iron"), "skillbook_blood": ("book", "potion"),
     "minor_healing_potion": ("potion", "potion"), "healing_potion": ("big_potion", "potion"),
