@@ -44,6 +44,11 @@ goblini (Warchief, Trapper), pak vegetace a domy zblízka.
 Bludičky u Stone Circle jen v noci, naváděná pomalá střela, zhasnutí u menhiru, vzácná Lantern of the Barrow se
 rozdělí na tři (pravou prozradí stín). Podrobnosti a co nebylo ověřeno: `design/monster-audit.md`, poslední oddíl.
 
+## Hotovo 2026-11-11 v noci: Carrion Crow (krok 2 plánu)
+
+Vrány na novém bojišti Crowfield na okraji Moonfell, nálety, rozprášení hejna, vzácný Gallows Rook s řadou pěti
+vran. Podrobnosti: `design/monster-audit.md`, poslední oddíl. Autor zatím nic nehrál (2026-11-11).
+
 ## Co dělat jako první
 
 Zeptat se autora, co si zahrál. Pokud nic jiného neurčí, pokračovat schváleným plánem níže (autor schválil
@@ -57,8 +62,7 @@ Návrhy jsou v `design/meadow-valley-rework.md` (tabulka monster: kde, úroveň,
 v `asset-pipeline/`, studio záběr (`PIXEL_MONSTERS=...`), dokumentace, commit a push.
 
 1. ~~**Barrow Wisp**~~ hotovo 2026-11-11.
-2. **Carrion Crow** (Moonfell, bojiště, úroveň 3 až 5): hejno tří až pěti, nálet z výšky, po zásahu jedné se
-   hejno rozprchne a vrátí. Vzácný **Gallows Rook**: pět vran nalétá postupně v řadě.
+2. ~~**Carrion Crow**~~ hotovo 2026-11-11 (Crowfield).
 3. **Goblin Warchief** (Goblin Warren): roh svolá hlídku z nejbližší chodby (lze vyjít z `SoundAlarm`
    válečného bubnu), rána štítem, která odhodí. **Goblin Trapper** (Old Ruins): klade viditelné nášlapné
    sítě, které hráče na 1 s zpomalí (zpomalení musí jít přes `PlayerState`, aby ho klient předpověděl).

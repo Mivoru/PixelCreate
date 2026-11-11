@@ -11,6 +11,7 @@ COLORS = {
     "pelt_grey": "7E8494", "pelt_pale": "D6D2C8", "branch": "5A3E30", "bone_old": "D8CCB0",
     "char": "2A2224", "stone_old": "7A7884", "thatch_rot": "6A5A3E", "shutter_old": "3A4A50", "dirt_dark": "4A3E34", "bronze": "8A6A3A",
     "ash": "57514F", "wax": "EEE2C4", "flesh_dry": "7A3A2E", "antler": "C8B898",
+    "rust": "7A4A32", "rust_light": "9A6A48", "steel_old": "9AA0A8", "banner_faded": "4A5A7A", "banner_trim": "B8A060",
 }
 
 
@@ -633,7 +634,67 @@ def hunters_rack(h):
     quad(h, "hide_back", [(-0.85, -0.87, 0.2), (-0.85, -0.55, 1.35), (0.65, -0.55, 1.35), (0.65, -0.87, 0.2)], "hide")
 
 
+def battle_debris(h):
+    """What an old battle left in the grass: swords and spears stuck in the ground at angles, gone to rust,
+    a split round shield, a dented helmet lying on its side, and bones half sunk in the earth."""
+    rng = random.Random(311)
+    for i, (x, y, lean_x, lean_y) in enumerate(((-0.9, 0.2, 0.25, 0.1), (0.4, -0.5, -0.2, 0.15), (1.1, 0.6, 0.1, -0.3))):
+        top = (x + lean_x, y + lean_y, 1.0)
+        # A flat blade: two timbers side by side, the edge brighter than the rust down its middle.
+        h.timber(f"blade{i}", (x, y, -0.1), top, 0.09, "steel_old")
+        h.timber(f"fuller{i}", (x + 0.05, y, -0.1), (top[0] + 0.05, top[1], top[2]), 0.05, "rust")
+        h.timber(f"guard{i}", (top[0] - 0.2, top[1], top[2]), (top[0] + 0.25, top[1], top[2]), 0.07, "banner_trim")
+        h.timber(f"grip{i}", top, (top[0] + lean_x * 0.25, top[1] + lean_y * 0.25, top[2] + 0.28), 0.06, "wood_dark")
+        h.blob(f"pommel{i}", (top[0] + lean_x * 0.27, top[1] + lean_y * 0.27, top[2] + 0.32), 0.06, "banner_trim", 330 + i, 1.0, 1)
+    for i, (x, y) in enumerate(((-0.2, 0.9), (0.9, -1.1))):
+        lean = rng.uniform(-0.6, 0.6)
+        top = (x + lean, y + 0.4, 1.9)
+        h.timber(f"spear{i}", (x, y, -0.1), top, 0.045, "wood")
+        h.timber(f"head{i}", top, (top[0] + lean * 0.12, top[1] + 0.06, top[2] + 0.25), 0.06, "rust")
+    # A split round shield, both halves on the ground.
+    h.blob("shield_a", (-1.3, -0.7, 0.06), 0.45, "banner_faded", 312, 0.12, 2)
+    h.blob("boss", (-1.3, -0.7, 0.12), 0.12, "rust_light", 313, 0.6, 1)
+    h.blob("shield_b", (-0.6, -1.25, 0.05), 0.32, "wood", 314, 0.12, 2)
+    # A helmet on its side.
+    h.blob("helm", (0.2, 0.2, 0.17), 0.2, "rust", 315, 1.0, 2)
+    h.timber("helm_rim", (0.02, 0.22, 0.05), (0.38, 0.2, 0.05), 0.05, "rust_light")
+    # Bones half sunk in the earth.
+    h.blob("skull", (0.9, 0.05, 0.08), 0.15, "bone_old", 316, 0.9, 2)
+    for i in range(4):
+        x, y = rng.uniform(-1.2, 1.4), rng.uniform(-1.0, 1.0)
+        a = rng.uniform(0, math.tau)
+        h.timber(f"bone{i}", (x, y, 0.03), (x + math.cos(a) * 0.4, y + math.sin(a) * 0.4, 0.04), 0.05, "bone_old")
+
+
+def fallen_banner(h):
+    """A war banner nobody came back for: the pole leans hard, its crossbar hangs askew and the faded blue
+    cloth is torn into ragged strips with a tarnished gold edge."""
+    base = (0, 0, 0)
+    top = (0.9, 0.2, 3.6)
+    h.timber("pole", base, top, 0.11, "wood_dark")
+    bar_a, bar_b = (0.35, 0.15, 3.45), (1.55, 0.25, 3.1)
+    h.timber("bar", bar_a, bar_b, 0.07, "wood_dark")
+    h.blob("finial", (top[0] + 0.05, top[1], top[2] + 0.1), 0.1, "rust_light", 320, 1.2, 1)
+    # Ragged strips hanging from the bar, each a different length.
+    for i in range(5):
+        t = (i + 0.5) / 5
+        x = bar_a[0] + (bar_b[0] - bar_a[0]) * t
+        z = bar_a[2] + (bar_b[2] - bar_a[2]) * t
+        length = 1.0 + ((i * 37) % 5) * 0.22
+        width = 0.2
+        for side, offset in (("f", 0.03), ("b", -0.03)):
+            points = [(x - width / 2, 0.2 + offset, z), (x + width / 2, 0.2 + offset, z), (x + width / 2 + 0.05, 0.2 + offset, z - length), (x - width / 2 + 0.02, 0.2 + offset, z - length * 0.85)]
+            quad(h, f"strip{i}{side}", points if side == "f" else list(reversed(points)), "banner_faded")
+        h.box(f"trim{i}", (x, 0.2, z - 0.05), (width, 0.07, 0.08), "banner_trim")
+    # A stone cairn piled round the foot to hold it up.
+    for i in range(6):
+        a = i / 6 * math.tau
+        h.blob(f"stone{i}", (math.cos(a) * 0.35, math.sin(a) * 0.35, 0.12), 0.2, "stone_old", 321 + i, 0.7, 1)
+
+
 BUILDERS = {
+    "battle_debris": battle_debris,
+    "fallen_banner": fallen_banner,
     "burned_barn": burned_barn,
     "cart_wreck": cart_wreck,
     "bridge_broken_end": bridge_broken_end,

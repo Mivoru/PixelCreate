@@ -284,6 +284,7 @@ public sealed partial class Enemy
         HasteTicks = 0;
         GoingToDrum = false;
         DrumTried = false;
+        ScatterTicks = 0;
     }
 
     private EnemyDef Choose(Random random)
@@ -468,7 +469,7 @@ public sealed partial class Enemy
     public bool TakeHit(short damage, Vector3 from, int attackerId = -1)
     {
         // The first two rounds of the prologue trial are lessons: the examiner cannot be hurt.
-        if (InShadow || Dodging || TrialRound is 1 or 2 || TutorLesson > 0)
+        if (Untouchable || TrialRound is 1 or 2 || TutorLesson > 0)
         {
             return false;
         }
@@ -528,6 +529,13 @@ public sealed partial class Enemy
 
         Health -= damage;
         HitFlash = 10;
+
+        // One crow struck sends the whole flock up and away for a moment.
+        if (Def.Kind == "crow" && Health > 0)
+        {
+            ScatterFlock();
+        }
+
         var away = Flat(Position - from);
         if (away != Vector3.Zero && !Def.Statue)
         {

@@ -166,3 +166,24 @@ bubeník u bubnu (živý záběr ukázal útok orků, ale buben byl mimo záběr
 
 Neověřeno: bludičky zhasínající za svítání ve hře, souboj s Lantern až do konce (rozbití falešných světel),
 jak se kruh hraje se čtyřmi bludičkami a Lantern naráz (síla nenastavena). Zvuky ze stávající sady.
+
+### Postaveno 2026-11-11 v noci: Carrion Crow a Gallows Rook
+
+- **Crowfield** (nové místo, −138, 166, 15 m od cesty do Moonfell): staré bojiště s meči a kopími zabodnutými
+  v zemi, rozbitým štítem, přilbou a kostmi (`battle_debris`), dvěma vybledlými modrými prapory (`fallen_banner`),
+  suchým stromem, převráceným vozem a zpustlou zemí. Moonfell sám má vlkodlaky 12 až 15, proto vrány (3 až 5)
+  sedí na jeho okraji, ne mezi nimi. Studio záběr `place_crowfield`.
+- **Carrion Crow** (čtyři, úroveň 3 až 5, role `flock`): hejno krouží kolem hráče ve výšce (klient 3,6 m) a tam
+  nejde zasáhnout (`Enemy.Aloft`, `Enemy.Untouchable`; čepel, šíp, dovednost i mistrovské tahy jím projdou).
+  Nálet (`dive`, varování čárou, 34 t) přijde nejvýš od dvou vran naráz (tahy na blízký útok); po něm vrána
+  1,2 s kluje na zemi a tehdy jde zasáhnout. Zasažená vrána rozpráší celé hejno na 2 s (`ScatterTicks`), pak se
+  vrátí.
+- **Gallows Rook** (vzácný, úroveň 6): vlastní nálet a `rookCall`: pět vran (`gallows_crow`, jedna rána, nic
+  nedají, za 10 s zmizí) se seřadí za ním a nalétnou na hráče jedna po druhé, 18 t od sebe.
+- Vedlejší oprava: stínový vlk pod zemí a uhýbající duelistka už nepočítají zásah (dřív rána, která neublížila,
+  přesto spustila krádež života a počítadla).
+- Testy `net-tests/CrowTests.cs`, studio `PIXEL_MONSTERS=carrion,gallows`. Živě ověřeno na Crowfieldu: kroužení,
+  varovná čára, klování u nohou hráče, Rook svolal svých pět vran.
+
+Neověřeno: boj hráčem (bot stál), jestli vrána prolétající blízko kamery neruší; jmenovky visí pod letícími
+vranami. Zvuky ze stávající sady (nálet = `dash`).

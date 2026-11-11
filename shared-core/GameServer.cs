@@ -1198,6 +1198,11 @@ public sealed partial class GameServer : IEnemyEvents
     /// <summary>One blow of a skill on an enemy: its own damage, raised by Intelligence, with all that follows from a blow.</summary>
     private void SkillBlow(Player player, Enemy enemy, int skill, float share, Vector3 from)
     {
+        if (enemy.Untouchable)
+        {
+            return;
+        }
+
         var damage = (short)Math.Max(1, MathF.Round(BlowDamage(player, AttackKind.Light, enemy, SkillDef.All[skill].Damage, PlayerAttribute.Intelligence) * share));
         var killed = enemy.TakeHit(damage, from, player.Id);
         AfterBlow(player, enemy, damage);
@@ -2423,7 +2428,8 @@ public sealed partial class GameServer : IEnemyEvents
         var forward = Movement.AimDirection(player.State.AttackAim);
         foreach (var enemy in _enemies)
         {
-            if (!enemy.Alive)
+            // A crow aloft or a wolf sunk in shadow is beyond the blade.
+            if (!enemy.Alive || enemy.Untouchable)
             {
                 continue;
             }
@@ -3379,6 +3385,13 @@ public sealed partial class GameServer : IEnemyEvents
             case "wispSplit":
                 SplitLantern(enemy, target);
                 break;
+            case "dive":
+                // The crow strikes where its dive comes down.
+                Area(enemy.Position, ability.Radius, ability.Damage, enemy);
+                break;
+            case "rookCall":
+                CallRooks(enemy, target);
+                break;
             case "airSlash":
                 // The crescent leaves the blade at chest height and dies after a few metres.
             case "airSlashWide":
@@ -3517,6 +3530,48 @@ public sealed partial class GameServer : IEnemyEvents
             _summons.Add(decoy);
         }
     }
+
+    /// <summary>How many crows the Gallows Rook calls, and how long apart they dive.</summary>
+    public const int RookFlock = 5;
+    public const int RookCallGapTicks = 18;
+    private const int RookCrowLifeTicks = Tuning.TickRate * 10;
+
+    /// <summary>
+    /// The Gallows Rook calls five crows that line up behind it and dive at the player one after another;
+    /// each falls to a single blow and leaves nothing.
+    /// </summary>
+    private void CallRooks(Enemy rook, Target? target)
+    {
+        if ((target ?? FindTarget(rook.TargetId)) is not { } mark)
+        {
+            return;
+        }
+
+        var type = (byte)EnemyDef.All.ToList().FindIndex(d => d.Id == "gallows_crow");
+        var back = -Facing(rook);
+        var across = new Vector3(-back.Z, 0, back.X);
+        for (var i = 0; i < RookFlock; i++)
+        {
+            var crow = new Enemy
+            {
+                Id = _nextEnemyId++,
+                Type = type,
+                Home = rook.Home with { Types = new[] { "gallows_crow" }, RespawnTicks = int.MaxValue },
+                SummonedBy = rook.Id,
+                LifeTicks = RookCrowLifeTicks,
+            };
+            crow.Reset(_random, _world);
+            var spot = rook.Position + back * (1.5f + i * 1.2f) + across * ((i % 2 == 0 ? 1 : -1) * 0.8f);
+            crow.Position = spot with { Y = _world.GroundHeight(spot.X, spot.Z) };
+            crow.Level = rook.Level;
+            crow.Facing = rook.Facing;
+            crow.CastAt(0, mark, i * RookCallGapTicks);
+            _summons.Add(crow);
+        }
+    }
+
+    private Target? FindTarget(int id) =>
+        _players.TryGetValue(id, out var player) ? new Target(player.Id, player.State.Position, player.State.Velocity) : null;
 
     /// <summary>Two shadow copies of the wolf rise at its sides and join the hunt.</summary>
     private void Summon(Enemy wolf, Target? target)
@@ -3806,6 +3861,11 @@ public sealed partial class GameServer : IEnemyEvents
     /// <summary>One blow of a player's attack on an enemy, scaled by share, with all that follows from it.</summary>
     private void Smite(Player player, Enemy enemy, AttackKind kind, float share, Vector3 from)
     {
+        if (enemy.Untouchable)
+        {
+            return;
+        }
+
         var damage = (short)Math.Max(1, MathF.Round(BlowDamage(player, kind, enemy) * share));
         var killed = enemy.TakeHit(damage, from, player.Id);
         AfterBlow(player, enemy, damage);
@@ -3961,7 +4021,7 @@ public sealed partial class GameServer : IEnemyEvents
         foreach (var enemy in _enemies)
         {
             var chest = enemy.Position + new Vector3(0, enemy.Def.Size * 0.6f, 0);
-            if (!enemy.Alive || shot.Struck.Contains(enemy.Id) || Vector3.Distance(chest, shot.Position) >= HitRadius + enemy.Def.Size * 0.35f)
+            if (!enemy.Alive || enemy.Untouchable || shot.Struck.Contains(enemy.Id) || Vector3.Distance(chest, shot.Position) >= HitRadius + enemy.Def.Size * 0.35f)
             {
                 continue;
             }

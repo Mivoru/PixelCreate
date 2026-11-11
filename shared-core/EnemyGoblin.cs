@@ -10,7 +10,8 @@ namespace PixelCreate.Core;
 /// crescents side by side), superJump (a charged leap from far off that rolls on a miss) and runeWave (three
 /// straight lanes of rune light along the ground, with gaps to stand in) and warDance (a shaman's dance that
 /// hastens the goblins of its camp nearby) and axeThrow (a hand axe thrown end over end), wispBolt (a slow light
-/// that turns after the player) and wispSplit (a lantern becomes three, two of them false).</summary>
+/// that turns after the player), wispSplit (a lantern becomes three, two of them false), dive (a crow's swoop from
+/// the air onto the player) and rookCall (five crows called to dive one after another).</summary>
 public sealed record Ability(
     string Effect, float Range, int WindupTicks, int RecoverTicks, int CooldownTicks, short Damage,
     float Radius = 0f, float MinRange = 0f, string Telegraph = "none");
@@ -44,7 +45,7 @@ public sealed partial class Enemy
 
         StepTurn(events, Action == EnemyAction.Strike && _lastGoblinAction != EnemyAction.Strike);
         _lastGoblinAction = Action;
-        if (StepWard(world, targets))
+        if (StepWard(world, targets) || StepScatter(world, targets, events))
         {
             Fall(world, random, events);
             return;
@@ -281,7 +282,7 @@ public sealed partial class Enemy
             }
 
             // A lantern splits only when no false light of its own still burns.
-            if (ability.Effect == "wispSplit" && HasDecoys())
+            if (ability.Effect is "wispSplit" or "rookCall" && HasSummons())
             {
                 continue;
             }
@@ -432,6 +433,12 @@ public sealed partial class Enemy
         {
             ShadowSlides = 0;
             Submerge(targets);
+            return;
+        }
+
+        if (ability.Effect == "dive")
+        {
+            Dive();
             return;
         }
 

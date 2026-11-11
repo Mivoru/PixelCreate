@@ -118,18 +118,4 @@ public sealed partial class Enemy
         Face(foe.Position);
         return true;
     }
-
-    /// <summary>Whether a false light this enemy cast still burns: a lantern splits again only when its copies are gone.</summary>
-    private bool HasDecoys()
-    {
-        foreach (var other in Crowd)
-        {
-            if (other.SummonedBy == Id && other.Alive)
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
 }

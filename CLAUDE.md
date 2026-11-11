@@ -369,7 +369,8 @@ Rules:
   shot: the Burnt Farm by the west pass (a charred `burned_barn`, a `cart_wreck` with goblin arrows, a farm track),
   the Fallen Bridge on Silverbrook (`bridge_broken_end` on each bank, origin on the bank, stub along +X; `Zone.Settle`
   keeps its origin height), the Hunters' Camp in Greyfang (`hunters_rack`) and the Pilgrim Shrine on Mirror Way
-  (`wayside_shrine`, a short track from the road). Studio shot `eye` and `at` heights are above the ground there.
+  (`wayside_shrine`, a short track from the road). Crowfield on Moonfell's edge (`battle_debris`, `fallen_banner`, a
+  `dead_tree`, blighted ground) is the old battlefield where the carrion crows gather. Studio shot `eye` and `at` heights are above the ground there.
 - The rim mountains (`Zone.Rim`) have ridged crests (`Crest`) and cliff bands (`CliffBand`, warped so they never ring
   like a stadium); the terrain shader lays snow only on ledges and tops by the world normal. A GLSL variable cannot be
   called `flat`.
@@ -409,6 +410,12 @@ Rules:
   draws them at chest height. The rare Lantern of the Barrow's `wispSplit` makes it three lights, two false
   (`lantern_decoy`, `EnemyDef.Decoy`: same name and health, gone at one touch); only the true one casts a shadow.
   `net-tests/WispTests.cs`.
+  Carrion crows (kind `crow`, behaviour `flock`, `CrowView`, `EnemyCrow.cs`) circle the player at `Enemy.FlockRing`
+  out of reach (`Enemy.Aloft`; `Enemy.Untouchable` also covers shadow and dodge, and every player blow skips it),
+  `dive` with a line warning (a close blow, so they take turns) and peck on the ground afterwards, open to blows.
+  A struck crow scatters its flock (`ScatterTicks`). They live on Crowfield, an old battlefield on Moonfell's edge
+  (`battle_debris`, `fallen_banner`). The rare Gallows Rook's `rookCall` lines up `GameServer.RookFlock` one-blow
+  `gallows_crow`s that dive one after another (`Enemy.CastAt`). `net-tests/CrowTests.cs`.
   Rage and dance (`net-tests/RageAndDanceTests.cs`): `enrageAt` (share of health) sets `Enemy.Enraged` once, then
   `enrageWindup`/`enrageRecover` scale its wind-ups and recoveries (never under `Enemy.MinWindupTicks`) and
   `enrageTaken` the damage it takes: the goblin brute winds up faster below a third, the orc berserker recovers twice
