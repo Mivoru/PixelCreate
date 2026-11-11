@@ -191,28 +191,32 @@ public sealed class FaceRig
 
     private static void BuildScar(Node3D head, Color skin, string scar)
     {
-        var line = skin.Darkened(0.42f).Lerp(new Color("8a3a3a"), 0.4f);
-        MeshInstance3D Mark(Vector3 radius, Vector3 at, float tilt, float turn = 0f)
+        // An old scar: a thin line of pale, healed skin inside a narrow darker edge. A single dark
+        // blot read as dirt on the cheek.
+        var edge = skin.Darkened(0.3f).Lerp(new Color("9a4a48"), 0.45f);
+        var healed = skin.Lightened(0.35f).Lerp(new Color("f4d6d0"), 0.4f);
+        void Mark(float length, float width, Vector3 at, float tilt, float turn = 0f)
         {
-            var mark = Flat(radius, line, at);
-            mark.Rotation = new Vector3(0, turn, tilt);
-            head.AddChild(mark);
-            return mark;
+            var outer = Flat(new Vector3(length, width, 0.004f), edge, at);
+            outer.Rotation = new Vector3(0, turn, tilt);
+            head.AddChild(outer);
+            var inner = Flat(new Vector3(length * 0.86f, width * 0.42f, 0.004f), healed, at + new Vector3(0, 0, -0.0012f));
+            inner.Rotation = new Vector3(0, turn, tilt);
+            head.AddChild(inner);
         }
 
         switch (scar)
         {
             case "cheek":
-                Mark(new Vector3(0.02f, 0.0042f, 0.004f), new Vector3(-0.07f, -0.06f, -0.11f), 0.6f, 0.35f);
-                Mark(new Vector3(0.0035f, 0.008f, 0.004f), new Vector3(-0.07f, -0.06f, -0.111f), 0.6f, 0.35f);
+                Mark(0.024f, 0.0032f, new Vector3(-0.07f, -0.06f, -0.111f), 0.6f, 0.35f);
                 break;
             case "eye":
-                // Across the brow and down the cheek, crossing the eye.
-                Mark(new Vector3(0.003f, 0.012f, 0.004f), new Vector3(-0.062f, 0.032f, -0.123f), 0.25f, 0.32f);
-                Mark(new Vector3(0.004f, 0.016f, 0.004f), new Vector3(-0.066f, -0.058f, -0.113f), 0.25f, 0.35f);
+                // Down through the brow and on down the cheek, broken where it crosses the eye.
+                Mark(0.013f, 0.003f, new Vector3(-0.061f, 0.034f, -0.124f), 1.32f, 0.32f);
+                Mark(0.018f, 0.003f, new Vector3(-0.067f, -0.056f, -0.114f), 1.32f, 0.35f);
                 break;
             case "nose":
-                Mark(new Vector3(0.028f, 0.0042f, 0.004f), new Vector3(0, -0.046f, -0.143f), 0.4f);
+                Mark(0.03f, 0.0032f, new Vector3(0, -0.046f, -0.144f), 0.4f);
                 break;
         }
     }
