@@ -3333,6 +3333,18 @@ public sealed partial class GameServer : IEnemyEvents
                 spear.Gravity = Tuning.Gravity * 0.2f;
                 spear.Velocity.Y += spear.Gravity * 0.5f * (Vector3.Distance(aimPoint, chest) / SpearSpeed);
                 break;
+            case "warDance":
+                // Every goblin of the shaman's camp close by runs and strikes faster for a while.
+                foreach (var ally in _enemies)
+                {
+                    if (ally != enemy && ally.Alive && ally.Home == enemy.Home && ally.Def.Kind == "goblin" &&
+                        Vector3.Distance(ally.Position, enemy.Position) < Enemy.DanceRadius)
+                    {
+                        ally.HasteTicks = Enemy.HasteDuration;
+                    }
+                }
+
+                break;
             case "runeWave":
                 var way = direction with { Y = 0 };
                 way = way == Vector3.Zero ? Facing(enemy) : Vector3.Normalize(way);
@@ -4035,7 +4047,7 @@ public sealed partial class GameServer : IEnemyEvents
                 .OrderBy(e => Vector3.Distance(e.Position, origin) + (e.IsAnimal ? AnimalInterestPenalty : 0f))
                 .Take(MaxEnemiesPerSnapshot)
                 .Select(e => new EnemyView(e.Id, e.Type, e.Level, e.Position, e.Facing, e.Health, (short)e.MaxHealth,
-                    e.Action, e.HitFlash, e.LeapTarget, e.TargetId >= 0, e.AbilityIndex)).ToArray();
+                    e.Action, e.HitFlash, e.LeapTarget, e.TargetId >= 0, e.AbilityIndex, e.HasteTicks > 0, e.Enraged)).ToArray();
             var shots = _projectiles
                 .OrderBy(s => Vector3.Distance(s.Position, origin)).Take(MaxProjectilesPerSnapshot)
                 .Select(s => new ProjectileView(s.Id, s.Kind, s.Position)).ToArray();

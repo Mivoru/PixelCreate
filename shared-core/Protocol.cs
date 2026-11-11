@@ -13,7 +13,7 @@ public readonly record struct RemotePlayer(int Id, Vector3 Position, Vector3 Vel
 
 public readonly record struct EnemyView(
     int Id, byte Type, byte Level, Vector3 Position, float Facing, short Health, short MaxHealth,
-    EnemyAction Action, byte HitFlash, Vector3 LeapTarget, bool Fighting, byte Ability = 0);
+    EnemyAction Action, byte HitFlash, Vector3 LeapTarget, bool Fighting, byte Ability = 0, bool Hasted = false, bool Enraged = false);
 
 public readonly record struct ProjectileView(int Id, ProjectileKind Kind, Vector3 Position);
 
@@ -264,7 +264,8 @@ public static class Protocol
             writer.Write(enemy.MaxHealth);
             writer.Write((byte)enemy.Action);
             writer.Write(enemy.HitFlash);
-            writer.Write(enemy.Fighting);
+            // Fighting, hastened by a shaman's dance and enraged share one byte.
+            writer.Write((byte)((enemy.Fighting ? 1 : 0) | (enemy.Hasted ? 2 : 0) | (enemy.Enraged ? 4 : 0)));
             writer.Write(enemy.Ability);
 
             // Only an enemy about to strike needs its aim point, which saves most of the packet.
@@ -410,10 +411,11 @@ public static class Protocol
             var maxHealth = reader.ReadInt16();
             var action = (EnemyAction)reader.ReadByte();
             var flash = reader.ReadByte();
-            var fighting = reader.ReadBoolean();
+            var state = reader.ReadByte();
             var ability = reader.ReadByte();
             var target = ShowsTarget(action) ? ReadVector(reader) : Vector3.Zero;
-            snapshot.Enemies[i] = new EnemyView(id, type, level, position, facing, health, maxHealth, action, flash, target, fighting, ability);
+            snapshot.Enemies[i] = new EnemyView(id, type, level, position, facing, health, maxHealth, action, flash, target,
+                (state & 1) != 0, ability, (state & 2) != 0, (state & 4) != 0);
         }
 
         snapshot.Projectiles = new ProjectileView[reader.ReadByte()];

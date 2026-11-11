@@ -33,6 +33,7 @@
   },
   {
     "id": "goblin_brute", "behavior": "brute", "name": "Goblin Brute", "kind": "goblin", "defense": 8, "weapon": "club",
+    "enrageAt": 0.33, "enrageWindup": 0.8,
     "minLevel": 4, "maxLevel": 6, "health": 150, "healthPerLevel": 30, "speed": 3.2, "size": 1.3,
     "aggroRange": 10, "preferredRange": 2,
     "abilities": [
@@ -85,7 +86,8 @@
     "aggroRange": 16, "preferredRange": 10,
     "abilities": [
       { "effect": "fireball", "range": 15, "windupTicks": 34, "recoverTicks": 22, "cooldownTicks": 90, "damage": 18, "radius": 2.4 },
-      { "effect": "firewall", "range": 14, "windupTicks": 62, "recoverTicks": 70, "cooldownTicks": 360, "damage": 26, "telegraph": "wedge" }
+      { "effect": "firewall", "range": 14, "windupTicks": 62, "recoverTicks": 70, "cooldownTicks": 360, "damage": 26, "telegraph": "wedge" },
+      { "effect": "warDance", "range": 16, "windupTicks": 54, "recoverTicks": 24, "cooldownTicks": 540, "damage": 0 }
     ],
     "drops": [{ "rarity": 1, "chance": 1 }, { "rarity": 2, "chance": 0.15 }, { "rarity": 3, "chance": 0.01 }],
     "gear": { "chance": 0.25, "rarity": [30, 35, 25, 10], "items": ["bone_staff", "shaman_mask", "twin_daggers", "iron_helm", "chain_leggings"] },
@@ -105,6 +107,7 @@
   },
   {
     "id": "orc_berserker", "behavior": "brute", "name": "Orc Berserker", "kind": "orc", "weapon": "axe", "defense": 6,
+    "enrageAt": 0.5, "enrageRecover": 0.5, "enrageTaken": 1.25,
     "minLevel": 10, "maxLevel": 12, "health": 260, "healthPerLevel": 36, "speed": 4.8, "size": 1.25,
     "aggroRange": 15, "preferredRange": 2.4, "tagHeight": 2.7,
     "abilities": [

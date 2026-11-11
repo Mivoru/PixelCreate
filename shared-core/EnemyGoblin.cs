@@ -8,7 +8,8 @@ namespace PixelCreate.Core;
 /// combo (three blows in a row), airSlashWide (a flat crescent), summonSpears (three spears loosed one by one
 /// from above the head), tornado (a long spin that drifts after the player), fangSlash (three slanted red
 /// crescents side by side), superJump (a charged leap from far off that rolls on a miss) and runeWave (three
-/// straight lanes of rune light along the ground, with gaps to stand in).</summary>
+/// straight lanes of rune light along the ground, with gaps to stand in) and warDance (a shaman's dance that
+/// hastens the goblins of its camp nearby).</summary>
 public sealed record Ability(
     string Effect, float Range, int WindupTicks, int RecoverTicks, int CooldownTicks, short Damage,
     float Radius = 0f, float MinRange = 0f, string Telegraph = "none");
@@ -27,12 +28,18 @@ public sealed partial class Enemy
 
     private void StepGoblin(World world, Random random, IReadOnlyList<Target> targets, IEnemyEvents events)
     {
+        // A hastened goblin's abilities come round twice as fast.
         for (var i = 0; i < _cooldowns.Length; i++)
         {
-            if (_cooldowns[i] > 0) _cooldowns[i]--;
+            _cooldowns[i] = Math.Max(0, _cooldowns[i] - (HasteTicks > 0 ? 2 : 1));
         }
 
         if (RoutTicks > 0) RoutTicks--;
+        if (HasteTicks > 0) HasteTicks--;
+        if (!Enraged && Def.EnrageAt > 0f && Alive && Health <= MaxHealth * Def.EnrageAt)
+        {
+            Enraged = true;
+        }
 
         StepTurn(events, Action == EnemyAction.Strike && _lastGoblinAction != EnemyAction.Strike);
         _lastGoblinAction = Action;
@@ -244,6 +251,12 @@ public sealed partial class Enemy
                 continue;
             }
 
+            // A shaman dances only with goblins of its camp near enough to be stirred by it.
+            if (ability.Effect == "warDance" && !AlliesNear(DanceRadius))
+            {
+                continue;
+            }
+
             // A close blow needs a turn; while others have them, this fighter waits its chance.
             if (IsClose(ability) && Def.Kind != "human" && !TakeTurn(events, target))
             {
@@ -330,8 +343,9 @@ public sealed partial class Enemy
         Facing = MathF.Atan2(-heading.X, -heading.Z);
         Action = EnemyAction.Walk;
         ActionTicks = 14;
-        Velocity.X = heading.X * Def.Speed * speedFactor;
-        Velocity.Z = heading.Z * Def.Speed * speedFactor;
+        var speed = Def.Speed * speedFactor * (HasteTicks > 0 ? HasteSpeed : 1f);
+        Velocity.X = heading.X * speed;
+        Velocity.Z = heading.Z * speed;
     }
 
     /// <summary>How fast an animal can swing round while it walks or runs, in radians a second.</summary>
@@ -350,7 +364,7 @@ public sealed partial class Enemy
     {
         AbilityIndex = index;
         Action = EnemyAction.Cast;
-        ActionTicks = ability.WindupTicks;
+        ActionTicks = Quicker(ability.WindupTicks, (Enraged ? Def.EnrageWindup : 1f) * (HasteTicks > 0 ? HasteWindup : 1f));
         _cooldowns[index] = ability.CooldownTicks + random.Next(30);
         LeapTarget = ability.Effect is "spin" or "shadowClone" or "tornado" ? Position : target.Position;
         ComboLeft = 0;
@@ -409,6 +423,38 @@ public sealed partial class Enemy
 
         events.Fire(this, ability, FindTarget(targets));
         Action = EnemyAction.Strike;
-        ActionTicks = ability.RecoverTicks;
+        ActionTicks = Quicker(ability.RecoverTicks, Enraged ? Def.EnrageRecover : 1f);
     }
+
+    /// <summary>A number of ticks scaled down, but never under the floor every blow keeps for a fair warning.</summary>
+    private static int Quicker(int ticks, float scale) =>
+        scale >= 1f ? ticks : Math.Max(Math.Min(ticks, MinWindupTicks), (int)MathF.Round(ticks * scale));
+
+    /// <summary>No blow winds up quicker than this, enraged or hastened.</summary>
+    public const int MinWindupTicks = 16;
+
+    /// <summary>Whether a living fighter of this camp and kind other than this one stands within reach.</summary>
+    private bool AlliesNear(float reach)
+    {
+        foreach (var other in Crowd)
+        {
+            if (other != this && other.Alive && other.Home == Home && other.Def.Kind == Def.Kind && Vector3.Distance(other.Position, Position) < reach)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>Ticks left of the haste a shaman's dance gave: faster on its feet, quicker to wind up, abilities back sooner.</summary>
+    public int HasteTicks;
+
+    /// <summary>Set once, when the enemy falls under its enrage share of health; cleared when it respawns.</summary>
+    public bool Enraged;
+
+    public const float DanceRadius = 9f;
+    public const int HasteDuration = Tuning.TickRate * 5;
+    private const float HasteSpeed = 1.35f;
+    private const float HasteWindup = 0.8f;
 }

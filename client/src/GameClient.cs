@@ -2541,6 +2541,24 @@ public partial class GameClient : Node
                 _hud.AddFloating("Staggered!", position + Vector3.Up * (def.TagHeight > 0 ? def.TagHeight : 2f), new Color("feae34"));
             }
 
+            if (slime is GoblinView { Enraged: true })
+            {
+                _hud.AddFloating("Enraged!", position + Vector3.Up * (def.TagHeight > 0 ? def.TagHeight : 2f), new Color("e43b44"));
+                _fx.Burst(position + Vector3.Up * 1.2f, new Color("e43b44"), 24, 5f, 0.6f, 0.08f, -4f, 80f);
+            }
+
+            // A shaman's dance shows as green flames licking round the feet of every goblin it stirred,
+            // and a rage as red embers rising off the shoulders, so the player sees who is dangerous now.
+            if (enemy.Hasted && GD.Randf() < delta * 14f)
+            {
+                _fx.Burst(position + Vector3.Up * 0.15f, new Color("63c74d"), 3, 2.2f, 0.45f, 0.08f, 4f, 30f);
+            }
+
+            if (enemy.Enraged && enemy.Action != EnemyAction.Dead && GD.Randf() < delta * 9f)
+            {
+                _fx.Burst(position + Vector3.Up * def.Size * 1.3f, new Color("f77622"), 2, 1.6f, 0.6f, 0.06f, 3f, 35f);
+            }
+
             if (slime is GoblinView { Launch: { } launch } leaper)
             {
                 // The ground bursts where a werewolf springs for its great leap.

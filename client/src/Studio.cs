@@ -315,7 +315,7 @@ public partial class Studio : Node
             };
 
             // Orcs also show each ability: the wind-up and the blow, from three quarters.
-            for (var a = 0; def.Kind is "orc" or "werewolf" or "sentinel" && a < (def.Abilities?.Length ?? 0); a++)
+            for (var a = 0; (def.Kind is "orc" or "werewolf" or "sentinel" || def.Id == "goblin_shaman") && a < (def.Abilities?.Length ?? 0); a++)
             {
                 var effect = def.Abilities![a].Effect;
                 poses.Add(($"{effect}_cast", 1.0f, 4.6f, EnemyAction.Cast, (byte)a));

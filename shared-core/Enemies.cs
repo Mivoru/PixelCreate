@@ -18,7 +18,8 @@ public sealed record EnemyDef(
     double RareChance = 0, string Kind = "slime", bool Rare = false, string Weapon = "", float PreferredRange = 2f,
     Ability[]? Abilities = null, DropEntry[]? Drops = null, string Temper = "hostile", LootEntry[]? Loot = null,
     float AlertRange = 0f, float TagHeight = 0f, GearTable? Gear = null, int Defense = 0, string? Behavior = null,
-    bool Leader = false, bool Statue = false, float FrontGuard = 1f, float BackBonus = 1f)
+    bool Leader = false, bool Statue = false, float FrontGuard = 1f, float BackBonus = 1f,
+    float EnrageAt = 0f, float EnrageWindup = 1f, float EnrageRecover = 1f, float EnrageTaken = 1f)
 {
     private static readonly Lazy<IReadOnlyList<EnemyDef>> Loaded = new(Load);
 
@@ -263,6 +264,8 @@ public sealed partial class Enemy
         Routed = false;
         RoutTicks = 0;
         PackLed = false;
+        Enraged = false;
+        HasteTicks = 0;
     }
 
     private EnemyDef Choose(Random random)
@@ -452,6 +455,12 @@ public sealed partial class Enemy
         if (Action == EnemyAction.Stagger)
         {
             damage = (short)MathF.Round(damage * Tuning.StaggerDamageScale);
+        }
+
+        // A berserker in its frenzy has given up guarding itself.
+        if (Enraged)
+        {
+            damage = (short)MathF.Round(damage * Def.EnrageTaken);
         }
 
         // A guardian's front is armoured and its back is not: blows are worth going round for.

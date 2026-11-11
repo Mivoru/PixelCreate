@@ -26,6 +26,11 @@ public sealed class GoblinView : IEnemyView
     private float _pitch;
     private EnemyAction _lastLeapAction;
 
+    /// <summary>Set for one frame when the enemy flies into a rage.</summary>
+    public bool Enraged { get; private set; }
+
+    private bool _lastEnraged;
+
     /// <summary>Set for one frame when the enemy starts to reel from a parry.</summary>
     public bool Staggered { get; private set; }
 
@@ -112,7 +117,9 @@ public sealed class GoblinView : IEnemyView
         var spinning = enemy.Action == EnemyAction.Strike && ability?.Effect == "spin" && _actionTime < 0.5f;
         // A tornado turns the orc five times round over its whole length.
         var whirling = enemy.Action == EnemyAction.Tornado;
-        _spin = whirling ? _spin + delta * TornadoTurnSpeed : spinning ? _spin + delta * 20f : 0f;
+        // A shaman's war dance: it turns slowly on the spot with its staff held high.
+        var dancing = enemy.Action == EnemyAction.Cast && ability?.Effect == "warDance";
+        _spin = whirling ? _spin + delta * TornadoTurnSpeed : spinning ? _spin + delta * 20f : dancing ? _spin + delta * 7f : 0f;
         if (enemy.Action == EnemyAction.Strike && _lastStrikeAction != EnemyAction.Strike)
         {
             _comboStep++;
@@ -258,6 +265,7 @@ public sealed class GoblinView : IEnemyView
             "airSlashWide" => winding ? WeaponMove.SwingBack : WeaponMove.SwingAcross,
             "summonSpears" => winding ? WeaponMove.StaffRaise : WeaponMove.StaffThrust,
             "runeWave" => winding ? WeaponMove.ClubRaise : WeaponMove.GroundChop,
+            "warDance" => winding ? WeaponMove.StaffRaise : WeaponMove.StaffPlant,
             "tornado" => WeaponMove.SwingBack,
             _ => WeaponMove.None,
         };
@@ -278,6 +286,20 @@ public sealed class GoblinView : IEnemyView
         }
 
         Staggered = !_first && enemy.Action == EnemyAction.Stagger && _lastAction != EnemyAction.Stagger;
+
+        // The moment it flies into a rage it roars.
+        Enraged = !_first && enemy.Enraged && !_lastEnraged;
+        if (Enraged)
+        {
+            sfx.Play(_def.Kind == "orc" ? "orc_alert" : "goblin_alert", position + Vector3.Up);
+        }
+
+        _lastEnraged = enemy.Enraged;
+        if (!_first && enemy.Action == EnemyAction.Cast && _lastAction != EnemyAction.Cast && _def.Abilities is { } dances &&
+            enemy.Ability < dances.Length && dances[enemy.Ability].Effect == "warDance")
+        {
+            sfx.Play("goblin_cackle", position + Vector3.Up);
+        }
 
         DamageTaken = 0;
         if (!_first)
