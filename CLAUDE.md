@@ -359,6 +359,11 @@ Rules:
 - Collision is measured from the models: building a model writes its boxes to `world/collision.json`
   (`asset-pipeline/collision.py`). Never hand-size a hitbox; rebuild the model. Plants and models with
   platform floors are listed as non-solid in `Zone.NonSolid`. Grass never grows inside a solid box.
+- Camp stockades are never a closed ring (author, 2026-11-11: closed camps looked like pens). Build them from
+  arcs of `palisade` (9 m), `palisade_half` (ends a run; its snapped end is local +X, so it joins the piece on its
+  -X side) and `palisade_broken` (a 3 m breach a walker fits through, `BrokenStockades_LetAWalkerThrough`), with
+  open ground between the arcs held by a `spike_wall`, skull pikes or a log pile. The rails are on the camp side
+  (the game's +Z at yaw 0). Studio shots `goblin_camp_east`, `goblin_fort_west`, `warcamp_west` show the open sides.
 - Studio model shots: `PIXEL_MODELS=cottage,bridge` photographs only those models, from five sides, with
   their collision boxes drawn.
 - Models: edit `asset-pipeline/build_meshes.py`, then `scripts/build_assets.ps1` builds and imports them.

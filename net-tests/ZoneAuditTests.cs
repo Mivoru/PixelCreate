@@ -392,7 +392,7 @@ public class ZoneAuditTests
     public void TurnedRuns_BlockOnlyAlongTheirLine()
     {
         var world = Valley.World;
-        foreach (var run in Valley.Props.Where(p => p.Model is "palisade" or "fence" or "spike_wall" or "stone_wall"))
+        foreach (var run in Valley.Props.Where(p => p.Model is "palisade" or "palisade_half" or "fence" or "spike_wall" or "stone_wall"))
         {
             var (sin, cos) = MathF.SinCos(run.Yaw);
             var across = new Vector2(sin, cos);
@@ -410,6 +410,29 @@ public class ZoneAuditTests
                     Assert.Fail($"the {run.Model} at {centre} turned {run.Yaw:F2} blocks {half + 1:F1} m out from its line");
                 }
             }
+        }
+    }
+
+    /// <summary>
+    /// A breach in a stockade is a way in: a walker can stand in the gap of every broken stretch, and the
+    /// ragged ends either side of it still block.
+    /// </summary>
+    [Fact]
+    public void BrokenStockades_LetAWalkerThrough()
+    {
+        var world = Valley.World;
+        var breaches = Valley.Props.Where(p => p.Model == "palisade_broken").ToList();
+        Assert.NotEmpty(breaches);
+        foreach (var run in breaches)
+        {
+            var (sin, cos) = MathF.SinCos(run.Yaw);
+            var along = new Vector2(cos, -sin);
+            var centre = new Vector2(run.Position.X, run.Position.Z);
+            Vector3 At(Vector2 point) => new(point.X, world.GroundHeight(point.X, point.Y) + 0.05f, point.Y);
+            var gap = centre - along * 0.4f;
+            Assert.False(world.OverlapsPlayer(At(gap)), $"the breach of the stockade at {centre} is blocked");
+            Assert.True(world.OverlapsPlayer(At(centre - along * 3.4f)), $"the stockade at {centre} has no standing end before its breach");
+            Assert.True(world.OverlapsPlayer(At(centre + along * 3.4f)), $"the stockade at {centre} has no standing end after its breach");
         }
     }
 

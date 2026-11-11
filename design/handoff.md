@@ -22,6 +22,14 @@ cesta po silnicích na minimapě, na velké mapě a jako zlaté šipky na zemi (
 questu nebo jobu. Značka se drží v `user://waypoints.cfg` po savech a zmizí po příchodu. Šipky na
 zemi nic neměřitelného nestojí (10,0 proti 10,3 ms). Čeká na zahrání autorem.
 
+## Hotovo 2026-11-11: tábory goblinů a orků už nejsou ohrady
+
+Autor: tábory byly moc uzavřené a nevypadaly dobře, chce neúplné oplocení. Goblin camp, goblin fort a Ironjaw
+Warcamp mají palisádu v obloucích s volnými úseky (`palisade_half`, `palisade_broken` s průchozím průlomem,
+v mezerách `spike_wall`, kůly s lebkami, hranice dřeva). Trámy palisády jsou na vnitřní straně tábora.
+Ověřeno: 335 testů, studio záběry všech tří táborů z otevřených stran, jeden živý záběr u goblin campu.
+Neověřeno hraním: jak goblini a orkové průlomy používají v boji (vybíhají ven, hráč je láká po jednom).
+
 ## Co dělat jako první
 
 Zeptat se autora, co si zahrál, a podle `design/direction.md` oddíl 5 vybrat další kus: prostředí,

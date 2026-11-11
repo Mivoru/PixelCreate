@@ -1916,20 +1916,47 @@ def camp_fire():
     blob("embers", (0, 0, 0.06), 0.3, "window", 4, 0.3, 1)
 
 
-def palisade():
-    """A stretch of goblin stockade: rough logs of uneven height, sharpened to points, sunk in the
-    ground and pinned by two rails behind with rope lashings. Everything stays inside its narrow hitbox."""
-    rng = random.Random(17)
-    for index in range(11):
+def stockade(slots, seed, rails):
+    """Stakes of a goblin stockade on a 0.8 m pitch: rough logs of uneven height, sharpened to points and sunk
+    in the ground. A slot is (index, kind): "whole" stands tall, "snapped" is broken off ragged and leans out.
+    Rails (from x, to x, height at each end) pin the stakes on the camp side, which is the game's +Z at yaw 0. Everything stays inside the narrow hitbox."""
+    rng = random.Random(seed)
+    for index, kind in slots:
         x = -4.0 + index * 0.8
-        radius = rng.uniform(0.3, 0.36)
-        height = rng.uniform(2.7, 3.3)
-        lean = rng.uniform(-0.05, 0.05)
+        radius = rng.uniform(0.29, 0.37)
+        lean = rng.uniform(-0.07, 0.07)
+        if kind == "snapped":
+            height = rng.uniform(1.1, 1.9)
+            tilt = rng.choice((-1, 1)) * rng.uniform(0.1, 0.22)
+            loft(f"stake{index}", [(-0.6, radius, radius, x, 0), (height, radius * 0.94, radius * 0.94, x + lean, tilt),
+                                   (height + 0.22, radius * 0.5, radius * 0.3, x + lean + 0.08, tilt * 1.15),
+                                   (height + 0.5, 0.03, 0.03, x + lean + 0.14, tilt * 1.25)], "bark", 7)
+            continue
+        height = rng.uniform(2.5, 3.5)
         loft(f"stake{index}", [(-0.6, radius, radius, x, 0), (height, radius * 0.92, radius * 0.92, x + lean, 0),
                                (height + 0.55, 0.04, 0.04, x + lean * 1.2, 0)], "bark", 7)
         loft(f"band{index}", [(1.95, radius * 0.97, radius * 0.97, x + lean * 0.6, 0), (2.07, radius * 0.97, radius * 0.97, x + lean * 0.6, 0)], "sack", 7)
-    for z in (0.9, 2.0):
-        timber("rail", (-4.3, 0.36, z), (4.3, 0.36, z), 0.16, "wood_dark")
+    for i, (x0, x1, z0, z1) in enumerate(rails):
+        timber(f"rail{i}", (x0, -0.36, z0), (x1, -0.36, z1), 0.16, "wood_dark")
+
+
+def palisade():
+    """A whole stretch of stockade, nine metres long."""
+    stockade([(i, "whole") for i in range(11)], 17, [(-4.3, 4.3, 0.9, 0.9), (-4.3, 4.3, 2.0, 2.0)])
+
+
+def palisade_half():
+    """A short stretch that ends a run: six stakes, the last one snapped, the rails sticking out past it."""
+    stockade([(i, "whole") for i in range(3, 8)] + [(8, "snapped")], 23, [(-1.9, 2.9, 0.9, 0.95), (-1.9, 2.2, 2.0, 1.9)])
+
+
+def palisade_broken():
+    """A stretch something broke through: a gap wide enough to walk between two ragged ends, the top rail
+    hanging down into it and a pulled stake lying along the foot of the standing part."""
+    slots = [(0, "whole"), (1, "whole"), (2, "snapped"), (7, "snapped"), (8, "whole"), (9, "whole"), (10, "whole")]
+    stockade(slots, 31, [(-4.3, -2.2, 0.9, 0.9), (-4.3, -2.6, 2.0, 2.0), (1.4, 4.3, 0.9, 0.9), (2.2, 4.3, 2.0, 2.0)])
+    timber("rail_hanging", (2.3, -0.4, 2.0), (1.5, -0.55, 0.75), 0.15, "wood_dark")
+    tube("fallen", [(1.9, -0.78, 0.3), (3.2, -0.74, 0.3), (4.1, -0.72, 0.29), (4.45, -0.72, 0.29)], [0.3, 0.29, 0.27, 0.04], "bark")
 
 
 
@@ -2043,6 +2070,8 @@ MODELS = {
     "standing_stone": standing_stone,
     "camp_fire": camp_fire,
     "palisade": palisade,
+    "palisade_half": palisade_half,
+    "palisade_broken": palisade_broken,
     "ruin": ruin,
 }
 

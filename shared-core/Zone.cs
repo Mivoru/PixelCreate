@@ -783,7 +783,7 @@ public sealed class Zone
     }
 
     /// <summary>Fences and walls: long, thin pieces laid end to end.</summary>
-    private static bool IsRun(string model) => model is "fence" or "stone_wall" or "palisade" or "spike_wall" or "ruin_wall";
+    private static bool IsRun(string model) => model is "fence" or "stone_wall" or "palisade" or "palisade_half" or "palisade_broken" or "spike_wall" or "ruin_wall";
 
     /// <summary>How far from its centre a model reaches on the ground, by what it is made of.</summary>
     private static float Footprint(string model) => model switch
