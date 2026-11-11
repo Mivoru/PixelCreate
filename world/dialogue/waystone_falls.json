@@ -126,6 +126,84 @@
           ]
         },
         {
+          "text": "Travel to the Goblin Hollow Waystone (15 gold)",
+          "when": {
+            "all": [
+              {
+                "flag": "waystone.waystone_falls"
+              },
+              {
+                "flag": "waystone.waystone_hollow"
+              },
+              {
+                "gold": {
+                  "min": 15
+                }
+              }
+            ]
+          },
+          "effects": [
+            {
+              "gold": -15
+            },
+            {
+              "action": "travel:waystone_hollow"
+            }
+          ]
+        },
+        {
+          "text": "Travel to the West Road Waystone (15 gold)",
+          "when": {
+            "all": [
+              {
+                "flag": "waystone.waystone_falls"
+              },
+              {
+                "flag": "waystone.waystone_west_road"
+              },
+              {
+                "gold": {
+                  "min": 15
+                }
+              }
+            ]
+          },
+          "effects": [
+            {
+              "gold": -15
+            },
+            {
+              "action": "travel:waystone_west_road"
+            }
+          ]
+        },
+        {
+          "text": "Travel to the Mirror Way Waystone (15 gold)",
+          "when": {
+            "all": [
+              {
+                "flag": "waystone.waystone_falls"
+              },
+              {
+                "flag": "waystone.waystone_mirror_way"
+              },
+              {
+                "gold": {
+                  "min": 15
+                }
+              }
+            ]
+          },
+          "effects": [
+            {
+              "gold": -15
+            },
+            {
+              "action": "travel:waystone_mirror_way"
+            }
+          ]
+        },
+        {
           "text": "Leave"
         }
       ]

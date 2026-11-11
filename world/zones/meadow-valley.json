@@ -164,7 +164,10 @@
     { "id": "waystone_east_watch", "name": "East Watch Waystone", "role": "waystone", "x": 139, "z": 6 },
     { "id": "waystone_falls", "name": "Silver Falls Waystone", "role": "waystone", "x": -37, "z": 116 },
     { "id": "waystone_greyfang", "name": "Greyfang Waystone", "role": "waystone", "x": 161, "z": 183 },
-    { "id": "waystone_moonfell", "name": "Moonfell Waystone", "role": "waystone", "x": -168, "z": 198 }
+    { "id": "waystone_moonfell", "name": "Moonfell Waystone", "role": "waystone", "x": -168, "z": 198 },
+    { "id": "waystone_hollow", "name": "Goblin Hollow Waystone", "role": "waystone", "x": 72, "z": -83 },
+    { "id": "waystone_west_road", "name": "West Road Waystone", "role": "waystone", "x": -236, "z": -31 },
+    { "id": "waystone_mirror_way", "name": "Mirror Way Waystone", "role": "waystone", "x": 105, "z": 244 }
   ],
   "hills": [
     {"x": -22, "z": 170, "radius": 32, "height": 14},
@@ -754,7 +757,10 @@
     { "model": "waystone", "x": 139, "z": 6 },
     { "model": "waystone", "x": -37, "z": 116 },
     { "model": "waystone", "x": 161, "z": 183 },
-    { "model": "waystone", "x": -168, "z": 198 }
+    { "model": "waystone", "x": -168, "z": 198 },
+    { "model": "waystone", "x": 72, "z": -83 },
+    { "model": "waystone", "x": -236, "z": -31 },
+    { "model": "waystone", "x": 105, "z": 244 }
   ],
   "scatter": [
     { "model": "tree_a", "count": 120, "area": [-165, -165, 165, 165], "minScale": 0.9, "maxScale": 1.4, "spacing": 6, "clusters": 0.42 },

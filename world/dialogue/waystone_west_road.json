@@ -1,0 +1,212 @@
+{
+  "npc": "waystone_west_road",
+  "entries": [
+    {
+      "node": "stone"
+    }
+  ],
+  "nodes": {
+    "stone": {
+      "text": "An Auren waystone, cold and humming. Azure runes run up its faces, and beneath them the names of other stones glow faintly, those you have touched brightest.",
+      "options": [
+        {
+          "text": "Lay your hand on the stone.",
+          "when": {
+            "notFlag": "waystone.waystone_west_road"
+          },
+          "effects": [
+            {
+              "setFlag": "waystone.waystone_west_road"
+            }
+          ],
+          "next": "stone"
+        },
+        {
+          "text": "Travel to the Hearthmere Waystone (15 gold)",
+          "when": {
+            "all": [
+              {
+                "flag": "waystone.waystone_west_road"
+              },
+              {
+                "flag": "waystone.waystone_hearthmere"
+              },
+              {
+                "gold": {
+                  "min": 15
+                }
+              }
+            ]
+          },
+          "effects": [
+            {
+              "gold": -15
+            },
+            {
+              "action": "travel:waystone_hearthmere"
+            }
+          ]
+        },
+        {
+          "text": "Travel to the East Watch Waystone (15 gold)",
+          "when": {
+            "all": [
+              {
+                "flag": "waystone.waystone_west_road"
+              },
+              {
+                "flag": "waystone.waystone_east_watch"
+              },
+              {
+                "gold": {
+                  "min": 15
+                }
+              }
+            ]
+          },
+          "effects": [
+            {
+              "gold": -15
+            },
+            {
+              "action": "travel:waystone_east_watch"
+            }
+          ]
+        },
+        {
+          "text": "Travel to the Silver Falls Waystone (15 gold)",
+          "when": {
+            "all": [
+              {
+                "flag": "waystone.waystone_west_road"
+              },
+              {
+                "flag": "waystone.waystone_falls"
+              },
+              {
+                "gold": {
+                  "min": 15
+                }
+              }
+            ]
+          },
+          "effects": [
+            {
+              "gold": -15
+            },
+            {
+              "action": "travel:waystone_falls"
+            }
+          ]
+        },
+        {
+          "text": "Travel to the Greyfang Waystone (15 gold)",
+          "when": {
+            "all": [
+              {
+                "flag": "waystone.waystone_west_road"
+              },
+              {
+                "flag": "waystone.waystone_greyfang"
+              },
+              {
+                "gold": {
+                  "min": 15
+                }
+              }
+            ]
+          },
+          "effects": [
+            {
+              "gold": -15
+            },
+            {
+              "action": "travel:waystone_greyfang"
+            }
+          ]
+        },
+        {
+          "text": "Travel to the Moonfell Waystone (15 gold)",
+          "when": {
+            "all": [
+              {
+                "flag": "waystone.waystone_west_road"
+              },
+              {
+                "flag": "waystone.waystone_moonfell"
+              },
+              {
+                "gold": {
+                  "min": 15
+                }
+              }
+            ]
+          },
+          "effects": [
+            {
+              "gold": -15
+            },
+            {
+              "action": "travel:waystone_moonfell"
+            }
+          ]
+        },
+        {
+          "text": "Travel to the Goblin Hollow Waystone (15 gold)",
+          "when": {
+            "all": [
+              {
+                "flag": "waystone.waystone_west_road"
+              },
+              {
+                "flag": "waystone.waystone_hollow"
+              },
+              {
+                "gold": {
+                  "min": 15
+                }
+              }
+            ]
+          },
+          "effects": [
+            {
+              "gold": -15
+            },
+            {
+              "action": "travel:waystone_hollow"
+            }
+          ]
+        },
+        {
+          "text": "Travel to the Mirror Way Waystone (15 gold)",
+          "when": {
+            "all": [
+              {
+                "flag": "waystone.waystone_west_road"
+              },
+              {
+                "flag": "waystone.waystone_mirror_way"
+              },
+              {
+                "gold": {
+                  "min": 15
+                }
+              }
+            ]
+          },
+          "effects": [
+            {
+              "gold": -15
+            },
+            {
+              "action": "travel:waystone_mirror_way"
+            }
+          ]
+        },
+        {
+          "text": "Leave"
+        }
+      ]
+    }
+  }
+}

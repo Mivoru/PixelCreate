@@ -148,3 +148,17 @@ trčí dozadu místo kolem hlavy. Zvířata jsem viděl jen ve studiu, ne ve hř
 Doporučené pořadí stavby: Thornback (stavba kance už existuje), Auren Sentinel (dá ruinám
 a Sunken Archive vlastního nepřítele), Barrow Wisp, pak ostatní. Mirefin a Vinelasher potřebují
 nový druh pohybu (ve vodě, bez pohybu), proto jsou až na konci.
+
+### Hotovo 2026-11-11 (třetí část): waystony
+
+Osm kamenů místo pěti: přibyl Goblin Hollow (72, −83, u cesty před tábory), West Road (−236, −31,
+na King's Road před západním sedlem) a Mirror Way (105, 244, před jižním sedlem). Pravidlo: jeden
+u každého sídla, vchodu do dungeonu a cesty k sedlu. Rozhovory píše `python tools/waystones.py`.
+Východní sedlo kryje East Watch, jihozápadní Moonfell. Neověřeno ve hře: nové kameny jsem neviděl
+ani ve studiu, jen prošly testy (kámen stojí, cesta mezi kameny funguje).
+
+### Zbývá z doporučeného pořadí
+
+Účesy a jizvy hlavní postavy, hory na okraji (skály místo hladkých boulí), nová místa (vypálený
+statek, zborcený most, tábor lovců, kaplička u jižního sedla), stavba navržených monster, vegetace
+a domy zblízka, břehy pod mosty, zvuky a animace monster.
