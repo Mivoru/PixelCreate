@@ -265,6 +265,7 @@ public sealed partial class Enemy
         }
 
         Position = spot;
+        ForgetTrail();
         // A statue keeps the spot and the facing it rose with, and goes back to them after a fight.
         Post = spot;
         StatueFacing = Facing = Home.Facing ?? angle;

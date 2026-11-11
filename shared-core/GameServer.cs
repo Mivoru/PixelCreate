@@ -754,6 +754,10 @@ public sealed partial class GameServer : IEnemyEvents
 
             _enemies.AddRange(_summons);
             _summons.Clear();
+            foreach (var enemy in _enemies)
+            {
+                enemy.Remember();
+            }
 
             // A clone is gone once it falls or fades, and with the wolf that called it.
             var living = _enemies.Where(e => e.Alive && e.SummonedBy < 0).Select(e => e.Id).ToHashSet();
@@ -2422,6 +2426,17 @@ public sealed partial class GameServer : IEnemyEvents
         }
     }
 
+    /// <summary>Whether an enemy standing at a point is inside a blow's reach and arc.</summary>
+    private static bool InReach(Vector3 from, Vector3 forward, AttackDef attack, Enemy enemy, Vector3 at)
+    {
+        var toEnemy = at - from;
+        var height = MathF.Abs(toEnemy.Y);
+        toEnemy.Y = 0;
+        var distance = toEnemy.Length();
+        var inFront = distance < 0.6f || Vector3.Dot(toEnemy / distance, forward) >= attack.MinDot;
+        return distance <= attack.Range + enemy.Def.Size * 0.5f && height <= 2.2f && inFront;
+    }
+
     private void Strike(Player player, AttackKind kind)
     {
         var attack = Tuning.Attack(kind);
@@ -2434,12 +2449,9 @@ public sealed partial class GameServer : IEnemyEvents
                 continue;
             }
 
-            var toEnemy = enemy.Position - player.State.Position;
-            var height = MathF.Abs(toEnemy.Y);
-            toEnemy.Y = 0;
-            var distance = toEnemy.Length();
-            var inFront = distance < 0.6f || Vector3.Dot(toEnemy / distance, forward) >= attack.MinDot;
-            if (distance > attack.Range + enemy.Def.Size * 0.5f || height > 2.2f || !inFront)
+            // The blow finds the enemy where it is, or where the player saw it a moment ago.
+            if (!InReach(player.State.Position, forward, attack, enemy, enemy.Position)
+                && !InReach(player.State.Position, forward, attack, enemy, enemy.SeenAt(Enemy.SeenLateTicks)))
             {
                 continue;
             }

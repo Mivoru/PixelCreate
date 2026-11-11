@@ -216,11 +216,11 @@ public static class Tuning
     // Reaches are the weapon tip's reach from the body's middle at the blow, measured from above in
     // the studio's attack_reach shots, plus about half a metre of slack; an enemy's own half size
     // is added to it in GameServer.Strike.
-    private static readonly AttackDef LightAttack = new(22, 9, 15, 2.0f, 0.3f, 8f, 0.55f);
-    private static readonly AttackDef HeavyAttack = new(46, 26, 40, 2.3f, 0.5f, 25f, 0.25f);
+    private static readonly AttackDef LightAttack = new(22, 9, 15, 2.4f, 0.25f, 8f, 0.55f);
+    private static readonly AttackDef HeavyAttack = new(46, 26, 40, 2.7f, 0.45f, 25f, 0.25f);
 
     /// <summary>Two quick stabs, right hand then left, each landing on its own.</summary>
-    private static readonly AttackDef DaggerFlurry = new(24, 6, 9, 1.6f, 0.35f, 9f, 0.75f, 13);
+    private static readonly AttackDef DaggerFlurry = new(24, 6, 9, 1.8f, 0.3f, 9f, 0.75f, 13);
 
     /// <summary>
     /// A leap at the enemy with both daggers raised, driving them down on landing. The blow lands

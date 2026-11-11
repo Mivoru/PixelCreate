@@ -92,6 +92,9 @@ Rules:
   added in `GameServer.Strike`. The studio's attacks job saves `attack_reach_all` (each blow from above with its area:
   red the reach and arc, yellow the reach to a goblin's middle) and `attack_carry_all` (each weapon idle, walking,
   running, in the air and dashing). Check both after changing a weapon model, pose or reach.
+  A melee blow also tests where the enemy stood `Enemy.SeenLateTicks` ago (`Enemy.SeenAt`, `GameServer.InReach`): the player
+  sees enemies a little late, and circling goblins kept stepping out of blows that looked like hits. The swing's trail
+  must not reach past the red area in `attack_reach_all`.
 - Enemy views are placed from `GameClient._enemyShown`, never from their own root: a leaping werewolf's root is
   tipped round its middle, and feeding that back into the easing made Moonleaper stutter in the air.
 - Slide: Ctrl while running on the ground (`Buttons.Slide`, `PlayerState.SlideTicks`/`SlideDirection`, in `Movement.Step`):

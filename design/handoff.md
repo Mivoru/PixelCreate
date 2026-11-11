@@ -54,7 +54,7 @@ vran. Podrobnosti: `design/monster-audit.md`, poslední oddíl. Autor zatím nic
 Autor si zahrál a chce samostatnou práci do 6:00. Zaškrtávat, co je hotové:
 
 - [x] Podzemí: mezery ve stěnách a mezi stěnou a podlahou, je vidět prázdno.
-- [ ] Zkontrolovat hitboxy a dosah všech útoků (lehký útok mečem často netrefí).
+- [x] Zkontrolovat hitboxy a dosah všech útoků (lehký útok mečem často netrefí).
 - [x] Kliknutí v dialogu zároveň zaútočí.
 - [x] Interiéry (Guilda, podzemí) jsou z okraje mapy vidět, jak levitují.
 - [x] Goblini na začátku (prolog) slabší.
