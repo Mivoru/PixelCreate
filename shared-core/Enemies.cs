@@ -37,10 +37,11 @@ public sealed record EnemyDef(
 /// A camp: a place enemies live, return to and respawn at. A rare camp holds only rare enemies.
 /// With a route it is a patrol: the group walks from point to point and back, resting at each.
 /// A camp that hunts goes after deer and boar now and then. Facing, when set, is the way its statues stand guard.
+/// Drum, when set, is the war drum the camp answers: whoever beats it calls every camp that shares it.
 /// </summary>
 public readonly record struct EnemySpawn(
     Vector3 Center, float Radius, int Count, int MinLevel = 1, int MaxLevel = 3, int RespawnTicks = 240, bool Rare = false,
-    string[]? Types = null, Vector3[]? Route = null, bool Hunts = false, float? Facing = null);
+    string[]? Types = null, Vector3[]? Route = null, bool Hunts = false, float? Facing = null, Vector3? Drum = null);
 
 public enum EnemyAction : byte
 {
@@ -78,6 +79,9 @@ public enum EnemyAction : byte
 
     /// <summary>Reeling from a parried blow: it cannot act, and takes more from every hit.</summary>
     Stagger = 17,
+
+    /// <summary>An orc beating its camp's war drum: when it finishes, the whole camp comes running.</summary>
+    Drum = 18,
 }
 
 /// <summary>The nametag colour rule: how an enemy compares with the player.</summary>
@@ -115,6 +119,12 @@ public interface IEnemyEvents
 
     /// <summary>The fighter has finished its turn and makes way.</summary>
     void EndTurn(Enemy enemy) { }
+
+    /// <summary>Asks to be the one who runs to the camp's war drum. Only one may, and not again soon after it sounded.</summary>
+    bool ClaimDrum(Enemy enemy) => false;
+
+    /// <summary>The drum has sounded: every camp that answers it turns on the player.</summary>
+    void SoundAlarm(Enemy enemy, int targetId) { }
 }
 
 /// <summary>
@@ -266,6 +276,8 @@ public sealed partial class Enemy
         PackLed = false;
         Enraged = false;
         HasteTicks = 0;
+        GoingToDrum = false;
+        DrumTried = false;
     }
 
     private EnemyDef Choose(Random random)
@@ -455,6 +467,14 @@ public sealed partial class Enemy
         if (Action == EnemyAction.Stagger)
         {
             damage = (short)MathF.Round(damage * Tuning.StaggerDamageScale);
+        }
+
+        // A blow stops a drummer: it turns to fight, and the alarm has to wait for someone else.
+        if (Action == EnemyAction.Drum || GoingToDrum)
+        {
+            GoingToDrum = false;
+            Action = EnemyAction.Idle;
+            ActionTicks = 6;
         }
 
         // A berserker in its frenzy has given up guarding itself.

@@ -401,6 +401,17 @@ Rules:
   Archive Warden (back wall of the archive) adds `runeWave`: three straight lanes (`RuneWave`, `HazardKind.RuneWave`,
   telegraph `lanes`, client `RuneWaveNode`) with gaps to stand in; enemy hazards with a `HalfWidth` hit as strips.
   `net-tests/SentinelTests.cs`. `PIXEL_MONSTERS=auren,archive` photographs only those monsters in the studio.
+  Rage and dance (`net-tests/RageAndDanceTests.cs`): `enrageAt` (share of health) sets `Enemy.Enraged` once, then
+  `enrageWindup`/`enrageRecover` scale its wind-ups and recoveries (never under `Enemy.MinWindupTicks`) and
+  `enrageTaken` the damage it takes: the goblin brute winds up faster below a third, the orc berserker recovers twice
+  as fast below half but takes a quarter more. The shaman's `warDance` (only with goblins of its camp within
+  `Enemy.DanceRadius`) gives them `HasteTicks`: faster feet, quicker wind-ups, cooldowns twice as fast. Snapshots
+  carry both in the enemy's state byte (`EnemyView.Hasted`/`Enraged`); the client shows green flames and red embers.
+  The orc huntress throws a hand axe (`axeThrow`, `ProjectileKind.ThrownAxe`, tumbling in the client).
+  War drum (`net-tests/WarDrumTests.cs`): camps with a `drum` point (every Ironjaw camp) answer it. A fighter that
+  notices a player within 45 m of the drum runs to it instead (`Enemy.RunsToDrum`, one at a time via
+  `ClaimDrum`), beats it for `Enemy.DrumTicks` (`EnemyAction.Drum`), and then every camp of that drum within 60 m
+  turns on the player (`SoundAlarm`, `Stats.Alarms`); the drum then rests a minute. Any blow on the drummer stops it.
   A new monster can often be data: a kind picks the view (`animal` and `wolf` use
   `AnimalView`), abilities pick the attacks. Rare variants and goblin and orc proposals: `design/monster-audit.md`.
   No light blow has a wind-up under 16 ticks.

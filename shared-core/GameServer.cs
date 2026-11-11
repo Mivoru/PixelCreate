@@ -41,6 +41,9 @@ public sealed class ServerStats
     /// <summary>The largest snapshot the server encoded before trimming it to fit one packet, in bytes.</summary>
     public int LargestSnapshot;
     public long PlayerHits;
+
+    /// <summary>War drums that sounded all the way through.</summary>
+    public long Alarms;
     public long EnemyHits;
     public long Splashes;
     public long Spits;
@@ -3141,6 +3144,56 @@ public sealed partial class GameServer : IEnemyEvents
             var kin = other.Home == enemy.Home || (leader && other.Def.Kind == enemy.Def.Kind);
             if (other.Alive && other.TargetId < 0 && !other.Returning && kin &&
                 Vector3.Distance(other.Position, enemy.Position) < (leader ? HelpRadius * 2.5f : HelpRadius))
+            {
+                other.TargetId = targetId;
+            }
+        }
+    }
+
+    /// <summary>Each war drum: who is on the way to it, and the tick until which it rests after sounding.</summary>
+    private readonly Dictionary<Vector3, (int Drummer, uint RestUntil)> _drums = new();
+
+    /// <summary>How long a war drum rests after sounding before it can be beaten again.</summary>
+    private const uint DrumRestTicks = Tuning.TickRate * 60;
+
+    /// <summary>How far the sound of a war drum carries to the camps that answer it, in metres.</summary>
+    private const float DrumCarry = 60f;
+
+    bool IEnemyEvents.ClaimDrum(Enemy enemy)
+    {
+        var drum = enemy.Home.Drum!.Value;
+        if (_drums.TryGetValue(drum, out var state))
+        {
+            if (Tick < state.RestUntil)
+            {
+                return false;
+            }
+
+            var busy = _enemies.Any(e => e.Id == state.Drummer && e.Alive && (e.GoingToDrum || e.Action == EnemyAction.Drum));
+            if (busy)
+            {
+                return false;
+            }
+        }
+
+        _drums[drum] = (enemy.Id, 0);
+        return true;
+    }
+
+    void IEnemyEvents.SoundAlarm(Enemy enemy, int targetId)
+    {
+        var drum = enemy.Home.Drum!.Value;
+        _drums[drum] = (enemy.Id, Tick + DrumRestTicks);
+        Stats.Alarms++;
+        if (targetId < 0)
+        {
+            return;
+        }
+
+        foreach (var other in _enemies)
+        {
+            if (other.Alive && other.Home.Drum == drum && other.TargetId < 0 && !other.Returning &&
+                Vector3.Distance(other.Position, drum) < DrumCarry)
             {
                 other.TargetId = targetId;
             }

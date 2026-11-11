@@ -131,3 +131,18 @@ Slabé: tábor je jen místo, kde stojí; nic nedělají společně.
 - **Archive Warden** (vzácný, úroveň 10): k tomu runová vlna, tři rovné pruhy po 1,6 m se dvěma mezerami po
   1,8 m, nápřah 70 t s varováním `lanes`. Kdo varování přečte, stoupne si do mezery.
 - Kniha dovednosti Rune Ward (z návrhu) zatím není; Warden dává Rune Core.
+
+### Postaveno 2026-11-11: goblini a orkové
+
+- **Šamanův tanec** (`warDance`): šaman se na místě točí s holí nad hlavou (nápřah 54 t, s chechtotem) a goblini
+  jeho tábora do 9 m mají 5 s zrychlení: rychlejší běh, kratší nápřahy, schopnosti se vracejí dvakrát rychleji.
+  Zelené plameny u nohou. Sám tančí jen tehdy, když má koho povzbudit.
+- **Goblin brute** pod třetinou zdraví zařve („Enraged!", rudé jiskry) a jeho nápřahy se zkrátí na 80 %.
+- **Orc berserker** pod polovinou zdraví zuří: zotavení po ráně poloviční, ale bere o čtvrtinu víc poškození.
+- **Orc huntress** hází ruční sekeru (4 až 10 m, nápřah 30 t s čárou), která letí obloukem a točí se.
+- **Válečný buben** v Ironjaw Warcampu: kdo z orků hráče zahlédne, doběhne k bubnu a 3 s bubnuje („War drum!",
+  rány do bubnu); pak se seběhne celý tábor. Rána do bubeníka bubnování přeruší, buben pak minutu odpočívá po
+  každém zaznění. Na skutečné zóně ověřeno: buben zazněl a tábor hráče přemohl.
+
+Neověřeno očima: zelené plameny a rudé jiskry ve hře (efekty jsou jen v klientu, ne ve studiu), letící sekera a
+bubeník u bubnu (živý záběr ukázal útok orků, ale buben byl mimo záběr). Zvuky jsou ze stávající sady.

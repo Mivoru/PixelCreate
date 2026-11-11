@@ -35,8 +35,9 @@ Neověřeno hraním: jak goblini a orkové průlomy používají v boji (vybíha
 Hory na okraji mají hřebeny, skalní pásy a sníh jen nahoře. Přibyla čtyři místa (Burnt Farm, Fallen Bridge,
 Hunters' Camp, Pilgrim Shrine) a kamenní strážci Auren Sentinel s vzácným Archive Warden. Podrobnosti a co
 nebylo ověřeno hraním: `design/meadow-valley-rework.md` (pátá část) a `design/monster-audit.md`.
-Další na řadě: schválené úpravy goblinů a orků (šamanův tanec, rozzuřený brute, berserker, vrhací sekera
-huntress, válečný buben), pak Barrow Wisp a Carrion Crow.
+Večer přibyly schválené úpravy goblinů a orků: šamanův tanec, rozzuřený brute a berserker, vrhací sekera huntress
+a válečný buben v Ironjaw (`design/monster-audit.md`). Další na řadě: Barrow Wisp a Carrion Crow, dva noví vzácní
+goblini (Warchief, Trapper), pak vegetace a domy zblízka.
 
 ## Co dělat jako první
 

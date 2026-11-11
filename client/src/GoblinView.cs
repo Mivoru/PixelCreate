@@ -26,6 +26,14 @@ public sealed class GoblinView : IEnemyView
     private float _pitch;
     private EnemyAction _lastLeapAction;
 
+    /// <summary>Set for one frame when an orc starts to beat its war drum.</summary>
+    public bool DrumStarted { get; private set; }
+
+    private int _beats;
+
+    /// <summary>Beats of the war drum a second.</summary>
+    private const float DrumBeats = 4f;
+
     /// <summary>Set for one frame when the enemy flies into a rage.</summary>
     public bool Enraged { get; private set; }
 
@@ -187,6 +195,12 @@ public sealed class GoblinView : IEnemyView
 
     private WeaponMove MoveFor(EnemyAction action, Ability? ability)
     {
+        // Beating the war drum: the weapon comes down on the skin four times a second.
+        if (action == EnemyAction.Drum)
+        {
+            return (int)(_actionTime * DrumBeats * 2f) % 2 == 0 ? WeaponMove.ClubRaise : WeaponMove.ClubSmash;
+        }
+
         if (action == EnemyAction.Tornado)
         {
             return WeaponMove.ClubSpin;
@@ -286,6 +300,20 @@ public sealed class GoblinView : IEnemyView
         }
 
         Staggered = !_first && enemy.Action == EnemyAction.Stagger && _lastAction != EnemyAction.Stagger;
+
+        // A war drum: a boom on every beat, and a shout as the drummer starts.
+        DrumStarted = !_first && enemy.Action == EnemyAction.Drum && _lastAction != EnemyAction.Drum;
+        if (DrumStarted)
+        {
+            sfx.Play(Female ? "orc_f_alert" : "orc_alert", position + Vector3.Up);
+            _beats = 0;
+        }
+
+        if (enemy.Action == EnemyAction.Drum && _actionTime * DrumBeats >= _beats)
+        {
+            _beats++;
+            sfx.Play("club_thud", position + Vector3.Up * 0.8f, 4f);
+        }
 
         // The moment it flies into a rage it roars.
         Enraged = !_first && enemy.Enraged && !_lastEnraged;

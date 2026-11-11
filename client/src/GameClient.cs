@@ -2541,6 +2541,11 @@ public partial class GameClient : Node
                 _hud.AddFloating("Staggered!", position + Vector3.Up * (def.TagHeight > 0 ? def.TagHeight : 2f), new Color("feae34"));
             }
 
+            if (slime is GoblinView { DrumStarted: true })
+            {
+                _hud.AddFloating("War drum!", position + Vector3.Up * (def.TagHeight > 0 ? def.TagHeight + 0.4f : 2.4f), new Color("f77622"));
+            }
+
             if (slime is GoblinView { Enraged: true })
             {
                 _hud.AddFloating("Enraged!", position + Vector3.Up * (def.TagHeight > 0 ? def.TagHeight : 2f), new Color("e43b44"));

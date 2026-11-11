@@ -123,6 +123,17 @@ public sealed partial class Enemy
             case EnemyAction.Dodge:
                 StepDodge();
                 break;
+            case EnemyAction.Drum:
+                Velocity.X = 0;
+                Velocity.Z = 0;
+                if (ActionTicks <= 0)
+                {
+                    events.SoundAlarm(this, TargetId);
+                    Action = EnemyAction.Idle;
+                    ActionTicks = 6;
+                }
+
+                break;
         }
 
         Fall(world, random, events);
@@ -228,6 +239,11 @@ public sealed partial class Enemy
         if (FindTarget(targets) is not { } target)
         {
             Patrol(world, random, homeDistance);
+            return;
+        }
+
+        if (RunsToDrum(world, events))
+        {
             return;
         }
 
@@ -425,6 +441,73 @@ public sealed partial class Enemy
         Action = EnemyAction.Strike;
         ActionTicks = Quicker(ability.RecoverTicks, Enraged ? Def.EnrageRecover : 1f);
     }
+
+    /// <summary>
+    /// A fighter of a camp with a war drum that has just noticed a player runs to the drum instead of at the
+    /// player, if nobody else is already on the way, and beats it once there. Returns true while it is busy.
+    /// </summary>
+    private bool RunsToDrum(World world, IEnemyEvents events)
+    {
+        if (Home.Drum is not { } drum)
+        {
+            return false;
+        }
+
+        if (!GoingToDrum)
+        {
+            if (DrumTried || Flat(drum - Position).Length() > DrumReach || !events.ClaimDrum(this))
+            {
+                return false;
+            }
+
+            DrumTried = true;
+            GoingToDrum = true;
+            _drumRunTicks = 0;
+            EndTurn(events);
+        }
+
+        // A drummer that cannot get there in time gives up and fights; someone else may try.
+        var way = Flat(drum - Position);
+        if (way.Length() > DrumStand)
+        {
+            if (++_drumRunTicks > DrumRunLimit)
+            {
+                GoingToDrum = false;
+                return false;
+            }
+
+            Walk(world, way, DrumRunSpeed);
+            return true;
+        }
+
+        GoingToDrum = false;
+        Facing = MathF.Atan2(-way.X, -way.Z);
+        Action = EnemyAction.Drum;
+        ActionTicks = DrumTicks;
+        return true;
+    }
+
+    /// <summary>On its way to the war drum, or not.</summary>
+    public bool GoingToDrum;
+
+    /// <summary>Set once this fighter has gone for the drum: if it is stopped, someone else must try.</summary>
+    public bool DrumTried;
+
+    /// <summary>How long the drum must be beaten before the camp hears it.</summary>
+    public const int DrumTicks = Tuning.TickRate * 3;
+
+    /// <summary>Only a fighter this close to the drum goes for it, in metres.</summary>
+    private const float DrumReach = 45f;
+
+    /// <summary>How close a drummer stands to its drum.</summary>
+    private const float DrumStand = 2.4f;
+
+    /// <summary>Decisions spent running to the drum; each walk step lasts several ticks.</summary>
+    private int _drumRunTicks;
+
+    /// <summary>How many walk decisions a drummer gets to reach the drum before it gives up.</summary>
+    private const int DrumRunLimit = 40;
+    private const float DrumRunSpeed = 1.4f;
 
     /// <summary>A number of ticks scaled down, but never under the floor every blow keeps for a fair warning.</summary>
     private static int Quicker(int ticks, float scale) =>
