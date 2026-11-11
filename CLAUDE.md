@@ -296,6 +296,11 @@ Rules:
   into walkable passes), and beyond them lie Greyfang Forest (wolves, south-east), Moonfell (south-west) and the
   Ironjaw Warcamp (north-east). `grounds` paint forest floor, blight or trampled earth on terrain and grass. Props for
   these lands come from `asset-pipeline/lands.py`. The terrain is drawn in 60 m chunks so off-screen ground is culled.
+  The mountains round the zone are `Zone.Rim`: rounded corners, a foot that wanders, low foothills before it, and
+  `passes` (a point on the border, `width`, `floor` metres climbed to the border, `to` the region beyond) where the
+  wall opens into a saddle. Four passes: west (Thornwood), east (Ironjaw Highlands), south (Mirror Coast) and
+  south-west (Moonfell Downs). Keep a hill's height at or under 0.26 of its radius (about 20 degrees at its steepest);
+  the three crags at Silver Falls are steep on purpose. The audit and what comes next: `design/meadow-valley-rework.md`.
 - Blender: `D:\Program\Blender Foundation\Blender 5.2\blender.exe -b --factory-startup -P <script>`.
 - Play: `powershell -ExecutionPolicy Bypass -File scripts/play.ps1` opens the main menu (`MainMenu.cs`, scene
   `menu.tscn`, the project's main scene): Continue (newest save), New Game (a named slot, `SaveFile.SlotFor`), Load

@@ -123,7 +123,14 @@ public sealed class Zone
         PropData[] Props, ScatterData[] Scatter, EnemySpawnData[]? Enemies, RegionData[]? Regions,
         RiverData[]? Rivers = null, RectData[]? Platforms = null, RectData[]? Walls = null, PortalData[]? Portals = null,
         NpcData[]? Npcs = null, float[]? Trial = null, float[]? Waterfall = null, float[][]? Clearings = null, LakeData[]? Lakes = null,
-        float[][]? Yards = null, RidgeData[]? Ridges = null, GroundData[]? Grounds = null);
+        float[][]? Yards = null, RidgeData[]? Ridges = null, GroundData[]? Grounds = null, PassData[]? Passes = null);
+
+    /// <summary>
+    /// A pass through the mountains round the zone, towards a neighbouring region: the wall opens along the
+    /// line from the middle of the zone through this point, <c>Width</c> metres across, and the ground climbs
+    /// only <c>Floor</c> metres up to the border instead of the full wall. <c>To</c> names the region beyond.
+    /// </summary>
+    private sealed record PassData(float X, float Z, float Width = 44f, float Floor = 9f, string? To = null);
 
     /// <summary>
     /// Models a walker passes through or over: plants, flat things, and the bridges, piers and
@@ -584,16 +591,74 @@ public sealed class Zone
             }
         }
 
-        // Mountains close the zone, so there is no visible end of the world.
-        var edge = MathF.Max(MathF.Abs(x), MathF.Abs(z)) / (data.Size / 2);
-        if (edge > 0.84f)
+        return height + Rim(data, x, z) + Bumps(data.Seed, x, z);
+    }
+
+    /// <summary>Where the mountain wall starts, as a share of the way from the middle to the border.</summary>
+    private const float RimStart = 0.84f;
+
+    /// <summary>Where the foothills before the wall start, and how high they swell.</summary>
+    private const float RimFoot = 0.74f;
+
+    private const float FoothillHeight = 3.5f;
+
+    /// <summary>
+    /// The mountains that close the zone, so there is no visible end of the world. Their foot wanders in
+    /// and out and rounds the corners instead of drawing a square, low foothills lead up to it, and at
+    /// each pass the wall opens into a saddle a road can climb.
+    /// </summary>
+    private static float Rim(ZoneData data, float x, float z)
+    {
+        var half = data.Size / 2;
+        var ax = MathF.Abs(x) / half;
+        var az = MathF.Abs(z) / half;
+        // Rounded corners: a superellipse lies inside the square everywhere but on the axes.
+        var round = MathF.Pow(MathF.Pow(ax, 10f) + MathF.Pow(az, 10f), 0.1f);
+        var angle = MathF.Atan2(z, x);
+        // The foot of the wall only ever moves outwards from the old square, so nothing built stands in it.
+        var bays = 0.5f + 0.27f * MathF.Sin(3f * angle + 0.7f) + 0.15f * MathF.Sin(7f * angle - 1.3f) + 0.08f * MathF.Sin(13f * angle + 2.1f);
+        var edge = MathF.Min(round, 1f) - 0.035f * Math.Clamp(bays, 0f, 1f) * (1f - MathF.Min(round, 1f)) / (1f - RimStart);
+        edge = MathF.Max(edge, MathF.Max(ax, az) - 0.035f);
+        if (edge <= RimFoot)
         {
-            var rise = (edge - 0.84f) / 0.16f;
-            var ridges = MathF.Sin(x * 0.11f) * MathF.Cos(z * 0.13f) + MathF.Sin(x * 0.043f + z * 0.031f) * 1.6f + MathF.Sin(z * 0.27f - x * 0.19f) * 0.35f;
-            height += rise * rise * 50f + ridges * 6f * rise;
+            return 0f;
         }
 
-        return height + Bumps(data.Seed, x, z);
+        // Foothills: a gentle swell before the wall, so the valley floor does not meet it in a crease.
+        var foot = Math.Clamp((edge - RimFoot) / (RimStart - RimFoot), 0f, 1f);
+        var swell = 0.55f + 0.45f * MathF.Sin(x * 0.047f + z * 0.019f) * MathF.Cos(z * 0.041f - x * 0.023f);
+        var height = FoothillHeight * foot * foot * (3f - 2f * foot) * swell;
+        if (edge <= RimStart)
+        {
+            return height;
+        }
+
+        var rise = (edge - RimStart) / (1f - RimStart);
+        var ridges = MathF.Sin(x * 0.11f) * MathF.Cos(z * 0.13f) + MathF.Sin(x * 0.043f + z * 0.031f) * 1.6f + MathF.Sin(z * 0.27f - x * 0.19f) * 0.35f;
+        var wall = rise * rise * 50f + ridges * 6f * rise;
+        var open = 0f;
+        var floor = 0f;
+        foreach (var pass in data.Passes ?? Array.Empty<PassData>())
+        {
+            var length = MathF.Sqrt(pass.X * pass.X + pass.Z * pass.Z);
+            var along = (x * pass.X + z * pass.Z) / length;
+            if (along <= 0f)
+            {
+                continue;
+            }
+
+            var across = MathF.Abs(x * pass.Z - z * pass.X) / length;
+            // Level across the middle half of the pass, then shoulders climbing to the wall.
+            var gate = 1f - Math.Clamp((across - pass.Width * 0.25f) / (pass.Width * 0.5f), 0f, 1f);
+            gate = gate * gate * (3f - 2f * gate);
+            if (gate > open)
+            {
+                open = gate;
+                floor = pass.Floor;
+            }
+        }
+
+        return height + wall * (1f - open) + floor * rise * open;
     }
 
     private static float PolylineDistance(float[][] points, float x, float z) => NearestOnPolyline(points, x, z).Distance;

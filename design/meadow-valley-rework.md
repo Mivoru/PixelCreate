@@ -62,3 +62,56 @@ Každá část končí commitem, snímky skutečné cesty hráče a seznamem, co
   (7 až 10). Interiéry na plošinách mimo mapu jako Guilda, vchody jako portály.
 
 Pak: technika přechodů mezi zónami, waystones, a první nový region Thornwood.
+
+---
+
+## Kontrola celé zóny 2026-11-11 (zadání autora: zkontrolovat a vylepšit všechno)
+
+Podklad: kompletní studio (svět, lidé, monstra, modely), mapa sklonů z terénní funkce, výpis všech
+spawnů. Co se nekontrolovalo, je uvedené na konci.
+
+### Nálezy
+
+1. **Terén.** 16 % plochy mělo sklon nad 18°, 7 % nad 26°: čtrnáct osamělých strmých kuželů na
+   rovné desce (profil kopce dává největší sklon 1,43 × výška / poloměr, u většiny přes 30°).
+   Silverbrook tekl přímo skrz kopec u západního okraje. Okraj zóny byla čtvercová zeď bez sedel.
+2. **Přechody.** Žádná cesta nevedla k okraji, žádné sedlo neexistovalo.
+3. **Hlavní postava.** Vlasy jsou čepice s rovnou vodorovnou linií nad čelem. „Tidy" má z boku
+   vyčnívající hřeben, „Swept back" věnec kolem hlavy, „Shaved" vypadá jako helma, „Wild" je zezadu
+   shluk střepů. Jizvy jsou tmavé šmouhy, čtou se jako špína. Tunika je plochá šedá plocha.
+4. **Monstra.** Modely goblinů, orků, vlků a vlkodlaků obstojí. Slabina je šířka: pět rodin na celou
+   zónu, Emerald Jungle, Stone Circle, Silver Falls a jezero nemají vlastní monstrum. Úrovně: slimové
+   1 až 3, goblini 3 až 7, vlci 5 až 10, orkové 9 až 13, vlkodlaci 12 až 15.
+5. **Stavby.** Tábory byly uzavřené ohrady (opraveno). Břehy pod mosty jsou šedé strmé plochy.
+   Hory na okraji jsou hladké bílé boule bez skal. Domy zblízka proti standardu 8.4 zatím neprojité.
+6. **Rychlé cestování.** Pět waystonů (Hearthmere, East Watch, Silver Falls, Greyfang, Moonfell).
+   Severovýchod (Goblin Hollow, Ironjaw) a západ nemají žádný.
+
+### Hotovo 2026-11-11
+
+- Tábory goblinů a orků: palisáda v obloucích s průlomy místo uzavřeného kruhu.
+- Kopce: strmé kopce rozšířené a snížené (výška nejvýš 0,26 poloměru, tedy sklon kolem 20°), dva
+  vnitřní hřebeny (Greyfang, Old Ruins) snížené, kopec posunutý z koryta Silverbrooku. Tři skály
+  u Silver Falls zůstaly strmé záměrně.
+- Okraj (`Zone.Rim`): zaoblené rohy, pata hor se vlní, před ní předhůří do 3,5 m.
+- Sedla (`passes` v zóně): západ (Thornwood, koryto Silverbrooku), východ (Ironjaw Highlands, koryto
+  Ironwash), jih (Mirror Coast), jihozápad (Moonfell Downs). Záběry `pass_*`, `rim_*`, `hills_*`.
+
+### Pořadí dalších částí (doporučení)
+
+1. **Sedla dotáhnout:** cesty k nim (King's Road na západ a východ, Mirror Way, Moonfell Path),
+   rozcestníky se jménem kraje, zával nebo závora, dokud sousední zóna není, a spoušť přechodu.
+2. **Hlavní postava:** deset účesů znovu v Blenderu (pramínky přes linii čela, objem vzadu), jizvy
+   jako tenká světlá čára s tmavým okrajem, tunika se švy a páskem. Záběry `creator`.
+3. **Hory na okraji:** skalní stěny a římsy místo hladkých boulí, sníh jen na vrcholech.
+4. **Waystony:** pravidlo jeden u každého sídla, vchodu do dungeonu a sedla. Doplnit Goblin Hollow
+   (rozcestí 84, −92), West Gate a South Pass; celkem osm.
+5. **Nová místa** podle `world-plan.md` 8.5: vypálený statek u západního sedla, zborcený most na
+   Silverbrooku, opuštěný tábor lovců u Greyfangu, poutní kaplička u jižního sedla.
+6. **Monstra podle biomů** (návrh ke schválení): džungle, kamenný kruh, jezero, ruiny.
+7. **Vegetace a domy zblízka**, břehy pod mosty.
+
+### Nekontrolováno
+
+Animace a zvuky monster, každý dům zblízka, hustota vegetace po biomech, chování monster v boji
+u nových průlomů, hra na novém terénu (jen testy a studio, žádný živý průchod).
