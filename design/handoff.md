@@ -79,7 +79,7 @@ v `asset-pipeline/`, studio záběr (`PIXEL_MONSTERS=...`), dokumentace, commit 
 
 1. ~~**Barrow Wisp**~~ hotovo 2026-11-11.
 2. ~~**Carrion Crow**~~ hotovo 2026-11-11 (Crowfield).
-3. **Goblin Warchief** (Goblin Warren): roh svolá hlídku z nejbližší chodby (lze vyjít z `SoundAlarm`
+3. ~~**Goblin Warchief** a **Goblin Trapper**~~ hotovo 2026-11-11 v noci. Původní zadání: (Goblin Warren): roh svolá hlídku z nejbližší chodby (lze vyjít z `SoundAlarm`
    válečného bubnu), rána štítem, která odhodí. **Goblin Trapper** (Old Ruins): klade viditelné nášlapné
    sítě, které hráče na 1 s zpomalí (zpomalení musí jít přes `PlayerState`, aby ho klient předpověděl).
 4. **Stoneback** (předhůří a sedla) s **Mossback Elder** (roztočí se v krunýři a klouže).

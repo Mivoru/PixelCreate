@@ -73,6 +73,8 @@ public sealed class GoblinView : IEnemyView
             "goblin_rapid_archer" => ("archer", "3a5a7a"),
             "goblin_sharpshooter" => ("sharpshooter", "5a3a5a"),
             "goblin_raider_archer" => ("archer", "4a5a3a"),
+            "goblin_warchief" => ("brute", "8a2a2a"),
+            "goblin_trapper" => ("skirmisher", "4a5a2a"),
             "goblin_shaman" => ("shaman", "733e39"),
             "auren_sentinel" => ("sentinel", "8e909c"),
             "archive_warden" => ("sentinel_warden", "6a6c78"),

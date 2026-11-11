@@ -2674,7 +2674,8 @@ public partial class GameClient : Node
             {
                 var crack = wall.Kind == HazardKind.EarthCrack;
                 var runes = wall.Kind == HazardKind.RuneWave;
-                node = crack ? new EarthCrackNode(_world, _fx, ToGodot(wall.Origin), wall.Yaw)
+                node = wall.Kind == HazardKind.Snare ? new SnareNode(_world, ToGodot(wall.Origin))
+                    : crack ? new EarthCrackNode(_world, _fx, ToGodot(wall.Origin), wall.Yaw)
                     : runes ? new RuneWaveNode(_world, _fx, ToGodot(wall.Origin), wall.Yaw)
                     : new FireWallNode(_world, _fx, ToGodot(wall.Origin), wall.Yaw, wall.HalfWidth);
                 _walls.Add(wall.Id, node);
@@ -2683,7 +2684,7 @@ public partial class GameClient : Node
                 {
                     _sfx.Play("shockwave", ToGodot(wall.Origin));
                 }
-                else if (!crack)
+                else if (!crack && wall.Kind != HazardKind.Snare)
                 {
                     _sfx.Play("fire_wall", ToGodot(wall.Origin));
                 }

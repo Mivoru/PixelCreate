@@ -42,6 +42,10 @@ public sealed class ServerStats
     public int LargestSnapshot;
     public long PlayerHits;
 
+    /// <summary>Times a player stepped in a goblin trapper's snare, and goblins a warchief's horn called.</summary>
+    public long Snared;
+    public long HornCalls;
+
     /// <summary>War drums that sounded all the way through.</summary>
     public long Alarms;
     public long EnemyHits;
@@ -118,6 +122,20 @@ public enum HazardKind : byte
     Fire = 0,
     EarthCrack = 1,
     RuneWave = 2,
+
+    /// <summary>A goblin trapper's snare: a loop of rope pegged out on the ground that slows whoever steps in it.</summary>
+    Snare = 3,
+}
+
+/// <summary>A goblin trapper's snares: how long one lies, how close a step sets it off and how long it holds.</summary>
+public static class Snare
+{
+    public const int LieTicks = Tuning.TickRate * 25;
+    public const float Reach = 0.95f;
+    public const byte HoldTicks = Tuning.TickRate;
+
+    /// <summary>At most this many of one trapper's snares lie at once; laying another lifts the oldest.</summary>
+    public const int PerTrapper = 3;
 }
 
 /// <summary>
@@ -650,6 +668,9 @@ public sealed partial class GameServer : IEnemyEvents
     public int ProjectileCount => _projectiles.Count;
 
     public int FireWallCount => _walls.Count;
+
+    /// <summary>The hazards on the ground now, for tests.</summary>
+    public IReadOnlyList<FireWallHazard> FireWalls => _walls;
 
     public int CrystalsOnGround => _loot.Count(l => ItemDef.All[l.Item].IsCrystal);
 
@@ -3416,6 +3437,40 @@ public sealed partial class GameServer : IEnemyEvents
                 }
 
                 break;
+            case "layTrap":
+                LaySnare(enemy, ability);
+                break;
+            case "hornCall":
+                // The warchief's horn: every goblin within earshot that is not already fighting comes for the player.
+                if (target is { } called)
+                {
+                    foreach (var other in _enemies)
+                    {
+                        if (other.Alive && other != enemy && other.TargetId < 0 && other.Def.Kind == "goblin"
+                            && Vector3.Distance(other.Position, enemy.Position) < HornReach)
+                        {
+                            other.TargetId = called.Id;
+                            other.Returning = false;
+                            Stats.HornCalls++;
+                        }
+                    }
+                }
+
+                break;
+            case "shieldBash":
+                // A shove with the shield: it hurts a little and throws the player back.
+                foreach (var player in _players.Values)
+                {
+                    var away = player.State.Position - enemy.Position;
+                    away.Y = 0;
+                    if (away.Length() < ability.Radius + 0.4f && Vector3.Dot(away == Vector3.Zero ? Facing(enemy) : Vector3.Normalize(away), Facing(enemy)) > 0.2f
+                        && Hurt(player, ability.Damage, 0, enemy, heavy: true))
+                    {
+                        player.State.Velocity += (away == Vector3.Zero ? Facing(enemy) : Vector3.Normalize(away)) * BashPush + Vector3.UnitY * 3f;
+                    }
+                }
+
+                break;
             case "dive":
                 // The crow strikes where its dive comes down.
                 Area(enemy.Position, ability.Radius, ability.Damage, enemy);
@@ -3560,6 +3615,34 @@ public sealed partial class GameServer : IEnemyEvents
             decoy.ActionTicks = 20;
             _summons.Add(decoy);
         }
+    }
+
+    /// <summary>How far the warchief's horn carries, in metres.</summary>
+    public const float HornReach = 40f;
+
+    /// <summary>How hard a shield bash throws the player back, in metres a second.</summary>
+    private const float BashPush = 9f;
+
+    /// <summary>
+    /// A trapper pegs a snare out on the ground, partway towards the player, where they are likely to step. Its
+    /// oldest snare is lifted once it has laid <see cref="Snare.PerTrapper"/>.
+    /// </summary>
+    private void LaySnare(Enemy trapper, Ability ability)
+    {
+        var mine = _walls.Where(w => w.Kind == HazardKind.Snare && w.Owner == -2 - trapper.Id).ToList();
+        if (mine.Count >= Snare.PerTrapper)
+        {
+            _walls.Remove(mine[0]);
+        }
+
+        var toward = (trapper.LeapTarget - trapper.Position) with { Y = 0 };
+        var spot = trapper.Position + (toward.Length() > 0.1f ? toward * 0.55f : Facing(trapper) * 2f);
+        spot.Y = _world.GroundHeight(spot.X, spot.Z);
+        _walls.Add(new FireWallHazard
+        {
+            Id = _nextId++, Origin = spot, Direction = Facing(trapper), Damage = ability.Damage, Kind = HazardKind.Snare,
+            Owner = -2 - trapper.Id, Span = 0f, Grow = 1, Burn = Snare.LieTicks,
+        });
     }
 
     public const int QuillCount = 14;
@@ -3832,6 +3915,23 @@ public sealed partial class GameServer : IEnemyEvents
                 continue;
             }
 
+            // A snare lies until someone steps in it: it holds them a moment and is spent.
+            if (wall.Kind == HazardKind.Snare)
+            {
+                foreach (var player in _players.Values)
+                {
+                    if (Vector3.Distance(player.State.Position with { Y = 0 }, wall.Origin with { Y = 0 }) < Snare.Reach && player.State.Grounded)
+                    {
+                        Hurt(player, wall.Damage, Snare.HoldTicks, heavy: false, from: wall.Origin);
+                        Stats.Snared++;
+                        wall.Age = wall.Grow + wall.Burn + 1;
+                        break;
+                    }
+                }
+
+                continue;
+            }
+
             // A crack or a rune wave hurts only while it runs; what it leaves behind is harmless.
             if (wall.Kind is HazardKind.EarthCrack or HazardKind.RuneWave && wall.Age > wall.Grow + 2)
             {
@@ -3851,6 +3951,9 @@ public sealed partial class GameServer : IEnemyEvents
         }
 
         _walls.RemoveAll(w => w.Age > w.Grow + w.Burn || (w.Owner >= 0 && !_players.ContainsKey(w.Owner)));
+
+        // A dead trapper's snares are lifted with it.
+        _walls.RemoveAll(w => w.Kind == HazardKind.Snare && !_enemies.Any(e => e.Alive && -2 - e.Id == w.Owner));
     }
 
     /// <summary>A player's line of fire: every enemy inside the strip takes the staff's blow, once.</summary>
