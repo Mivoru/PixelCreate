@@ -115,7 +115,9 @@ Neověřeno hraním člověkem: vše výše jen boty, testy (385) a snímky. Sí
    syrové maso a ryba z tašky se mění na sedm nových jídel (Roast Chicken, Game Skewer, Roast Mutton, Boar Roast,
    Venison Steak, Seared Steak, Grilled Fillet), léčí zhruba 1,7x víc než syrové (odhad). Tess kove u kovadliny
    (`tools/forge.py`): osm receptů z materiálů monster a zlata, výsledek je rare kus úrovně hráče (odhad). Tess má
-   nově ženský hlas (Matilda, dřív omylem Roger). Zbývá: rybaření, byliny a houby, rank D.
+   nově ženský hlas (Matilda, dřív omylem Roger). Byliny a houby: Meadow Sage (louky kolem Hearthmere),
+   Glowcap (Whispering Woods, Westwood, Greyfang) a Moonpetal (Stone Circle, Moonfell) rostou na místech z `gathers`,
+   sbírají se přejitím, dorostou za 10 minut; Wren z nich vaří lektvary (`tools/brew.py`). Zbývá: rybaření, rank D.
 6. [ ] Delší dungeon s bossem a skrytou cestou (Archive i Warren jsou dnes jedna síň).
 7. [x] Kvalita: hlídač zaseknutí klienta (zápis, co hra dělala), audit děr ve zbylých interiérech.
    Hlídač hotový (2026-11-12, `FreezeWatch.cs`): když klient 4 s nezačne snímek, zapíše do `client.log` řádek

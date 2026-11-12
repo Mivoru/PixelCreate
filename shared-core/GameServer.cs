@@ -709,6 +709,9 @@ public sealed partial class GameServer : IEnemyEvents
     /// <summary>For tests: wounds a player without an enemy.</summary>
     public void HurtForTest(int id, short damage) => _players[id].State.Health -= damage;
 
+    /// <summary>Puts a player somewhere at once, as a waystone does (the client takes it from the snapshot).</summary>
+    public void MoveForTest(int id, Vector3 to) => Move(_players[id], to);
+
     /// <summary>Sets a player's standing with the Guild. For tests and tools.</summary>
     public void SetRank(int id, GuildRank rank) => _players[id].Rank = rank;
 

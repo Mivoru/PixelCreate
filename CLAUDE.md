@@ -151,6 +151,14 @@ Rules:
   Recipes and prices are guesses. An open dialogue rebuilds its options when the bag or purse changes
   (`Dialogues.Refresh`), since a choice that returns to the same node is shown before the new bag arrives.
   `net-tests/ForgeTests.cs`.
+- Herbs and mushrooms: items with `"gather": true` (Meadow Sage, Glowcap, Moonpetal) grow where the zone's `gathers`
+  circles put them (`Zone.PlaceGathers`: seeded spots on dry, open, gentle ground off roads, `World.Gathers`). The
+  server makes each spot a loot of its own (`Loot.Spot`) for every player within `GatherReach` whose spot is not
+  regrowing, takes it away past `GatherDrop`, and a pick (walking over it, like any drop) regrows after
+  `GatherRegrowTicks`; real drops go into the snapshot first. The client draws them low with a green ring. Wren
+  brews potions from them (`python tools/brew.py` writes her dialogue). `net-tests/GatherTests.cs`.
+- `Command.UseItem` eats and drinks through `GameServer.Consume`: the old eat command range (`ItemCommands.Eat`)
+  reaches only the first 64 items.
 - Test a far area: set `PIXEL_SPAWN=x,z` before starting the server.
 - Enemy abilities and crystal drops are data in `world/enemies.json`; new effects go in `GameServer.Fire`.
 - Group AI (`EnemyTactics.cs`): fighters keep apart (`AllySpacing`), and a close blow needs a turn from the server

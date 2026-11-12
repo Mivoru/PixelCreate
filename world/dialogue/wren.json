@@ -15,18 +15,306 @@
   ],
   "nodes": {
     "shop": {
-      "text": "Potions, fresh from the cauldron! One heals you at once, but give your body three breaths before the next. You have {gold} gold.",
+      "text": "Potions, fresh from the cauldron! One heals you at once, but give your body three breaths before the next. Bring me sage from the meadows, glowcaps from the deep woods or moonpetal from the old stones, and I'll brew them for a few coins. You have {gold} gold.",
       "shop": "alchemist",
       "options": [
+        {
+          "text": "Brew a Minor Healing Potion (3 Meadow Sage, 4 gold).",
+          "when": {
+            "all": [
+              {
+                "item": {
+                  "id": "meadow_sage",
+                  "count": 3
+                }
+              },
+              {
+                "gold": {
+                  "min": 4
+                }
+              }
+            ]
+          },
+          "effects": [
+            {
+              "take": {
+                "item": "meadow_sage",
+                "count": 3
+              }
+            },
+            {
+              "gold": -4
+            },
+            {
+              "give": {
+                "item": "minor_healing_potion",
+                "count": 1
+              }
+            }
+          ],
+          "next": "brewed"
+        },
+        {
+          "text": "Brew a Minor Healing Potion: 3 Meadow Sage, 4 gold. (Not enough yet.)",
+          "when": {
+            "not": {
+              "all": [
+                {
+                  "item": {
+                    "id": "meadow_sage",
+                    "count": 3
+                  }
+                },
+                {
+                  "gold": {
+                    "min": 4
+                  }
+                }
+              ]
+            }
+          },
+          "next": "short"
+        },
+        {
+          "text": "Brew a Healing Potion (2 Glowcap, 1 Moonpetal, 10 gold).",
+          "when": {
+            "all": [
+              {
+                "item": {
+                  "id": "glowcap",
+                  "count": 2
+                }
+              },
+              {
+                "item": {
+                  "id": "moonpetal",
+                  "count": 1
+                }
+              },
+              {
+                "gold": {
+                  "min": 10
+                }
+              }
+            ]
+          },
+          "effects": [
+            {
+              "take": {
+                "item": "glowcap",
+                "count": 2
+              }
+            },
+            {
+              "take": {
+                "item": "moonpetal",
+                "count": 1
+              }
+            },
+            {
+              "gold": -10
+            },
+            {
+              "give": {
+                "item": "healing_potion",
+                "count": 1
+              }
+            }
+          ],
+          "next": "brewed"
+        },
+        {
+          "text": "Brew a Healing Potion: 2 Glowcap, 1 Moonpetal, 10 gold. (Not enough yet.)",
+          "when": {
+            "not": {
+              "all": [
+                {
+                  "item": {
+                    "id": "glowcap",
+                    "count": 2
+                  }
+                },
+                {
+                  "item": {
+                    "id": "moonpetal",
+                    "count": 1
+                  }
+                },
+                {
+                  "gold": {
+                    "min": 10
+                  }
+                }
+              ]
+            }
+          },
+          "next": "short"
+        },
         {
           "text": "Goodbye"
         }
       ]
     },
     "broke": {
-      "text": "Potions, fresh from the cauldron! Come back when the Guild has paid you; I do not give them away.",
+      "text": "Potions, fresh from the cauldron! Come back when the Guild has paid you; I do not give them away. Bring me sage from the meadows, glowcaps from the deep woods or moonpetal from the old stones, and I'll brew them for a few coins.",
       "shop": "alchemist",
       "options": [
+        {
+          "text": "Brew a Minor Healing Potion (3 Meadow Sage, 4 gold).",
+          "when": {
+            "all": [
+              {
+                "item": {
+                  "id": "meadow_sage",
+                  "count": 3
+                }
+              },
+              {
+                "gold": {
+                  "min": 4
+                }
+              }
+            ]
+          },
+          "effects": [
+            {
+              "take": {
+                "item": "meadow_sage",
+                "count": 3
+              }
+            },
+            {
+              "gold": -4
+            },
+            {
+              "give": {
+                "item": "minor_healing_potion",
+                "count": 1
+              }
+            }
+          ],
+          "next": "brewed"
+        },
+        {
+          "text": "Brew a Minor Healing Potion: 3 Meadow Sage, 4 gold. (Not enough yet.)",
+          "when": {
+            "not": {
+              "all": [
+                {
+                  "item": {
+                    "id": "meadow_sage",
+                    "count": 3
+                  }
+                },
+                {
+                  "gold": {
+                    "min": 4
+                  }
+                }
+              ]
+            }
+          },
+          "next": "short"
+        },
+        {
+          "text": "Brew a Healing Potion (2 Glowcap, 1 Moonpetal, 10 gold).",
+          "when": {
+            "all": [
+              {
+                "item": {
+                  "id": "glowcap",
+                  "count": 2
+                }
+              },
+              {
+                "item": {
+                  "id": "moonpetal",
+                  "count": 1
+                }
+              },
+              {
+                "gold": {
+                  "min": 10
+                }
+              }
+            ]
+          },
+          "effects": [
+            {
+              "take": {
+                "item": "glowcap",
+                "count": 2
+              }
+            },
+            {
+              "take": {
+                "item": "moonpetal",
+                "count": 1
+              }
+            },
+            {
+              "gold": -10
+            },
+            {
+              "give": {
+                "item": "healing_potion",
+                "count": 1
+              }
+            }
+          ],
+          "next": "brewed"
+        },
+        {
+          "text": "Brew a Healing Potion: 2 Glowcap, 1 Moonpetal, 10 gold. (Not enough yet.)",
+          "when": {
+            "not": {
+              "all": [
+                {
+                  "item": {
+                    "id": "glowcap",
+                    "count": 2
+                  }
+                },
+                {
+                  "item": {
+                    "id": "moonpetal",
+                    "count": 1
+                  }
+                },
+                {
+                  "gold": {
+                    "min": 10
+                  }
+                }
+              ]
+            }
+          },
+          "next": "short"
+        },
+        {
+          "text": "Goodbye"
+        }
+      ]
+    },
+    "brewed": {
+      "text": "There, still warm. Shake it before you drink it, and don't drink it all at once in a fight. Well, do.",
+      "options": [
+        {
+          "text": "Show me the rest.",
+          "next": "shop"
+        },
+        {
+          "text": "Goodbye"
+        }
+      ]
+    },
+    "short": {
+      "text": "That's not enough to fill a flask. The herbs grow back if you leave the roots; go and look again.",
+      "options": [
+        {
+          "text": "Show me the rest.",
+          "next": "shop"
+        },
         {
           "text": "Goodbye"
         }

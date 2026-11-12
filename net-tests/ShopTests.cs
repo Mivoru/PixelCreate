@@ -90,4 +90,23 @@ public class ShopTests
         Run(server, client, network, 12, Command.UseItem, potion);
         Assert.Equal(1, server.GetBagCount(1, potion));
     }
+
+    [Fact]
+    public void Wren_BrewsAMinorPotion_FromThreeSprigsOfSage()
+    {
+        var (server, client, network) = AtTheAlchemist();
+        var sage = ItemDef.Index("meadow_sage");
+        var potion = ItemDef.Index("minor_healing_potion");
+        var brew = (ushort)Story.Options.First(o => o.Npc == "wren" && o.Text.StartsWith("Brew a Minor", StringComparison.Ordinal) && !o.Text.Contains("Not enough")).Index;
+        server.GiveGold(1, 10);
+        server.GiveItem(1, sage, 2);
+        Run(server, client, network, 12, Command.Choose, brew);
+        Assert.Equal(0, server.GetBagCount(1, potion));
+
+        server.GiveItem(1, sage, 1);
+        Run(server, client, network, 12, Command.Choose, brew);
+        Assert.Equal(1, server.GetBagCount(1, potion));
+        Assert.Equal(0, server.GetBagCount(1, sage));
+        Assert.Equal(6, server.GetGold(1));
+    }
 }

@@ -3090,7 +3090,11 @@ public partial class GameClient : Node
             }
 
             node.Rotation += new Vector3(0, delta * 2.2f, 0);
-            node.Position = ToGodot(drop.Position) + Vector3.Up * (0.55f + Mathf.Sin(Time.GetTicksMsec() / 300f + drop.Id) * 0.12f);
+            // Herbs and mushrooms grow low and only sway; drops float and bob.
+            var growing = ItemDef.All[drop.Item].Gather;
+            node.Position = ToGodot(drop.Position) + Vector3.Up * (growing
+                ? 0.52f + Mathf.Sin(Time.GetTicksMsec() / 700f + drop.Id) * 0.03f
+                : 0.55f + Mathf.Sin(Time.GetTicksMsec() / 300f + drop.Id) * 0.12f);
         }
 
         foreach (var id in _crystals.Keys.Where(id => !alive.Contains(id)).ToList())
@@ -3142,11 +3146,12 @@ public partial class GameClient : Node
     {
         var root = new Node3D();
         var tier = rarity == LootView.NoRarity ? def.Tier : rarity;
-        var color = TierGlow[Math.Clamp(tier, 0, 3)];
+        // Herbs and mushrooms wear a soft green ring, smaller, so they read as something growing to pick.
+        var color = def.Gather ? new Color("63c74d") : TierGlow[Math.Clamp(tier, 0, 3)];
         root.AddChild(new Sprite3D
         {
             Texture = GD.Load<Texture2D>($"res://assets/ui/icons/{def.Icon}.png"),
-            PixelSize = 0.032f,
+            PixelSize = def.Gather ? 0.028f : 0.032f,
             Billboard = BaseMaterial3D.BillboardModeEnum.Enabled,
             TextureFilter = BaseMaterial3D.TextureFilterEnum.Nearest,
             AlphaCut = SpriteBase3D.AlphaCutMode.Discard,
@@ -3162,8 +3167,14 @@ public partial class GameClient : Node
             },
             Position = new Vector3(0, -0.5f, 0),
         };
+        if (def.Gather)
+        {
+            ring.Position = new Vector3(0, -0.38f, 0);
+            ring.Scale = Vector3.One * 0.8f;
+        }
+
         root.AddChild(ring);
-        if (tier > 0 || def.IsEquipment)
+        if ((tier > 0 && !def.Gather) || def.IsEquipment)
         {
             // The rarer the find, the taller its beam of light.
             var height = 4f + tier * 2f;

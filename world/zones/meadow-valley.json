@@ -1209,5 +1209,16 @@
     { "kind": "trampled", "x": -18.0, "z": -52.0, "radius": 8 },
     { "kind": "blight", "x": -138, "z": 166, "radius": 11 },
     { "kind": "trampled", "x": 148, "z": 56, "radius": 12 }
+  ],
+  "gathers": [
+    { "item": "meadow_sage", "x": -30, "z": 32, "radius": 22, "count": 8 },
+    { "item": "meadow_sage", "x": 58, "z": 38, "radius": 22, "count": 8 },
+    { "item": "meadow_sage", "x": 34, "z": -62, "radius": 18, "count": 6 },
+    { "item": "meadow_sage", "x": 100, "z": 20, "radius": 20, "count": 6 },
+    { "item": "glowcap", "x": -96, "z": 46, "radius": 45, "count": 10 },
+    { "item": "glowcap", "x": -210, "z": 0, "radius": 45, "count": 8 },
+    { "item": "glowcap", "x": 205, "z": 195, "radius": 40, "count": 8 },
+    { "item": "moonpetal", "x": -90, "z": 120, "radius": 14, "count": 5 },
+    { "item": "moonpetal", "x": -198, "z": 206, "radius": 35, "count": 6 }
   ]
 }
