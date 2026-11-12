@@ -80,6 +80,9 @@ Autor si zahrál a chce samostatnou práci do 6:00. Zaškrtávat, co je hotové:
   hlasy všech mluvících lidí, déšť (vybrané dny) a schovávání lidí před deštěm, světlušky v noci.
 - Joby: 7 nových + 8 hledaných (wanted) jednorázových; nástěnka na třech stránkách. Dovednosti: Wisp Bolt, Vine Pull,
   Rune Ward.
+- Dopoledne 2026-11-12: oprava odevzdávání jobů (u Miry šlo odevzdat jen prvních pět, `tools/turnins.py` + test),
+  otřes kamery při zásahu (`PIXEL_OFF=shake`), jižní okraj Hearthmere (2 chalupy, zahrada, Greta), Greystone Mine
+  pod lomem (nora u stěny, skřeti, stoneback, truhla, job od Borse), nářadí se při sezení odkládá.
 
 Neověřeno hraním člověkem: vše výše jen boty, testy (385) a snímky. Síla monster a odměny nenastaveny (pravidlo
 „neladit obtížnost“), jen hrubě odhadnuté; ryby u mola byly pro level 1 smrtelné, ztlumil jsem je.
