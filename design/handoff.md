@@ -111,10 +111,11 @@ Neověřeno hraním člověkem: vše výše jen boty, testy (385) a snímky. Sí
 5. [ ] Systémy: rybaření na molech, sběr bylin a hub (pro Wren), vaření u ohně, řemeslo u Tess z materiálů monster,
    rank D se zkouškou v Guildě jako cíl po úrovni 9.
 6. [ ] Delší dungeon s bossem a skrytou cestou (Archive i Warren jsou dnes jedna síň).
-7. [ ] Kvalita: hlídač zaseknutí klienta (zápis, co hra dělala), audit děr ve zbylých interiérech.
+7. [x] Kvalita: hlídač zaseknutí klienta (zápis, co hra dělala), audit děr ve zbylých interiérech.
    Hlídač hotový (2026-11-12, `FreezeWatch.cs`): když klient 4 s nezačne snímek, zapíše do `client.log` řádek
    `FREEZE ... last mark: <část snímku>` a po rozjetí `FREEZE over`. Příčinu zaseknutí v Guildě to samo neopraví,
-   jen ukáže, kde visí. Audit děr v interiérech zbývá.
+   jen ukáže, kde visí. Audit děr: snímky `audit_*` (rohy Guildy u podlahy, strop Guildy, aréna, strop hospody)
+   žádnou díru neukázaly; podzemí bylo opravené dřív.
 
 ### Co si zahrát jako první (2026-11-12)
 
