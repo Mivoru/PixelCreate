@@ -1408,7 +1408,9 @@ public partial class GameClient : Node
             _lastXp = snapshot.Xp;
         }
 
-        var rare = snapshot.Enemies.FirstOrDefault(e => e.Action != EnemyAction.Dead && EnemyDef.All[e.Type].Rare);
+        // A rare is announced when it is close enough to matter, not anywhere the server still sends it.
+        var rare = snapshot.Enemies.FirstOrDefault(e => e.Action != EnemyAction.Dead && EnemyDef.All[e.Type].Rare && !EnemyDef.All[e.Type].Decoy
+            && new Vector2(e.Position.X - _client.State.Position.X, e.Position.Z - _client.State.Position.Z).Length() < RareBannerRange);
         var rareAlive = EnemyDef.All[rare.Type].Rare && rare.Action != EnemyAction.Dead && snapshot.Enemies.Length > 0;
         if (rareAlive && !_rareSeen)
         {
@@ -1571,6 +1573,9 @@ public partial class GameClient : Node
 
     /// <summary>A mouse button pressed while a window or dialogue was open, still held: it is not an attack until let go.</summary>
     private bool _mouseHeldFromUi;
+
+    /// <summary>How close a rare enemy must be before the banner names it, in metres.</summary>
+    private const float RareBannerRange = 30f;
 
     private (sbyte X, sbyte Z, Buttons Buttons) ReadInput()
     {
