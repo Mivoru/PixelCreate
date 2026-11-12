@@ -129,6 +129,12 @@ public partial class GameClient : Node
     private byte _lastLevel = 1;
     private ushort _pendingArg;
     private Command _pendingCommand;
+
+    /// <summary>When the player cast a fishing line (0: none), where they stood, and how full the bag was then.</summary>
+    private ulong _castAt;
+    private System.Numerics.Vector3 _castFrom;
+    private int _castBag;
+    private ulong _slackUntil;
     private GuildRank _lastRank;
     private readonly Dictionary<string, PlayerRig> _npcs = new();
     private byte _lastDodges;
@@ -276,11 +282,11 @@ public partial class GameClient : Node
                     _propViews.Add(actor.Id, node);
                 }
             }
-            else if (actor.Role is "storage" or "anchor_stone" or "quest_board" or "hearth" or Waystones.Role)
+            else if (actor.Role is "storage" or "anchor_stone" or "quest_board" or "hearth" or "fishing" or Waystones.Role)
             {
                 // Things you can use, like the Guild chest and the job board, carry a floating sign so players see them.
-                var height = actor.Role == "quest_board" ? 2.7f : actor.Role == Waystones.Role ? 3.7f : actor.Role == "hearth" ? 1.6f : 1.25f;
-                var sign = actor.Role switch { "quest_board" => "Quest Board: jobs", "hearth" => $"{actor.Name}: cook", _ => actor.Name };
+                var height = actor.Role == "quest_board" ? 2.7f : actor.Role == Waystones.Role ? 3.7f : actor.Role is "hearth" or "fishing" ? 1.6f : 1.25f;
+                var sign = actor.Role switch { "quest_board" => "Quest Board: jobs", "hearth" => $"{actor.Name}: cook", "fishing" => "Fishing Spot: fish", _ => actor.Name };
                 _hud.Signs.Add((ToGodot(actor.Home) + Vector3.Up * height, sign));
             }
         }
@@ -492,6 +498,15 @@ public partial class GameClient : Node
             if (_pendingCommand == Command.None)
             {
                 (_pendingCommand, _pendingArg) = _hud.TakeCommand();
+            }
+
+            if (_pendingCommand == Command.Choose && _pendingArg < Story.Options.Count &&
+                Story.Options[_pendingArg].Effects.Any(e => e.References().Contains(("action", "fish"))))
+            {
+                // A line is out: the HUD says to keep still until the bite or a step away.
+                _castAt = Time.GetTicksMsec();
+                _castFrom = _client.State.Position;
+                _castBag = _hud.Items.Counts.Values.Sum();
             }
 
             var (aim, aimYaw, aimPitch) = ShotAim();
@@ -1253,10 +1268,34 @@ public partial class GameClient : Node
             : nearest is { Role: "storage" or "cache" } chest ? $"[E] Open the {chest.Name}"
             : nearest is { Role: Waystones.Role } stone ? $"[E] Touch the {stone.Name}"
             : nearest is { Role: "hearth" } fire ? $"[E] Cook at the {fire.Name}"
+            : nearest is { Role: "fishing" } ? "[E] Cast a line"
             : nearest is { } target ? $"[E] Talk to {target.Name}" : "";
         if (_hud.DialogOpen && nearest is null && !_hud.SceneDialog)
         {
             _hud.CloseDialog();
+        }
+
+        if (_castAt > 0)
+        {
+            var now = Time.GetTicksMsec();
+            if (_hud.Items.Counts.Values.Sum() > _castBag || now - _castAt > 12000)
+            {
+                _castAt = 0;
+            }
+            else if (System.Numerics.Vector3.Distance(_client.State.Position, _castFrom) > GameServer.FishStillReach)
+            {
+                _castAt = 0;
+                _slackUntil = now + 2500;
+            }
+            else
+            {
+                _hud.Prompt = "Line out... keep still until something bites.";
+            }
+        }
+
+        if (Time.GetTicksMsec() < _slackUntil)
+        {
+            _hud.Prompt = "The line went slack: you moved.";
         }
 
         if (_hud.DialogOpen)
@@ -1844,6 +1883,11 @@ public partial class GameClient : Node
         if (mode == "cook")
         {
             return CookBot();
+        }
+
+        if (mode == "fish")
+        {
+            return FishBot();
         }
 
         if (mode == "tutorial")
@@ -2596,6 +2640,42 @@ public partial class GameClient : Node
                 GD.Print($"BOT cooked: {recipe}");
             }
 
+            _botWait = 0;
+        }
+
+        return (0, 0, Buttons.None);
+    }
+
+    /// <summary>
+    /// PIXEL_BOT=fish (with PIXEL_SPAWN near a pier): walks to the nearest fishing spot, casts, keeps still, and casts
+    /// again after each catch, printing what bit; "done" after three fish.
+    /// </summary>
+    private (sbyte X, sbyte Z, Buttons Buttons) FishBot()
+    {
+        var position = ToGodot(_client.State.Position);
+        var spot = ToGodot(_actors.Where(a => a.Role == "fishing").OrderBy(a => ToGodot(a.Home).DistanceTo(position)).First().Home);
+        var fish = new[] { "river_perch", "silver_trout", "mirefin_fillet" }.Sum(id => _hud.Items.Counts.GetValueOrDefault(ItemDef.Index(id)));
+        if (_botStage == "done" || fish >= 3)
+        {
+            BotStage("done");
+            return (0, 0, Buttons.None);
+        }
+
+        if (new Vector2(position.X - spot.X, position.Z - spot.Z).Length() > 1.6f && _castAt == 0)
+        {
+            BotStage("walk to the fishing spot");
+            return BotGo(spot, 1.2f, Buttons.None);
+        }
+
+        BotStage($"fishing, {fish} caught");
+        if (_castAt == 0 && !_hud.DialogOpen && _client.Tick % 30 == 0)
+        {
+            Interact();
+        }
+        else if (_hud.DialogOpen && ++_botWait > BotDialogTicks)
+        {
+            (_pendingCommand, _pendingArg) = _hud.ChooseLabel("Cast a line.");
+            GD.Print($"BOT cast at tick {_client.Tick}");
             _botWait = 0;
         }
 

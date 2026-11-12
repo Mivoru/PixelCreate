@@ -48,6 +48,8 @@
 
   { "id": "raw_beef", "name": "Raw Steak", "kind": "food", "tier": 0, "price": 6, "heal": 30, "icon": "raw_beef", "description": "A thick cut of beef. Better cooked, but it fills you up." },
   { "id": "hare_meat", "name": "Hare Meat", "kind": "food", "tier": 0, "price": 4, "heal": 18, "icon": "hare_meat", "description": "Lean and dark. Best in a pot with an onion." },
+  { "id": "river_perch", "name": "Lake Perch", "kind": "food", "tier": 0, "price": 3, "heal": 12, "icon": "river_perch", "description": "Striped and spiny, caught off a pier on Mirror Lake. Better over a fire." },
+  { "id": "silver_trout", "name": "Silver Trout", "kind": "food", "tier": 0, "price": 6, "heal": 18, "icon": "silver_trout", "description": "A long bright fish that fought all the way to the pier." },
   { "id": "mirefin_fillet", "name": "Mirefin Fillet", "kind": "food", "tier": 0, "price": 7, "heal": 28, "icon": "mirefin_fillet", "description": "Firm white flesh. Tobb says it tastes of mud. Tobb is wrong." },
   { "id": "goat_meat", "name": "Goat Meat", "kind": "food", "tier": 0, "price": 4, "heal": 20, "icon": "goat_meat", "description": "Lean and a little tough." },
   { "id": "venison", "name": "Venison", "kind": "food", "tier": 0, "price": 7, "heal": 28, "icon": "venison", "description": "Dark, rich deer meat." },
@@ -57,6 +59,8 @@
   { "id": "egg", "name": "Egg", "kind": "food", "tier": 0, "price": 2, "heal": 10, "icon": "egg", "description": "Still warm." },
   { "id": "bread", "name": "Bread", "kind": "food", "tier": 0, "price": 2, "heal": 18, "shop": "barkeep", "icon": "bread", "description": "A dense round loaf. It keeps for days." },
   { "id": "hearty_stew", "name": "Hearty Stew", "kind": "food", "tier": 0, "price": 8, "heal": 50, "shop": "barkeep", "icon": "hearty_stew", "description": "A bowl of Dorran's stew from the Bent Nail. Nobody asks what is in it." },
+  { "id": "fried_perch", "name": "Fried Perch", "kind": "food", "tier": 0, "price": 6, "heal": 24, "icon": "fried_perch", "description": "Crisp at the edges, spines picked out. Tobb eats three at a sitting." },
+  { "id": "baked_trout", "name": "Baked Trout", "kind": "food", "tier": 0, "price": 10, "heal": 34, "icon": "baked_trout", "description": "Wrapped in leaves and baked in the embers. The skin comes off in one piece." },
   { "id": "meat_pie", "name": "Meat Pie", "kind": "food", "tier": 0, "price": 5, "heal": 32, "shop": "barkeep", "icon": "meat_pie", "description": "A pie with a thick crust, still warm from the Bent Nail's oven." },
   { "id": "roast_chicken", "name": "Roast Chicken", "kind": "food", "tier": 0, "price": 6, "heal": 28, "icon": "roast_chicken", "description": "Crisp skin, smoke and a little ash. Turned on a stick over an open fire." },
   { "id": "game_skewer", "name": "Game Skewer", "kind": "food", "tier": 0, "price": 7, "heal": 32, "icon": "game_skewer", "description": "Lean chunks charred on a green stick. Hunters eat them standing up." },

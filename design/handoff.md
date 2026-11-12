@@ -109,7 +109,7 @@ Neověřeno hraním člověkem: vše výše jen boty, testy (385) a snímky. Sí
    krb, tři stoly, kout s loutnou. Štamgasti sedí ve dvoře od 18 a v 20 jdou dovnitř skutečně dveřmi (při dešti hned),
    Corwin od 20. Čtyři nové rozhovory uvnitř (s hlasy). Interiéry dalších domů zatím ne.
    Dorran prodává chléb, Hearty Stew (8 zl., léčí 50) a Meat Pie (5 zl., léčí 32); ceny jsou odhad, neladěno.
-5. [~] Systémy: rybaření na molech, sběr bylin a hub (pro Wren), vaření u ohně, řemeslo u Tess z materiálů monster,
+5. [x] Systémy: rybaření na molech, sběr bylin a hub (pro Wren), vaření u ohně, řemeslo u Tess z materiálů monster,
    rank D se zkouškou v Guildě jako cíl po úrovni 9.
    Hotovo (2026-11-12 večer): vaření u čtyř ohňů (krb v Bent Nail, East Watch, lom, Woodcutters' Camp; `tools/cooking.py`):
    syrové maso a ryba z tašky se mění na sedm nových jídel (Roast Chicken, Game Skewer, Roast Mutton, Boar Roast,
@@ -119,7 +119,10 @@ Neověřeno hraním člověkem: vše výše jen boty, testy (385) a snímky. Sí
    Glowcap (Whispering Woods, Westwood, Greyfang) a Moonpetal (Stone Circle, Moonfell) rostou na místech z `gathers`,
    sbírají se přejitím, dorostou za 10 minut; Wren z nich vaří lektvary (`tools/brew.py`). Rank D: od úrovně 9 (po ranku E) nabídne Mira zkoušku,
    Rhea bojuje naplno (úroveň 10, 640 životů, navíc vzdušný sek; čísla jsou odhad), výhra dá flag `rank.d`, 150 zl.
-   a 500 XP. Rank D zatím nic neodemyká (joby podle ranku nejsou). Zbývá: rybaření.
+   a 500 XP. Rank D zatím nic neodemyká (joby podle ranku nejsou). Rybaření: dvě
+   místa na koncích mol na Mirror Lake ("Cast a line.", pár sekund stát v klidu): Lake Perch, Silver Trout, občas
+   mirefin; obě ryby se dají upéct. Pozor: mirefini a Old Gulper (úroveň 8) hráče na molu napadají, nováček tam
+   rybařit skoro nemůže; rozhodnutí pro autora (nechat, nebo dát rybářské místo jinam).
 6. [ ] Delší dungeon s bossem a skrytou cestou (Archive i Warren jsou dnes jedna síň).
 7. [x] Kvalita: hlídač zaseknutí klienta (zápis, co hra dělala), audit děr ve zbylých interiérech.
    Hlídač hotový (2026-11-12, `FreezeWatch.cs`): když klient 4 s nezačne snímek, zapíše do `client.log` řádek

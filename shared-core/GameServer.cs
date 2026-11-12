@@ -75,6 +75,7 @@ public sealed class ServerStats
     public readonly long[] GearDropped = new long[4];
     public long GearForged;
     public long Gathered;
+    public long FishCaught;
 }
 
 public enum ProjectileKind : byte
@@ -378,6 +379,10 @@ public sealed partial class GameServer : IEnemyEvents
         /// <summary>Gear carried, by place; a place is empty when null. Worn pieces stay in the list.</summary>
         public readonly GearPiece?[] Gear = new GearPiece?[GearSlots];
 
+        /// <summary>When a cast line at a fishing spot bites (0: no line out), and where the player stood to cast.</summary>
+        public uint BiteAt;
+        public Vector3 CastFrom;
+
         /// <summary>Gather spots this player picked, with the tick each grows back.</summary>
         public readonly Dictionary<int, uint> RegrowAt = new();
         public readonly HashSet<int> Worn = new();
@@ -462,6 +467,13 @@ public sealed partial class GameServer : IEnemyEvents
         /// <summary>The gather spot this herb or mushroom grows on, or -1 for a drop.</summary>
         public int Spot = -1;
     }
+
+    /// <summary>A cast line bites after this many ticks, at random between the two.</summary>
+    public const int FishBiteMinTicks = Tuning.TickRate * 4;
+    public const int FishBiteMaxTicks = Tuning.TickRate * 9;
+
+    /// <summary>What bites, by weight: mostly perch, some trout, now and then a mirefin.</summary>
+    private static readonly (string Item, int Weight)[] Catch = { ("river_perch", 55), ("silver_trout", 35), ("mirefin_fillet", 10) };
 
     /// <summary>A picked herb or mushroom grows back after this long (ten minutes).</summary>
     public const uint GatherRegrowTicks = Tuning.TickRate * 600;
@@ -782,6 +794,8 @@ public sealed partial class GameServer : IEnemyEvents
         {
             StepGathers();
         }
+
+        StepFishing();
 
         StepLoot();
         StepBleeding();
@@ -1750,6 +1764,11 @@ public sealed partial class GameServer : IEnemyEvents
             // Rhea's trial is the step to rank E, from level five.
             case "beginTrial" when player.Rank == GuildRank.Adventurer && player.Level >= RankTrialLevel && !_story.Has("rank.e") && Near(player, "receptionist"):
                 BeginTrial(player);
+                break;
+            // A line cast from a fishing spot bites a few seconds later, if the player has stood still (StepFishing).
+            case "fish" when player.BiteAt == 0 && Near(player, "fishing"):
+                player.BiteAt = Tick + (uint)_random.Next(FishBiteMinTicks, FishBiteMaxTicks);
+                player.CastFrom = player.State.Position;
                 break;
             // The trial to rank D: Rhea again, at full strength, from level nine.
             case "beginTrialD" when player.Rank == GuildRank.Adventurer && player.Level >= RankDTrialLevel && _story.Has("rank.e") && !_story.Has("rank.d") &&
@@ -3165,6 +3184,32 @@ public sealed partial class GameServer : IEnemyEvents
             }
         }
     }
+
+    /// <summary>Lines that bite now: a fish for a player who stayed by the cast, nothing for one who walked off.</summary>
+    private void StepFishing()
+    {
+        foreach (var player in _players.Values)
+        {
+            if (player.BiteAt == 0 || Tick < player.BiteAt)
+            {
+                continue;
+            }
+
+            player.BiteAt = 0;
+            if (Vector3.Distance(player.State.Position, player.CastFrom) > FishStillReach || player.State.Health <= 0)
+            {
+                continue;
+            }
+
+            var roll = _random.Next(Catch.Sum(c => c.Weight));
+            var (item, _) = Catch.First(c => (roll -= c.Weight) < 0);
+            AddItem(player, ItemDef.Index(item), 1);
+            Stats.FishCaught++;
+        }
+    }
+
+    /// <summary>How far a fisher may step from where they cast before the line is lost.</summary>
+    public const float FishStillReach = 1.2f;
 
     private void StepLoot()
     {

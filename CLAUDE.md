@@ -157,6 +157,13 @@ Rules:
   regrowing, takes it away past `GatherDrop`, and a pick (walking over it, like any drop) regrows after
   `GatherRegrowTicks`; real drops go into the snapshot first. The client draws them low with a green ring. Wren
   brews potions from them (`python tools/brew.py` writes her dialogue). `net-tests/GatherTests.cs`.
+- Fishing: NPCs of role `fishing` (no figure, "Fishing Spot: fish" sign) at the water end of the two Mirror Lake piers;
+  `python tools/fishing.py` writes their dialogue. "Cast a line." runs the action `fish`: a bite comes after
+  `FishBiteMinTicks` to `FishBiteMaxTicks` if the player stays within `FishStillReach` (`GameServer.StepFishing`):
+  a Lake Perch, a Silver Trout or now and then a mirefin fillet (`GameServer.Catch`), all cookable. The client shows
+  "Line out..." while it waits and "The line went slack" on a step away. The lake's mirefins (and the Old Gulper)
+  attack players on the piers, so tests freeze enemies. `PIXEL_BOT=fish` (PIXEL_SPAWN near a pier) fishes three.
+  `net-tests/FishingTests.cs`.
 - `Command.UseItem` eats and drinks through `GameServer.Consume`: the old eat command range (`ItemCommands.Eat`)
   reaches only the first 64 items.
 - Test a far area: set `PIXEL_SPAWN=x,z` before starting the server.

@@ -332,7 +332,8 @@ public class DialogueDataTests
         // Waystones speak too, in the sense that their runes offer the trip to other stones.
         // So do hidden caches: an old chest has only "Open it." And cooking fires offer their recipes.
         Assert.Empty(Story.Dialogues.Keys.Except(speakers).Where(k => !k.StartsWith("waystone_", StringComparison.Ordinal) &&
-            !k.StartsWith("cache_", StringComparison.Ordinal) && !k.StartsWith("fire_", StringComparison.Ordinal)));
+            !k.StartsWith("cache_", StringComparison.Ordinal) && !k.StartsWith("fire_", StringComparison.Ordinal) &&
+            !k.StartsWith("fish_", StringComparison.Ordinal)));
     }
 
     [Fact]

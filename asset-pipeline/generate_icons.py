@@ -59,6 +59,8 @@ RAMPS = {
     "wolf": ["262b44", "3a4466", "5a6988", "8b9bb4"],
     "potion": ["3e2731", "a22633", "e43b44", "f6757a"],
     "sage": ["193c3e", "265c42", "3e8948", "63c74d"],
+    "perch": ["265c42", "3e8948", "feae34", "fee761"],
+    "trout": ["3a4466", "8b9bb4", "c0cbdc", "ffffff"],
     "glowcap": ["3a4466", "8b9bb4", "c0cbdc", "2ce8f5"],
     "moonpetal": ["3a4466", "8b9bb4", "c0cbdc", "ffffff"],
     # Cooked food: browned versions of the raw meats.
@@ -826,6 +828,8 @@ ICONS = {
     "roast_chicken": ("drumstick", "roast"), "game_skewer": ("skewer", "seared"), "roast_mutton": ("grilled", "roast"),
     "boar_roast": ("grilled", "charred"), "venison_steak": ("grilled", "venison_cooked"), "seared_steak": ("grilled", "seared"),
     "grilled_fillet": ("grilled", "fish_cooked"),
+    "river_perch": ("fish", "perch"), "silver_trout": ("fish", "trout"), "fried_perch": ("fish", "roast"),
+    "baked_trout": ("fish", "seared"),
     "meadow_sage": ("sprig", "sage"), "glowcap": ("mushroom", "glowcap"), "moonpetal": ("flower", "moonpetal"), "bond": ("scroll", "paper"),
     "skillbook_fire": ("book", "fire"), "skillbook_wind": ("book", "blue"), "skillbook_earth": ("book", "leather"),
     "skillbook_spear": ("book", "iron"), "skillbook_wisp": ("book", "wisp"), "skillbook_rune": ("book", "stone"), "skillbook_vine": ("book", "slime"), "skillbook_blood": ("book", "potion"),
@@ -841,6 +845,27 @@ ICONS = {
 
 def rgba(hex_color):
     return tuple(int(hex_color[i:i + 2], 16) for i in (0, 2, 4)) + (255,)
+
+
+SHAPES.update({
+    "fish": """
+................
+................
+................
+................
+................
+.......2222.....
+..11..233343....
+.1221233444432..
+..1223333334k3..
+.1221233333332..
+..11..2222222...
+.......1111.....
+................
+................
+................
+................""",
+})
 
 
 SHAPES.update({

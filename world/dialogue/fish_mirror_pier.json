@@ -1,0 +1,26 @@
+{
+  "npc": "fish_mirror_pier",
+  "entries": [
+    {
+      "node": "water"
+    }
+  ],
+  "nodes": {
+    "water": {
+      "text": "The end of the old pier, where the lake drops away into deep water. Mind the fins. Cast a line and keep still until something bites.",
+      "options": [
+        {
+          "text": "Cast a line.",
+          "effects": [
+            {
+              "action": "fish"
+            }
+          ]
+        },
+        {
+          "text": "Leave it."
+        }
+      ]
+    }
+  }
+}

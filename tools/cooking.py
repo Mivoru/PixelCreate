@@ -23,6 +23,8 @@ RECIPES = [
     ("venison", "venison_steak", "Sear the venison."),
     ("raw_beef", "seared_steak", "Sear the beef."),
     ("mirefin_fillet", "grilled_fillet", "Grill the mirefin fillet on a hot stone."),
+    ("river_perch", "fried_perch", "Fry the perch in the pan."),
+    ("silver_trout", "baked_trout", "Bake the trout in the embers."),
 ]
 
 DEFAULT_NOTE = "The fire burns low and steady. A spit and a blackened pan wait over the embers."

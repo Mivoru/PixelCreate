@@ -194,6 +194,52 @@
           "next": "fire"
         },
         {
+          "text": "Fry the perch in the pan.",
+          "when": {
+            "item": {
+              "id": "river_perch"
+            }
+          },
+          "effects": [
+            {
+              "take": {
+                "item": "river_perch",
+                "count": 1
+              }
+            },
+            {
+              "give": {
+                "item": "fried_perch",
+                "count": 1
+              }
+            }
+          ],
+          "next": "fire"
+        },
+        {
+          "text": "Bake the trout in the embers.",
+          "when": {
+            "item": {
+              "id": "silver_trout"
+            }
+          },
+          "effects": [
+            {
+              "take": {
+                "item": "silver_trout",
+                "count": 1
+              }
+            },
+            {
+              "give": {
+                "item": "baked_trout",
+                "count": 1
+              }
+            }
+          ],
+          "next": "fire"
+        },
+        {
           "text": "Leave the fire."
         }
       ]
