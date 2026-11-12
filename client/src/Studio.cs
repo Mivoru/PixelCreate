@@ -302,10 +302,10 @@ public partial class Studio : Node
         // PIXEL_MONSTERS=auren,archive photographs only the monsters whose ids start with those words.
         var only = (System.Environment.GetEnvironmentVariable("PIXEL_MONSTERS") ?? "").Split(',', System.StringSplitOptions.RemoveEmptyEntries);
         var monsters = EnemyDef.All.Select((def, index) => (def, index))
-            .Where(p => p.def.Kind is "slime" or "goblin" or "orc" or "werewolf" or "sentinel" or "wisp" or "crow" or "vine" && (only.Length == 0 || only.Any(o => p.def.Id.StartsWith(o)))).ToList();
+            .Where(p => p.def.Kind is "slime" or "goblin" or "orc" or "werewolf" or "sentinel" or "wisp" or "crow" or "vine" or "fish" && (only.Length == 0 || only.Any(o => p.def.Id.StartsWith(o)))).ToList();
         foreach (var (def, index) in monsters)
         {
-            IEnemyView view = def.Kind == "slime" ? new SlimeView() : def.Kind == "wisp" ? new WispView(def) : def.Kind == "crow" ? new CrowView(def) : def.Kind == "vine" ? new VineView(def) : new GoblinView(def);
+            IEnemyView view = def.Kind == "slime" ? new SlimeView() : def.Kind == "wisp" ? new WispView(def) : def.Kind == "crow" ? new CrowView(def) : def.Kind == "vine" ? new VineView(def) : def.Kind == "fish" ? new FishView(def, def.Size * 0.45f) : new GoblinView(def);
             _set.AddChild(view.Root);
             var height = def.Size * 1.1f;
             var poses = new List<(string Pose, float Yaw, float Distance, EnemyAction Action, byte Ability)>
@@ -315,6 +315,12 @@ public partial class Studio : Node
             };
 
             // A wisp shows its bolt gathering and the light put out by a standing stone.
+            if (def.Kind == "fish")
+            {
+                poses.Add(("leap", 1.57f, 4.5f, EnemyAction.Leap, 0));
+                poses.Add(("stranded", 0.7f, 4f, EnemyAction.Stagger, 0));
+            }
+
             if (def.Kind == "vine")
             {
                 poses.Add(("windup_lash", 0.7f, 5f, EnemyAction.Cast, (byte)(def.Abilities!.Length - 1)));
@@ -384,7 +390,7 @@ public partial class Studio : Node
         var lineup = new List<IEnemyView>();
         foreach (var (def, index) in monsters)
         {
-            IEnemyView view = def.Kind == "slime" ? new SlimeView() : def.Kind == "wisp" ? new WispView(def) : def.Kind == "crow" ? new CrowView(def) : def.Kind == "vine" ? new VineView(def) : new GoblinView(def);
+            IEnemyView view = def.Kind == "slime" ? new SlimeView() : def.Kind == "wisp" ? new WispView(def) : def.Kind == "crow" ? new CrowView(def) : def.Kind == "vine" ? new VineView(def) : def.Kind == "fish" ? new FishView(def, def.Size * 0.45f) : new GoblinView(def);
             _set.AddChild(view.Root);
             lineup.Add(view);
             view.Update(new EnemyView(1, (byte)index, 3, default, 0f, 10, 10, EnemyAction.Idle, 0, default, false), new Vector3(x, 0, 0), Step, sfx);

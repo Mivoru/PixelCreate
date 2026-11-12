@@ -41,7 +41,7 @@ public sealed partial class Enemy
     {
         "pounce" or "dashStrike" or "shadowRun" or "tornado" or "combo" or "superJump" or "dive" => true,
         "arrow" or "volley" or "powershot" or "fireball" or "firewall" or "airSlash" or "airSlashWide"
-            or "spearThrow" or "summonSpears" or "shadowClone" or "earthCrack" or "fangSlash" or "rookCall" or "vineWhip" or "vineGrab" => false,
+            or "spearThrow" or "summonSpears" or "shadowClone" or "earthCrack" or "fangSlash" or "rookCall" or "vineWhip" or "vineGrab" or "waterJet" => false,
         _ => ability.Range <= 4.5f,
     };
 
@@ -150,6 +150,12 @@ public sealed partial class Enemy
         if (_retreat > 0)
         {
             Walk(world, -toward + AllySpacing() * toward.Length(), 1.1f);
+            return;
+        }
+
+        if (role == "lurker")
+        {
+            Lurk(world, random, target);
             return;
         }
 

@@ -3427,6 +3427,10 @@ public sealed partial class GameServer : IEnemyEvents
             case "vineWhip":
                 Lash(enemy, direction, ability, 0);
                 break;
+            case "waterJet":
+                // The Old Gulper's jet: a straight blast that throws the player back from the shore.
+                Lash(enemy, direction, ability, 0, -1.4f);
+                break;
             case "vineGrab":
                 // The Stranglethorn's three vines lash out in a fan; whoever one catches is held and dragged in.
                 foreach (var angle in new[] { -VineFan, 0f, VineFan })
@@ -3649,7 +3653,7 @@ public sealed partial class GameServer : IEnemyEvents
     /// A vine lashes out along a line from the plant: every player across it is hurt and yanked back towards
     /// the plant, into reach of its jaws; a grab also holds them a moment.
     /// </summary>
-    private void Lash(Enemy plant, Vector3 direction, Ability ability, byte hold)
+    private void Lash(Enemy plant, Vector3 direction, Ability ability, byte hold, float pull = 1f)
     {
         var way = direction with { Y = 0 };
         way = way == Vector3.Zero ? Facing(plant) : Vector3.Normalize(way);
@@ -3666,7 +3670,7 @@ public sealed partial class GameServer : IEnemyEvents
             Stats.VineLashes++;
             var back = -offset;
             back = back == Vector3.Zero ? -way : Vector3.Normalize(back);
-            player.State.Velocity += back * VinePull * MathF.Min(1f, along / 4f) + Vector3.UnitY * 2f;
+            player.State.Velocity += back * VinePull * pull * (pull > 0f ? MathF.Min(1f, along / 4f) : 1f) + Vector3.UnitY * 2f;
         }
     }
 

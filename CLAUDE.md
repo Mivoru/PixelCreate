@@ -454,6 +454,11 @@ Rules:
   and `vineWhip` a player within reach, yanking them in (`GameServer.Lash`, `GameServer.VinePull`); the rare
   Stranglethorn's `vineGrab` throws three vines in a fan that also hold (`GameServer.VineHold` of slow).
   `net-tests/VineTests.cs`.
+  Mirefins (Mirror Lake; kind `fish`, behaviour `lurker`, `EnemyFish.cs`, `FishView`): the camp's middle and radius are
+  the lake. Under water (`Enemy.Submerged`) only the fin shows and blows pass through; they shadow a player along the
+  shore and `pounce` only at one within `Enemy.ShoreReach` of the edge, surfacing in the wind-up, then lie stranded
+  (`Stagger`, `Enemy.StrandedTicks`) and wriggle back. The rare Old Gulper's `waterJet` throws the player back
+  (`Lash` with a negative pull). `net-tests/FishTests.cs`.
   War drum (`net-tests/WarDrumTests.cs`): camps with a `drum` point (every Ironjaw camp) answer it. A fighter that
   notices a player within 45 m of the drum runs to it instead (`Enemy.RunsToDrum`, one at a time via
   `ClaimDrum`), beats it for `Enemy.DrumTicks` (`EnemyAction.Drum`), and then every camp of that drum within 60 m

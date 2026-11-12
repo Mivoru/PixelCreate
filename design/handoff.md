@@ -83,7 +83,7 @@ v `asset-pipeline/`, studio záběr (`PIXEL_MONSTERS=...`), dokumentace, commit 
    válečného bubnu), rána štítem, která odhodí. **Goblin Trapper** (Old Ruins): klade viditelné nášlapné
    sítě, které hráče na 1 s zpomalí (zpomalení musí jít přes `PlayerState`, aby ho klient předpověděl).
 4. ~~**Stoneback**~~ hotovo 2026-11-11 v noci (severní předhůří). Původně: (předhůří a sedla) s **Mossback Elder** (roztočí se v krunýři a klouže).
-5. ~~**Vinelasher**~~ hotovo 2026-11-12 (Mirefin zbývá). Původně: **Vinelasher** (Emerald Jungle, nehýbe se) se **Stranglethorn** a **Mirefin** (Mirror Lake, ve vodě)
+5. ~~**Vinelasher**~~ hotovo 2026-11-12 (i Mirefin hotov). Původně: **Vinelasher** (Emerald Jungle, nehýbe se) se **Stranglethorn** a **Mirefin** (Mirror Lake, ve vodě)
    s **Old Gulper**. Oba potřebují nový druh pohybu, proto až na konci.
 6. Vegetace a domy zblízka (kontrola každé budovy zblízka), břehy pod mosty.
 7. Volitelně knihy dovedností ze vzácných: Rune Ward, Wisp Bolt, Vine Pull.

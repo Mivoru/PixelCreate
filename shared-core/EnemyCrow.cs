@@ -14,7 +14,7 @@ public sealed partial class Enemy
     public bool Aloft => Def.Kind == "crow" && Alive && Action is not (EnemyAction.Leap or EnemyAction.Strike or EnemyAction.Stagger);
 
     /// <summary>Beyond harm for the moment: sunk in shadow, dashing aside, or a crow aloft. Blows pass through.</summary>
-    public bool Untouchable => InShadow || Dodging || Aloft || Action is EnemyAction.Shell or EnemyAction.ShellSpin;
+    public bool Untouchable => InShadow || Dodging || Aloft || Submerged || Action is EnemyAction.Shell or EnemyAction.ShellSpin;
 
     /// <summary>Ticks left of a crow's flight away from the player after its flock was struck.</summary>
     public int ScatterTicks;

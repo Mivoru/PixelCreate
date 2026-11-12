@@ -407,6 +407,25 @@
     "loot": [{"item": "vine_fiber", "chance": 1, "min": 3, "max": 5}, {"item": "heartseed", "chance": 1, "min": 1, "max": 1}]
   },
   {
+    "id": "mirefin", "behavior": "lurker", "name": "Mirefin", "kind": "fish",
+    "minLevel": 4, "maxLevel": 6, "health": 80, "healthPerLevel": 14, "speed": 4.2, "size": 1.0, "aggroRange": 20, "preferredRange": 2, "tagHeight": 1.2,
+    "abilities": [
+      { "effect": "pounce", "range": 9, "minRange": 1.5, "windupTicks": 40, "recoverTicks": 10, "cooldownTicks": 360, "damage": 9, "radius": 1.5, "telegraph": "circle" }
+    ],
+    "drops": [{ "rarity": 0, "chance": 1 }, { "rarity": 1, "chance": 0.04 }],
+    "loot": [{"item": "mirefin_fillet", "chance": 1, "min": 1, "max": 2}, {"item": "fin_spine", "chance": 0.4, "min": 1, "max": 1}]
+  },
+  {
+    "id": "old_gulper", "behavior": "lurker", "name": "Old Gulper", "kind": "fish", "rare": true,
+    "minLevel": 8, "maxLevel": 8, "health": 360, "healthPerLevel": 30, "speed": 3.8, "size": 1.7, "aggroRange": 22, "preferredRange": 3, "tagHeight": 1.8,
+    "abilities": [
+      { "effect": "pounce", "range": 10, "minRange": 1.5, "windupTicks": 40, "recoverTicks": 10, "cooldownTicks": 360, "damage": 16, "radius": 2.0, "telegraph": "circle" },
+      { "effect": "waterJet", "range": 12, "minRange": 2, "windupTicks": 46, "recoverTicks": 30, "cooldownTicks": 360, "damage": 14, "telegraph": "line" }
+    ],
+    "drops": [{ "rarity": 1, "chance": 1 }, { "rarity": 2, "chance": 0.2 }],
+    "loot": [{"item": "mirefin_fillet", "chance": 1, "min": 3, "max": 4}, {"item": "fin_spine", "chance": 1, "min": 2, "max": 3}, {"item": "gulper_pearl", "chance": 1, "min": 1, "max": 1}]
+  },
+  {
     "id": "auren_sentinel", "behavior": "brute", "name": "Auren Sentinel", "kind": "sentinel", "weapon": "longsword", "defense": 12,
     "statue": true, "frontGuard": 0.3, "backBonus": 1.5,
     "minLevel": 7, "maxLevel": 9, "health": 300, "healthPerLevel": 36, "speed": 2.6, "size": 1.25, "aggroRange": 6, "preferredRange": 3, "tagHeight": 2.9,

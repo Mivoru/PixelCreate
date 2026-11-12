@@ -301,6 +301,8 @@
     { "x": -90, "z": -142, "radius": 0.3, "count": 1, "respawnTicks": 2400, "types": ["vinelasher"], "yaw": 0.6 },
     { "x": -132, "z": -120, "radius": 0.3, "count": 1, "respawnTicks": 2400, "types": ["vinelasher"], "yaw": 1.2 },
     { "x": -66, "z": -128, "radius": 0.3, "count": 1, "respawnTicks": 14400, "rare": true, "types": ["stranglethorn"], "yaw": -1.6 },
+    { "x": 70, "z": 137, "radius": 15, "count": 2, "respawnTicks": 2400, "types": ["mirefin"] },
+    { "x": 70, "z": 137, "radius": 15, "count": 1, "respawnTicks": 18000, "rare": true, "types": ["old_gulper"] },
     { "x": -52, "z": -236, "radius": 6, "count": 3, "respawnTicks": 2400, "types": ["stoneback"] },
     { "x": 52, "z": -238, "radius": 6, "count": 2, "respawnTicks": 2400, "types": ["stoneback"] },
     { "x": -12, "z": -254, "radius": 2, "count": 1, "respawnTicks": 18000, "rare": true, "types": ["mossback_elder"] },

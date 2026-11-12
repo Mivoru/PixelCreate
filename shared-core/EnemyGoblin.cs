@@ -46,7 +46,7 @@ public sealed partial class Enemy
 
         StepTurn(events, Action == EnemyAction.Strike && _lastGoblinAction != EnemyAction.Strike);
         _lastGoblinAction = Action;
-        if (StepWard(world, targets) || StepScatter(world, targets, events) || StepShell(targets, world, random))
+        if (StepWard(world, targets) || StepScatter(world, targets, events) || StepShell(targets, world, random) || StepStranded(world))
         {
             Fall(world, random, events);
             return;
@@ -93,6 +93,13 @@ public sealed partial class Enemy
                     ActionTicks = CurrentAbility!.RecoverTicks;
                     Velocity.X = 0;
                     Velocity.Z = 0;
+
+                    // A fish that leapt out lies stranded where it came down.
+                    if (IsFish)
+                    {
+                        Action = EnemyAction.Stagger;
+                        ActionTicks = StrandedTicks;
+                    }
 
                     // A great leap that finds nobody ends in a forward roll instead of a strike.
                     if (CurrentAbility.Effect == "superJump" && !Landed)
@@ -253,6 +260,12 @@ public sealed partial class Enemy
 
         if (FindTarget(targets) is not { } target)
         {
+            if (IsFish)
+            {
+                Lurk(world, random, null);
+                return;
+            }
+
             Patrol(world, random, homeDistance);
             return;
         }
@@ -284,6 +297,12 @@ public sealed partial class Enemy
 
             // A shaman dances only with goblins of its camp near enough to be stirred by it.
             if (ability.Effect == "warDance" && !AlliesNear(DanceRadius))
+            {
+                continue;
+            }
+
+            // A fish leaps or spits only at a player standing by the water.
+            if (IsFish && ability.Effect is "pounce" or "waterJet" && !AtTheShore(target))
             {
                 continue;
             }
