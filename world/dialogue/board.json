@@ -42,6 +42,36 @@
    "text": "Notices flutter on the board, each signed by whoever posted it. Harder work goes up as the Guild trusts you with it.",
    "options": [
     {
+     "text": "Village work: slimes, goblins, hides and errands",
+     "next": "easy"
+    },
+    {
+     "text": "Hunts and expeditions for seasoned hands",
+     "next": "hard",
+     "when": {
+      "level": {
+       "min": 4
+      }
+     }
+    },
+    {
+     "text": "Wanted posters: rewards for the worst of them",
+     "next": "wanted",
+     "when": {
+      "level": {
+       "min": 4
+      }
+     }
+    },
+    {
+     "text": "Leave"
+    }
+   ]
+  },
+  "easy": {
+   "text": "Small jobs for the village and the road: honest pay for honest work.",
+   "options": [
+    {
      "text": "Clear the Slimes (Pip): kill 5 slimes in the Slime Fields. 40 gold",
      "effects": [
       {
@@ -91,6 +121,58 @@
       }
      ]
     },
+    {
+     "text": "Hares for the Pot (Tobb): bring 3 Hare Meat from the meadows. 35 gold",
+     "effects": [
+      {
+       "quest": {
+        "start": "hare_stew"
+       }
+      }
+     ]
+    },
+    {
+     "text": "Raiders at the Fold (Brin): kill 3 goblins at the Westwood camp. 120 gold",
+     "effects": [
+      {
+       "quest": {
+        "start": "fold_raiders"
+       }
+      }
+     ],
+     "when": {
+      "level": {
+       "min": 3
+      }
+     }
+    },
+    {
+     "text": "Crows over Crowfield (Garrick): kill 4 carrion crows on Crowfield. 110 gold",
+     "effects": [
+      {
+       "quest": {
+        "start": "crowfield_crows"
+       }
+      }
+     ],
+     "when": {
+      "level": {
+       "min": 3
+      }
+     }
+    },
+    {
+     "text": "Back to the board",
+     "next": "jobs"
+    },
+    {
+     "text": "Leave"
+    }
+   ]
+  },
+  "hard": {
+   "text": "Work further out, where the monsters are worse and the pay is better.",
+   "options": [
     {
      "text": "Wolves at Greyfang (Garrick): kill 4 wolves in Greyfang Forest. 150 gold",
      "effects": [
@@ -167,46 +249,6 @@
      }
     },
     {
-     "text": "Hares for the Pot (Tobb): bring 3 Hare Meat from the meadows. 35 gold",
-     "effects": [
-      {
-       "quest": {
-        "start": "hare_stew"
-       }
-      }
-     ]
-    },
-    {
-     "text": "Raiders at the Fold (Brin): kill 3 goblins at the Westwood camp. 120 gold",
-     "effects": [
-      {
-       "quest": {
-        "start": "fold_raiders"
-       }
-      }
-     ],
-     "when": {
-      "level": {
-       "min": 3
-      }
-     }
-    },
-    {
-     "text": "Crows over Crowfield (Garrick): kill 4 carrion crows on Crowfield. 110 gold",
-     "effects": [
-      {
-       "quest": {
-        "start": "crowfield_crows"
-       }
-      }
-     ],
-     "when": {
-      "level": {
-       "min": 3
-      }
-     }
-    },
-    {
      "text": "Lookout at the Old Watchtower (Garrick): kill 2 goblins at the Old Watchtower. 150 gold",
      "effects": [
       {
@@ -265,6 +307,214 @@
        "min": 5
       }
      }
+    },
+    {
+     "text": "Back to the board",
+     "next": "jobs"
+    },
+    {
+     "text": "Leave"
+    }
+   ]
+  },
+  "wanted": {
+   "text": "Wanted posters, each with a sketch and a sum. Each is paid once, to whoever brings proof first.",
+   "options": [
+    {
+     "text": "Wanted: the Gallows Rook: 160 gold, once only",
+     "effects": [
+      {
+       "quest": {
+        "start": "wanted_rook"
+       }
+      }
+     ],
+     "when": {
+      "all": [
+       {
+        "level": {
+         "min": 4
+        }
+       },
+       {
+        "quest": {
+         "wanted_rook": "none"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "text": "Wanted: the Briarking: 260 gold, once only",
+     "effects": [
+      {
+       "quest": {
+        "start": "wanted_briarking"
+       }
+      }
+     ],
+     "when": {
+      "all": [
+       {
+        "level": {
+         "min": 7
+        }
+       },
+       {
+        "quest": {
+         "wanted_briarking": "none"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "text": "Wanted: the Stranglethorn: 260 gold, once only",
+     "effects": [
+      {
+       "quest": {
+        "start": "wanted_stranglethorn"
+       }
+      }
+     ],
+     "when": {
+      "all": [
+       {
+        "level": {
+         "min": 7
+        }
+       },
+       {
+        "quest": {
+         "wanted_stranglethorn": "none"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "text": "Wanted: the Lantern of the Barrow: 300 gold, once only",
+     "effects": [
+      {
+       "quest": {
+        "start": "wanted_lantern"
+       }
+      }
+     ],
+     "when": {
+      "all": [
+       {
+        "level": {
+         "min": 8
+        }
+       },
+       {
+        "quest": {
+         "wanted_lantern": "none"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "text": "Wanted: the Old Gulper: 260 gold, once only",
+     "effects": [
+      {
+       "quest": {
+        "start": "wanted_gulper"
+       }
+      }
+     ],
+     "when": {
+      "all": [
+       {
+        "level": {
+         "min": 7
+        }
+       },
+       {
+        "quest": {
+         "wanted_gulper": "none"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "text": "Wanted: the Mossback Elder: 300 gold, once only",
+     "effects": [
+      {
+       "quest": {
+        "start": "wanted_mossback"
+       }
+      }
+     ],
+     "when": {
+      "all": [
+       {
+        "level": {
+         "min": 8
+        }
+       },
+       {
+        "quest": {
+         "wanted_mossback": "none"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "text": "Wanted: the Goblin Warchief: 360 gold, once only",
+     "effects": [
+      {
+       "quest": {
+        "start": "wanted_warchief"
+       }
+      }
+     ],
+     "when": {
+      "all": [
+       {
+        "level": {
+         "min": 9
+        }
+       },
+       {
+        "quest": {
+         "wanted_warchief": "none"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "text": "Wanted: Red Hand Garrow: 400 gold, once only",
+     "effects": [
+      {
+       "quest": {
+        "start": "wanted_garrow"
+       }
+      }
+     ],
+     "when": {
+      "all": [
+       {
+        "level": {
+         "min": 9
+        }
+       },
+       {
+        "quest": {
+         "wanted_garrow": "none"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "text": "Back to the board",
+     "next": "jobs"
     },
     {
      "text": "Leave"

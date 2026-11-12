@@ -532,5 +532,269 @@
         "route": false
       }
     ]
+  },
+  {
+    "id": "wanted_rook",
+    "name": "Wanted: the Gallows Rook",
+    "kind": "job",
+    "giver": "board",
+    "repeatable": false,
+    "brief": "kill the Gallows Rook",
+    "gold": 160,
+    "xp": 220,
+    "poster": "Garrick, village guard",
+    "place": "Crowfield",
+    "journal": "Garrick's notice: A rook as big as a dog leads the crows on Crowfield, and calls the whole flock down at once. Bring it down.",
+    "steps": [
+      {
+        "text": "Kill the Gallows Rook on Crowfield. It calls its crows in a line: strike each as it dives.",
+        "goal": {
+          "kill": "gallows_rook",
+          "count": 1
+        },
+        "at": [
+          -136,
+          164
+        ]
+      },
+      {
+        "text": "Return to the Guild and report to Mira.",
+        "goal": {
+          "talk": "mira"
+        },
+        "route": false
+      }
+    ]
+  },
+  {
+    "id": "wanted_briarking",
+    "name": "Wanted: the Briarking",
+    "kind": "job",
+    "giver": "board",
+    "repeatable": false,
+    "brief": "kill the Briarking",
+    "gold": 260,
+    "xp": 360,
+    "poster": "Oswin, woodcutter",
+    "place": "the Emerald Jungle",
+    "journal": "Oswin's notice: The thornbacks have a king: a boar twice their size whose back throws thorns. It broke Oswin's cart in two.",
+    "steps": [
+      {
+        "text": "Kill the Briarking deep in the Emerald Jungle. Watch for its ring of thorns and make it charge a tree.",
+        "goal": {
+          "kill": "briarking",
+          "count": 1
+        },
+        "at": [
+          -124,
+          -150
+        ]
+      },
+      {
+        "text": "Return to the Guild and report to Mira.",
+        "goal": {
+          "talk": "mira"
+        },
+        "route": false
+      }
+    ]
+  },
+  {
+    "id": "wanted_stranglethorn",
+    "name": "Wanted: the Stranglethorn",
+    "kind": "job",
+    "giver": "board",
+    "repeatable": false,
+    "brief": "kill the Stranglethorn",
+    "gold": 260,
+    "xp": 360,
+    "poster": "Wren, alchemist",
+    "place": "the Emerald Jungle",
+    "journal": "Wren's notice: Wren wants the seed of a great vine on the jungle's eastern edge that holds whatever it catches. Mind its three vines.",
+    "steps": [
+      {
+        "text": "Kill the Stranglethorn on the eastern edge of the Emerald Jungle. Do not stand in a line with its vines.",
+        "goal": {
+          "kill": "stranglethorn",
+          "count": 1
+        },
+        "at": [
+          -66,
+          -128
+        ]
+      },
+      {
+        "text": "Return to the Guild and report to Mira.",
+        "goal": {
+          "talk": "mira"
+        },
+        "route": false
+      }
+    ]
+  },
+  {
+    "id": "wanted_lantern",
+    "name": "Wanted: the Lantern of the Barrow",
+    "kind": "job",
+    "giver": "board",
+    "repeatable": false,
+    "brief": "kill the Lantern of Barrow",
+    "gold": 300,
+    "xp": 420,
+    "poster": "Old Bram, elder",
+    "place": "the Stone Circle by night",
+    "journal": "Old Bram's notice: A great light leads the wisps of the Stone Circle and splits into three when pressed. Only the true one casts a shadow.",
+    "steps": [
+      {
+        "text": "After dark, put out the Lantern of the Barrow at the Stone Circle. Strike the light that casts a shadow.",
+        "goal": {
+          "kill": "lantern_of_the_barrow",
+          "count": 1
+        },
+        "at": [
+          -90,
+          121
+        ]
+      },
+      {
+        "text": "Return to the Guild and report to Mira.",
+        "goal": {
+          "talk": "mira"
+        },
+        "route": false
+      }
+    ]
+  },
+  {
+    "id": "wanted_gulper",
+    "name": "Wanted: the Old Gulper",
+    "kind": "job",
+    "giver": "board",
+    "repeatable": false,
+    "brief": "kill the Old Gulper",
+    "gold": 260,
+    "xp": 360,
+    "poster": "Tobb, fisherman",
+    "place": "Mirror Lake",
+    "journal": "Tobb's notice: Something old and huge lives in Mirror Lake and spits the water out to knock men off the bank. Tobb has seen it twice.",
+    "steps": [
+      {
+        "text": "Kill the Old Gulper in Mirror Lake. Stand at the shore to draw it out, and hit it while it lies stranded.",
+        "goal": {
+          "kill": "old_gulper",
+          "count": 1
+        },
+        "at": [
+          70,
+          137
+        ]
+      },
+      {
+        "text": "Return to the Guild and report to Mira.",
+        "goal": {
+          "talk": "mira"
+        },
+        "route": false
+      }
+    ]
+  },
+  {
+    "id": "wanted_mossback",
+    "name": "Wanted: the Mossback Elder",
+    "kind": "job",
+    "giver": "board",
+    "repeatable": false,
+    "brief": "kill the Mossback Elder",
+    "gold": 300,
+    "xp": 420,
+    "poster": "Bors, quarryman",
+    "place": "the northern foothills",
+    "journal": "Bors's notice: A stoneback older than the quarry rolls in its shell through the northern foothills and smashes whatever it hits.",
+    "steps": [
+      {
+        "text": "Kill the Mossback Elder in the northern foothills. Let its spin glance off a rock, then strike while it is dizzy.",
+        "goal": {
+          "kill": "mossback_elder",
+          "count": 1
+        },
+        "at": [
+          -12,
+          -254
+        ]
+      },
+      {
+        "text": "Return to the Guild and report to Mira.",
+        "goal": {
+          "talk": "mira"
+        },
+        "route": false
+      }
+    ]
+  },
+  {
+    "id": "wanted_warchief",
+    "name": "Wanted: the Goblin Warchief",
+    "kind": "job",
+    "giver": "board",
+    "repeatable": false,
+    "brief": "kill the Goblin Warchief",
+    "gold": 360,
+    "xp": 500,
+    "poster": "Corwin Hale, branch master",
+    "place": "the Goblin Warren",
+    "journal": "Corwin Hale's notice: The goblins of the Warren answer to a warchief whose horn calls every goblin in the tunnels. Silence it.",
+    "steps": [
+      {
+        "text": "Go down into the Goblin Warren and kill the Goblin Warchief. Fight him away from the other goblins if you can.",
+        "goal": {
+          "kill": "goblin_warchief",
+          "count": 1
+        },
+        "at": [
+          651,
+          -2
+        ]
+      },
+      {
+        "text": "Return to the Guild and report to Mira.",
+        "goal": {
+          "talk": "mira"
+        },
+        "route": false
+      }
+    ]
+  },
+  {
+    "id": "wanted_garrow",
+    "name": "Wanted: Red Hand Garrow",
+    "kind": "job",
+    "giver": "board",
+    "repeatable": false,
+    "brief": "kill the Red Hand Garrow",
+    "gold": 400,
+    "xp": 520,
+    "poster": "Marta, innkeeper",
+    "place": "Bandit Hollow",
+    "journal": "Marta's notice: Garrow and his Red Hand rob the travellers on Mirror Way. Marta has put up every coin she has, and the Guild matched it.",
+    "steps": [
+      {
+        "text": "Kill Red Hand Garrow in Bandit Hollow, in the woods west of the Last Lantern.",
+        "goal": {
+          "kill": "bandit_chief",
+          "count": 1
+        },
+        "at": [
+          -6,
+          204
+        ]
+      },
+      {
+        "text": "Return to the Guild and report to Mira.",
+        "goal": {
+          "talk": "mira"
+        },
+        "route": false
+      }
+    ]
   }
 ]

@@ -2358,7 +2358,10 @@ public partial class GameClient : Node
         }
         else if (++_botWait > BotDialogTicks)
         {
-            (_pendingCommand, _pendingArg) = _hud.ChooseLabel(wanted);
+            // The board files its notices on pages: open the village page when the job is not on this one.
+            var label = _hud.DialogLabels.Any(l => l.Contains(wanted, StringComparison.OrdinalIgnoreCase)) ? wanted
+                : _hud.DialogLabels.FirstOrDefault(l => l.StartsWith("Village work", StringComparison.Ordinal)) ?? wanted;
+            (_pendingCommand, _pendingArg) = _hud.ChooseLabel(label);
             _botWait = 0;
         }
 
