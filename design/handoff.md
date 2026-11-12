@@ -123,7 +123,15 @@ Neověřeno hraním člověkem: vše výše jen boty, testy (385) a snímky. Sí
    místa na koncích mol na Mirror Lake ("Cast a line.", pár sekund stát v klidu): Lake Perch, Silver Trout, občas
    mirefin; obě ryby se dají upéct. Pozor: mirefini a Old Gulper (úroveň 8) hráče na molu napadají, nováček tam
    rybařit skoro nemůže; rozhodnutí pro autora (nechat, nebo dát rybářské místo jinam).
-6. [ ] Delší dungeon s bossem a skrytou cestou (Archive i Warren jsou dnes jedna síň).
+6. [x] Delší dungeon s bossem a skrytou cestou (Archive i Warren jsou dnes jedna síň).
+   Hotovo (2026-11-12 v noci), návrh v `design/dungeon-archive.md`: Sunken Archive má za obloukem v zadní stěně
+   Utopené schodiště, Zatopené regály (sentinely, bludičky, slizy), tajnou stěnu s teplým glyfem (E) a za ní skrytý
+   trezor (truhla s Auren zámkem na klíč vylovený z Mirror Lake, šance 4 %; Tobb o něm mluví), průchod a Strážcovu síň
+   s bossem The Keeper (úroveň 10, 2400 životů, runové vlny, vyvolává bludičky, pruh životů nahoře). Po jeho pádu se
+   otevře brána k šachtě se světlem a portálu ven k Silver Falls. Job „The Keeper Below“ od úrovně 8.
+   Smysl systémů: uvařené jídlo dá Well Fed (+15 % životů, regenerace, 10 min), Draught of Warding od Wren (o 25 %
+   menší rány na 60 s), sběrné zakázky (šalvěj, okouni, houby), z Keeperova srdce ukove Tess Seal of the Keeper.
+   Neověřeno: boj s bossem postavou správné úrovně (bot úrovně 1 padl za 3 s), čísla jsou odhad.
 7. [x] Kvalita: hlídač zaseknutí klienta (zápis, co hra dělala), audit děr ve zbylých interiérech.
    Hlídač hotový (2026-11-12, `FreezeWatch.cs`): když klient 4 s nezačne snímek, zapíše do `client.log` řádek
    `FREEZE ... last mark: <část snímku>` a po rozjetí `FREEZE over`. Příčinu zaseknutí v Guildě to samo neopraví,

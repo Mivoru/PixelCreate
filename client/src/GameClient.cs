@@ -1638,7 +1638,8 @@ public partial class GameClient : Node
         var rareAlive = EnemyDef.All[rare.Type].Rare && rare.Action != EnemyAction.Dead && snapshot.Enemies.Length > 0;
         if (rareAlive && !_rareSeen)
         {
-            _hud.ShowBanner($"A {EnemyDef.All[rare.Type].Name} is near!", new Color("f6757a"));
+            var rareName = EnemyDef.All[rare.Type].Name;
+            _hud.ShowBanner(rareName.StartsWith("The ", StringComparison.Ordinal) ? $"{rareName} is near!" : $"A {rareName} is near!", new Color("f6757a"));
         }
 
         _rareSeen = rareAlive;
@@ -1896,6 +1897,11 @@ public partial class GameClient : Node
         if (mode == "fish")
         {
             return FishBot();
+        }
+
+        if (mode == "archive")
+        {
+            return ArchiveBot();
         }
 
         if (mode == "tutorial")
@@ -2689,6 +2695,124 @@ public partial class GameClient : Node
 
         return (0, 0, Buttons.None);
     }
+
+    /// <summary>
+    /// PIXEL_BOT=archive (PIXEL_TEST=1, PIXEL_SPAWN=560,8, best with PIXEL_PEACE=1): walks the deep Sunken Archive
+    /// from the first hall through the arch and the stair into the stacks, presses the warm glyph, opens the scribe's
+    /// chest in the hidden vault, then goes on to the Keeper's hall, printing a stage at each place. Without peace it
+    /// swings at whatever comes close and, in the Keeper's hall, locks on and fights the Keeper.
+    /// </summary>
+    private (sbyte X, sbyte Z, Buttons Buttons) ArchiveBot()
+    {
+        var position = ToGodot(_client.State.Position);
+        var route = new (string Stage, Vector3 Spot)[]
+        {
+            ("first hall", new Vector3(560, 0, -10)), ("through the arch", new Vector3(560, 0, -22)), ("down the stair", new Vector3(560, 0, -35)),
+            ("into the stacks", new Vector3(560, 0, -41)), ("to the glyph", new Vector3(575.6f, 0, -52.4f)),
+        };
+        var after = new (string Stage, Vector3 Spot)[]
+        {
+            ("into the vault", new Vector3(582.4f, 0, -51.6f)), ("back to the stacks", new Vector3(570, 0, -48)),
+            ("south arch", new Vector3(560, 0, -66)), ("the passage", new Vector3(560, 0, -74)), ("the Keeper's hall", new Vector3(560, 0, -84)),
+        };
+        if (_botStage == "done")
+        {
+            return (0, 0, Buttons.None);
+        }
+
+        // In the Keeper's hall (or started there): fight the Keeper, staying close behind its blows.
+        if (position.Z < -78f && _client.Latest?.Enemies.FirstOrDefault(e => EnemyDef.All[e.Type].Id == "archive_keeper") is { } keeper)
+        {
+            var at = ToGodot(keeper.Position);
+            if (keeper.Health <= 0)
+            {
+                BotStage("the Keeper fell");
+                return (0, 0, Buttons.None);
+            }
+
+            BotStage("fighting the Keeper");
+            if (_client.Tick % 120 == 0)
+            {
+                GD.Print($"BOT Keeper {keeper.Health}/{keeper.MaxHealth} enraged {keeper.Enraged}, me {_client.State.Health}, wisps {_client.Latest.Enemies.Count(e => EnemyDef.All[e.Type].Id == "page_wisp")}");
+            }
+
+            if (new Vector2(position.X - at.X, position.Z - at.Z).Length() > 3.2f)
+            {
+                return BotWalk(at, 3.0f, Buttons.None);
+            }
+
+            _yaw = Mathf.Atan2(position.X - at.X, position.Z - at.Z);
+            return (0, 0, _client.Tick % 20 < 10 ? Buttons.Light : Buttons.None);
+        }
+
+        // Anything that comes close gets a blow.
+        var foe = _client.Latest?.Enemies.Where(e => e.Fighting && e.Health > 0).OrderBy(e => ToGodot(e.Position).DistanceTo(position)).Cast<EnemyView?>().FirstOrDefault();
+        var swing = foe is { } near && ToGodot(near.Position).DistanceTo(position) < 3.5f ? Buttons.Light : Buttons.None;
+        if (swing != Buttons.None)
+        {
+            var at = ToGodot(foe!.Value.Position);
+            _yaw = Mathf.Atan2(position.X - at.X, position.Z - at.Z);
+            return (0, 0, swing);
+        }
+
+        var secret = _client.Story.Has("archive.secret");
+        foreach (var (stage, spot) in secret ? after : route)
+        {
+            if (_botPassed.Contains(stage))
+            {
+                if (stage == "into the vault" && !_botPassed.Contains("opened the chest"))
+                {
+                    break;
+                }
+
+                continue;
+            }
+
+            if (new Vector2(position.X - spot.X, position.Z - spot.Z).Length() > 1.4f)
+            {
+                BotStage(stage);
+                return BotWalk(spot, 1.0f, Buttons.None);
+            }
+
+            _botPassed.Add(stage);
+            if (stage == "into the vault")
+            {
+                GD.Print("BOT in the hidden vault");
+                break;
+            }
+
+            if (stage == "the Keeper's hall")
+            {
+                BotStage("done");
+                return (0, 0, Buttons.None);
+            }
+        }
+
+        // At the glyph: press it. In the vault: open the scribe's chest.
+        if (!_hud.DialogOpen && _client.Tick % 30 == 0)
+        {
+            Interact();
+        }
+        else if (_hud.DialogOpen && ++_botWait > BotDialogTicks)
+        {
+            var wanted = _hud.DialogLabels.FirstOrDefault(l => l is "Press the glyph." or "Go in." or "Open it." or "Take it all." or "Leave it." or "Leave");
+            GD.Print($"BOT says: {_hud.DialogText} | {string.Join(" | ", _hud.DialogLabels)}");
+            if (wanted is not null)
+            {
+                (_pendingCommand, _pendingArg) = _hud.ChooseLabel(wanted);
+                if (wanted is "Take it all." || wanted == "Leave" && secret)
+                {
+                    _botPassed.Add("opened the chest");
+                }
+            }
+
+            _botWait = 0;
+        }
+
+        return (0, 0, Buttons.None);
+    }
+
+    private readonly HashSet<string> _botPassed = new();
 
     private void BotStage(string stage)
     {

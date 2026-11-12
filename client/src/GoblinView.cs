@@ -78,6 +78,8 @@ public sealed class GoblinView : IEnemyView
             "goblin_shaman" => ("shaman", "733e39"),
             "auren_sentinel" => ("sentinel", "8e909c"),
             "archive_warden" => ("sentinel_warden", "6a6c78"),
+            // The Keeper: the warden's frame, bigger (its size), in pale marble with a dark cloth of office.
+            "archive_keeper" => ("sentinel_warden", "2c3c66"),
             _ => ("skirmisher", "7a4a2e"),
         };
         // Each kind has its own shade of skin, so a camp reads as a crowd and not as copies.
@@ -100,6 +102,7 @@ public sealed class GoblinView : IEnemyView
             "goblin_rapid_archer" => "8ab04a",
             "auren_sentinel" => "c8c8d0",
             "archive_warden" => "b4b8c6",
+            "archive_keeper" => "dcdce6",
             _ => "7fb04a",
         });
         var clothes = new Color(cloth);

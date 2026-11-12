@@ -491,6 +491,15 @@ Rules:
   Archive Warden (back wall of the archive) adds `runeWave`: three straight lanes (`RuneWave`, `HazardKind.RuneWave`,
   telegraph `lanes`, client `RuneWaveNode`) with gaps to stand in; enemy hazards with a `HalfWidth` hit as strips.
   `net-tests/SentinelTests.cs`. `PIXEL_MONSTERS=auren,archive` photographs only those monsters in the studio.
+  The deep Sunken Archive (design/dungeon-archive.md, laid out by `python tools/deep_archive.py`, whose pieces carry
+  `"deep": true` in the zone file so a rerun replaces only them): an arch in the first hall's back wall, the Drowned
+  Stair, the Flooded Stacks (sentinels, wisps out at any hour underground, slimes), a secret wall
+  (`archive_secret_wall`, `unless: archive.secret`) opened by the Warm Glyph (role `secret`), the hidden vault with
+  a Rune-locked Chest (a cache with `requires: drowned_key`, `tools/caches.py`), and the Keeper's Hall: the boss
+  `archive_keeper` (`boss: true` shows its bar at the top, `killFlag: archive.keeper` opens `archive_gate` on the way
+  out, a portal in the daylit alcove to Silver Falls). The generic ability effect `summon` (`summon`, `count`,
+  `life`) calls up helpers, one lot at a time (the Keeper's page wisps). Job "The Keeper Below" from level 8.
+  `net-tests/DeepArchiveTests.cs`; studio shots `deeparchive_*`. `PIXEL_BOT=archive` walks it.
   Barrow wisps (kind `wisp`, `WispView`, `EnemyWisp.cs`) haunt the Stone Circle at night only: a camp with
   `"night": true` fades at dawn (`GameTime.IsDark`, no loot) and rises at dusk. They keep their distance, flare (`spin`) at a player
   who closes in, and loose `wispBolt` (`ProjectileKind.WispBolt`, `Projectile.Homing` turns it after its player). A camp's `wards` are its

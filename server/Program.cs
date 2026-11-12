@@ -25,6 +25,8 @@ var server = new GameServer(transport, zone.World, new ServerOptions
     // A new game starts with the prologue; PIXEL_SKIP_PROLOGUE=1 starts in the village as before.
     Prologue = save is null && !testMode && Environment.GetEnvironmentVariable("PIXEL_SKIP_PROLOGUE") != "1",
 });
+// PIXEL_PEACE=1 freezes every enemy, to walk a dungeon and look at it (bots and checks only).
+server.EnemiesFrozen = Environment.GetEnvironmentVariable("PIXEL_PEACE") == "1";
 // PIXEL_TIME=21 starts a new game at nine in the evening, to check night and dusk.
 if (save is null && int.TryParse(Environment.GetEnvironmentVariable("PIXEL_TIME"), out var hour))
 {
