@@ -1588,7 +1588,25 @@ public sealed class PlayerRig
         _target[ArmL] = 0.05f;
         _target[ForearmL] = -0.15f;
         _target[Lean] = 0.03f + breath * 0.01f;
+
+        // People standing about look round now and then, and shift their weight from foot to foot.
+        if (_look.Kind != "player")
+        {
+            var t = (float)Time.GetTicksMsec() / 1000f + _seed;
+            var look = Mathf.Sin(t * 0.31f) * Mathf.Sin(t * 0.17f + 1.7f);
+            _glanceWanted = new Vector2(Mathf.Clamp(look * 1.6f, -0.7f, 0.7f), Mathf.Sin(t * 0.23f + 0.4f) * 0.08f);
+            var shift = Mathf.Sin(t * 0.21f + 2.1f);
+            _target[ThighL] = Mathf.Max(0f, shift) * 0.08f;
+            _target[ThighR] = Mathf.Max(0f, -shift) * 0.08f;
+            _target[ShinL] = Mathf.Max(0f, shift) * 0.14f;
+            _target[ShinR] = Mathf.Max(0f, -shift) * 0.14f;
+        }
     }
+
+    /// <summary>Where an idle person's head turns (yaw, pitch), eased towards where they want to look.</summary>
+    private Vector2 _glance;
+    private Vector2 _glanceWanted;
+    private readonly float _seed = GD.Randf() * 100f;
 
     private void WalkPose()
     {
@@ -2089,13 +2107,16 @@ public sealed class PlayerRig
 
     private void Apply()
     {
+        // The glance eases in, and fades whenever the person is not idle.
+        _glance = _glance.Lerp(_glanceWanted, 0.03f);
+        _glanceWanted *= 0.98f;
         var shake = Flash ? (float)GD.RandRange(-0.05, 0.05) : 0f;
         _hips.Position = new Vector3(shake, _hipHeight + _pose[Bob], 0);
 
         // Goblins stoop, with the head craned forward.
         var hunch = _look.Werewolf ? 0.62f : _look.Orc ? 0.12f : _look.Goblin ? 0.32f : 0f;
         _torso.Rotation = new Vector3(-_pose[Lean] - hunch, _pose[Twist], 0);
-        _head.Rotation = new Vector3(-_pose[Head] + hunch * 0.8f, -_pose[Twist] * 0.6f, 0);
+        _head.Rotation = new Vector3(-_pose[Head] + hunch * 0.8f + _glance.Y, -_pose[Twist] * 0.6f + _glance.X, 0);
         _thighL.Rotation = new Vector3(_pose[ThighL], 0, 0);
         _thighR.Rotation = new Vector3(_pose[ThighR], 0, 0);
         _shinL.Rotation = new Vector3(-_pose[ShinL], 0, 0);
