@@ -335,6 +335,17 @@ public class DialogueDataTests
     }
 
     [Fact]
+    public void EveryJob_CanBeHandedInToMira()
+    {
+        // A job the player finishes must be payable: Mira opens a hand-in when it is ready (tools/turnins.py).
+        var mira = Story.Dialogues["mira"];
+        foreach (var job in Story.Quests.Where(q => q.Kind == "job"))
+        {
+            Assert.True(mira.Nodes.ContainsKey($"turn_in_{job.Id}"), $"Mira has no hand-in for {job.Id}");
+        }
+    }
+
+    [Fact]
     public void Registry_NumbersEveryKeyOnce()
     {
         foreach (var (kind, names) in Story.Keys)

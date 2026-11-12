@@ -1,415 +1,1115 @@
 {
-  "npc": "mira",
-  "entries": [
-    {
-      "when": {
-        "rank": {
-          "max": 0
-        }
-      },
-      "node": "register"
-    },
-    {
-      "when": {
-        "all": [
-          {
-            "rank": {
-              "min": 1
-            }
-          },
-          {
-            "notFlag": "tutorial.offered"
-          },
-          {
-            "notFlag": "tutorial.started"
-          }
-        ]
-      },
-      "node": "registered"
-    },
-    {
-      "when": {
-        "quest": {
-          "slime_cull": "ready"
-        }
-      },
-      "node": "turn_in_slime_cull"
-    },
-    {
-      "when": {
-        "quest": {
-          "goblin_bounty": "ready"
-        }
-      },
-      "node": "turn_in_goblin_bounty"
-    },
-    {
-      "when": {
-        "quest": {
-          "gel_for_alchemist": "ready"
-        }
-      },
-      "node": "turn_in_gel_for_alchemist"
-    },
-    {
-      "when": {
-        "quest": {
-          "hides_for_tanner": "ready"
-        }
-      },
-      "node": "turn_in_hides_for_tanner"
-    },
-    {
-      "when": {
-        "quest": {
-          "proof_of_hunt": "ready"
-        }
-      },
-      "node": "turn_in_proof_of_hunt"
-    },
-    {
-      "when": {
-        "all": [
-          {
-            "rank": {
-              "min": 1
-            }
-          },
-          {
-            "level": {
-              "min": 5
-            }
-          },
-          {
-            "notFlag": "rank.e"
-          },
-          {
-            "notFlag": "trial.offered"
-          }
-        ]
-      },
-      "node": "rank_trial"
-    },
-    {
-      "node": "default"
+ "npc": "mira",
+ "entries": [
+  {
+   "when": {
+    "rank": {
+     "max": 0
     }
-  ],
-  "nodes": {
-    "register": {
-      "text": "Welcome to the Adventurers Guild. Looking for work? Sign here and you're rank F: the board's jobs are yours, and the Guild buys every magic crystal you bring.",
-      "face": "smile",
-      "options": [
-        {
-          "text": "Sign me up.",
-          "effects": [
-            {
-              "action": "register"
-            },
-            {
-              "quest": {
-                "complete": "prologue_fallen"
-              }
-            }
-          ],
-          "next": "registered"
-        },
-        {
-          "text": "Not yet."
-        }
-      ]
-    },
-    "turn_in_slime_cull": {
-      "text": "Well done! Here is your pay for Clear the Slimes: 40 gold.",
-      "face": "smile",
-      "options": [
-        {
-          "text": "Hand in the job",
-          "effects": [
-            {
-              "quest": {
-                "complete": "slime_cull"
-              }
-            }
-          ]
-        },
-        {
-          "text": "Sell all crystals ({crystalWorth} gold)",
-          "effects": [
-            {
-              "action": "sellCrystals"
-            }
-          ]
-        },
-        {
-          "text": "Goodbye"
-        }
-      ]
-    },
-    "turn_in_goblin_bounty": {
-      "text": "Well done! Here is your pay for Goblin Bounty: 120 gold.",
-      "face": "smile",
-      "options": [
-        {
-          "text": "Hand in the job",
-          "effects": [
-            {
-              "quest": {
-                "complete": "goblin_bounty"
-              }
-            }
-          ]
-        },
-        {
-          "text": "Sell all crystals ({crystalWorth} gold)",
-          "effects": [
-            {
-              "action": "sellCrystals"
-            }
-          ]
-        },
-        {
-          "text": "Goodbye"
-        }
-      ]
-    },
-    "turn_in_gel_for_alchemist": {
-      "text": "You brought everything for Gel for the Alchemist! Here is your pay: 45 gold.",
-      "face": "smile",
-      "options": [
-        {
-          "text": "Hand in the job",
-          "effects": [
-            {
-              "quest": {
-                "complete": "gel_for_alchemist"
-              }
-            }
-          ]
-        },
-        {
-          "text": "Sell all crystals ({crystalWorth} gold)",
-          "effects": [
-            {
-              "action": "sellCrystals"
-            }
-          ]
-        },
-        {
-          "text": "Goodbye"
-        }
-      ]
-    },
-    "turn_in_hides_for_tanner": {
-      "text": "You brought everything for Hides for the Tanner! Here is your pay: 60 gold.",
-      "face": "smile",
-      "options": [
-        {
-          "text": "Hand in the job",
-          "effects": [
-            {
-              "quest": {
-                "complete": "hides_for_tanner"
-              }
-            }
-          ]
-        },
-        {
-          "text": "Sell all crystals ({crystalWorth} gold)",
-          "effects": [
-            {
-              "action": "sellCrystals"
-            }
-          ]
-        },
-        {
-          "text": "Goodbye"
-        }
-      ]
-    },
-    "turn_in_proof_of_hunt": {
-      "text": "You brought everything for Proof of the Hunt! Here is your pay: 90 gold.",
-      "face": "smile",
-      "options": [
-        {
-          "text": "Hand in the job",
-          "effects": [
-            {
-              "quest": {
-                "complete": "proof_of_hunt"
-              }
-            }
-          ]
-        },
-        {
-          "text": "Sell all crystals ({crystalWorth} gold)",
-          "effects": [
-            {
-              "action": "sellCrystals"
-            }
-          ]
-        },
-        {
-          "text": "Goodbye"
-        }
-      ]
-    },
-    "default": {
-      "text": "Good to see you. The Guild buys every magic crystal you bring. Hides, teeth and the like go to Hollis at the side counter.",
-      "options": [
-        {
-          "text": "Train with Rhea in the yard",
-          "when": {
-            "notFlag": "tutorial.started"
-          },
-          "effects": [
-            {
-              "action": "beginTutorial"
-            }
-          ]
-        },
-        {
-          "text": "Sell all crystals ({crystalWorth} gold)",
-          "effects": [
-            {
-              "action": "sellCrystals"
-            }
-          ]
-        },
-        {
-          "text": "Reset my attribute points ({resetCost} gold)",
-          "when": {
-            "any": [
-              {
-                "attr": {
-                  "Strength": 1
-                }
-              },
-              {
-                "attr": {
-                  "Dexterity": 1
-                }
-              },
-              {
-                "attr": {
-                  "Intelligence": 1
-                }
-              },
-              {
-                "attr": {
-                  "Vitality": 1
-                }
-              },
-              {
-                "attr": {
-                  "Endurance": 1
-                }
-              }
-            ]
-          },
-          "effects": [
-            {
-              "action": "resetAttributes"
-            }
-          ]
-        },
-        {
-          "text": "Sleep in the bunk room until morning",
-          "when": {
-            "any": [
-              {
-                "time": {
-                  "from": 1200,
-                  "to": 1439
-                }
-              },
-              {
-                "time": {
-                  "from": 0,
-                  "to": 359
-                }
-              }
-            ]
-          },
-          "effects": [
-            {
-              "action": "sleep"
-            }
-          ]
-        },
-        {
-          "text": "Take Rhea's trial for rank E",
-          "when": {
-            "all": [
-              {
-                "level": {
-                  "min": 5
-                }
-              },
-              {
-                "notFlag": "rank.e"
-              }
-            ]
-          },
-          "effects": [
-            {
-              "action": "beginTrial"
-            }
-          ]
-        },
-        {
-          "text": "Goodbye"
-        }
-      ]
-    },
-    "registered": {
-      "text": "Done, you're rank F. One more thing: Rhea wants to see you hold a sword before you go out. She'll show you the basics in the yard.",
-      "face": "smile",
-      "options": [
-        {
-          "text": "Take me to her.",
-          "effects": [
-            {
-              "setFlag": "tutorial.offered"
-            },
-            {
-              "action": "beginTutorial"
-            }
-          ]
-        },
-        {
-          "text": "Later.",
-          "effects": [
-            {
-              "setFlag": "tutorial.offered"
-            }
-          ]
-        }
-      ]
-    },
-    "rank_trial": {
-      "text": "Level five already. Rhea runs the trial for rank E, out in the yard. Beat her and you're E.",
-      "face": "smile",
-      "options": [
-        {
-          "text": "Take the trial.",
-          "effects": [
-            {
-              "setFlag": "trial.offered"
-            },
-            {
-              "action": "beginTrial"
-            }
-          ]
-        },
-        {
-          "text": "Not yet.",
-          "effects": [
-            {
-              "setFlag": "trial.offered"
-            }
-          ]
-        }
-      ]
+   },
+   "node": "register"
+  },
+  {
+   "when": {
+    "all": [
+     {
+      "rank": {
+       "min": 1
+      }
+     },
+     {
+      "notFlag": "tutorial.offered"
+     },
+     {
+      "notFlag": "tutorial.started"
+     }
+    ]
+   },
+   "node": "registered"
+  },
+  {
+   "when": {
+    "quest": {
+     "slime_cull": "ready"
     }
+   },
+   "node": "turn_in_slime_cull"
+  },
+  {
+   "when": {
+    "quest": {
+     "goblin_bounty": "ready"
+    }
+   },
+   "node": "turn_in_goblin_bounty"
+  },
+  {
+   "when": {
+    "quest": {
+     "gel_for_alchemist": "ready"
+    }
+   },
+   "node": "turn_in_gel_for_alchemist"
+  },
+  {
+   "when": {
+    "quest": {
+     "hides_for_tanner": "ready"
+    }
+   },
+   "node": "turn_in_hides_for_tanner"
+  },
+  {
+   "when": {
+    "quest": {
+     "proof_of_hunt": "ready"
+    }
+   },
+   "node": "turn_in_proof_of_hunt"
+  },
+  {
+   "when": {
+    "quest": {
+     "wolf_cull": "ready"
+    }
+   },
+   "node": "turn_in_wolf_cull"
+  },
+  {
+   "when": {
+    "quest": {
+     "orc_scouts": "ready"
+    }
+   },
+   "node": "turn_in_orc_scouts"
+  },
+  {
+   "when": {
+    "quest": {
+     "moonfell_howls": "ready"
+    }
+   },
+   "node": "turn_in_moonfell_howls"
+  },
+  {
+   "when": {
+    "quest": {
+     "archive_shaman": "ready"
+    }
+   },
+   "node": "turn_in_archive_shaman"
+  },
+  {
+   "when": {
+    "quest": {
+     "warren_brutes": "ready"
+    }
+   },
+   "node": "turn_in_warren_brutes"
+  },
+  {
+   "when": {
+    "quest": {
+     "hare_stew": "ready"
+    }
+   },
+   "node": "turn_in_hare_stew"
+  },
+  {
+   "when": {
+    "quest": {
+     "fold_raiders": "ready"
+    }
+   },
+   "node": "turn_in_fold_raiders"
+  },
+  {
+   "when": {
+    "quest": {
+     "crowfield_crows": "ready"
+    }
+   },
+   "node": "turn_in_crowfield_crows"
+  },
+  {
+   "when": {
+    "quest": {
+     "watchtower_lookout": "ready"
+    }
+   },
+   "node": "turn_in_watchtower_lookout"
+  },
+  {
+   "when": {
+    "quest": {
+     "thornback_tracks": "ready"
+    }
+   },
+   "node": "turn_in_thornback_tracks"
+  },
+  {
+   "when": {
+    "quest": {
+     "barrow_lights": "ready"
+    }
+   },
+   "node": "turn_in_barrow_lights"
+  },
+  {
+   "when": {
+    "quest": {
+     "bandit_hollow": "ready"
+    }
+   },
+   "node": "turn_in_bandit_hollow"
+  },
+  {
+   "when": {
+    "quest": {
+     "wanted_rook": "ready"
+    }
+   },
+   "node": "turn_in_wanted_rook"
+  },
+  {
+   "when": {
+    "quest": {
+     "wanted_briarking": "ready"
+    }
+   },
+   "node": "turn_in_wanted_briarking"
+  },
+  {
+   "when": {
+    "quest": {
+     "wanted_stranglethorn": "ready"
+    }
+   },
+   "node": "turn_in_wanted_stranglethorn"
+  },
+  {
+   "when": {
+    "quest": {
+     "wanted_lantern": "ready"
+    }
+   },
+   "node": "turn_in_wanted_lantern"
+  },
+  {
+   "when": {
+    "quest": {
+     "wanted_gulper": "ready"
+    }
+   },
+   "node": "turn_in_wanted_gulper"
+  },
+  {
+   "when": {
+    "quest": {
+     "wanted_mossback": "ready"
+    }
+   },
+   "node": "turn_in_wanted_mossback"
+  },
+  {
+   "when": {
+    "quest": {
+     "wanted_warchief": "ready"
+    }
+   },
+   "node": "turn_in_wanted_warchief"
+  },
+  {
+   "when": {
+    "quest": {
+     "wanted_garrow": "ready"
+    }
+   },
+   "node": "turn_in_wanted_garrow"
+  },
+  {
+   "when": {
+    "all": [
+     {
+      "rank": {
+       "min": 1
+      }
+     },
+     {
+      "level": {
+       "min": 5
+      }
+     },
+     {
+      "notFlag": "rank.e"
+     },
+     {
+      "notFlag": "trial.offered"
+     }
+    ]
+   },
+   "node": "rank_trial"
+  },
+  {
+   "node": "default"
   }
+ ],
+ "nodes": {
+  "register": {
+   "text": "Welcome to the Adventurers Guild. Looking for work? Sign here and you're rank F: the board's jobs are yours, and the Guild buys every magic crystal you bring.",
+   "face": "smile",
+   "options": [
+    {
+     "text": "Sign me up.",
+     "effects": [
+      {
+       "action": "register"
+      },
+      {
+       "quest": {
+        "complete": "prologue_fallen"
+       }
+      }
+     ],
+     "next": "registered"
+    },
+    {
+     "text": "Not yet."
+    }
+   ]
+  },
+  "turn_in_slime_cull": {
+   "text": "Well done! Here is your pay for Clear the Slimes: 40 gold.",
+   "face": "smile",
+   "options": [
+    {
+     "text": "Hand in the job",
+     "effects": [
+      {
+       "quest": {
+        "complete": "slime_cull"
+       }
+      }
+     ]
+    },
+    {
+     "text": "Sell all crystals ({crystalWorth} gold)",
+     "effects": [
+      {
+       "action": "sellCrystals"
+      }
+     ]
+    },
+    {
+     "text": "Goodbye"
+    }
+   ]
+  },
+  "turn_in_goblin_bounty": {
+   "text": "Well done! Here is your pay for Goblin Bounty: 120 gold.",
+   "face": "smile",
+   "options": [
+    {
+     "text": "Hand in the job",
+     "effects": [
+      {
+       "quest": {
+        "complete": "goblin_bounty"
+       }
+      }
+     ]
+    },
+    {
+     "text": "Sell all crystals ({crystalWorth} gold)",
+     "effects": [
+      {
+       "action": "sellCrystals"
+      }
+     ]
+    },
+    {
+     "text": "Goodbye"
+    }
+   ]
+  },
+  "turn_in_gel_for_alchemist": {
+   "text": "You brought everything for Gel for the Alchemist! Here is your pay: 45 gold.",
+   "face": "smile",
+   "options": [
+    {
+     "text": "Hand in the job",
+     "effects": [
+      {
+       "quest": {
+        "complete": "gel_for_alchemist"
+       }
+      }
+     ]
+    },
+    {
+     "text": "Sell all crystals ({crystalWorth} gold)",
+     "effects": [
+      {
+       "action": "sellCrystals"
+      }
+     ]
+    },
+    {
+     "text": "Goodbye"
+    }
+   ]
+  },
+  "turn_in_hides_for_tanner": {
+   "text": "You brought everything for Hides for the Tanner! Here is your pay: 60 gold.",
+   "face": "smile",
+   "options": [
+    {
+     "text": "Hand in the job",
+     "effects": [
+      {
+       "quest": {
+        "complete": "hides_for_tanner"
+       }
+      }
+     ]
+    },
+    {
+     "text": "Sell all crystals ({crystalWorth} gold)",
+     "effects": [
+      {
+       "action": "sellCrystals"
+      }
+     ]
+    },
+    {
+     "text": "Goodbye"
+    }
+   ]
+  },
+  "turn_in_proof_of_hunt": {
+   "text": "You brought everything for Proof of the Hunt! Here is your pay: 90 gold.",
+   "face": "smile",
+   "options": [
+    {
+     "text": "Hand in the job",
+     "effects": [
+      {
+       "quest": {
+        "complete": "proof_of_hunt"
+       }
+      }
+     ]
+    },
+    {
+     "text": "Sell all crystals ({crystalWorth} gold)",
+     "effects": [
+      {
+       "action": "sellCrystals"
+      }
+     ]
+    },
+    {
+     "text": "Goodbye"
+    }
+   ]
+  },
+  "default": {
+   "text": "Good to see you. The Guild buys every magic crystal you bring. Hides, teeth and the like go to Hollis at the side counter.",
+   "options": [
+    {
+     "text": "Train with Rhea in the yard",
+     "when": {
+      "notFlag": "tutorial.started"
+     },
+     "effects": [
+      {
+       "action": "beginTutorial"
+      }
+     ]
+    },
+    {
+     "text": "Sell all crystals ({crystalWorth} gold)",
+     "effects": [
+      {
+       "action": "sellCrystals"
+      }
+     ]
+    },
+    {
+     "text": "Reset my attribute points ({resetCost} gold)",
+     "when": {
+      "any": [
+       {
+        "attr": {
+         "Strength": 1
+        }
+       },
+       {
+        "attr": {
+         "Dexterity": 1
+        }
+       },
+       {
+        "attr": {
+         "Intelligence": 1
+        }
+       },
+       {
+        "attr": {
+         "Vitality": 1
+        }
+       },
+       {
+        "attr": {
+         "Endurance": 1
+        }
+       }
+      ]
+     },
+     "effects": [
+      {
+       "action": "resetAttributes"
+      }
+     ]
+    },
+    {
+     "text": "Sleep in the bunk room until morning",
+     "when": {
+      "any": [
+       {
+        "time": {
+         "from": 1200,
+         "to": 1439
+        }
+       },
+       {
+        "time": {
+         "from": 0,
+         "to": 359
+        }
+       }
+      ]
+     },
+     "effects": [
+      {
+       "action": "sleep"
+      }
+     ]
+    },
+    {
+     "text": "Take Rhea's trial for rank E",
+     "when": {
+      "all": [
+       {
+        "level": {
+         "min": 5
+        }
+       },
+       {
+        "notFlag": "rank.e"
+       }
+      ]
+     },
+     "effects": [
+      {
+       "action": "beginTrial"
+      }
+     ]
+    },
+    {
+     "text": "Goodbye"
+    }
+   ]
+  },
+  "registered": {
+   "text": "Done, you're rank F. One more thing: Rhea wants to see you hold a sword before you go out. She'll show you the basics in the yard.",
+   "face": "smile",
+   "options": [
+    {
+     "text": "Take me to her.",
+     "effects": [
+      {
+       "setFlag": "tutorial.offered"
+      },
+      {
+       "action": "beginTutorial"
+      }
+     ]
+    },
+    {
+     "text": "Later.",
+     "effects": [
+      {
+       "setFlag": "tutorial.offered"
+      }
+     ]
+    }
+   ]
+  },
+  "rank_trial": {
+   "text": "Level five already. Rhea runs the trial for rank E, out in the yard. Beat her and you're E.",
+   "face": "smile",
+   "options": [
+    {
+     "text": "Take the trial.",
+     "effects": [
+      {
+       "setFlag": "trial.offered"
+      },
+      {
+       "action": "beginTrial"
+      }
+     ]
+    },
+    {
+     "text": "Not yet.",
+     "effects": [
+      {
+       "setFlag": "trial.offered"
+      }
+     ]
+    }
+   ]
+  },
+  "turn_in_wolf_cull": {
+   "text": "Well done! Here is your pay for Wolves at Greyfang: 150 gold.",
+   "face": "smile",
+   "options": [
+    {
+     "text": "Hand in the job",
+     "effects": [
+      {
+       "quest": {
+        "complete": "wolf_cull"
+       }
+      }
+     ]
+    },
+    {
+     "text": "Sell all crystals ({crystalWorth} gold)",
+     "effects": [
+      {
+       "action": "sellCrystals"
+      }
+     ]
+    },
+    {
+     "text": "Goodbye"
+    }
+   ]
+  },
+  "turn_in_orc_scouts": {
+   "text": "Well done! Here is your pay for Orc Scouts at the Outpost: 260 gold.",
+   "face": "smile",
+   "options": [
+    {
+     "text": "Hand in the job",
+     "effects": [
+      {
+       "quest": {
+        "complete": "orc_scouts"
+       }
+      }
+     ]
+    },
+    {
+     "text": "Sell all crystals ({crystalWorth} gold)",
+     "effects": [
+      {
+       "action": "sellCrystals"
+      }
+     ]
+    },
+    {
+     "text": "Goodbye"
+    }
+   ]
+  },
+  "turn_in_moonfell_howls": {
+   "text": "Well done! Here is your pay for Something Howls in Moonfell: 320 gold.",
+   "face": "smile",
+   "options": [
+    {
+     "text": "Hand in the job",
+     "effects": [
+      {
+       "quest": {
+        "complete": "moonfell_howls"
+       }
+      }
+     ]
+    },
+    {
+     "text": "Sell all crystals ({crystalWorth} gold)",
+     "effects": [
+      {
+       "action": "sellCrystals"
+      }
+     ]
+    },
+    {
+     "text": "Goodbye"
+    }
+   ]
+  },
+  "turn_in_archive_shaman": {
+   "text": "Well done! Here is your pay for Fire in the Archive: 300 gold.",
+   "face": "smile",
+   "options": [
+    {
+     "text": "Hand in the job",
+     "effects": [
+      {
+       "quest": {
+        "complete": "archive_shaman"
+       }
+      }
+     ]
+    },
+    {
+     "text": "Sell all crystals ({crystalWorth} gold)",
+     "effects": [
+      {
+       "action": "sellCrystals"
+      }
+     ]
+    },
+    {
+     "text": "Goodbye"
+    }
+   ]
+  },
+  "turn_in_warren_brutes": {
+   "text": "Well done! Here is your pay for Into the Warren: 240 gold.",
+   "face": "smile",
+   "options": [
+    {
+     "text": "Hand in the job",
+     "effects": [
+      {
+       "quest": {
+        "complete": "warren_brutes"
+       }
+      }
+     ]
+    },
+    {
+     "text": "Sell all crystals ({crystalWorth} gold)",
+     "effects": [
+      {
+       "action": "sellCrystals"
+      }
+     ]
+    },
+    {
+     "text": "Goodbye"
+    }
+   ]
+  },
+  "turn_in_hare_stew": {
+   "text": "Well done! Here is your pay for Hares for the Pot: 35 gold.",
+   "face": "smile",
+   "options": [
+    {
+     "text": "Hand in the job",
+     "effects": [
+      {
+       "quest": {
+        "complete": "hare_stew"
+       }
+      }
+     ]
+    },
+    {
+     "text": "Sell all crystals ({crystalWorth} gold)",
+     "effects": [
+      {
+       "action": "sellCrystals"
+      }
+     ]
+    },
+    {
+     "text": "Goodbye"
+    }
+   ]
+  },
+  "turn_in_fold_raiders": {
+   "text": "Well done! Here is your pay for Raiders at the Fold: 120 gold.",
+   "face": "smile",
+   "options": [
+    {
+     "text": "Hand in the job",
+     "effects": [
+      {
+       "quest": {
+        "complete": "fold_raiders"
+       }
+      }
+     ]
+    },
+    {
+     "text": "Sell all crystals ({crystalWorth} gold)",
+     "effects": [
+      {
+       "action": "sellCrystals"
+      }
+     ]
+    },
+    {
+     "text": "Goodbye"
+    }
+   ]
+  },
+  "turn_in_crowfield_crows": {
+   "text": "Well done! Here is your pay for Crows over Crowfield: 110 gold.",
+   "face": "smile",
+   "options": [
+    {
+     "text": "Hand in the job",
+     "effects": [
+      {
+       "quest": {
+        "complete": "crowfield_crows"
+       }
+      }
+     ]
+    },
+    {
+     "text": "Sell all crystals ({crystalWorth} gold)",
+     "effects": [
+      {
+       "action": "sellCrystals"
+      }
+     ]
+    },
+    {
+     "text": "Goodbye"
+    }
+   ]
+  },
+  "turn_in_watchtower_lookout": {
+   "text": "Well done! Here is your pay for Lookout at the Old Watchtower: 150 gold.",
+   "face": "smile",
+   "options": [
+    {
+     "text": "Hand in the job",
+     "effects": [
+      {
+       "quest": {
+        "complete": "watchtower_lookout"
+       }
+      }
+     ]
+    },
+    {
+     "text": "Sell all crystals ({crystalWorth} gold)",
+     "effects": [
+      {
+       "action": "sellCrystals"
+      }
+     ]
+    },
+    {
+     "text": "Goodbye"
+    }
+   ]
+  },
+  "turn_in_thornback_tracks": {
+   "text": "Well done! Here is your pay for Thornback Tracks: 180 gold.",
+   "face": "smile",
+   "options": [
+    {
+     "text": "Hand in the job",
+     "effects": [
+      {
+       "quest": {
+        "complete": "thornback_tracks"
+       }
+      }
+     ]
+    },
+    {
+     "text": "Sell all crystals ({crystalWorth} gold)",
+     "effects": [
+      {
+       "action": "sellCrystals"
+      }
+     ]
+    },
+    {
+     "text": "Goodbye"
+    }
+   ]
+  },
+  "turn_in_barrow_lights": {
+   "text": "Well done! Here is your pay for Lights at the Stone Circle: 220 gold.",
+   "face": "smile",
+   "options": [
+    {
+     "text": "Hand in the job",
+     "effects": [
+      {
+       "quest": {
+        "complete": "barrow_lights"
+       }
+      }
+     ]
+    },
+    {
+     "text": "Sell all crystals ({crystalWorth} gold)",
+     "effects": [
+      {
+       "action": "sellCrystals"
+      }
+     ]
+    },
+    {
+     "text": "Goodbye"
+    }
+   ]
+  },
+  "turn_in_bandit_hollow": {
+   "text": "Well done! Here is your pay for Bandits on Mirror Way: 200 gold.",
+   "face": "smile",
+   "options": [
+    {
+     "text": "Hand in the job",
+     "effects": [
+      {
+       "quest": {
+        "complete": "bandit_hollow"
+       }
+      }
+     ]
+    },
+    {
+     "text": "Sell all crystals ({crystalWorth} gold)",
+     "effects": [
+      {
+       "action": "sellCrystals"
+      }
+     ]
+    },
+    {
+     "text": "Goodbye"
+    }
+   ]
+  },
+  "turn_in_wanted_rook": {
+   "text": "Well done! Here is your pay for Wanted: the Gallows Rook: 160 gold.",
+   "face": "smile",
+   "options": [
+    {
+     "text": "Hand in the job",
+     "effects": [
+      {
+       "quest": {
+        "complete": "wanted_rook"
+       }
+      }
+     ]
+    },
+    {
+     "text": "Sell all crystals ({crystalWorth} gold)",
+     "effects": [
+      {
+       "action": "sellCrystals"
+      }
+     ]
+    },
+    {
+     "text": "Goodbye"
+    }
+   ]
+  },
+  "turn_in_wanted_briarking": {
+   "text": "Well done! Here is your pay for Wanted: the Briarking: 260 gold.",
+   "face": "smile",
+   "options": [
+    {
+     "text": "Hand in the job",
+     "effects": [
+      {
+       "quest": {
+        "complete": "wanted_briarking"
+       }
+      }
+     ]
+    },
+    {
+     "text": "Sell all crystals ({crystalWorth} gold)",
+     "effects": [
+      {
+       "action": "sellCrystals"
+      }
+     ]
+    },
+    {
+     "text": "Goodbye"
+    }
+   ]
+  },
+  "turn_in_wanted_stranglethorn": {
+   "text": "Well done! Here is your pay for Wanted: the Stranglethorn: 260 gold.",
+   "face": "smile",
+   "options": [
+    {
+     "text": "Hand in the job",
+     "effects": [
+      {
+       "quest": {
+        "complete": "wanted_stranglethorn"
+       }
+      }
+     ]
+    },
+    {
+     "text": "Sell all crystals ({crystalWorth} gold)",
+     "effects": [
+      {
+       "action": "sellCrystals"
+      }
+     ]
+    },
+    {
+     "text": "Goodbye"
+    }
+   ]
+  },
+  "turn_in_wanted_lantern": {
+   "text": "Well done! Here is your pay for Wanted: the Lantern of the Barrow: 300 gold.",
+   "face": "smile",
+   "options": [
+    {
+     "text": "Hand in the job",
+     "effects": [
+      {
+       "quest": {
+        "complete": "wanted_lantern"
+       }
+      }
+     ]
+    },
+    {
+     "text": "Sell all crystals ({crystalWorth} gold)",
+     "effects": [
+      {
+       "action": "sellCrystals"
+      }
+     ]
+    },
+    {
+     "text": "Goodbye"
+    }
+   ]
+  },
+  "turn_in_wanted_gulper": {
+   "text": "Well done! Here is your pay for Wanted: the Old Gulper: 260 gold.",
+   "face": "smile",
+   "options": [
+    {
+     "text": "Hand in the job",
+     "effects": [
+      {
+       "quest": {
+        "complete": "wanted_gulper"
+       }
+      }
+     ]
+    },
+    {
+     "text": "Sell all crystals ({crystalWorth} gold)",
+     "effects": [
+      {
+       "action": "sellCrystals"
+      }
+     ]
+    },
+    {
+     "text": "Goodbye"
+    }
+   ]
+  },
+  "turn_in_wanted_mossback": {
+   "text": "Well done! Here is your pay for Wanted: the Mossback Elder: 300 gold.",
+   "face": "smile",
+   "options": [
+    {
+     "text": "Hand in the job",
+     "effects": [
+      {
+       "quest": {
+        "complete": "wanted_mossback"
+       }
+      }
+     ]
+    },
+    {
+     "text": "Sell all crystals ({crystalWorth} gold)",
+     "effects": [
+      {
+       "action": "sellCrystals"
+      }
+     ]
+    },
+    {
+     "text": "Goodbye"
+    }
+   ]
+  },
+  "turn_in_wanted_warchief": {
+   "text": "Well done! Here is your pay for Wanted: the Goblin Warchief: 360 gold.",
+   "face": "smile",
+   "options": [
+    {
+     "text": "Hand in the job",
+     "effects": [
+      {
+       "quest": {
+        "complete": "wanted_warchief"
+       }
+      }
+     ]
+    },
+    {
+     "text": "Sell all crystals ({crystalWorth} gold)",
+     "effects": [
+      {
+       "action": "sellCrystals"
+      }
+     ]
+    },
+    {
+     "text": "Goodbye"
+    }
+   ]
+  },
+  "turn_in_wanted_garrow": {
+   "text": "Well done! Here is your pay for Wanted: Red Hand Garrow: 400 gold.",
+   "face": "smile",
+   "options": [
+    {
+     "text": "Hand in the job",
+     "effects": [
+      {
+       "quest": {
+        "complete": "wanted_garrow"
+       }
+      }
+     ]
+    },
+    {
+     "text": "Sell all crystals ({crystalWorth} gold)",
+     "effects": [
+      {
+       "action": "sellCrystals"
+      }
+     ]
+    },
+    {
+     "text": "Goodbye"
+    }
+   ]
+  }
+ }
 }
