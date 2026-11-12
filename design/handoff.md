@@ -1,4 +1,22 @@
-# Předávka pro další session (stav 2026-11-12 odpoledne)
+# Předávka pro další session (stav 2026-11-12 v noci)
+
+## Konec session 2026-11-12: kde to stojí
+
+Hotové body 5 a 6 plánu (systémy a hluboký Sunken Archive s bossem), commity 75855de, 90a0fb1, 14df557.
+Strom je čistý, 410 testů prochází, `check.ps1` prošel. Podrobnosti v bodech 5 a 6 níže a v `design/dungeon-archive.md`.
+
+Rozhodnutí, která čekají na autora:
+1. Mirefini a Old Gulper (úroveň 8) napadají hráče na molech, kde se rybaří: nechat, nebo dát rybářské místo
+   jinam (třeba na Silverbrook) nebo mirefinům zakázat mola.
+2. Rank D zatím nic neodemyká: navrhnout joby nebo místa jen pro rank D?
+3. Čísla (Well Fed +15 %, Warding 25 %, klíč 4 %, Keeper 2400 životů, odměny) jsou odhad; ladit až po zahrání.
+
+Neověřeno: boj s Keeperem postavou úrovně 9 až 10 (testovací postava úrovně 1 padla za 3 s), pilulky buffů v HUD
+živě, vylovení klíče a kování prstenu živě, výška stránky nástěnky s 13 možnostmi, byliny v lesích živě. Nic z bodů
+5 a 6 nehrál člověk.
+
+Další krok, pokud autor neurčí jinak: bod 6 schváleného plánu (vegetace a domy zblízka), nebo druhý dungeon
+(Goblin Warren je pořád jedna síň) podle vzoru `tools/deep_archive.py`.
 
 ## Směr hry se změnil (rozhodnutí autora 2026-11-10)
 
@@ -151,6 +169,9 @@ Neověřeno hraním člověkem: vše výše jen boty, testy (385) a snímky. Sí
 7. Hospoda The Bent Nail v Hearthmere (dveře hospody u dvora): večer od 20 h (při dešti dřív) uvnitř štamgasti a
    rozhovory, u výčepu Dorran prodává jídlo. Hlídač zaseknutí: když hra zamrzne, pošli řádek `FREEZE` z
    `export/previews/client.log`.
+8. Vaření u ohně (pilulka Well Fed pod kartou životů), rybaření na molu, byliny pro Wren, kování u Tess.
+9. Sunken Archive za jeskyní u Silver Falls: oblouk v zadní stěně, regály, teplý glyf ve východní zdi (E), trezor,
+   boss The Keeper (doporučeno od úrovně 9, s jídlem a Draught of Warding).
 
 Ladění síly a odměn je pořád hrubý odhad (pravidlo „neladit obtížnost“): co je moc silné nebo slabé, napiš.
 
@@ -206,4 +227,6 @@ powershell -ExecutionPolicy Bypass -File scripts/check.ps1        # testy + živ
 powershell -ExecutionPolicy Bypass -File scripts/prologue.ps1     # bot projde zajetí a přepadení
 powershell -ExecutionPolicy Bypass -File scripts/prologue.ps1 -Contrary   # bot utíká před lovci
 powershell -ExecutionPolicy Bypass -File scripts/play.ps1         # hlavní menu
+python tools/deep_archive.py                                      # znovu rozloží hluboký Archive (jen kusy "deep")
+# Bot projde dungeon: PIXEL_BOT=archive, PIXEL_TEST=1, PIXEL_PEACE=1 (zmrazí nepřátele), PIXEL_SPAWN u vstupu archivu
 ```

@@ -499,7 +499,8 @@ Rules:
   `archive_keeper` (`boss: true` shows its bar at the top, `killFlag: archive.keeper` opens `archive_gate` on the way
   out, a portal in the daylit alcove to Silver Falls). The generic ability effect `summon` (`summon`, `count`,
   `life`) calls up helpers, one lot at a time (the Keeper's page wisps). Job "The Keeper Below" from level 8.
-  `net-tests/DeepArchiveTests.cs`; studio shots `deeparchive_*`. `PIXEL_BOT=archive` walks it.
+  `net-tests/DeepArchiveTests.cs`; studio shots `deeparchive_*`. `PIXEL_BOT=archive` walks it; `PIXEL_PEACE=1`
+  on the server freezes every enemy (`EnemiesFrozen`), so a bot can walk a dungeon and photograph it.
   Barrow wisps (kind `wisp`, `WispView`, `EnemyWisp.cs`) haunt the Stone Circle at night only: a camp with
   `"night": true` fades at dawn (`GameTime.IsDark`, no loot) and rises at dusk. They keep their distance, flare (`spin`) at a player
   who closes in, and loose `wispBolt` (`ProjectileKind.WispBolt`, `Projectile.Homing` turns it after its player). A camp's `wards` are its
