@@ -61,9 +61,28 @@ Autor si zahrál a chce samostatnou práci do 6:00. Zaškrtávat, co je hotové:
 - [x] Trial v Guildě: úskok platí jen načasovaný, hráči to nikdo neřekne a Shift jde mačkat pořád.
 - [x] Thornback a Briarking: útoky, animace a AI (zasekávání).
 - [x] Bludičky: zblízka přestanou svítit a jsou slabé.
-- [~] Mapa místy prázdná (Woodcutters' Camp, Fisher's Landing, Old Watchtower, Shepherd's Croft, zajíci, kachny hotové) a nudná: víc prvků, terén, stavby, obydlí, monstra, zvířata.
-- [ ] Pak dál ladit startovní lokaci: chytřejší NPC, kteří žijí normálně, namluvené hlášky, postupné joby,
+- [x] Mapa místy prázdná: viz seznam míst níže. a nudná: víc prvků, terén, stavby, obydlí, monstra, zvířata.
+- [~] Pak dál ladit startovní lokaci (rozhovory, déšť, truhly, hledaní hotové): chytřejší NPC, kteří žijí normálně, namluvené hlášky, postupné joby,
       animace; ptát se, co jde logicky nebo graficky zlepšit, inspirace z jiných RPG a MMORPG.
+
+### Co přibylo v noci 2026-11-11/12 (průběžně, commity na main)
+
+- Opravy z hraní: díry v podzemí, interiéry z okraje mapy (render vrstvy), klik v dialogu neútočí, slabší goblini
+  v prologu, úskok s tolerancí 15 t a novým stiskem Shift + nápověda v trialu, zásahy na blízko podle toho, kde hráč
+  nepřítele viděl (`Enemy.SeenAt`) a delší dosah meče.
+- Monstra: Carrion Crow + Gallows Rook (Crowfield), Thornback přepracovaný (skutečná zteč, omráčení o strom, rozběh;
+  Briarking věnec trnů), bludičky silnější s menším dosahem menhiru, Goblin Warchief (roh, štít) a Trapper (oka),
+  Stoneback + Mossback Elder (krunýř, roztočení), Vinelasher + Stranglethorn (šlehy, přitažení), Mirefin + Old Gulper
+  (Mirror Lake), bandité + Red Hand Garrow (Bandit Hollow), zajíci, kachny.
+- Místa: Woodcutters' Camp, Fisher's Landing, Old Watchtower, Shepherd's Croft, The Last Lantern (hostinec),
+  Greystone Quarry, Bandit Hollow, Crowfield; kopce na plochých loukách; hlinité břehy pod mosty; devět skrytých truhel.
+- Život: práce (`work` póza: sekání, rybaření, krumpáč), děti, Garrickova obchůzka, rozhovory mezi NPC (`chats.json`),
+  hlasy všech mluvících lidí, déšť (vybrané dny) a schovávání lidí před deštěm, světlušky v noci.
+- Joby: 7 nových + 8 hledaných (wanted) jednorázových; nástěnka na třech stránkách. Dovednosti: Wisp Bolt, Vine Pull,
+  Rune Ward.
+
+Neověřeno hraním člověkem: vše výše jen boty, testy (385) a snímky. Síla monster a odměny nenastaveny (pravidlo
+„neladit obtížnost“), jen hrubě odhadnuté; ryby u mola byly pro level 1 smrtelné, ztlumil jsem je.
 
 ## Co dělat jako první
 
