@@ -91,8 +91,9 @@ Neověřeno hraním člověkem: vše výše jen boty, testy (385) a snímky. Sí
 
 ## Plán (autor 2026-11-12): body 1 až 3 dělám teď, 4 až 6 jsou další na řadě
 
-1. [ ] Měření balancu: doba zabití každého monstra, poškození od něj, XP za level a čas na level. Výstup
-   `design/balance.md`, ladit až podle poznámek autora z hraní.
+1. [x] Měření balancu: doba zabití každého monstra, poškození od něj, XP za level a čas na level. Výstup
+   `design/balance.md` (`PIXEL_BALANCE=1 dotnet test --filter BalanceReport`), ladit až podle poznámek autora z hraní.
+   Nápadné: Goblin Brute 15 ran a Stoneback 17 při startovním meči, od levelu 9 přes 30 zabití na level.
 2. [ ] Pocit z boje: krátký hit stop u těžkých ran, znamení „otevřený“ u nepřátel, kteří jsou chvíli zranitelní
    (vrána po náletu, omráčený Thornback, želva po výpadu, ryba na břehu), zámek na cíl (Tab).
 3. [ ] Zvuky z ElevenLabs (autor souhlasil): vlastní zvuky nových monster a okolí (ptáci ve dne, cvrčci v noci,
