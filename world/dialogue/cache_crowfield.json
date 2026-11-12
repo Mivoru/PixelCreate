@@ -1,0 +1,58 @@
+{
+  "npc": "cache_crowfield",
+  "entries": [
+    {
+      "when": {
+        "flag": "cache.cache_crowfield"
+      },
+      "node": "empty"
+    },
+    {
+      "node": "closed"
+    }
+  ],
+  "nodes": {
+    "closed": {
+      "text": "A soldier's kit chest beneath a fallen banner, the crows' leavings all over it.",
+      "options": [
+        {
+          "text": "Open it.",
+          "effects": [
+            {
+              "setFlag": "cache.cache_crowfield"
+            },
+            {
+              "gold": 50
+            },
+            {
+              "give": {
+                "item": "healing_potion",
+                "count": 1
+              }
+            }
+          ],
+          "next": "found"
+        },
+        {
+          "text": "Leave it."
+        }
+      ]
+    },
+    "found": {
+      "text": "Inside, wrapped in oilcloth: an old campaign purse and a soldier's healing draught.",
+      "options": [
+        {
+          "text": "Take it all."
+        }
+      ]
+    },
+    "empty": {
+      "text": "The chest stands open and empty. Someone got here first. You did.",
+      "options": [
+        {
+          "text": "Leave"
+        }
+      ]
+    }
+  }
+}

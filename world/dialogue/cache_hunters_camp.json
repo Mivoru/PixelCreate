@@ -1,0 +1,64 @@
+{
+  "npc": "cache_hunters_camp",
+  "entries": [
+    {
+      "when": {
+        "flag": "cache.cache_hunters_camp"
+      },
+      "node": "empty"
+    },
+    {
+      "node": "closed"
+    }
+  ],
+  "nodes": {
+    "closed": {
+      "text": "A hunter's footlocker pushed under the lean-to, strapped with rawhide.",
+      "options": [
+        {
+          "text": "Open it.",
+          "effects": [
+            {
+              "setFlag": "cache.cache_hunters_camp"
+            },
+            {
+              "gold": 30
+            },
+            {
+              "give": {
+                "item": "venison",
+                "count": 3
+              }
+            },
+            {
+              "give": {
+                "item": "minor_healing_potion",
+                "count": 2
+              }
+            }
+          ],
+          "next": "found"
+        },
+        {
+          "text": "Leave it."
+        }
+      ]
+    },
+    "found": {
+      "text": "Inside, wrapped in oilcloth: arrows, dried meat and a few coins.",
+      "options": [
+        {
+          "text": "Take it all."
+        }
+      ]
+    },
+    "empty": {
+      "text": "The chest stands open and empty. Someone got here first. You did.",
+      "options": [
+        {
+          "text": "Leave"
+        }
+      ]
+    }
+  }
+}

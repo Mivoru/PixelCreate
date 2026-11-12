@@ -1,0 +1,58 @@
+{
+  "npc": "cache_quarry",
+  "entries": [
+    {
+      "when": {
+        "flag": "cache.cache_quarry"
+      },
+      "node": "empty"
+    },
+    {
+      "node": "closed"
+    }
+  ],
+  "nodes": {
+    "closed": {
+      "text": "A quarryman's lockbox wedged behind a boulder. Bors would swear it isn't his.",
+      "options": [
+        {
+          "text": "Open it.",
+          "effects": [
+            {
+              "setFlag": "cache.cache_quarry"
+            },
+            {
+              "gold": 40
+            },
+            {
+              "give": {
+                "item": "bread",
+                "count": 2
+              }
+            }
+          ],
+          "next": "found"
+        },
+        {
+          "text": "Leave it."
+        }
+      ]
+    },
+    "found": {
+      "text": "Inside, wrapped in oilcloth: wages somebody hid from somebody, and a block of good cheese.",
+      "options": [
+        {
+          "text": "Take it all."
+        }
+      ]
+    },
+    "empty": {
+      "text": "The chest stands open and empty. Someone got here first. You did.",
+      "options": [
+        {
+          "text": "Leave"
+        }
+      ]
+    }
+  }
+}

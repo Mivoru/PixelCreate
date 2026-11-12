@@ -213,7 +213,7 @@ public class ScheduleTests
     [Fact]
     public void EveryoneInTheValley_HasATemper()
     {
-        foreach (var npc in Valley.World.Npcs.Where(n => n.Role is not ("storage" or "quest_board" or "anchor_stone" or "waystone")))
+        foreach (var npc in Valley.World.Npcs.Where(n => n.Role is not ("storage" or "quest_board" or "anchor_stone" or "waystone" or "cache")))
         {
             Assert.True(People.Of(npc.Id) is not null, $"{npc.Id} has no entry in world/people.json");
         }

@@ -1,0 +1,58 @@
+{
+  "npc": "cache_burnt_farm",
+  "entries": [
+    {
+      "when": {
+        "flag": "cache.cache_burnt_farm"
+      },
+      "node": "empty"
+    },
+    {
+      "node": "closed"
+    }
+  ],
+  "nodes": {
+    "closed": {
+      "text": "A blackened strongbox half buried by the well, its lock melted shut and cracked.",
+      "options": [
+        {
+          "text": "Open it.",
+          "effects": [
+            {
+              "setFlag": "cache.cache_burnt_farm"
+            },
+            {
+              "gold": 45
+            },
+            {
+              "give": {
+                "item": "healing_potion",
+                "count": 1
+              }
+            }
+          ],
+          "next": "found"
+        },
+        {
+          "text": "Leave it."
+        }
+      ]
+    },
+    "found": {
+      "text": "Inside, wrapped in oilcloth: the farmer's savings, and a healing draught he never got to drink.",
+      "options": [
+        {
+          "text": "Take it all."
+        }
+      ]
+    },
+    "empty": {
+      "text": "The chest stands open and empty. Someone got here first. You did.",
+      "options": [
+        {
+          "text": "Leave"
+        }
+      ]
+    }
+  }
+}

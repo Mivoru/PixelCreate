@@ -1,0 +1,58 @@
+{
+  "npc": "cache_stone_circle",
+  "entries": [
+    {
+      "when": {
+        "flag": "cache.cache_stone_circle"
+      },
+      "node": "empty"
+    },
+    {
+      "node": "closed"
+    }
+  ],
+  "nodes": {
+    "closed": {
+      "text": "A small iron-bound casket in the middle of the circle, cold to the touch.",
+      "options": [
+        {
+          "text": "Open it.",
+          "effects": [
+            {
+              "setFlag": "cache.cache_stone_circle"
+            },
+            {
+              "gold": 40
+            },
+            {
+              "give": {
+                "item": "wisp_ember",
+                "count": 2
+              }
+            }
+          ],
+          "next": "found"
+        },
+        {
+          "text": "Leave it."
+        }
+      ]
+    },
+    "found": {
+      "text": "Inside, wrapped in oilcloth: a handful of old coins and a cold ember that will not go out.",
+      "options": [
+        {
+          "text": "Take it all."
+        }
+      ]
+    },
+    "empty": {
+      "text": "The chest stands open and empty. Someone got here first. You did.",
+      "options": [
+        {
+          "text": "Leave"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "npc": "cache_watchtower",
+  "entries": [
+    {
+      "when": {
+        "flag": "cache.cache_watchtower"
+      },
+      "node": "empty"
+    },
+    {
+      "node": "closed"
+    }
+  ],
+  "nodes": {
+    "closed": {
+      "text": "A goblin hoard heaped in the tower's shell: a split crate stuffed with whatever they stole.",
+      "options": [
+        {
+          "text": "Open it.",
+          "effects": [
+            {
+              "setFlag": "cache.cache_watchtower"
+            },
+            {
+              "gold": 60
+            },
+            {
+              "give": {
+                "item": "goblin_tooth",
+                "count": 4
+              }
+            }
+          ],
+          "next": "found"
+        },
+        {
+          "text": "Leave it."
+        }
+      ]
+    },
+    "found": {
+      "text": "Inside, wrapped in oilcloth: stolen coins, a goblin tooth necklace and a dented helm.",
+      "options": [
+        {
+          "text": "Take it all."
+        }
+      ]
+    },
+    "empty": {
+      "text": "The chest stands open and empty. Someone got here first. You did.",
+      "options": [
+        {
+          "text": "Leave"
+        }
+      ]
+    }
+  }
+}

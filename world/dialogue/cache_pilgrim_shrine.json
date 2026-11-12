@@ -1,0 +1,52 @@
+{
+  "npc": "cache_pilgrim_shrine",
+  "entries": [
+    {
+      "when": {
+        "flag": "cache.cache_pilgrim_shrine"
+      },
+      "node": "empty"
+    },
+    {
+      "node": "closed"
+    }
+  ],
+  "nodes": {
+    "closed": {
+      "text": "An offering box behind the shrine, its lid carved with a lantern.",
+      "options": [
+        {
+          "text": "Open it.",
+          "effects": [
+            {
+              "setFlag": "cache.cache_pilgrim_shrine"
+            },
+            {
+              "gold": 70
+            }
+          ],
+          "next": "found"
+        },
+        {
+          "text": "Leave it."
+        }
+      ]
+    },
+    "found": {
+      "text": "Inside, wrapped in oilcloth: coins left by a hundred pilgrims. The shrine would want them spent well.",
+      "options": [
+        {
+          "text": "Take it all."
+        }
+      ]
+    },
+    "empty": {
+      "text": "The chest stands open and empty. Someone got here first. You did.",
+      "options": [
+        {
+          "text": "Leave"
+        }
+      ]
+    }
+  }
+}

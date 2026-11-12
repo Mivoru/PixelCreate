@@ -1,0 +1,58 @@
+{
+  "npc": "cache_moonfell_well",
+  "entries": [
+    {
+      "when": {
+        "flag": "cache.cache_moonfell_well"
+      },
+      "node": "empty"
+    },
+    {
+      "node": "closed"
+    }
+  ],
+  "nodes": {
+    "closed": {
+      "text": "A rotting chest by the old Moonfell well, the lid clawed open and closed again.",
+      "options": [
+        {
+          "text": "Open it.",
+          "effects": [
+            {
+              "setFlag": "cache.cache_moonfell_well"
+            },
+            {
+              "gold": 90
+            },
+            {
+              "give": {
+                "item": "healing_potion",
+                "count": 1
+              }
+            }
+          ],
+          "next": "found"
+        },
+        {
+          "text": "Leave it."
+        }
+      ]
+    },
+    "found": {
+      "text": "Inside, wrapped in oilcloth: silver the villagers never came back for.",
+      "options": [
+        {
+          "text": "Take it all."
+        }
+      ]
+    },
+    "empty": {
+      "text": "The chest stands open and empty. Someone got here first. You did.",
+      "options": [
+        {
+          "text": "Leave"
+        }
+      ]
+    }
+  }
+}

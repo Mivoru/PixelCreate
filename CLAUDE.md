@@ -133,6 +133,9 @@ Rules:
   `travel:<id>` works only beside a waystone and only to a bound one, and lands `Waystones.ArrivalDistance` in front of
   it. Eight in Meadow Valley (Hearthmere, East Watch, Silver Falls, Greyfang, Moonfell, Goblin Hollow, West Road,
   Mirror Way): one at each settlement, dungeon mouth and pass road. `net-tests/WaystoneTests.cs`.
+- Hidden caches: NPCs of role `cache` (an "Old Chest", no figure, a `storage_chest` prop on the same spot) with a
+  `note`, `found` and `reward` in the zone file; `python tools/caches.py` writes their dialogue (open once: reward and
+  flag `cache.<id>`, then empty). Nine sit at the abandoned places, the watchtower, the quarry and Moonfell.
 - Test a far area: set `PIXEL_SPAWN=x,z` before starting the server.
 - Enemy abilities and crystal drops are data in `world/enemies.json`; new effects go in `GameServer.Fire`.
 - Group AI (`EnemyTactics.cs`): fighters keep apart (`AllySpacing`), and a close blow needs a turn from the server

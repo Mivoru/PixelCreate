@@ -1,0 +1,58 @@
+{
+  "npc": "cache_fallen_bridge",
+  "entries": [
+    {
+      "when": {
+        "flag": "cache.cache_fallen_bridge"
+      },
+      "node": "empty"
+    },
+    {
+      "node": "closed"
+    }
+  ],
+  "nodes": {
+    "closed": {
+      "text": "A tarred sea chest jammed among the stones under the broken bridge end, where the flood left it.",
+      "options": [
+        {
+          "text": "Open it.",
+          "effects": [
+            {
+              "setFlag": "cache.cache_fallen_bridge"
+            },
+            {
+              "gold": 55
+            },
+            {
+              "give": {
+                "item": "deer_hide",
+                "count": 2
+              }
+            }
+          ],
+          "next": "found"
+        },
+        {
+          "text": "Leave it."
+        }
+      ]
+    },
+    "found": {
+      "text": "Inside, wrapped in oilcloth: a merchant's purse and a good hide, still dry.",
+      "options": [
+        {
+          "text": "Take it all."
+        }
+      ]
+    },
+    "empty": {
+      "text": "The chest stands open and empty. Someone got here first. You did.",
+      "options": [
+        {
+          "text": "Leave"
+        }
+      ]
+    }
+  }
+}

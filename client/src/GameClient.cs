@@ -1090,7 +1090,7 @@ public partial class GameClient : Node
         var doorAt = DoorDistance(shown);
         var door = doorAt < Guild.DoorRange;
         _hud.Prompt = door && (nearest is null || doorAt < best) ? "[E] Use door"
-            : nearest is { Role: "storage" } chest ? $"[E] Open the {chest.Name}"
+            : nearest is { Role: "storage" or "cache" } chest ? $"[E] Open the {chest.Name}"
             : nearest is { Role: Waystones.Role } stone ? $"[E] Touch the {stone.Name}"
             : nearest is { } target ? $"[E] Talk to {target.Name}" : "";
         if (_hud.DialogOpen && nearest is null && !_hud.SceneDialog)
