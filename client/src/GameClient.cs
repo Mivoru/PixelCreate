@@ -1822,6 +1822,11 @@ public partial class GameClient : Node
             return MapBot();
         }
 
+        if (mode == "tavern")
+        {
+            return TavernBot();
+        }
+
         if (mode == "tutorial")
         {
             return TutorialBot();
@@ -2492,6 +2497,37 @@ public partial class GameClient : Node
     {
         BotStage("done");
         return (0, 0, Buttons.None);
+    }
+
+    /// <summary>
+    /// PIXEL_BOT=tavern: walks to the Bent Nail's door, goes in by it, and steps up to Dorran's bar, printing a stage
+    /// for each, then "done".
+    /// </summary>
+    private (sbyte X, sbyte Z, Buttons Buttons) TavernBot()
+    {
+        var position = ToGodot(_client.State.Position);
+        if (position.X < Guild.InteriorX)
+        {
+            BotStage("walk to the tavern door");
+            var door = new Vector3(17.6f, 0, -2f);
+            if (new Vector2(position.X - door.X, position.Z - door.Z).Length() < 2f && _client.Tick % 60 == 0)
+            {
+                Interact();
+            }
+
+            return BotGo(door, 1.2f, Buttons.None);
+        }
+
+        var bar = new Vector3(424.2f, 0, 59.2f);
+        var walk = BotGo(bar, 0.6f, Buttons.None);
+        if (_botStage is "at the bar" or "done" || new Vector2(position.X - bar.X, position.Z - bar.Z).Length() < 0.8f)
+        {
+            BotStage(_botStage == "at the bar" && ++_botWait > 90 || _botStage == "done" ? "done" : "at the bar");
+            return (0, 0, Buttons.None);
+        }
+
+        BotStage("inside the Bent Nail");
+        return walk;
     }
 
     private void BotStage(string stage)

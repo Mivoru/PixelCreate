@@ -278,7 +278,8 @@ Rules:
   all (`collision.py` fills enclosed cells), hence the split. Dorran keeps the bar. The regulars sit in the yard from
   six and go in at eight, or at once in the rain (rain blocks), Corwin from eight. Walks into and out of an interior
   go through its door (`Schedules.Door`, `Schedules.Way`; `Actor.Step` steps across the gap); someone at home who is
-  due indoors is simply there.
+  due indoors is simply there. `PIXEL_BOT=tavern` (with `PIXEL_TEST=1 PIXEL_SPAWN=22,-5`) walks to the door, goes in
+  and steps up to the bar, printing `BOT` stages and `BOT done`.
   The tavern yard (three tables east of the tavern door, footpath from the south road) fills from six: Corwin keeps
   his bench all day, the Brightwater Four (Edwin, Moss, Fen, Rook) have the south table. Mornings the Four meet by
   the Guild door, Osric and Anwen are at the mill, Hamm, Maddy and Tobias on Harrow Farm, Tam by Hollis's counter.
