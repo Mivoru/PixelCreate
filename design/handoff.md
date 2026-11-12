@@ -89,6 +89,21 @@ Autor si zahrál a chce samostatnou práci do 6:00. Zaškrtávat, co je hotové:
 Neověřeno hraním člověkem: vše výše jen boty, testy (385) a snímky. Síla monster a odměny nenastaveny (pravidlo
 „neladit obtížnost“), jen hrubě odhadnuté; ryby u mola byly pro level 1 smrtelné, ztlumil jsem je.
 
+## Plán (autor 2026-11-12): body 1 až 3 dělám teď, 4 až 6 jsou další na řadě
+
+1. [ ] Měření balancu: doba zabití každého monstra, poškození od něj, XP za level a čas na level. Výstup
+   `design/balance.md`, ladit až podle poznámek autora z hraní.
+2. [ ] Pocit z boje: krátký hit stop u těžkých ran, znamení „otevřený“ u nepřátel, kteří jsou chvíli zranitelní
+   (vrána po náletu, omráčený Thornback, želva po výpadu, ryba na břehu), zámek na cíl (Tab).
+3. [ ] Zvuky z ElevenLabs (autor souhlasil): vlastní zvuky nových monster a okolí (ptáci ve dne, cvrčci v noci,
+   déšť, řeka).
+4. [ ] Interiér hospody: vejít dovnitř, večer tam sedí hosté (Brightwater Four, Corwin, Bram) a běží rozhovory;
+   rozvrhy přes `via`. Případně interiéry dalších domů.
+5. [ ] Systémy: rybaření na molech, sběr bylin a hub (pro Wren), vaření u ohně, řemeslo u Tess z materiálů monster,
+   rank D se zkouškou v Guildě jako cíl po úrovni 9.
+6. [ ] Delší dungeon s bossem a skrytou cestou (Archive i Warren jsou dnes jedna síň).
+7. [ ] Kvalita: hlídač zaseknutí klienta (zápis, co hra dělala), audit děr ve zbylých interiérech.
+
 ### Co si zahrát jako první (2026-11-12)
 
 1. Nový začátek: prolog (slabší goblini), úskok v trialu u Rhey (Shift těsně před ranou, každý úskok nový stisk).
