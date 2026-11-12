@@ -128,6 +128,10 @@ Neověřeno hraním člověkem: vše výše jen boty, testy (385) a snímky. Sí
    Crowfield, Old Watchtower, East Watch se strážemi; truhly k nalezení.
 6. Monstra: Thornback (zteč, omráčení o strom), vrány, želvy, liány, ryby, Warchief, Trapper, bandité.
 
+7. Hospoda The Bent Nail v Hearthmere (dveře hospody u dvora): večer od 20 h (při dešti dřív) uvnitř štamgasti a
+   rozhovory, u výčepu Dorran prodává jídlo. Hlídač zaseknutí: když hra zamrzne, pošli řádek `FREEZE` z
+   `export/previews/client.log`.
+
 Ladění síly a odměn je pořád hrubý odhad (pravidlo „neladit obtížnost“): co je moc silné nebo slabé, napiš.
 
 ## Co dělat jako první
