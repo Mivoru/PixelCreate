@@ -1,4 +1,4 @@
-# Předávka pro další session (stav 2026-11-11 pozdě večer)
+# Předávka pro další session (stav 2026-11-12 odpoledne)
 
 ## Směr hry se změnil (rozhodnutí autora 2026-11-10)
 
@@ -88,6 +88,18 @@ Autor si zahrál a chce samostatnou práci do 6:00. Zaškrtávat, co je hotové:
 
 Neověřeno hraním člověkem: vše výše jen boty, testy (385) a snímky. Síla monster a odměny nenastaveny (pravidlo
 „neladit obtížnost“), jen hrubě odhadnuté; ryby u mola byly pro level 1 smrtelné, ztlumil jsem je.
+
+### Co si zahrát jako první (2026-11-12)
+
+1. Nový začátek: prolog (slabší goblini), úskok v trialu u Rhey (Shift těsně před ranou, každý úskok nový stisk).
+2. Lehký útok mečem proti kroužícím goblinům: má teď trefovat.
+3. Nástěnka v Guildě (tři stránky) a odevzdání libovolného jobu u Miry (dřív šlo jen u prvních pěti).
+4. Noc ve vesnici a u The Last Lantern (svítící okna, lucerny, světlušky, vytí), Stone Circle v noci (bludičky).
+5. Nová místa: Woodcutters' Camp, Greystone Quarry a Mine, Fisher's Landing, Shepherd's Croft, Bandit Hollow,
+   Crowfield, Old Watchtower, East Watch se strážemi; truhly k nalezení.
+6. Monstra: Thornback (zteč, omráčení o strom), vrány, želvy, liány, ryby, Warchief, Trapper, bandité.
+
+Ladění síly a odměn je pořád hrubý odhad (pravidlo „neladit obtížnost“): co je moc silné nebo slabé, napiš.
 
 ## Co dělat jako první
 
