@@ -799,6 +799,9 @@ public sealed class PlayerRig
             IdlePose();
         }
 
+        // A tool is laid down to sit: a woodcutter does not eat his bread with the axe in his hand.
+        _sword.Visible = !(Sitting && _look.Item is "wood_axe" or "pickaxe" or "fishing_rod" or "shepherd_crook");
+
         _slash.Visible = false;
         _motion = state;
         if (_look.Weapon == "none")
