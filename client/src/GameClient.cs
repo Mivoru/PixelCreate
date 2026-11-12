@@ -116,6 +116,7 @@ public partial class GameClient : Node
     private PlayerRig _player = null!;
     private Hud _hud = null!;
     private Sfx _sfx = null!;
+    private Ambience _ambience = null!;
     private Voices _voices = null!;
     private (string Speaker, string Text) _voiced;
     private Fx _fx = null!;
@@ -189,6 +190,7 @@ public partial class GameClient : Node
         _player = new PlayerRig(new Color("0099db"));
         _stage.View.AddChild(_player.Root);
         _sfx = new Sfx(_stage.View);
+        _ambience = new Ambience(_stage.View, _zone);
         _voices = new Voices(_stage.View);
         var effects = new Node3D();
         _stage.View.AddChild(effects);
@@ -532,6 +534,7 @@ public partial class GameClient : Node
         // Indoors the outdoor world is not drawn, and outdoors the interiors on their platforms off the map are not.
         var inside = shown.X > ZoneView.InteriorX;
         _stage.Camera.CullMask = (_stage.Camera.CullMask | ZoneView.OutdoorLayer | ZoneView.InteriorLayer) & ~(inside ? ZoneView.OutdoorLayer : ZoneView.InteriorLayer);
+        _ambience.Update(shown, d, inside && shown.X <= ArchiveX, shown.X > ArchiveX, _sfx.Muted);
         _stage.SetGloom(_gloom);
         _stage.PlaceMoon();
         // A staff shows the crosshair all the time, as its fireballs fly to whatever lies under it.
@@ -2845,9 +2848,13 @@ public partial class GameClient : Node
                 _stage.View.AddChild(node.Root);
                 if (runes)
                 {
-                    _sfx.Play("shockwave", ToGodot(wall.Origin));
+                    _sfx.Play("rune_wave", ToGodot(wall.Origin));
                 }
-                else if (!crack && wall.Kind != HazardKind.Snare)
+                else if (wall.Kind == HazardKind.Snare)
+                {
+                    _sfx.Play("snare", ToGodot(wall.Origin), -4f);
+                }
+                else if (!crack)
                 {
                     _sfx.Play("fire_wall", ToGodot(wall.Origin));
                 }

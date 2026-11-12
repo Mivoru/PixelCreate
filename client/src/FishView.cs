@@ -94,9 +94,11 @@ public sealed class FishView : IEnemyView
         {
             var sound = enemy.Action switch
             {
-                EnemyAction.Leap => "dash",
-                EnemyAction.Stagger => "slime_splat",
-                EnemyAction.Dead => "animal_fall",
+                EnemyAction.Leap => "fish_splash",
+                EnemyAction.Stagger => "fish_flop",
+                EnemyAction.Dead => "fish_flop",
+                // Back into the water after lying stranded.
+                _ when _lastAction == EnemyAction.Stagger => "fish_splash",
                 _ => null,
             };
             if (sound is not null)

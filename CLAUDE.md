@@ -308,6 +308,11 @@ Rules:
   rig when it changes. A new game opens the creator (`Hud.OpenCreator`, `PIXEL_BOT=creator`); test runs and
   `PIXEL_LOOK=default` start with the default look. Studio job `creator` photographs every choice.
 - Sound effects come from ElevenLabs: `python asset-pipeline/generate_sounds.py` (cached, keys stay outside the repo).
+  The new monsters have their own (crow caw, dive and hurt; wisp hum, bolt and death; stoneback shell; vine lash and
+  hurt; fish splash and flop; thornback charge, quill burst, war horn, snare, rune wave). `LOOPS` in the same script
+  are 20 s beds faded at both ends: `Ambience.cs` plays each on two players that overlap by the fade, eased by
+  `Ambient.Night` and `Ambient.Rain`: birds by day, crickets at night, rain (a little indoors), running water within
+  25 m of a river or 40 m of the falls, dripping stone underground. Run Godot's `--import` after generating.
 - Voices: Mira, Rhea and the finders (Vosk, Gil, Hanne, Corb) speak. A person with a `voice` in `world/people.json` (ElevenLabs voice id and settings)
   speaks. `python asset-pipeline/generate_voices.py` records their dialogue nodes, barks, `fight` shouts, `death` words and scene lines (`say` by actor or name) to
   `client/assets/voices/<npc>/<first 16 hex of the text's SHA-1>.mp3` (not in git; `--dry` counts characters, `--voices`

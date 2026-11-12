@@ -379,6 +379,7 @@ public sealed class GoblinView : IEnemyView
                     "pounce" => "werewolf_swipe",
                     "superJump" => "earth_crack",
                     "runeWave" => "swing_heavy",
+                    "hornCall" => "horn_call",
                     "melee" or "dashStrike" => _def.Kind == "werewolf" ? "werewolf_swipe" : _def.Kind == "orc" ? "orc_swing" : _def.Kind == "sentinel" ? "swing_heavy" : _def.Kind == "human" ? "swing_light" : "goblin_swing",
                     _ => null,
                 };

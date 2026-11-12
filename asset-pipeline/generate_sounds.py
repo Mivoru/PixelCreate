@@ -111,6 +111,23 @@ SOUNDS = {
     "wolf_hurt": ("a wolf yelping sharply in pain, one short high yelp", 0.6, 0.5, -8),
     "deer_hurt": ("a deer bleating once in pain, short high cry", 0.8, 0.6, -9),
     "hooves": ("loud close hoofbeats of several deer galloping fast over hard dry ground, clear thudding gallop", 1.5, 1.3, -12),
+    "crow_caw": ("a carrion crow cawing harshly two or three times, rough raspy caws, outdoors, one bird", 1.2, 1.0, -9),
+    "crow_dive": ("a big black crow diving fast at someone, sharp beating wings and a rushing whoosh with a harsh caw", 0.8, 0.6, -7),
+    "crow_hurt": ("a crow struck and squawking in pain, short harsh screech with a flutter of wings", 0.6, 0.5, -8),
+    "wisp_hum": ("an eerie ghostly hum of a floating spirit light, soft shimmering whisper, cold and hollow", 1.2, 1.0, -10),
+    "wisp_bolt": ("a ghostly blue magic bolt launched, soft hollow whoosh with a cold glassy shimmer", 0.7, 0.5, -8),
+    "wisp_die": ("a spirit light going out, soft falling ghostly sigh with a faint fading chime", 1.0, 0.9, -8),
+    "shell_tuck": ("a heavy stone shelled beast pulling into its shell, grinding stone scrape ending in a solid thunk", 0.7, 0.5, -7),
+    "shell_spin": ("a heavy stone shell spinning fast across rocky ground, grinding rumbling whirr", 1.2, 1.0, -7),
+    "vine_lash": ("a thick thorny vine whipping through the air, sharp leathery crack with a rustle of leaves", 0.6, 0.45, -7),
+    "vine_hurt": ("a plant monster struck by a blade, wet fibrous crunch and a low creaking groan of wood", 0.6, 0.5, -8),
+    "fish_splash": ("a big fish leaping out of a lake, heavy water splash, close", 0.8, 0.6, -7),
+    "fish_flop": ("a big fish flopping helplessly on wet stones, a few wet slaps", 0.9, 0.8, -9),
+    "thornback_charge": ("a wild boar beast charging, thundering hooves and a fierce squealing snort", 1.0, 0.9, -6),
+    "quill_burst": ("a burst of sharp thorns shooting out in all directions, a rapid volley of thin whooshes", 0.8, 0.6, -7),
+    "horn_call": ("a goblin war horn blown hard, a rough low brassy blast, short", 1.6, 1.4, -6),
+    "snare": ("a rope trap snapping tight around a leg, loud sudden rope snap and wooden clack, close", 1.0, 0.5, -8),
+    "rune_wave": ("ancient stone runes flaring, a deep humming magical pulse rolling along a stone floor", 1.2, 1.0, -6),
     "animal_fall": ("a large animal body falling onto soft grass, one heavy muffled thud", 0.8, 0.6, -9),
 }
 
@@ -138,6 +155,16 @@ def find_key():
     raise SystemExit("No ElevenLabs key has enough credits left.")
 
 
+# Beds of sound under the game, played as loops: name: (prompt, seconds asked for, level in dB).
+LOOPS = {
+    "amb_day": ("gentle countryside meadow ambience by day, several distant songbirds chirping, soft breeze in grass, no voices, no music, no insects", 20, -16),
+    "amb_night": ("quiet countryside night ambience, crickets chirping steadily, soft breeze, no voices, no music, no birds", 20, -17),
+    "amb_rain": ("steady gentle rain falling on grass and leaves, soft and even, no thunder, no voices", 20, -14),
+    "amb_river": ("a small river flowing over stones, steady babbling water, close, no birds, no voices", 20, -13),
+    "amb_cave": ("underground cave ambience, slow water drips echoing, faint low rumble, no voices, no music", 20, -15),
+}
+
+
 def download(key, name, prompt, seconds):
     body = {"text": prompt, "duration_seconds": seconds, "prompt_influence": 0.6}
     audio = request(key, "/sound-generation?output_format=mp3_44100_128", body).read()
@@ -153,21 +180,33 @@ def convert(name, keep, level):
                     "-ac", "1", "-ar", "44100", "-c:a", "pcm_s16le", str(OUT / f"{name}.wav")], check=True)
 
 
+def convert_loop(name, seconds, level):
+    """A bed of sound: kept whole, with half a second faded in and out, so two copies overlap into a loop."""
+    filters = (f"lowpass=f=11000,atrim=0:{seconds},afade=t=in:st=0:d=0.5,afade=t=out:st={seconds - 0.5}:d=0.5,"
+               f"loudnorm=I=-14:TP=-1:LRA=11,volume={level + 5}dB,alimiter=limit=0.95:level=false")
+    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(CACHE / f"{name}.mp3"), "-af", filters,
+                    "-ac", "1", "-ar", "44100", "-c:a", "pcm_s16le", str(OUT / f"{name}.wav")], check=True)
+
+
 def main():
     arguments = sys.argv[1:]
     force = "--force" in arguments
     names = [a for a in arguments if a != "--force"]
     OUT.mkdir(parents=True, exist_ok=True)
     CACHE.mkdir(exist_ok=True)
-    wanted = {n: SOUNDS[n] for n in names} if names else SOUNDS
-    missing = {n: s for n, s in wanted.items() if force or names or not (CACHE / f"{n}.mp3").exists()}
+    wanted = {n: SOUNDS[n] for n in names if n in SOUNDS} if names else SOUNDS
+    loops = {n: LOOPS[n] for n in names if n in LOOPS} if names else LOOPS
+    missing = {n: (s[0], s[1]) for n, s in {**wanted, **loops}.items() if force or names or not (CACHE / f"{n}.mp3").exists()}
     key = find_key() if missing else None
-    for name, (prompt, seconds, _, _) in missing.items():
+    for name, (prompt, seconds) in missing.items():
         download(key, name, prompt, seconds)
         print(f"generated {name}")
 
     for name, (_, _, keep, level) in wanted.items():
         convert(name, keep, level)
+
+    for name, (_, seconds, level) in loops.items():
+        convert_loop(name, seconds, level)
 
 
 if __name__ == "__main__":

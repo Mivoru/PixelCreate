@@ -12,6 +12,9 @@ namespace PixelCreate;
 /// </summary>
 public sealed class CrowView : IEnemyView
 {
+    private float _cawIn;
+    private bool _wasFighting;
+
     private static readonly Color Black = new("181425");
     private static readonly Color Sheen = new("262b44");
 
@@ -128,7 +131,7 @@ public sealed class CrowView : IEnemyView
 
     public void Update(in EnemyView enemy, Vector3 position, float delta, Sfx sfx)
     {
-        PlaySounds(enemy, position, sfx);
+        PlaySounds(enemy, position, sfx, delta);
         Root.Position = position;
         var time = (float)Time.GetTicksMsec() / 1000f + _phase;
         var scale = _def.Size * 1.6f;
@@ -202,7 +205,7 @@ public sealed class CrowView : IEnemyView
         _shadow.Visible = !dead;
     }
 
-    private void PlaySounds(in EnemyView enemy, Vector3 position, Sfx sfx)
+    private void PlaySounds(in EnemyView enemy, Vector3 position, Sfx sfx, float delta)
     {
         DamageTaken = 0;
         if (!_first)
@@ -210,22 +213,36 @@ public sealed class CrowView : IEnemyView
             if (enemy.Health < _lastHealth)
             {
                 DamageTaken = _lastHealth - enemy.Health;
+                sfx.Play("crow_hurt", position + Vector3.Up * _height, -3f);
             }
 
             if (enemy.Action != _lastAction)
             {
                 var sound = enemy.Action switch
                 {
-                    EnemyAction.Leap => "dash",
-                    EnemyAction.Cast when _def.Abilities is { } list && enemy.Ability < list.Length && list[enemy.Ability].Effect == "rookCall" => "clone_summon",
+                    EnemyAction.Leap => "crow_dive",
+                    EnemyAction.Cast when _def.Abilities is { } list && enemy.Ability < list.Length && list[enemy.Ability].Effect == "rookCall" => "crow_caw",
                     EnemyAction.Dead => "animal_fall",
                     _ => null,
                 };
                 if (sound is not null)
                 {
-                    sfx.Play(sound, position + Vector3.Up * _height, enemy.Action == EnemyAction.Leap ? -6f : -2f);
+                    sfx.Play(sound, position + Vector3.Up * _height, enemy.Action == EnemyAction.Leap ? -3f : -2f);
                 }
             }
+
+            // A flock caws as it gathers, and now and then while it circles; one bird of every few, not all at once.
+            _cawIn -= delta;
+            if (enemy.Action != EnemyAction.Dead && enemy.Fighting && (_cawIn <= 0f || !_wasFighting))
+            {
+                _cawIn = 5f + (float)GD.RandRange(0.0, 7.0);
+                if (!_wasFighting || enemy.Id % 3 == 0)
+                {
+                    sfx.Play("crow_caw", position + Vector3.Up * _height, -5f);
+                }
+            }
+
+            _wasFighting = enemy.Fighting;
         }
 
         _first = false;

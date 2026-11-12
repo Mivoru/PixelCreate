@@ -11,6 +11,8 @@ namespace PixelCreate;
 /// </summary>
 public sealed class WispView : IEnemyView
 {
+    private float _humIn = (float)GD.RandRange(1.0, 8.0);
+
     private static readonly Color Cold = new("2ce8f5");
     private static readonly Color Pale = new("ffffff");
     private static readonly Color Out = new("5a6988");
@@ -134,7 +136,7 @@ public sealed class WispView : IEnemyView
 
     public void Update(in EnemyView enemy, Vector3 position, float delta, Sfx sfx)
     {
-        PlaySounds(enemy, position, sfx);
+        PlaySounds(enemy, position, sfx, delta);
         Root.Position = position;
         var time = (float)Time.GetTicksMsec() / 1000f + _phase;
         var dead = enemy.Action == EnemyAction.Dead;
@@ -174,7 +176,7 @@ public sealed class WispView : IEnemyView
         }
     }
 
-    private void PlaySounds(in EnemyView enemy, Vector3 position, Sfx sfx)
+    private void PlaySounds(in EnemyView enemy, Vector3 position, Sfx sfx, float delta)
     {
         DamageTaken = 0;
         var at = position + Vector3.Up * Hover;
@@ -187,7 +189,18 @@ public sealed class WispView : IEnemyView
 
             if (enemy.Fighting && !_lastFighting)
             {
-                sfx.Play("clone_summon", at, -6f);
+                sfx.Play("wisp_hum", at, -4f);
+            }
+
+            // A wisp hums to itself as it drifts, quietly, each on its own clock.
+            _humIn -= delta;
+            if (_humIn <= 0f)
+            {
+                _humIn = 6f + (float)GD.RandRange(0.0, 9.0);
+                if (enemy.Action != EnemyAction.Dead && !enemy.Fighting)
+                {
+                    sfx.Play("wisp_hum", at, -14f);
+                }
             }
 
             if (enemy.Action != _lastAction)
@@ -195,9 +208,9 @@ public sealed class WispView : IEnemyView
                 var sound = enemy.Action switch
                 {
                     EnemyAction.Cast when _def.Abilities is { } list && enemy.Ability < list.Length && list[enemy.Ability].Effect == "wispSplit" => "shadow_rise",
-                    EnemyAction.Cast => "spear_summon",
+                    EnemyAction.Cast => "wisp_bolt",
                     EnemyAction.Dim => "shadow_sink",
-                    EnemyAction.Dead => "lightning_zap",
+                    EnemyAction.Dead => "wisp_die",
                     _ => null,
                 };
                 if (sound is not null)

@@ -489,6 +489,23 @@ public sealed class AnimalView : IEnemyView
             {
                 sfx?.Play("clone_summon", position + Vector3.Up);
             }
+
+            // Thornbacks thunder off on a charge and the Briarking bursts its quills; stonebacks grind into their
+            // shells, spin in them and come back out.
+            var effect = EnemyDef.All[enemy.Type].Abilities is { } abilities && enemy.Ability < abilities.Length ? abilities[enemy.Ability].Effect : null;
+            var sound = action switch
+            {
+                EnemyAction.Leap when effect == "charge" => "thornback_charge",
+                EnemyAction.Strike when effect == "quillBurst" => "quill_burst",
+                EnemyAction.Shell => "shell_tuck",
+                EnemyAction.ShellSpin => "shell_spin",
+                _ when _lastAction == EnemyAction.Shell && action != EnemyAction.Dead => "shell_tuck",
+                _ => null,
+            };
+            if (sound is not null)
+            {
+                sfx?.Play(sound, position + Vector3.Up * 0.6f, _lastAction == EnemyAction.Shell && action != EnemyAction.ShellSpin ? -6f : -1f);
+            }
         }
 
         if (_ghost && _lastAction == default && _clockStart)

@@ -120,15 +120,21 @@ public sealed class VineView : IEnemyView
     public void Update(in EnemyView enemy, Vector3 position, float delta, Sfx sfx)
     {
         DamageTaken = !_first && enemy.Health < _lastHealth ? _lastHealth - enemy.Health : 0;
+        if (DamageTaken > 0)
+        {
+            sfx?.Play("vine_hurt", position + Vector3.Up, -3f);
+        }
+
         if (!_first && enemy.Action != _lastAction && sfx is not null)
         {
             if (enemy.Action == EnemyAction.Strike)
             {
-                sfx.Play("air_slash", position + Vector3.Up, -6f);
+                sfx.Play("vine_lash", position + Vector3.Up, -2f);
             }
             else if (enemy.Action == EnemyAction.Dead)
             {
-                sfx.Play("animal_fall", position, -2f);
+                sfx.Play("vine_hurt", position + Vector3.Up);
+                sfx.Play("animal_fall", position, -4f);
             }
         }
 

@@ -99,8 +99,10 @@ Neověřeno hraním člověkem: vše výše jen boty, testy (385) a snímky. Sí
    Hotovo: hit stop 0,08 s / 0,035 s jen v obraze, „Open!“ se zeleným kruhem, Tab zámek se zlatými šipkami (taška
    je teď jen na I). Viděno v záběrech bota (Open! u Thornbacka, zámek na slizech); hit stop očima ve hře ne, jen
    kódem: autor ať řekne, jestli je moc nebo málo.
-3. [ ] Zvuky z ElevenLabs (autor souhlasil): vlastní zvuky nových monster a okolí (ptáci ve dne, cvrčci v noci,
+3. [x] Zvuky z ElevenLabs (autor souhlasil): vlastní zvuky nových monster a okolí (ptáci ve dne, cvrčci v noci,
    déšť, řeka).
+   Hotovo: 17 zvuků monster a 5 smyček prostředí (den, noc, déšť, řeka, jeskyně). Napojeno a běží bez chyb, ale bot
+   hraje s tichým ovladačem: poslechnout musí autor (hlasitost smyček, jestli neruší, jestli je slyšet šev).
 4. [ ] Interiér hospody: vejít dovnitř, večer tam sedí hosté (Brightwater Four, Corwin, Bram) a běží rozhovory;
    rozvrhy přes `via`. Případně interiéry dalších domů.
 5. [ ] Systémy: rybaření na molech, sběr bylin a hub (pro Wren), vaření u ohně, řemeslo u Tess z materiálů monster,
