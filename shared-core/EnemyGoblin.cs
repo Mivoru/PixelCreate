@@ -12,9 +12,10 @@ namespace PixelCreate.Core;
 /// hastens the goblins of its camp nearby) and axeThrow (a hand axe thrown end over end), wispBolt (a slow light
 /// that turns after the player), wispSplit (a lantern becomes three, two of them false), dive (a crow's swoop from
 /// the air onto the player) and rookCall (five crows called to dive one after another).</summary>
+/// <param name="Summon">For the effect summon: the enemy type called up, how many, and their life in seconds.</param>
 public sealed record Ability(
     string Effect, float Range, int WindupTicks, int RecoverTicks, int CooldownTicks, short Damage,
-    float Radius = 0f, float MinRange = 0f, string Telegraph = "none");
+    float Radius = 0f, float MinRange = 0f, string Telegraph = "none", string Summon = "", int Count = 0, int Life = 0);
 
 /// <summary>Goblins walk and fight with abilities, unlike slimes, which hop and leap.</summary>
 public sealed partial class Enemy

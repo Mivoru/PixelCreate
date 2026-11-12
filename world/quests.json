@@ -901,5 +901,34 @@
         "route": false
       }
     ]
+  },
+  {
+    "id": "keeper_below",
+    "name": "The Keeper Below",
+    "kind": "job",
+    "giver": "board",
+    "repeatable": false,
+    "brief": "bring down the Keeper",
+    "gold": 500,
+    "xp": 900,
+    "journal": "Wren's notice, in a shaky hand: under the Sunken Archive's first hall a door stands open that was shut for a thousand years, and something huge walks behind it. The Guild wants it brought down.",
+    "steps": [
+      {
+        "text": "Find the Keeper in the deepest hall of the Sunken Archive (the cave beside Silver Falls) and bring it down.",
+        "goal": {
+          "kill": "archive_keeper",
+          "count": 1
+        }
+      },
+      {
+        "text": "Return to the Guild and report to Mira.",
+        "goal": {
+          "talk": "mira"
+        },
+        "route": false
+      }
+    ],
+    "poster": "Wren, alchemist",
+    "place": "the Sunken Archive beside Silver Falls"
   }
 ]

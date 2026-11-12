@@ -261,6 +261,14 @@
   },
   {
    "when": {
+    "quest": {
+     "keeper_below": "ready"
+    }
+   },
+   "node": "turn_in_keeper_below"
+  },
+  {
+   "when": {
     "all": [
      {
       "rank": {
@@ -1303,6 +1311,33 @@
       {
        "quest": {
         "complete": "glowcaps_for_the_guild"
+       }
+      }
+     ]
+    },
+    {
+     "text": "Sell all crystals ({crystalWorth} gold)",
+     "effects": [
+      {
+       "action": "sellCrystals"
+      }
+     ]
+    },
+    {
+     "text": "Goodbye"
+    }
+   ]
+  },
+  "turn_in_keeper_below": {
+   "text": "Well done! Here is your pay for The Keeper Below: 500 gold.",
+   "face": "smile",
+   "options": [
+    {
+     "text": "Hand in the job",
+     "effects": [
+      {
+       "quest": {
+        "complete": "keeper_below"
        }
       }
      ]

@@ -831,7 +831,7 @@ public sealed class EnemyTests
     {
         Assert.Equal(new[] { "Common", "Rare", "Epic", "Legendary" }, Crystals.All.Select(c => c.Rarity.ToString()));
         Assert.True(Crystals.All.Zip(Crystals.All.Skip(1)).All(p => p.First.Weight < p.Second.Weight));
-        Assert.All(EnemyDef.All.Where(d => !Guild.IsExaminer(d.Id) && d.Id != "shadow_clone" && !d.Decoy && d.Temper != "passive"), def => Assert.NotEmpty(def.Drops!));
+        Assert.All(EnemyDef.All.Where(d => !Guild.IsExaminer(d.Id) && d.Id != "shadow_clone" && d.Id != "page_wisp" && !d.Decoy && d.Temper != "passive"), def => Assert.NotEmpty(def.Drops!));
     }
 
     [Fact]

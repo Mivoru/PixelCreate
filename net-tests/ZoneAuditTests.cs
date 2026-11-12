@@ -124,10 +124,23 @@ public class ZoneAuditTests
     public void GuildInterior_ConnectsTheDoorToMiraAndTheBoard()
     {
         var door = Valley.World.Portals[0].To;
-        var cells = Walkable(door);
-        foreach (var npc in Valley.World.Npcs.Where(n => n.Position.X > 400))
+        // The archive's hidden vault lies behind its secret wall: shut until the glyph is pressed, then open.
+        var vault = Valley.World.Npcs.Single(n => n.Id == "cache_archive_vault");
+        var archive = Valley.World.Portals.First(p => p.To.X > 540 && p.To.X < 600).To;
+        Assert.False(ReachedNear(Walkable(archive), vault.Position, (int)Guild.TalkRange), "the hidden vault is open before the glyph is pressed");
+        var before = Valley.World.HasFlag;
+        Valley.World.HasFlag = flag => flag == "archive.secret";
+        try
         {
-            Assert.True(ReachedNear(cells, npc.Position, (int)Guild.TalkRange), $"{npc.Name} cannot be reached from the door");
+            var cells = Walkable(door);
+            foreach (var npc in Valley.World.Npcs.Where(n => n.Position.X > 400))
+            {
+                Assert.True(ReachedNear(cells, npc.Position, (int)Guild.TalkRange), $"{npc.Name} cannot be reached from the door");
+            }
+        }
+        finally
+        {
+            Valley.World.HasFlag = before;
         }
     }
 

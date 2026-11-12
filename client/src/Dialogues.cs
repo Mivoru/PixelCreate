@@ -1103,7 +1103,7 @@ public static class Dialogues
         "lost" => "Lightborn",
         "finder_captain" => "Finder Captain",
         "finder" or "finder_gil" or "finder_hanne" or "finder_corb" => "Finder",
-        "object" or "anchor_stone" or "cache" or "hearth" or "fishing" => "",
+        "object" or "anchor_stone" or "cache" or "hearth" or "fishing" or "secret" => "",
         Waystones.Role => "Auren Waystone",
         _ => "Villager",
     };

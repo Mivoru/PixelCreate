@@ -1,0 +1,49 @@
+{
+  "npc": "archive_glyph",
+  "entries": [
+    {
+      "when": {
+        "flag": "archive.secret"
+      },
+      "node": "open"
+    },
+    {
+      "node": "glyph"
+    }
+  ],
+  "nodes": {
+    "glyph": {
+      "text": "In the empty niche of the cracked wall, one glyph glows warmer than the runes round it, like an ember under ash.",
+      "options": [
+        {
+          "text": "Press the glyph.",
+          "effects": [
+            {
+              "setFlag": "archive.secret"
+            }
+          ],
+          "next": "opened"
+        },
+        {
+          "text": "Leave it."
+        }
+      ]
+    },
+    "opened": {
+      "text": "Stone grinds on stone. The cracked wall sinks into the floor, and cold air breathes out of a room nobody has opened in a thousand years.",
+      "options": [
+        {
+          "text": "Go in."
+        }
+      ]
+    },
+    "open": {
+      "text": "The glyph has gone dark. Where the wall stood, the way into the hidden vault lies open.",
+      "options": [
+        {
+          "text": "Leave it."
+        }
+      ]
+    }
+  }
+}

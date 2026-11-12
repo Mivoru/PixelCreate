@@ -3151,6 +3151,11 @@ public sealed partial class GameServer : IEnemyEvents
         }
 
         Story.OnKill(_story, enemy.Def.Id);
+        if (enemy.Def.KillFlag.Length > 0)
+        {
+            // A boss's fall changes the world: the Keeper's gate opens on the way out.
+            _story.SetFlag(enemy.Def.KillFlag);
+        }
 
         // The first monster the hero kills wakes the Mark: levels, experience and skills appear.
         if (_story.Has("prologue.started") && !_story.Has("hud.mark") && enemy.Def.Kind != "animal")
@@ -3710,6 +3715,10 @@ public sealed partial class GameServer : IEnemyEvents
             case "shadowClone":
                 Summon(enemy, target);
                 break;
+            case "summon" when ability.Summon.Length > 0 && !_enemies.Any(e => e.SummonedBy == enemy.Id && e.Health > 0):
+                // A boss calls up helpers of the type the data names; never a second lot while the first still fights.
+                Summon(enemy, target, ability.Summon, Math.Max(1, ability.Count), ability.Life > 0 ? ability.Life * Tuning.TickRate : CloneLifeTicks);
+                break;
             case "wispBolt":
                 var wisp = Shoot(ProjectileKind.WispBolt, chest, direction * WispBoltSpeed, ability.Damage);
                 wisp.TargetId = target?.Id ?? enemy.TargetId;
@@ -4062,20 +4071,24 @@ public sealed partial class GameServer : IEnemyEvents
     private Target? FindTarget(int id) =>
         _players.TryGetValue(id, out var player) ? new Target(player.Id, player.State.Position, player.State.Velocity) : null;
 
-    /// <summary>Two shadow copies of the wolf rise at its sides and join the hunt.</summary>
-    private void Summon(Enemy wolf, Target? target)
+    /// <summary>
+    /// Copies of a summoner's kind rise at its sides and join the hunt: two shadow clones of a wolf by default, or
+    /// the type and number a summon ability names, spread on alternate sides.
+    /// </summary>
+    private void Summon(Enemy wolf, Target? target, string kind = "shadow_clone", int count = 2, int life = CloneLifeTicks)
     {
-        var type = (byte)EnemyDef.All.ToList().FindIndex(d => d.Id == "shadow_clone");
+        var type = (byte)EnemyDef.All.ToList().FindIndex(d => d.Id == kind);
         var side = new Vector3(MathF.Cos(wolf.Facing), 0, -MathF.Sin(wolf.Facing));
-        foreach (var sign in new[] { -1f, 1f })
+        for (var n = 0; n < count; n++)
         {
+            var sign = (n % 2 == 0 ? -1f : 1f) * (1 + n / 2);
             var clone = new Enemy
             {
                 Id = _nextEnemyId++,
                 Type = type,
-                Home = wolf.Home with { Types = new[] { "shadow_clone" }, RespawnTicks = int.MaxValue },
+                Home = wolf.Home with { Types = new[] { kind }, RespawnTicks = int.MaxValue, Night = false },
                 SummonedBy = wolf.Id,
-                LifeTicks = CloneLifeTicks,
+                LifeTicks = life,
             };
             clone.Reset(_random, _world);
             var spot = wolf.Position + side * sign * CloneSpread;

@@ -1,0 +1,88 @@
+{
+  "npc": "cache_archive_vault",
+  "entries": [
+    {
+      "when": {
+        "flag": "cache.cache_archive_vault"
+      },
+      "node": "empty"
+    },
+    {
+      "when": {
+        "not": {
+          "item": {
+            "id": "drowned_key"
+          }
+        }
+      },
+      "node": "locked"
+    },
+    {
+      "node": "closed"
+    }
+  ],
+  "nodes": {
+    "locked": {
+      "text": "The lock is shaped like an Auren rune. Old Tobb says the Auren threw their keys into Mirror Lake; maybe the lake still has this one.",
+      "options": [
+        {
+          "text": "Leave it."
+        }
+      ]
+    },
+    "closed": {
+      "text": "An old iron-bound chest with a lock of white stone set in its lid, cut like a rune. No pick will turn it; it wants its own key.",
+      "options": [
+        {
+          "text": "Open it.",
+          "effects": [
+            {
+              "take": {
+                "item": "drowned_key",
+                "count": 1
+              }
+            },
+            {
+              "setFlag": "cache.cache_archive_vault"
+            },
+            {
+              "gold": 220
+            },
+            {
+              "give": {
+                "item": "rune_core",
+                "count": 1
+              }
+            },
+            {
+              "give": {
+                "item": "healing_potion",
+                "count": 2
+              }
+            }
+          ],
+          "next": "found"
+        },
+        {
+          "text": "Leave it."
+        }
+      ]
+    },
+    "found": {
+      "text": "Inside, wrapped in oilcloth: the Archive's last treasury: Auren silver, a rune core and two flasks of a healer's draught, sealed in wax.",
+      "options": [
+        {
+          "text": "Take it all."
+        }
+      ]
+    },
+    "empty": {
+      "text": "The chest stands open and empty. Someone got here first. You did.",
+      "options": [
+        {
+          "text": "Leave"
+        }
+      ]
+    }
+  }
+}

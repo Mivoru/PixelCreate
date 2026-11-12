@@ -20,7 +20,7 @@ public sealed record EnemyDef(
     float AlertRange = 0f, float TagHeight = 0f, GearTable? Gear = null, int Defense = 0, string? Behavior = null,
     bool Leader = false, bool Statue = false, float FrontGuard = 1f, float BackBonus = 1f,
     float EnrageAt = 0f, float EnrageWindup = 1f, float EnrageRecover = 1f, float EnrageTaken = 1f, bool Decoy = false,
-    bool Shells = false)
+    bool Shells = false, bool Boss = false, string KillFlag = "")
 {
     private static readonly Lazy<IReadOnlyList<EnemyDef>> Loaded = new(Load);
 

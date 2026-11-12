@@ -549,6 +549,17 @@ public static class ZoneView
             root.AddChild(new OmniLight3D { Position = new Vector3(x, 3.2f, z), LightColor = new Color("2ce8f5"), LightEnergy = 1.6f, OmniRange = 11f });
         }
 
+        // The deep archive: the stair, the stacks, the Keeper's ring of pillars; a warm glow in the hidden vault and
+        // daylight falling into the alcove behind the Keeper's gate.
+        foreach (var (x, z) in new[] { (560f, -27f), (560f, -34f), (548f, -42f), (572f, -42f), (560f, -52f), (548f, -62.5f), (572f, -64f),
+                     (560f, -72f), (560f, -91.5f), (550f, -86f), (570f, -86f), (550f, -97f), (570f, -97f) })
+        {
+            root.AddChild(new OmniLight3D { Position = new Vector3(x, 3.2f, z), LightColor = new Color("2ce8f5"), LightEnergy = 1.6f, OmniRange = 11f });
+        }
+
+        root.AddChild(new OmniLight3D { Position = new Vector3(586f, 2.6f, -52.4f), LightColor = new Color("ffb070"), LightEnergy = 1.5f, OmniRange = 9f });
+        root.AddChild(new OmniLight3D { Position = new Vector3(560f, 5.5f, -110f), LightColor = new Color("fff1d0"), LightEnergy = 2.6f, OmniRange = 9f });
+
         // The Goblin Warren's torches, besides its two fires.
         foreach (var (x, z) in new[] { (625f, -14.6f), (649f, -14.6f), (617.4f, 7f), (662.6f, -7f), (631f, 14.6f),
                      (705f, -14.6f), (729f, -14.6f), (697.4f, 7f), (742.6f, -7f), (711f, 14.6f) })

@@ -1269,11 +1269,19 @@ public partial class GameClient : Node
             : nearest is { Role: Waystones.Role } stone ? $"[E] Touch the {stone.Name}"
             : nearest is { Role: "hearth" } fire ? $"[E] Cook at the {fire.Name}"
             : nearest is { Role: "fishing" } ? "[E] Cast a line"
+            : nearest is { Role: "secret" } ? "[E] Touch the glyph"
             : nearest is { } target ? $"[E] Talk to {target.Name}" : "";
         if (_hud.DialogOpen && nearest is null && !_hud.SceneDialog)
         {
             _hud.CloseDialog();
         }
+
+        // A boss that fights the player gets its bar at the top of the screen.
+        var me = _client.State.Position;
+        _hud.Boss = _client.Latest is not { } bossView ? null : bossView.Enemies
+            .Where(e => EnemyDef.All[e.Type].Boss && e.Fighting && e.Health > 0 && System.Numerics.Vector3.Distance(e.Position, me) < 45f)
+            .Select(e => ((string Name, float Share, bool Enraged)?)(EnemyDef.All[e.Type].Name, e.Health / (float)Math.Max((short)1, e.MaxHealth), e.Enraged))
+            .FirstOrDefault();
 
         if (_castAt > 0)
         {

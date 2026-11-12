@@ -1,5 +1,7 @@
 {
   "guild.registered": "I signed with the Adventurers Guild in Hearthmere. Rank F: the board's jobs are mine.",
   "rank.e": "I beat Rhea in the yard. Rank E.",
-  "rank.d": "Rhea fought me at full strength this time, and I still won. Rank D."
+  "rank.d": "Rhea fought me at full strength this time, and I still won. Rank D.",
+  "archive.secret": "A warm glyph in a cracked wall of the Flooded Stacks opened a hidden vault in the Sunken Archive. Its strongbox wants an Auren key.",
+  "archive.keeper": "I brought down the Keeper in the deepest hall of the Sunken Archive. Its gate opened on a way back up to Silver Falls."
 }

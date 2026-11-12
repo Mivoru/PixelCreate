@@ -22,7 +22,7 @@ public class BalanceReport
         }
 
         var rows = new List<(int Level, string Line)>();
-        foreach (var def in EnemyDef.All.Where(d => d.Temper == "hostile" && !d.Decoy && !Guild.IsExaminer(d.Id) && d.Id != "shadow_clone" && d.Id != "gallows_crow"))
+        foreach (var def in EnemyDef.All.Where(d => d.Temper == "hostile" && !d.Decoy && !Guild.IsExaminer(d.Id) && d.Id != "shadow_clone" && d.Id != "page_wisp" && d.Id != "gallows_crow"))
         {
             var level = Math.Max(1, def.MinLevel);
             var blow = OneBlow(def.Id, (byte)level);

@@ -315,6 +315,7 @@ public partial class Hud : Control
     /// <summary>Swaps the options of the open conversation without starting its text again.</summary>
     public void ReplaceOptions(DialogChoice[] options) => _dialogOptions = options;
 
+
     public void CloseDialog()
     {
         _dialogName = "";
@@ -863,6 +864,7 @@ public partial class Hud : Control
         DrawStatus();
         DrawHotbar();
         DrawGuide();
+        DrawBossBar();
         DrawTutorial();
         DrawLootFeed();
         if (ShowPosition)
@@ -1499,6 +1501,25 @@ public partial class Hud : Control
             Card(rect, 17, new Color(0.2f, 0.35f, 0.1f, 0.8f));
             Label(label, rect.Position + new Vector2(16, 23), 16, new Color("c8f59a"), _bold);
         }
+    }
+
+    /// <summary>The boss the player fights (name, health share, enraged), shown as a wide bar at the top; null when none.</summary>
+    public (string Name, float Share, bool Enraged)? Boss;
+
+    private void DrawBossBar()
+    {
+        if (Boss is not { } boss)
+        {
+            return;
+        }
+
+        var width = Mathf.Min(720f, Size.X * 0.42f);
+        var rect = new Rect2((Size.X - width) / 2f, 30, width, 18);
+        var name = boss.Enraged ? $"{boss.Name}  (enraged)" : boss.Name;
+        Label(name, new Vector2((Size.X - Width(name, 20, _bold)) / 2f, rect.Position.Y - 6), 20, boss.Enraged ? new Color("ff8a6a") : Text, _bold, true);
+        Rounded(new Rect2(rect.Position - new Vector2(3, 3), rect.Size + new Vector2(6, 6)), 6, new Color(0, 0, 0, 0.65f), Colors.Transparent, 0);
+        Rounded(new Rect2(rect.Position, new Vector2(rect.Size.X * Mathf.Clamp(boss.Share, 0f, 1f), rect.Size.Y)), 4,
+            boss.Enraged ? new Color("e43b44") : new Color("b8304a"), Colors.Transparent, 0);
     }
 
     private void DrawGuide()

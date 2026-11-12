@@ -1,0 +1,58 @@
+{
+  "npc": "cache_archive_satchel",
+  "entries": [
+    {
+      "when": {
+        "flag": "cache.cache_archive_satchel"
+      },
+      "node": "empty"
+    },
+    {
+      "node": "closed"
+    }
+  ],
+  "nodes": {
+    "closed": {
+      "text": "A scribe's chest under the reading desk, its leather gone hard as wood.",
+      "options": [
+        {
+          "text": "Open it.",
+          "effects": [
+            {
+              "setFlag": "cache.cache_archive_satchel"
+            },
+            {
+              "gold": 60
+            },
+            {
+              "give": {
+                "item": "wisp_ember",
+                "count": 2
+              }
+            }
+          ],
+          "next": "found"
+        },
+        {
+          "text": "Leave it."
+        }
+      ]
+    },
+    "found": {
+      "text": "Inside, wrapped in oilcloth: a purse of old coin and two cold blue embers in a jar.",
+      "options": [
+        {
+          "text": "Take it all."
+        }
+      ]
+    },
+    "empty": {
+      "text": "The chest stands open and empty. Someone got here first. You did.",
+      "options": [
+        {
+          "text": "Leave"
+        }
+      ]
+    }
+  }
+}

@@ -278,6 +278,163 @@ def waystone(h):
         h.blob(f"moss{i}", (math.cos(i * 2.1) * 0.9, math.sin(i * 2.1) * 0.9, 0.25), 0.2, "moss", 671 + i, 0.4, 1)
 
 
+# --- The deep archive (design/dungeon-archive.md): the stair, the flooded stacks, the vault and the Keeper's hall ----
+# The deep floor and ceiling are one piece each, placed at game (560, -66.5); deep() turns game x, z into the piece's
+# Blender x, y so the details below can be written in the zone's own numbers.
+DEEP_X, DEEP_Z = 560.0, -66.5
+DEEP_W, DEEP_D = 42.0, 91.0
+
+
+def deep(x, z):
+    return x - DEEP_X, -(z - DEEP_Z)
+
+
+def archive_arch(h):
+    """Twelve metres of the hall's wall with a doorway four metres wide in the middle: jambs, a lintel of long blocks
+    with a keystone, and a line of runes over it. The opening is clear to the floor."""
+    thick = 0.8
+    for side in (-1, 1):
+        cx = side * 4.0
+        h.box("plinth", (cx, 0, 0.3), (4.0, thick + 0.2, 0.6), "auren_dark")
+        h.box("wall", (cx, 0, HALL_H / 2), (4.0, thick, HALL_H), "auren")
+        for k in range(1, 7):
+            h.box("course", (cx, -thick / 2 - 0.01, k * 0.92), (4.0, 0.03, 0.06), "auren_dark")
+        h.box("jamb", (side * 2.25, -thick / 2 - 0.12, 2.1), (0.5, 0.3, 4.2), "auren_dark")
+        h.box("jamb_base", (side * 2.25, -thick / 2 - 0.16, 0.2), (0.7, 0.4, 0.4), "auren_dark")
+        h.box("pilaster", (side * 5.7, -thick / 2 - 0.15, HALL_H / 2), (0.6, 0.3, HALL_H), "auren_dark")
+        h.box("rune_band", (cx + side * 0.3, -thick / 2 - 0.03, 4.6), (2.4, 0.04, 0.16), "rune")
+        h.blob("moss", (side * 3.2, -thick / 2 - 0.1, 0.1), 0.35, "moss", 570 + side, 0.4, 1)
+    h.box("lintel_wall", (0, 0, (HALL_H + 4.2) / 2), (4.0, thick, HALL_H - 4.2), "auren")
+    for i in range(5):
+        h.box("voussoir", (-1.6 + i * 0.8, -thick / 2 - 0.1, 4.45), (0.74, 0.3, 0.5), "auren_dark")
+    h.box("keystone", (0, -thick / 2 - 0.16, 4.6), (0.6, 0.36, 0.8), "auren")
+    h.box("keystone_rune", (0, -thick / 2 - 0.35, 4.6), (0.22, 0.04, 0.36), "rune")
+    for i in range(6):
+        h.box("glyph", (-1.25 + i * 0.5, -thick / 2 - 0.04, 5.25), (0.16, 0.04, 0.24), "rune")
+
+
+def archive_secret_wall(h):
+    """A six metre stretch of wall like the others, but cracked from floor to vault, its niche empty, and in the niche
+    one glyph that glows warmer than the runes round it. Touched, it is gone (a prop with "unless")."""
+    rng = random.Random(580)
+    length, thick = 6.0, 0.8
+    h.box("plinth", (0, 0, 0.3), (length, thick + 0.2, 0.6), "auren_dark")
+    h.box("wall", (0, 0, HALL_H / 2), (length, thick, HALL_H), "auren")
+    for k in range(1, 7):
+        h.box("course", (0, -thick / 2 - 0.01, k * 0.92), (length, 0.03, 0.06), "auren_dark")
+    for x in (-length / 2 + 0.3, length / 2 - 0.3):
+        h.box("pilaster", (x, -thick / 2 - 0.15, HALL_H / 2), (0.6, 0.3, HALL_H), "auren_dark")
+    h.box("niche", (0, -thick / 2 + 0.02, 2.1), (3.2, 0.06, 2.8), "cave_dark")
+    h.box("niche_head", (0, -thick / 2 - 0.12, 3.65), (3.6, 0.3, 0.3), "auren_dark")
+    # The crack: a jagged dark line of short slanted pieces up the wall.
+    z, x = 0.6, 0.4
+    while z < HALL_H - 0.4:
+        nx = x + rng.uniform(-0.35, 0.35)
+        h.timber("crack", (x, -thick / 2 - 0.02, z), (nx, -thick / 2 - 0.02, z + 0.5), 0.05, "cave_dark")
+        x, z = nx, z + 0.5
+    h.box("glyph_frame", (0, -thick / 2 - 0.05, 2.0), (0.7, 0.06, 0.9), "auren_dark")
+    h.box("glyph", (0, -thick / 2 - 0.09, 2.0), (0.36, 0.04, 0.56), "ember")
+    h.box("glyph_bar", (0, -thick / 2 - 0.1, 2.0), (0.12, 0.04, 0.7), "ember")
+    h.box("rune_band", (0, -thick / 2 - 0.03, 4.6), (length - 1.4, 0.04, 0.16), "rune")
+    for i in range(3):
+        h.blob("rubble", (rng.uniform(-2.4, 2.4), -thick / 2 - 0.3, 0.1), rng.uniform(0.15, 0.3), "auren_wet", 581 + i, 0.6, 1)
+
+
+def archive_gate(h):
+    """The Keeper's gate: four metres of heavy Auren bars between two rune posts, closing the doorway of an arch.
+    Solid while it stands; it is gone once the Keeper falls (a prop with "unless")."""
+    for side in (-1, 1):
+        h.box("post", (side * 2.0, 0, 2.1), (0.3, 0.5, 4.2), "auren_dark")
+        h.box("post_rune", (side * 2.0, -0.27, 2.4), (0.12, 0.04, 1.4), "rune")
+    for i in range(7):
+        h.box("bar", (-1.5 + i * 0.5, 0, 2.05), (0.16, 0.16, 4.1), "auren")
+    for z in (0.5, 2.0, 3.6):
+        h.box("rail", (0, 0, z), (3.8, 0.24, 0.2), "auren_dark")
+    h.box("seal", (0, -0.16, 2.0), (0.8, 0.12, 0.8), "auren_dark")
+    h.box("seal_rune", (0, -0.24, 2.0), (0.4, 0.04, 0.4), "rune")
+
+
+def archive_deep_floor(h):
+    """The floor of the deep archive in one piece: worn slabs, the water channel down the stair, two black pools in
+    the stacks, a ring of runes round the middle of the Keeper's hall, pages and rubble."""
+    rng = random.Random(590)
+    h.box("base", (0, 0, -0.25), (DEEP_W + 2, DEEP_D, 0.5), "auren_dark")
+    for i in range(int(DEEP_W / 2)):
+        for j in range(int(DEEP_D / 2)):
+            x = -DEEP_W / 2 + 1 + i * 2
+            y = -DEEP_D / 2 + 1 + j * 2
+            h.box("slab", (x, y, 0.0), (1.92, 1.92, 0.04), rng.choice(("auren", "auren", "auren_dark", "auren_wet")))
+    x, y = deep(560, -28.5)
+    h.box("water", (x, y, 0.03), (1.2, 15, 0.01), "deep_water")
+    for side in (-1, 1):
+        h.box("kerb", (x + side * 0.75, y, 0.06), (0.3, 15, 0.12), "auren_dark")
+    for (gx, gz, w, d) in ((550, -48, 5, 3.4), (571, -61, 4.4, 3.0)):
+        x, y = deep(gx, gz)
+        h.box("pool_rim", (x, y, 0.025), (w + 0.5, d + 0.5, 0.01), "auren_wet")
+        h.box("pool", (x, y, 0.035), (w, d, 0.01), "deep_water")
+    cx, cy = deep(560, -91)
+    for i in range(36):
+        a = i * math.tau / 36
+        h.box("ring_rune", (cx + math.cos(a) * 6.5, cy + math.sin(a) * 6.5, 0.04), (0.18, 0.5, 0.02), "rune")
+    for i in range(12):
+        a = i * math.tau / 12
+        h.box("ring_spoke", (cx + math.cos(a) * 3.6, cy + math.sin(a) * 3.6, 0.04), (0.12, 0.9, 0.02), "auren_dark")
+    for i in range(40):
+        h.box("page", (rng.uniform(-19, 19), rng.uniform(-44, 44), 0.035), (0.3, 0.22, 0.01), "page")
+    for i in range(18):
+        h.blob("rubble", (rng.uniform(-19, 19), rng.uniform(-44, 44), 0.05), rng.uniform(0.15, 0.35), "auren_wet", 600 + i, 0.6, 1)
+
+
+def archive_deep_ceiling(h):
+    """The vault over the deep archive: a slab on ribs, with roots hanging through."""
+    rng = random.Random(591)
+    h.box("vault", (0, 0, HALL_H + 0.1), (DEEP_W + 4, DEEP_D + 2, 1.0), "auren_wet")
+    for j in range(16):
+        h.box("rib", (0, -DEEP_D / 2 + 3 + j * (DEEP_D - 6) / 15, HALL_H - 0.2), (DEEP_W, 0.7, 0.5), "auren_dark")
+    for i in range(30):
+        x, y = rng.uniform(-19, 19), rng.uniform(-44, 44)
+        length = rng.uniform(0.8, 2.6)
+        h.timber("root", (x, y, HALL_H), (x + rng.uniform(-0.3, 0.3), y + rng.uniform(-0.3, 0.3), HALL_H - length), 0.06, "bark_dark")
+
+
+def archive_vault_floor(h):
+    """The hidden vault's floor, fourteen by eight metres: older, smaller slabs and a faded mosaic of a key."""
+    rng = random.Random(592)
+    h.box("base", (0, 0, -0.25), (15, 9, 0.5), "auren_dark")
+    for i in range(14):
+        for j in range(8):
+            h.box("slab", (-6.5 + i, -3.5 + j, 0.0), (0.94, 0.94, 0.04), rng.choice(("auren", "auren_dark", "auren_wet")))
+    h.box("mosaic_bow", (2.5, 0, 0.03), (1.4, 1.4, 0.01), "rune")
+    h.box("mosaic_hole", (2.5, 0, 0.035), (0.6, 0.6, 0.01), "auren_dark")
+    h.box("mosaic_shaft", (0.6, 0, 0.03), (2.6, 0.3, 0.01), "rune")
+    h.box("mosaic_bit", (-0.5, -0.35, 0.03), (0.3, 0.5, 0.01), "rune")
+
+
+def archive_vault_ceiling(h):
+    """A low slab over the hidden vault, cracked, with one root through it."""
+    h.box("vault", (0, 0, HALL_H + 0.1), (16, 10, 1.0), "auren_wet")
+    for x in (-4, 0, 4):
+        h.box("rib", (x, 0, HALL_H - 0.2), (0.6, 8, 0.5), "auren_dark")
+    h.timber("root", (1.0, 1.0, HALL_H), (1.2, 0.8, HALL_H - 2.0), 0.07, "bark_dark")
+
+
+def keeper_plinth(h):
+    """The low plinth the Keeper stands on until it wakes: two shallow steps of white stone with runes round the top
+    one. Non-solid (Zone.NonSolid), so the Keeper can stand on it and step off."""
+    h.box("step_low", (0, 0, 0.1), (3.6, 3.0, 0.2), "auren_dark")
+    h.box("step_top", (0, 0.2, 0.25), (2.8, 2.2, 0.1), "auren")
+    for i in range(8):
+        h.box("rune", (-1.2 + i * 0.34, -0.92, 0.31), (0.18, 0.04, 0.03), "rune")
+
+
+def archive_light_shaft(h):
+    """Daylight falling into the alcove behind the Keeper's gate from a crack far above: a patch of lit floor with
+    ferns in it (the client adds the light), the way back up to Silver Falls."""
+    h.box("lit_floor", (0, 0, 0.03), (3.0, 3.0, 0.01), "page")
+    for i, (x, y) in enumerate(((-0.9, 0.6), (0.8, 0.9), (0.2, -0.8))):
+        h.blob(f"fern{i}", (x, y, 0.15), 0.3, "foliage_bush", 620 + i, 0.6, 1)
+
+
 BUILDERS = {
     "waystone": waystone,
     "warren_floor": warren_floor,
@@ -293,6 +450,15 @@ BUILDERS = {
     "archive_pillar": archive_pillar,
     "archive_lectern": archive_lectern,
     "archive_cave": archive_cave,
+    "archive_arch": archive_arch,
+    "archive_secret_wall": archive_secret_wall,
+    "archive_gate": archive_gate,
+    "archive_deep_floor": archive_deep_floor,
+    "archive_deep_ceiling": archive_deep_ceiling,
+    "archive_vault_floor": archive_vault_floor,
+    "archive_vault_ceiling": archive_vault_ceiling,
+    "keeper_plinth": keeper_plinth,
+    "archive_light_shaft": archive_light_shaft,
 }
 
 

@@ -150,7 +150,8 @@ public class WispTests
     [Fact]
     public void EveryWispCamp_IsOutAtNight_WithItsStandingStones()
     {
-        var camps = Valley.World.EnemySpawns.Where(s => s.Types?.Any(t => EnemyDef.All.First(d => d.Id == t).Kind == "wisp") == true).ToList();
+        // Underground (the deep archive) the wisps never see the sun, so they are out at any hour.
+        var camps = Valley.World.EnemySpawns.Where(s => s.Center.X < Guild.InteriorX && s.Types?.Any(t => EnemyDef.All.First(d => d.Id == t).Kind == "wisp") == true).ToList();
         Assert.NotEmpty(camps);
         Assert.All(camps, c => Assert.True(c.Night, "a wisp camp that is out by day"));
         Assert.All(camps, c => Assert.True(c.Wards is { Length: >= 3 }, "a wisp camp without its standing stones"));

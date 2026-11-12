@@ -269,6 +269,30 @@
      }
     },
     {
+     "text": "The Keeper Below (Wren): bring down the Keeper in the deepest hall of the Sunken Archive. 500 gold, once only",
+     "effects": [
+      {
+       "quest": {
+        "start": "keeper_below"
+       }
+      }
+     ],
+     "when": {
+      "all": [
+       {
+        "level": {
+         "min": 8
+        }
+       },
+       {
+        "quest": {
+         "keeper_below": "none"
+        }
+       }
+      ]
+     }
+    },
+    {
      "text": "Into the Warren (Corwin Hale): kill 2 goblin brutes in the Goblin Warren. 240 gold",
      "effects": [
       {
