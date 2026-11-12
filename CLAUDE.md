@@ -257,7 +257,10 @@ Rules:
   breaks the bars, the player jumps out, takes Hanne's Shortsword where she fell (`hannes_shortsword`, the wooden
   sword's numbers) and finishes the wounded goblins. `prologue.done` is set then; the quest `prologue_fallen` points to
   Mira, whose "Sign me up." registers the player (action `register`) and completes it. Rhea's trial is the step to rank
-  E from level `GameServer.RankTrialLevel` (5; flag `rank.e`); a lost trial leaves the player registered.
+  E from level `GameServer.RankTrialLevel` (5; flag `rank.e`); a lost trial leaves the player registered. Rank D
+  comes from level `GameServer.RankDTrialLevel` (9) after rank E: Mira offers it (action `beginTrialD`) and Rhea
+  fights at full strength (`guild_examiner_d`, level 10, an air slash added; numbers are guesses; flag `rank.d`).
+  `Guild.IsExaminer` covers both forms. Enemies may have up to eight abilities (`Enemy._cooldowns`).
   `scripts/prologue.ps1` plays it with `PIXEL_BOT=prologue` against a throwaway save and passes on `BOT done`;
   `-Contrary` plays the flight from the finders (`PIXEL_CONTRARY=flee`). `-Steps` prints every scene step.
   Keep the ruins camp and patrol away from the ambush on the road at (71.5, 72): level 4 goblins joined the first fight.

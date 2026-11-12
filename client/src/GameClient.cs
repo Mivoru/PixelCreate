@@ -2439,7 +2439,7 @@ public partial class GameClient : Node
         }
 
         var lesson = Array.FindIndex(Tutorial.Lessons, l => !story.Has(l.Flag));
-        var examiner = snapshot.Enemies.Where(e => EnemyDef.All[e.Type].Id == Guild.ExaminerId).Cast<EnemyView?>().FirstOrDefault();
+        var examiner = snapshot.Enemies.Where(e => Guild.IsExaminer(EnemyDef.All[e.Type].Id)).Cast<EnemyView?>().FirstOrDefault();
         if (lesson < 0 || examiner is not { } rhea)
         {
             BotStage("wait for Rhea's last word");

@@ -831,7 +831,7 @@ public sealed class EnemyTests
     {
         Assert.Equal(new[] { "Common", "Rare", "Epic", "Legendary" }, Crystals.All.Select(c => c.Rarity.ToString()));
         Assert.True(Crystals.All.Zip(Crystals.All.Skip(1)).All(p => p.First.Weight < p.Second.Weight));
-        Assert.All(EnemyDef.All.Where(d => d.Id != Guild.ExaminerId && d.Id != "shadow_clone" && !d.Decoy && d.Temper != "passive"), def => Assert.NotEmpty(def.Drops!));
+        Assert.All(EnemyDef.All.Where(d => !Guild.IsExaminer(d.Id) && d.Id != "shadow_clone" && !d.Decoy && d.Temper != "passive"), def => Assert.NotEmpty(def.Drops!));
     }
 
     [Fact]
@@ -1032,6 +1032,41 @@ public sealed class GuildTests
         Run(server, client, network, 60 * 90);
         Assert.Equal(GuildRank.Adventurer, server.GetRank(1));
         Assert.False(server.StoryState.Has("rank.e"));
+        Assert.DoesNotContain(server.Enemies, e => e.TrialOf == 1);
+    }
+
+    [Fact]
+    public void RankD_IsOfferedFromLevelNine_AfterRankE_AndBeatingRheaAtFullStrength_MakesIt()
+    {
+        var (server, client, network, _) = Start();
+        Promote(server, client, network);
+        var take = Option("mira", "Take Rhea's trial for rank D");
+
+        // Rank E first.
+        server.SetLevel(1, (byte)GameServer.RankDTrialLevel);
+        Run(server, client, network, 12, Command.Choose, Buttons.None, take);
+        Assert.DoesNotContain(server.Enemies, e => e.TrialOf == 1);
+
+        // Level nine next.
+        server.StoryState.SetFlag("rank.e");
+        server.SetLevel(1, (byte)(GameServer.RankDTrialLevel - 1));
+        Run(server, client, network, 12, Command.Choose, Buttons.None, take);
+        Assert.DoesNotContain(server.Enemies, e => e.TrialOf == 1);
+
+        // At level nine Mira opens with the offer.
+        server.SetLevel(1, (byte)GameServer.RankDTrialLevel);
+        Run(server, client, network, 12, Command.Choose, Buttons.None, Option("mira", "Take the trial.", "rank_trial_d"));
+        var examiner = server.Enemies.Single(e => e.TrialOf == 1);
+        Assert.Equal(Guild.ExaminerDId, examiner.Def.Id);
+        Assert.Equal(10, examiner.Level);
+        Assert.Equal(GuildRank.InTrial, server.GetRank(1));
+
+        server.EnemiesFrozen = true;
+        examiner.Health = 1;
+        examiner.Position = server.GetPlayer(1)!.Value.Position + new Vector3(0, 0, -2);
+        Run(server, client, network, 30, Command.None, Buttons.Light);
+        Assert.Equal(GuildRank.Adventurer, server.GetRank(1));
+        Assert.True(server.StoryState.Has("rank.d"));
         Assert.DoesNotContain(server.Enemies, e => e.TrialOf == 1);
     }
 

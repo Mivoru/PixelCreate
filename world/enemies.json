@@ -160,6 +160,19 @@
     "drops": []
   },
   {
+    "id": "guild_examiner_d", "name": "Examiner Rhea", "kind": "human", "weapon": "sword", "behavior": "duelist", "defense": 7,
+    "minLevel": 10, "maxLevel": 10, "health": 640, "healthPerLevel": 0, "speed": 5.8, "size": 1.0,
+    "aggroRange": 40, "preferredRange": 2,
+    "abilities": [
+      { "effect": "melee", "range": 2.4, "windupTicks": 17, "recoverTicks": 18, "cooldownTicks": 45, "damage": 18, "radius": 1.6 },
+      { "effect": "combo", "range": 2.6, "windupTicks": 16, "recoverTicks": 28, "cooldownTicks": 260, "damage": 14, "radius": 1.7, "telegraph": "circle" },
+      { "effect": "dashStrike", "range": 9, "minRange": 3.5, "windupTicks": 26, "recoverTicks": 24, "cooldownTicks": 200, "damage": 24, "radius": 1.8, "telegraph": "line" },
+      { "effect": "airSlash", "range": 8, "minRange": 4, "windupTicks": 34, "recoverTicks": 24, "cooldownTicks": 240, "damage": 22, "telegraph": "line" },
+      { "effect": "slam", "range": 3.4, "windupTicks": 42, "recoverTicks": 32, "cooldownTicks": 280, "damage": 32, "radius": 2, "telegraph": "circle" }
+    ],
+    "drops": []
+  },
+  {
     "id": "goblin_shaman", "behavior": "support", "name": "Goblin Shaman", "kind": "goblin", "weapon": "staff", "rare": true,
     "minLevel": 7, "maxLevel": 7, "health": 240, "healthPerLevel": 30, "speed": 3.6, "size": 1.0,
     "aggroRange": 16, "preferredRange": 10,

@@ -1751,6 +1751,11 @@ public sealed partial class GameServer : IEnemyEvents
             case "beginTrial" when player.Rank == GuildRank.Adventurer && player.Level >= RankTrialLevel && !_story.Has("rank.e") && Near(player, "receptionist"):
                 BeginTrial(player);
                 break;
+            // The trial to rank D: Rhea again, at full strength, from level nine.
+            case "beginTrialD" when player.Rank == GuildRank.Adventurer && player.Level >= RankDTrialLevel && _story.Has("rank.e") && !_story.Has("rank.d") &&
+                                   Near(player, "receptionist"):
+                BeginTrial(player, Guild.ExaminerDId);
+                break;
             case "sellCrystals" when player.Rank == GuildRank.Adventurer && Near(player, "receptionist"):
                 for (var i = 0; i < player.Crystals.Length; i++)
                 {
@@ -2242,6 +2247,9 @@ public sealed partial class GameServer : IEnemyEvents
     /// <summary>The level from which Mira offers Rhea's trial for rank E.</summary>
     public const int RankTrialLevel = 5;
 
+    /// <summary>The level from which Mira offers the trial to rank D.</summary>
+    public const int RankDTrialLevel = 9;
+
     /// <summary>Moves the calendar on, and runs the faction plans once an hour.</summary>
     private void StepCalendar()
     {
@@ -2372,18 +2380,18 @@ public sealed partial class GameServer : IEnemyEvents
         player.State.Velocity = Vector3.Zero;
     }
 
-    private void BeginTrial(Player player)
+    private void BeginTrial(Player player, string examinerId = Guild.ExaminerId)
     {
         player.Rank = GuildRank.InTrial;
         player.State.Health = MaxHealth(player);
         var ground = _world.TrialGround;
         Move(player, ground + new Vector3(0, 0, 7));
-        var type = (byte)EnemyDef.All.ToList().FindIndex(d => d.Id == Guild.ExaminerId);
+        var type = (byte)EnemyDef.All.ToList().FindIndex(d => d.Id == examinerId);
         var examiner = new Enemy
         {
             Id = _nextEnemyId++,
             Type = type,
-            Home = new EnemySpawn(ground, 2f, 1, 2, 2, int.MaxValue, false, new[] { Guild.ExaminerId }),
+            Home = new EnemySpawn(ground, 2f, 1, 2, 2, int.MaxValue, false, new[] { examinerId }),
             TrialOf = player.Id,
         };
         examiner.Reset(_random, _world);
@@ -3049,11 +3057,22 @@ public sealed partial class GameServer : IEnemyEvents
 
         if (enemy.TrialOf >= 0)
         {
-            // A registered adventurer who beats Rhea is rank E (the old start, a trial to register, is gone).
-            _story.SetFlag(_story.Has("guild.registered") ? "rank.e" : "guild.registered");
             killer.Rank = GuildRank.Adventurer;
-            killer.Gold += 60;
-            AwardXp(killer.Id, 150);
+            if (enemy.Def.Id == Guild.ExaminerDId)
+            {
+                // Rhea at full strength beaten: rank D.
+                _story.SetFlag("rank.d");
+                killer.Gold += 150;
+                AwardXp(killer.Id, 500);
+            }
+            else
+            {
+                // A registered adventurer who beats Rhea is rank E (the old start, a trial to register, is gone).
+                _story.SetFlag(_story.Has("guild.registered") ? "rank.e" : "guild.registered");
+                killer.Gold += 60;
+                AwardXp(killer.Id, 150);
+            }
+
             _finishedTrials.Add(enemy);
             return;
         }

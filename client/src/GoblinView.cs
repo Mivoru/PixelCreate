@@ -103,7 +103,7 @@ public sealed class GoblinView : IEnemyView
             _ => "7fb04a",
         });
         var clothes = new Color(cloth);
-        var look = def.Id == Guild.ExaminerId ? NpcLooks.Examiner : NpcLooks.Enemy(def.Id) ?? new RigLook(kind, skin, def.Size, def.Weapon)
+        var look = Guild.IsExaminer(def.Id) ? NpcLooks.Examiner : NpcLooks.Enemy(def.Id) ?? new RigLook(kind, skin, def.Size, def.Weapon)
         {
             Item = def.Kind == "sentinel" ? "sentinel_blade" : null,
             Palette = new System.Collections.Generic.Dictionary<string, Color>
@@ -288,7 +288,7 @@ public sealed class GoblinView : IEnemyView
         };
     }
 
-    private bool Female => _def.Id is "orc_spearwoman" or "orc_huntress" or "orc_spearcaller" or "bandit_archer" || _def.Id == Guild.ExaminerId;
+    private bool Female => _def.Id is "orc_spearwoman" or "orc_huntress" or "orc_spearcaller" or "bandit_archer" || Guild.IsExaminer(_def.Id);
 
     private void PlaySounds(in EnemyView enemy, Vector3 position, Sfx sfx)
     {

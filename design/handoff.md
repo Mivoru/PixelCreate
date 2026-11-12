@@ -117,7 +117,9 @@ Neověřeno hraním člověkem: vše výše jen boty, testy (385) a snímky. Sí
    (`tools/forge.py`): osm receptů z materiálů monster a zlata, výsledek je rare kus úrovně hráče (odhad). Tess má
    nově ženský hlas (Matilda, dřív omylem Roger). Byliny a houby: Meadow Sage (louky kolem Hearthmere),
    Glowcap (Whispering Woods, Westwood, Greyfang) a Moonpetal (Stone Circle, Moonfell) rostou na místech z `gathers`,
-   sbírají se přejitím, dorostou za 10 minut; Wren z nich vaří lektvary (`tools/brew.py`). Zbývá: rybaření, rank D.
+   sbírají se přejitím, dorostou za 10 minut; Wren z nich vaří lektvary (`tools/brew.py`). Rank D: od úrovně 9 (po ranku E) nabídne Mira zkoušku,
+   Rhea bojuje naplno (úroveň 10, 640 životů, navíc vzdušný sek; čísla jsou odhad), výhra dá flag `rank.d`, 150 zl.
+   a 500 XP. Rank D zatím nic neodemyká (joby podle ranku nejsou). Zbývá: rybaření.
 6. [ ] Delší dungeon s bossem a skrytou cestou (Archive i Warren jsou dnes jedna síň).
 7. [x] Kvalita: hlídač zaseknutí klienta (zápis, co hra dělala), audit děr ve zbylých interiérech.
    Hlídač hotový (2026-11-12, `FreezeWatch.cs`): když klient 4 s nezačne snímek, zapíše do `client.log` řádek

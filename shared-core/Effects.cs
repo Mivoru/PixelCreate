@@ -23,7 +23,7 @@ public abstract class Effect
     /// <summary>The server actions an effect may name; anything else is a mistake in the data.</summary>
     public static readonly string[] Actions =
     {
-        "register", "beginTutorial", "endTutorial", "beginTrial", "sellCrystals", "sellLoot", "resetAttributes", "openChest", "sleep", "openShop:alchemist",
+        "register", "beginTutorial", "endTutorial", "beginTrial", "beginTrialD", "sellCrystals", "sellLoot", "resetAttributes", "openChest", "sleep", "openShop:alchemist",
     };
 
     /// <summary>Whether a name is a server action: one of <see cref="Actions"/>, or scene:&lt;id&gt; to start a scene.</summary>

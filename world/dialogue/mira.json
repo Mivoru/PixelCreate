@@ -259,6 +259,27 @@
    "node": "rank_trial"
   },
   {
+   "when": {
+    "all": [
+     {
+      "flag": "rank.e"
+     },
+     {
+      "level": {
+       "min": 9
+      }
+     },
+     {
+      "notFlag": "rank.d"
+     },
+     {
+      "notFlag": "trial_d.offered"
+     }
+    ]
+   },
+   "node": "rank_trial_d"
+  },
+  {
    "node": "default"
   }
  ],
@@ -521,6 +542,29 @@
      "effects": [
       {
        "action": "beginTrial"
+      }
+     ]
+    },
+    {
+     "text": "Take Rhea's trial for rank D",
+     "when": {
+      "all": [
+       {
+        "flag": "rank.e"
+       },
+       {
+        "level": {
+         "min": 9
+        }
+       },
+       {
+        "notFlag": "rank.d"
+       }
+      ]
+     },
+     "effects": [
+      {
+       "action": "beginTrialD"
       }
      ]
     },
@@ -1143,6 +1187,31 @@
     },
     {
      "text": "Goodbye"
+    }
+   ]
+  },
+  "rank_trial_d": {
+   "text": "Level nine, and still standing. Rank D is the next step, but Rhea won't go easy on you this time: she fights it at full strength, out in the yard. Beat her and you're D.",
+   "face": "smile",
+   "options": [
+    {
+     "text": "Take the trial.",
+     "effects": [
+      {
+       "setFlag": "trial_d.offered"
+      },
+      {
+       "action": "beginTrialD"
+      }
+     ]
+    },
+    {
+     "text": "Not yet.",
+     "effects": [
+      {
+       "setFlag": "trial_d.offered"
+      }
+     ]
     }
    ]
   }

@@ -21,7 +21,7 @@ public sealed partial class Enemy
 {
     private const int LungeTicks = 12;
     private const float LungeSpeed = 15f;
-    private readonly int[] _cooldowns = new int[4];
+    private readonly int[] _cooldowns = new int[8];
 
     /// <summary>The ability being used, while the action is Cast, Leap or Strike.</summary>
     public byte AbilityIndex;

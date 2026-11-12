@@ -74,6 +74,12 @@ public enum GuildRank : byte
 public static class Guild
 {
     public const string ExaminerId = "guild_examiner";
+
+    /// <summary>Rhea at full strength, for the trial to rank D.</summary>
+    public const string ExaminerDId = "guild_examiner_d";
+
+    /// <summary>Either of Rhea's trial forms: the same woman, look and voice.</summary>
+    public static bool IsExaminer(string id) => id is ExaminerId or ExaminerDId;
     public const float TalkRange = 3.6f;
     public const float DoorRange = 3f;
 
