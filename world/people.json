@@ -1982,5 +1982,65 @@
         "text": "Sit a while, love. The road will still be there."
       }
     ]
+  },
+  "dunn": {
+    "voice": {
+      "id": "pNInz6obpgDQGcFmaJgB",
+      "name": "Adam",
+      "stability": 0.55,
+      "similarity_boost": 0.75,
+      "style": 0.25
+    },
+    "moods": [],
+    "barks": [
+      {
+        "when": {
+          "time": {
+            "from": 0,
+            "to": 1439
+          }
+        },
+        "text": "East Watch. Orc smoke on the hills again. Keep your eyes open past here."
+      },
+      {
+        "when": {
+          "time": {
+            "from": 0,
+            "to": 1439
+          }
+        },
+        "text": "If you hear drums from the north-east, run. Don't ask, run."
+      }
+    ]
+  },
+  "pell": {
+    "voice": {
+      "id": "IKne3meq5aSn9XLyUdCD",
+      "name": "Charlie",
+      "stability": 0.45,
+      "similarity_boost": 0.75,
+      "style": 0.4
+    },
+    "moods": [],
+    "barks": [
+      {
+        "when": {
+          "time": {
+            "from": 0,
+            "to": 1439
+          }
+        },
+        "text": "Fire's warm, the watch is cold. Fair trade."
+      },
+      {
+        "when": {
+          "time": {
+            "from": 0,
+            "to": 1439
+          }
+        },
+        "text": "Six days out here and not one orc. I'm almost disappointed."
+      }
+    ]
   }
 }

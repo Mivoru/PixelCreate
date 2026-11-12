@@ -470,5 +470,39 @@
         "Then bring Rook."
       ]
     ]
+  },
+  {
+    "between": [
+      "dunn",
+      "pell"
+    ],
+    "when": {
+      "time": {
+        "from": 780,
+        "to": 900
+      }
+    },
+    "lines": [
+      [
+        "pell",
+        "Your watch, Dunn."
+      ],
+      [
+        "dunn",
+        "Anything?"
+      ],
+      [
+        "pell",
+        "A goat. Two crows. One very suspicious bush."
+      ],
+      [
+        "dunn",
+        "Did the bush move?"
+      ],
+      [
+        "pell",
+        "Not while I was looking."
+      ]
+    ]
   }
 ]

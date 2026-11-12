@@ -950,6 +950,25 @@ public static class NpcLooks
         },
     };
 
+    /// <summary>Dunn and Pell: the two watchmen of East Watch, in the valley guard's blue with spears of their own.</summary>
+    private static readonly RigLook Sentry = Guard with
+    {
+        Kind = "sentry", Weapon = "spear", Hair = "undercut", Mood = "neutral",
+        Palette = new Dictionary<string, Color>
+        {
+            ["anime_hair"] = new("2a2218"), ["anime_shirt"] = new("3a4a6a"), ["anime_cloak"] = new("2f4070"), ["anime_trousers"] = new("2e3040"),
+        },
+    };
+
+    private static readonly RigLook SentryB = Guard with
+    {
+        Kind = "sentry_b", Skin = new Color("c89070"), Hair = "topknot", Mood = "happy", Scale = 0.98f,
+        Palette = new Dictionary<string, Color>
+        {
+            ["anime_hair"] = new("1a1a1a"), ["anime_shirt"] = new("3a4a6a"), ["anime_cloak"] = new("2f4070"), ["anime_trousers"] = new("2e3040"),
+        },
+    };
+
     /// <summary>The look of a human enemy by its id, or null when it has none of its own.</summary>
     public static RigLook? Enemy(string id) => id switch
     {
@@ -967,7 +986,7 @@ public static class NpcLooks
         ("nell", Captive), ("haruto", Lost), ("vosk", FinderCaptain), ("gil", FinderGil), ("hanne", FinderHanne), ("corb", FinderCorb),
         ("corwin", BranchMaster), ("tam", Apprentice), ("edwin", PartySword), ("moss", PartyBow), ("fen", PartyHealer),
         ("rook", PartyShield), ("osric", Miller), ("anwen", MillerDaughter), ("hamm", FarmElder), ("maddy", FarmGirl),
-        ("tobias", Farmhand), ("oswin", Woodcutter), ("jory", WoodcutterB), ("tobb", Fisher), ("brin", Shepherd), ("marta", Innkeeper), ("aldous", Pilgrim), ("fennick", Peddler), ("bors", Quarryman), ("wilm", QuarrymanB), ("ollie", Child), ("bea", ChildB), ("greta", Gardener),
+        ("tobias", Farmhand), ("oswin", Woodcutter), ("jory", WoodcutterB), ("tobb", Fisher), ("brin", Shepherd), ("marta", Innkeeper), ("aldous", Pilgrim), ("fennick", Peddler), ("bors", Quarryman), ("wilm", QuarrymanB), ("ollie", Child), ("bea", ChildB), ("greta", Gardener), ("dunn", Sentry), ("pell", SentryB),
     };
 
     public static RigLook? For(string role) => role switch
@@ -1013,6 +1032,8 @@ public static class NpcLooks
         "child" => Child,
         "child_b" => ChildB,
         "gardener" => Gardener,
+        "sentry" => Sentry,
+        "sentry_b" => SentryB,
         _ => null,
     };
 }
@@ -1051,6 +1072,7 @@ public static class Dialogues
         "quarryman" or "quarryman_b" => "Quarryman",
         "child" or "child_b" => "Village Child",
         "gardener" => "Gardener",
+        "sentry" or "sentry_b" => "Watchman",
         "captive" => "Bonded Girl",
         "lost" => "Lightborn",
         "finder_captain" => "Finder Captain",
