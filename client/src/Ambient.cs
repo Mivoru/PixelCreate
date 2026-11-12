@@ -39,7 +39,11 @@ public partial class Ambient : Node3D
     private CpuParticles3D _butterflies = null!;
     private CpuParticles3D _pollen = null!;
     private CpuParticles3D _leaves = null!;
+    private CpuParticles3D _fireflies = null!;
     private float _time;
+
+    /// <summary>How dark it is, from 0 by day to 1 at night; the game sets it from the clock every frame.</summary>
+    public static float Night { get; set; }
 
     public Ambient(Zone zone)
     {
@@ -65,6 +69,14 @@ public partial class Ambient : Node3D
         _butterflies.ColorRamp = null;
         _pollen = Swarm(120, 9f, new Vector3(24, 6, 24), new BoxMesh { Size = Vector3.One * 0.035f }, new Color("fff6d0"), 0.25f, 0.05f);
         _leaves = Swarm(36, 8f, new Vector3(26, 9, 26), new BoxMesh { Size = new Vector3(0.11f, 0.015f, 0.08f) }, new Color("c8b048"), 0.9f, -0.75f);
+        // Fireflies: small glowing motes low over the grass after dark, drifting slowly.
+        _fireflies = Swarm(90, 6f, new Vector3(20, 1.4f, 20), new BoxMesh { Size = Vector3.One * 0.085f }, new Color("d8f86a"), 0.35f, 0.02f);
+        _fireflies.MaterialOverride = new StandardMaterial3D
+        {
+            AlbedoColor = new Color("d8f86a"), EmissionEnabled = true, Emission = new Color("c8f040"), EmissionEnergyMultiplier = 3f,
+            ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
+        };
+        _fireflies.Emitting = false;
         foreach (var prop in _zone.Props)
         {
             if (Chimneys.TryGetValue(prop.Model, out var top))
@@ -160,6 +172,12 @@ public partial class Ambient : Node3D
         _time += (float)delta;
         foreach (var flock in _flocks)
         {
+            // Birds roost at night.
+            foreach (var bird in flock.Birds)
+            {
+                bird.Body.Visible = Night < 0.5f;
+            }
+
             var angle = _time * flock.Speed;
             var lead = flock.Centre + new Vector3(Mathf.Cos(angle) * flock.Radius, flock.Height + Mathf.Sin(angle * 2.3f) * 3f, Mathf.Sin(angle) * flock.Radius);
             var heading = new Vector3(-Mathf.Sin(angle), 0, Mathf.Cos(angle));
@@ -183,9 +201,12 @@ public partial class Ambient : Node3D
 
             // Inside the Guild and the arena there is no meadow to fly over.
             var outside = around.X < _zone.Size / 2f;
-            _butterflies.Emitting = outside;
-            _pollen.Emitting = outside;
+            var night = Night > 0.5f;
+            _butterflies.Emitting = outside && !night;
+            _pollen.Emitting = outside && !night;
             _leaves.Emitting = outside;
+            _fireflies.GlobalPosition = around + new Vector3(0, -1.6f, 0);
+            _fireflies.Emitting = outside && night;
         }
     }
 }

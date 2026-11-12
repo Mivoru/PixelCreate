@@ -501,6 +501,8 @@ public partial class GameClient : Node
         if (_client.Latest is { } now && !PixelStage.Off("daytime"))
         {
             _stage.SetTime(now.Minute);
+            var hour = now.Minute / 60f;
+            Ambient.Night = hour >= 20.5f || hour < 5.5f ? 1f : 0f;
         }
 
         _stage.Underground = shown.X > ArchiveX ? 1f : 0f;
