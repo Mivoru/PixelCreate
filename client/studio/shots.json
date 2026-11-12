@@ -107,6 +107,8 @@
   { "name": "place_bandit_hollow", "eye": [10, 5, 190], "at": [-4, 1, 203] },
   { "name": "place_quarry", "eye": [158, 6, 74], "at": [147, 3, 54] },
   { "name": "village_south_end", "eye": [-2, 4, 52], "at": [-14, 1, 34] },
+  { "name": "mine_hall", "eye": [720, 2.4, 10], "at": [720, 1.2, -6] },
+  { "name": "mine_mouth", "eye": [148, 3, 60], "at": [148, 2, 49] },
   { "name": "place_woodcutters", "eye": [203, 5, 63], "at": [216, 2, 76] },
   { "name": "rim_corner", "eye": [120, 40, -120], "at": [300, 20, -300] },
   { "name": "hills_north", "eye": [60, 14, -170], "at": [26, 4, -130] },

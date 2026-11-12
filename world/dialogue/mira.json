@@ -229,6 +229,14 @@
   },
   {
    "when": {
+    "quest": {
+     "mine_goblins": "ready"
+    }
+   },
+   "node": "turn_in_mine_goblins"
+  },
+  {
+   "when": {
     "all": [
      {
       "rank": {
@@ -1094,6 +1102,33 @@
       {
        "quest": {
         "complete": "wanted_garrow"
+       }
+      }
+     ]
+    },
+    {
+     "text": "Sell all crystals ({crystalWorth} gold)",
+     "effects": [
+      {
+       "action": "sellCrystals"
+      }
+     ]
+    },
+    {
+     "text": "Goodbye"
+    }
+   ]
+  },
+  "turn_in_mine_goblins": {
+   "text": "Well done! Here is your pay for Goblins in the Mine: 180 gold.",
+   "face": "smile",
+   "options": [
+    {
+     "text": "Hand in the job",
+     "effects": [
+      {
+       "quest": {
+        "complete": "mine_goblins"
        }
       }
      ]

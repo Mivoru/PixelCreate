@@ -1,0 +1,58 @@
+{
+  "npc": "cache_mine",
+  "entries": [
+    {
+      "when": {
+        "flag": "cache.cache_mine"
+      },
+      "node": "empty"
+    },
+    {
+      "node": "closed"
+    }
+  ],
+  "nodes": {
+    "closed": {
+      "text": "A goblin's stash chest, wedged behind the stones at the end of the drift, half full of the quarry's tools.",
+      "options": [
+        {
+          "text": "Open it.",
+          "effects": [
+            {
+              "setFlag": "cache.cache_mine"
+            },
+            {
+              "gold": 80
+            },
+            {
+              "give": {
+                "item": "stone_scute",
+                "count": 2
+              }
+            }
+          ],
+          "next": "found"
+        },
+        {
+          "text": "Leave it."
+        }
+      ]
+    },
+    "found": {
+      "text": "Inside, wrapped in oilcloth: silver the goblins took off a carter, and a good leather jerkin.",
+      "options": [
+        {
+          "text": "Take it all."
+        }
+      ]
+    },
+    "empty": {
+      "text": "The chest stands open and empty. Someone got here first. You did.",
+      "options": [
+        {
+          "text": "Leave"
+        }
+      ]
+    }
+  }
+}

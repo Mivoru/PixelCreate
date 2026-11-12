@@ -309,6 +309,21 @@
      }
     },
     {
+     "text": "Goblins in the Mine (Bors): kill 4 goblins in Greystone Mine. 180 gold",
+     "effects": [
+      {
+       "quest": {
+        "start": "mine_goblins"
+       }
+      }
+     ],
+     "when": {
+      "level": {
+       "min": 5
+      }
+     }
+    },
+    {
      "text": "Back to the board",
      "next": "jobs"
     },

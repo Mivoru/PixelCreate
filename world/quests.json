@@ -796,5 +796,38 @@
         "route": false
       }
     ]
+  },
+  {
+    "id": "mine_goblins",
+    "name": "Goblins in the Mine",
+    "kind": "job",
+    "giver": "board",
+    "repeatable": true,
+    "brief": "kill 4 goblins in Greystone Mine",
+    "gold": 180,
+    "xp": 260,
+    "poster": "Bors, quarryman",
+    "place": "Greystone Mine under the quarry",
+    "journal": "Bors's notice: goblins have dug into the old drift under Greystone Quarry and carry off the blocks at night. Go down the hole at the foot of the cut face and clear them out.",
+    "steps": [
+      {
+        "text": "Go down the hole at the foot of Greystone Quarry's cut face and kill goblins in the mine.",
+        "goal": {
+          "kill": "goblin_*",
+          "count": 4
+        },
+        "at": [
+          720,
+          0
+        ]
+      },
+      {
+        "text": "Return to the Guild and report to Mira.",
+        "goal": {
+          "talk": "mira"
+        },
+        "route": false
+      }
+    ]
   }
 ]

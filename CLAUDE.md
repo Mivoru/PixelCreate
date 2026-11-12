@@ -289,7 +289,8 @@ Rules:
   x 560). Doors are portals; the zone audit's flood fill walks through them. Dungeons are built from pieces in
   `asset-pipeline/dungeons.py` (floor and ceiling non-solid, walls, shelves and pillars measured) and a ceiling wall
   box; past `ArchiveX` the client dims the light (`PixelStage.Underground`) and rune lamps glow (`ZoneView`). The
-  archive's way in is a cave mouth beside Silver Falls (-42, 134). The Goblin Warren (x 640, warm torches) is reached by
+  archive's way in is a cave mouth beside Silver Falls (-42, 134). Greystone Mine (x 720, the warren's shell with lanterns, goblins that raid the quarry, a stoneback, a cache) is
+  reached by a hole at the foot of the quarry's cut face (148, 49). The Goblin Warren (x 640, warm torches) is reached by
   a burrow just west of the goblin fort (70, -114). A dungeon platform must reach past every wall piece's corners, or
   `Zone.Settle` sinks the piece towards the terrain outside.
 - Character models come from Blender (`anime_*`) and use `toon.gdshader`, which also bends hair and cloth.

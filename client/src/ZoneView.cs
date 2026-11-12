@@ -528,9 +528,16 @@ public static class ZoneView
         }
 
         // The Goblin Warren's torches, besides its two fires.
-        foreach (var (x, z) in new[] { (625f, -14.6f), (649f, -14.6f), (617.4f, 7f), (662.6f, -7f), (631f, 14.6f) })
+        foreach (var (x, z) in new[] { (625f, -14.6f), (649f, -14.6f), (617.4f, 7f), (662.6f, -7f), (631f, 14.6f),
+                     (705f, -14.6f), (729f, -14.6f), (697.4f, 7f), (742.6f, -7f), (711f, 14.6f) })
         {
             root.AddChild(new OmniLight3D { Position = new Vector3(x, 2.8f, z), LightColor = new Color("ff9a48"), LightEnergy = 1.8f, OmniRange = 10f });
+        }
+
+        // Greystone Mine: miners' lanterns hang from the beams down the drift.
+        foreach (var (x, z) in new[] { (702f, 0f), (714f, -6f), (714f, 8f), (726f, 2f), (738f, -2f), (738f, 10f) })
+        {
+            root.AddChild(new OmniLight3D { Position = new Vector3(x, 3.6f, z), LightColor = new Color("ffc070"), LightEnergy = 2.2f, OmniRange = 12f });
         }
     }
 

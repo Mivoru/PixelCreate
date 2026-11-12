@@ -1255,7 +1255,7 @@ public partial class GameClient : Node
 
         if (shown.X > ArchiveX)
         {
-            return "Explore the Sunken Archive, or leave by the cave mouth";
+            return $"Explore {(_zone.RegionAt(shown.X, shown.Z) is { Length: > 0 } place ? place : "the depths")}, or leave the way you came";
         }
 
         if (shown.X > ArenaX)
