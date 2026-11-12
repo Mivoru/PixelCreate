@@ -116,6 +116,9 @@ public enum ProjectileKind : byte
 
     /// <summary>One of the thorns a Briarking shakes off its back in a ring.</summary>
     Thorn = 16,
+
+    /// <summary>The tip of a lashing vine, only to be seen: what it does is worked out when it is thrown.</summary>
+    Vine = 17,
 }
 
 /// <summary>What a ground hazard is: the shaman's burning V or a player's strip of fire, an orc's crack in the earth,
@@ -1189,6 +1192,39 @@ public sealed partial class GameServer : IEnemyEvents
                 }
 
                 break;
+            case "wispBolt":
+                // The player's wisp bolt: slow, and it turns after the nearest enemy (Home, below).
+                _projectiles.Add(new Projectile
+                {
+                    Id = _nextId++, Kind = ProjectileKind.WispBolt, Damage = 0, Position = origin, Velocity = aim * WispBoltSpeed * 1.3f,
+                    Shooter = player.Id, Skill = index, Homing = WispBoltTurn * 1.6f, Life = WispBoltLife, Radius = WispBoltRadius,
+                });
+                break;
+            case "vineWhip":
+                // Vine Pull: every enemy across the lash ahead is cut and dragged to the player's feet.
+                _projectiles.Add(new Projectile
+                {
+                    Id = _nextId++, Kind = ProjectileKind.Vine, Damage = 0, Position = origin, Velocity = flat * 32f, Shooter = player.Id,
+                    Life = (int)(VinePullReach / 32f * Tuning.TickRate) + 1,
+                });
+                foreach (var enemy in _enemies.ToList())
+                {
+                    var offset = (enemy.Position - player.State.Position) with { Y = 0 };
+                    var reach = Vector3.Dot(offset, flat);
+                    var aside = MathF.Abs(offset.X * flat.Z - offset.Z * flat.X);
+                    if (!enemy.Alive || enemy.Untouchable || reach < 0.5f || reach > VinePullReach || aside > skill.Radius + enemy.Def.Size * 0.4f)
+                    {
+                        continue;
+                    }
+
+                    SkillBlow(player, enemy, index, 1f, player.State.Position);
+                    if (enemy.Alive)
+                    {
+                        enemy.DragTo(player.State.Position + flat * (1.6f + enemy.Def.Size * 0.4f), VinePull);
+                    }
+                }
+
+                break;
             case "summonSpears":
                 var side = new Vector3(-flat.Z, 0, flat.X);
                 for (var i = 0; i < SpearDelays.Length; i++)
@@ -1258,7 +1294,7 @@ public sealed partial class GameServer : IEnemyEvents
 
             shot.Struck.Add(enemy.Id);
             SkillBlow(shooter, enemy, shot.Skill, 1f, shot.Position - shot.Velocity * Tuning.TickSeconds);
-            if (shot.Kind == ProjectileKind.SummonedSpear)
+            if (shot.Kind is ProjectileKind.SummonedSpear or ProjectileKind.WispBolt)
             {
                 return true;
             }
@@ -3426,6 +3462,7 @@ public sealed partial class GameServer : IEnemyEvents
                 break;
             case "vineWhip":
                 Lash(enemy, direction, ability, 0);
+                LashTip(enemy, direction, ability.Range);
                 break;
             case "waterJet":
                 // The Old Gulper's jet: a straight blast that throws the player back from the shore.
@@ -3435,7 +3472,9 @@ public sealed partial class GameServer : IEnemyEvents
                 // The Stranglethorn's three vines lash out in a fan; whoever one catches is held and dragged in.
                 foreach (var angle in new[] { -VineFan, 0f, VineFan })
                 {
-                    Lash(enemy, Vector3.Transform(direction, Matrix4x4.CreateRotationY(angle)), ability, VineHold);
+                    var lane = Vector3.Transform(direction, Matrix4x4.CreateRotationY(angle));
+                    Lash(enemy, lane, ability, VineHold);
+                    LashTip(enemy, lane, ability.Range);
                 }
 
                 break;
@@ -3641,6 +3680,19 @@ public sealed partial class GameServer : IEnemyEvents
 
     /// <summary>Half the width of a vine's lash, in metres.</summary>
     public const float VineHalfWidth = 0.7f;
+
+    /// <summary>Sends the visible tip of a vine along a lash, for the client to draw.</summary>
+    private void LashTip(Enemy plant, Vector3 direction, float range)
+    {
+        var way = direction with { Y = 0 };
+        way = way == Vector3.Zero ? Facing(plant) : Vector3.Normalize(way);
+        var tip = Shoot(ProjectileKind.Vine, plant.Position + Vector3.UnitY * 0.6f, way * 30f, 0);
+        tip.Life = (int)(range / 30f * Tuning.TickRate) + 1;
+        tip.Shooter = -2;
+    }
+
+    /// <summary>How far the player's Vine Pull reaches, in metres.</summary>
+    public const float VinePullReach = 8f;
 
     /// <summary>How hard a vine drags whoever it catches back towards the plant, in metres a second.</summary>
     public const float VinePull = 11f;
@@ -4289,6 +4341,13 @@ public sealed partial class GameServer : IEnemyEvents
                 continue;
             }
 
+            if (shot.Kind == ProjectileKind.Vine)
+            {
+                shot.Position += shot.Velocity * Tuning.TickSeconds;
+                shot.Life--;
+                continue;
+            }
+
             if (shot.Kind == ProjectileKind.ChainBolt)
             {
                 StepChainBolt(shot);
@@ -4303,7 +4362,7 @@ public sealed partial class GameServer : IEnemyEvents
             shot.Velocity.Y -= shot.Gravity * Tuning.TickSeconds;
             shot.Position += shot.Velocity * Tuning.TickSeconds;
             shot.Life--;
-            if (shot.Kind == ProjectileKind.WispBolt && _wards.Any(w => Vector3.Distance(w + Vector3.UnitY * 1.2f, shot.Position) < Enemy.WardReach))
+            if (shot.Kind == ProjectileKind.WispBolt && shot.Shooter < 0 && _wards.Any(w => Vector3.Distance(w + Vector3.UnitY * 1.2f, shot.Position) < Enemy.WardReach))
             {
                 // The light of a standing stone puts a wisp's bolt out.
                 shot.Life = 0;
@@ -4391,13 +4450,30 @@ public sealed partial class GameServer : IEnemyEvents
     /// <summary>Turns a homing shot a little towards its player's chest, never more than its turn rate allows.</summary>
     private void Home(Projectile shot)
     {
-        if (!_players.TryGetValue(shot.TargetId, out var quarry))
+        Vector3 goal;
+        if (shot.Shooter >= 0)
+        {
+            // A player's bolt goes after the nearest enemy it can reach.
+            var mark = _enemies.Where(e => e.Alive && !e.Untouchable && Vector3.Distance(e.Position, shot.Position) < 18f)
+                .OrderBy(e => Vector3.Distance(e.Position, shot.Position)).FirstOrDefault();
+            if (mark is null)
+            {
+                return;
+            }
+
+            goal = mark.Position + Vector3.UnitY * (mark.Def.Size * 0.6f);
+        }
+        else if (_players.TryGetValue(shot.TargetId, out var quarry))
+        {
+            goal = quarry.State.Position + Vector3.UnitY;
+        }
+        else
         {
             return;
         }
 
         var speed = shot.Velocity.Length();
-        var wanted = quarry.State.Position + Vector3.UnitY - shot.Position;
+        var wanted = goal - shot.Position;
         if (speed < 0.01f || wanted == Vector3.Zero)
         {
             return;

@@ -148,6 +148,30 @@ public class SkillTests
     }
 
     [Fact]
+    public void WispBolt_TurnsAfterAnEnemyOffTheAim()
+    {
+        // The aim runs straight ahead; the enemy stands well off to the side.
+        var (server, client, network) = Start(new Vector3(4.5f, 0, -7));
+        var skill = Learn(server, client, network, "wisp_bolt");
+        var health = server.Enemies[0].Health;
+        Run(server, client, network, 200, Command.CastSkill, skill);
+        Assert.True(server.Enemies[0].Health < health, "the wisp bolt never turned onto the enemy beside the aim");
+    }
+
+    [Fact]
+    public void VinePull_CutsAndDragsTheEnemiesAhead()
+    {
+        var (server, client, network) = Start(new Vector3(0, 0, -6), new Vector3(5, 0, 0));
+        var skill = Learn(server, client, network, "vine_pull");
+        var ahead = server.Enemies[0].Health;
+        var aside = server.Enemies[1].Health;
+        Run(server, client, network, 3, Command.CastSkill, skill);
+        Assert.True(server.Enemies[0].Health < ahead, "the vine missed the enemy ahead");
+        Assert.True(server.Enemies[0].DragTicks > 0 && server.Enemies[0].DragVelocity.Z > 3f, "the vine did not drag the enemy towards the player");
+        Assert.Equal(aside, server.Enemies[1].Health);
+    }
+
+    [Fact]
     public void Books_DropOnlyFromTheirTeachers()
     {
         var fireball = SkillDef.All[SkillDef.Index("fireball")];

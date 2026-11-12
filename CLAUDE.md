@@ -57,7 +57,8 @@ Rules:
   its cooldown, so swapping cannot stand in for more slots. The skill bar left of the hotbar casts them with Q, R and F;
   skills are dragged onto it from the character window (K) and never sit on the hotbar. A slotted skill casts with
   `Command.CastSkill` along the latest aim, for stamina, with a cooldown cut by
-  Intelligence. Skill damage scales with level and Intelligence, not weapon power. Test mode knows every skill.
+  Intelligence. Skill damage scales with level and Intelligence, not weapon power. Test mode knows every skill. Wisp Bolt (wisps, homing after the nearest enemy) and Vine Pull (vinelashers: cuts and
+  drags enemies ahead to the player, `Enemy.DragTo`) come from the new monsters.
   `Command.UseItem` (arg = item index) replaced the eat range for the interface, so there is no 64-item limit there.
 - Weapon mastery (`world/mastery.json`, `Mastery.cs`, window on J): kills earn the weapon kind in hand mastery
   experience (as much as the kill's experience); each mastery level is a point for that weapon's tree: three branches
@@ -453,7 +454,7 @@ Rules:
   Vinelashers (Emerald Jungle; kind `vine`, behaviour `rooted`, `statue`, `VineView`) never move: they bite up close
   and `vineWhip` a player within reach, yanking them in (`GameServer.Lash`, `GameServer.VinePull`); the rare
   Stranglethorn's `vineGrab` throws three vines in a fan that also hold (`GameServer.VineHold` of slow).
-  `net-tests/VineTests.cs`.
+  Vine lashes send a visible tip (`ProjectileKind.Vine`, no hits of its own). `net-tests/VineTests.cs`.
   Mirefins (Mirror Lake; kind `fish`, behaviour `lurker`, `EnemyFish.cs`, `FishView`): the camp's middle and radius are
   the lake. Under water (`Enemy.Submerged`) only the fin shows and blows pass through; they shadow a player along the
   shore and `pounce` only at one within `Enemy.ShoreReach` of the edge, surfacing in the wind-up, then lie stranded

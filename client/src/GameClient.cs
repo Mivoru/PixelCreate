@@ -2899,7 +2899,7 @@ public partial class GameClient : Node
                     _sfx.Play("spear_summon", ball.Position, -8f);
                 }
                 else if (spit.Kind is not (ProjectileKind.PlayerArrow or ProjectileKind.AirSlash or ProjectileKind.AirSlashWide or ProjectileKind.ThrownSpear
-                    or ProjectileKind.FangSlash or ProjectileKind.Knife or ProjectileKind.ThrownAxe or ProjectileKind.WispBolt or ProjectileKind.Thorn))
+                    or ProjectileKind.FangSlash or ProjectileKind.Knife or ProjectileKind.ThrownAxe or ProjectileKind.WispBolt or ProjectileKind.Thorn or ProjectileKind.Vine))
                 {
                     _sfx.Play(spit.Kind switch
                     {
@@ -2923,7 +2923,7 @@ public partial class GameClient : Node
             }
             if (spit.Kind is ProjectileKind.Arrow or ProjectileKind.PowerArrow or ProjectileKind.PlayerArrow or ProjectileKind.AirSlash
                     or ProjectileKind.AirSlashWide or ProjectileKind.ThrownSpear or ProjectileKind.SummonedSpear or ProjectileKind.FangSlash
-                    or ProjectileKind.Knife or ProjectileKind.Meteor or ProjectileKind.Thorn
+                    or ProjectileKind.Knife or ProjectileKind.Meteor or ProjectileKind.Thorn or ProjectileKind.Vine
                 && motion.LengthSquared() > 0.0001f)
             {
                 // A shot falling straight down (the rain of arrows) needs another up, or LookAt
@@ -3018,6 +3018,19 @@ public partial class GameClient : Node
 
     private MeshInstance3D BuildProjectile(ProjectileKind kind, Vector3 position)
     {
+        if (kind == ProjectileKind.Vine)
+        {
+            // The tip of a lashing vine trailing green.
+            var tip = new MeshInstance3D
+            {
+                Mesh = new BoxMesh { Size = new Vector3(0.12f, 0.12f, 0.5f) },
+                MaterialOverride = _fx.Stipple(new Color("3e8948"), 1f),
+                Position = position,
+            };
+            tip.AddChild(Trail(new Color("265c42"), 20, 0.35f, 0.1f));
+            return tip;
+        }
+
         if (kind == ProjectileKind.Thorn)
         {
             // A Briarking's thorn: a long dark green spike.

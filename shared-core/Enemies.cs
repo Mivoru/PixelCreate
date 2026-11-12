@@ -192,6 +192,23 @@ public sealed partial class Enemy
     public byte HitFlash;
     public float Facing;
 
+    /// <summary>Ticks left of being dragged (by a player's vine), and the speed it is dragged at.</summary>
+    public int DragTicks;
+    public Vector3 DragVelocity;
+
+    /// <summary>Drags the enemy to a point over a short time, as a vine yanking it in.</summary>
+    public void DragTo(Vector3 point, float speed)
+    {
+        var way = (point - Position) with { Y = 0 };
+        if (way.Length() < 0.3f || Def.Statue)
+        {
+            return;
+        }
+
+        DragVelocity = Vector3.Normalize(way) * speed;
+        DragTicks = (int)MathF.Ceiling(way.Length() / speed * Tuning.TickRate);
+    }
+
     /// <summary>
     /// The player this enemy is after, or -1. From <see cref="CreatureBase"/> up it is another creature:
     /// prey for a hunter, or the hunter a boar turns on.
@@ -318,6 +335,18 @@ public sealed partial class Enemy
         ActionTicks--;
         if (KeepsToTheNight(random))
         {
+            return;
+        }
+
+        // Dragged by a vine: it slides where it is pulled and does nothing else until it arrives.
+        if (DragTicks > 0 && Alive)
+        {
+            DragTicks--;
+            Velocity.X = DragVelocity.X;
+            Velocity.Z = DragVelocity.Z;
+            Action = EnemyAction.Stagger;
+            ActionTicks = Math.Max(ActionTicks, 8);
+            Fall(world, random, events);
             return;
         }
 

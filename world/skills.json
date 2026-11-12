@@ -1,32 +1,9 @@
 [
-  {
-    "id": "fireball", "name": "Fireball", "effect": "fireball", "icon": "skillbook_fire",
-    "description": "Hurls a ball of fire where you aim; it bursts on whatever it meets.",
-    "damage": 34, "stamina": 22, "cooldownTicks": 240, "radius": 2.2,
-    "teachers": ["goblin_shaman"], "bookChance": 0.12
-  },
-  {
-    "id": "air_slash", "name": "Air Slash", "effect": "airSlash", "icon": "skillbook_wind",
-    "description": "A standing crescent of air flies 9 m ahead and cuts every enemy in its path.",
-    "damage": 30, "stamina": 20, "cooldownTicks": 300, "radius": 1.4,
-    "teachers": ["orc_warrior", "orc_huntress", "orc_swordmaster"], "bookChance": 0.02, "rareBookChance": 0.15
-  },
-  {
-    "id": "earth_crack", "name": "Earth Crack", "effect": "earthCrack", "icon": "skillbook_earth",
-    "description": "Strikes the ground and splits it in a small V ahead, hurting everything it runs under.",
-    "damage": 38, "stamina": 26, "cooldownTicks": 420,
-    "teachers": ["orc_berserker", "orc_stormaxe"], "bookChance": 0.02, "rareBookChance": 0.15
-  },
-  {
-    "id": "summon_spears", "name": "Summon Spears", "effect": "summonSpears", "icon": "skillbook_spear",
-    "description": "Three burning spears appear over your head and shoot one by one at the nearest enemies.",
-    "damage": 24, "stamina": 28, "cooldownTicks": 480,
-    "teachers": ["orc_spearcaller"], "bookChance": 0.2
-  },
-  {
-    "id": "fang_slash", "name": "Fang Slash", "effect": "fangSlash", "icon": "skillbook_blood",
-    "description": "A savage swipe tears three red crescents from the air, side by side.",
-    "damage": 20, "stamina": 24, "cooldownTicks": 360, "radius": 0.9,
-    "teachers": ["werewolf_redclaw"], "bookChance": 0.2
-  }
+  {"id": "fireball", "name": "Fireball", "effect": "fireball", "icon": "skillbook_fire", "description": "Hurls a ball of fire where you aim; it bursts on whatever it meets.", "damage": 34, "stamina": 22, "cooldownTicks": 240, "radius": 2.2, "teachers": ["goblin_shaman"], "bookChance": 0.12},
+  {"id": "air_slash", "name": "Air Slash", "effect": "airSlash", "icon": "skillbook_wind", "description": "A standing crescent of air flies 9 m ahead and cuts every enemy in its path.", "damage": 30, "stamina": 20, "cooldownTicks": 300, "radius": 1.4, "teachers": ["orc_warrior", "orc_huntress", "orc_swordmaster"], "bookChance": 0.02, "rareBookChance": 0.15},
+  {"id": "earth_crack", "name": "Earth Crack", "effect": "earthCrack", "icon": "skillbook_earth", "description": "Strikes the ground and splits it in a small V ahead, hurting everything it runs under.", "damage": 38, "stamina": 26, "cooldownTicks": 420, "teachers": ["orc_berserker", "orc_stormaxe"], "bookChance": 0.02, "rareBookChance": 0.15},
+  {"id": "summon_spears", "name": "Summon Spears", "effect": "summonSpears", "icon": "skillbook_spear", "description": "Three burning spears appear over your head and shoot one by one at the nearest enemies.", "damage": 24, "stamina": 28, "cooldownTicks": 480, "teachers": ["orc_spearcaller"], "bookChance": 0.2},
+  {"id": "fang_slash", "name": "Fang Slash", "effect": "fangSlash", "icon": "skillbook_blood", "description": "A savage swipe tears three red crescents from the air, side by side.", "damage": 20, "stamina": 24, "cooldownTicks": 360, "radius": 0.9, "teachers": ["werewolf_redclaw"], "bookChance": 0.2},
+  {"id": "wisp_bolt", "name": "Wisp Bolt", "effect": "wispBolt", "icon": "skillbook_wisp", "description": "Looses a slow cold light that turns after the nearest enemy and follows it until it strikes.", "damage": 30, "stamina": 18, "cooldownTicks": 260, "teachers": ["barrow_wisp", "lantern_of_the_barrow"], "bookChance": 0.02, "rareBookChance": 0.25},
+  {"id": "vine_pull", "name": "Vine Pull", "effect": "vineWhip", "icon": "skillbook_vine", "description": "A thorny vine lashes 8 m ahead, cuts every enemy it catches and drags them to your feet.", "damage": 22, "stamina": 22, "cooldownTicks": 330, "radius": 0.9, "teachers": ["vinelasher", "stranglethorn"], "bookChance": 0.02, "rareBookChance": 0.25}
 ]

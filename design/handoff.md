@@ -86,7 +86,7 @@ v `asset-pipeline/`, studio záběr (`PIXEL_MONSTERS=...`), dokumentace, commit 
 5. ~~**Vinelasher**~~ hotovo 2026-11-12 (i Mirefin hotov). Původně: **Vinelasher** (Emerald Jungle, nehýbe se) se **Stranglethorn** a **Mirefin** (Mirror Lake, ve vodě)
    s **Old Gulper**. Oba potřebují nový druh pohybu, proto až na konci.
 6. Vegetace a domy zblízka (kontrola každé budovy zblízka). Břehy pod mosty hotové 2026-11-12 (hlína v terénním shaderu, kameny).
-7. Volitelně knihy dovedností ze vzácných: Rune Ward, Wisp Bolt, Vine Pull.
+7. Knihy dovedností: Wisp Bolt a Vine Pull hotové 2026-11-12; Rune Ward (štít zepředu) zbývá.
 
 Zvuky monster: zatím ze stávající sady. Nové zvuky z ElevenLabs stojí peníze, generovat jen po souhlasu autora.
 
