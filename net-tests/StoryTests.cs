@@ -323,7 +323,7 @@ public class DialogueDataTests
     public void ThePeopleWhoServe_HaveSomethingToSay_AndOnlyThey()
     {
         // The game is not about talk: Mira, the traders, the board and the stone speak; the rest only among themselves.
-        var speakers = new[] { "mira", "hollis", "wren", "board", "anchor" };
+        var speakers = new[] { "mira", "hollis", "wren", "dorran", "board", "anchor" };
         foreach (var id in speakers)
         {
             Assert.True(Story.Dialogues.ContainsKey(id), $"{id} has no dialogue in world/dialogue");

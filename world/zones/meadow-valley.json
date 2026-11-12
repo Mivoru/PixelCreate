@@ -199,7 +199,7 @@
     { "id": "bea", "name": "Bea", "role": "child_b", "x": 4.3, "z": -6.5, "yaw": 0 },
     { "id": "bors", "name": "Bors", "role": "quarryman", "x": 153.5, "z": 50.6, "yaw": 0 },
     { "id": "wilm", "name": "Wilm", "role": "quarryman_b", "x": 144, "z": 60.6, "yaw": 0 },
-    { "id": "dorran", "name": "Dorran", "role": "barkeep", "x": 424.2, "z": 55.7, "yaw": 3.14159 },
+    { "id": "dorran", "name": "Dorran", "role": "barkeep", "x": 424.2, "z": 56.3, "yaw": 3.14159 },
     { "id": "marta", "name": "Marta", "role": "innkeeper", "x": 99.9, "z": 201, "yaw": -1.5708 },
     { "id": "aldous", "name": "Aldous", "role": "pilgrim", "x": 96.95, "z": 210.3, "yaw": 3.14159 },
     { "id": "fennick", "name": "Fennick", "role": "peddler", "x": 89.5, "z": 202.6, "yaw": 3.14159 },

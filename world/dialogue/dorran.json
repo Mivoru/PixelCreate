@@ -1,0 +1,36 @@
+{
+  "npc": "dorran",
+  "entries": [
+    {
+      "when": {
+        "gold": {
+          "min": 1
+        }
+      },
+      "node": "shop"
+    },
+    {
+      "node": "broke"
+    }
+  ],
+  "nodes": {
+    "shop": {
+      "text": "Stew, pie or bread. Eat before you go out there, not after; the goblins won't wait while you chew. You have {gold} gold.",
+      "shop": "barkeep",
+      "options": [
+        {
+          "text": "Goodbye"
+        }
+      ]
+    },
+    "broke": {
+      "text": "No coin, no stew. Bring me something from the Guild's purse and I'll fill your bowl.",
+      "shop": "barkeep",
+      "options": [
+        {
+          "text": "Goodbye"
+        }
+      ]
+    }
+  }
+}

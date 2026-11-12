@@ -108,6 +108,7 @@ Neověřeno hraním člověkem: vše výše jen boty, testy (385) a snímky. Sí
    Hotovo (2026-11-12): hospoda The Bent Nail má sál za dveřmi (420, 60): výčep s hospodským Dorranem (nový, s hlasem),
    krb, tři stoly, kout s loutnou. Štamgasti sedí ve dvoře od 18 a v 20 jdou dovnitř skutečně dveřmi (při dešti hned),
    Corwin od 20. Čtyři nové rozhovory uvnitř (s hlasy). Interiéry dalších domů zatím ne.
+   Dorran prodává chléb, Hearty Stew (8 zl., léčí 50) a Meat Pie (5 zl., léčí 32); ceny jsou odhad, neladěno.
 5. [ ] Systémy: rybaření na molech, sběr bylin a hub (pro Wren), vaření u ohně, řemeslo u Tess z materiálů monster,
    rank D se zkouškou v Guildě jako cíl po úrovni 9.
 6. [ ] Delší dungeon s bossem a skrytou cestou (Archive i Warren jsou dnes jedna síň).

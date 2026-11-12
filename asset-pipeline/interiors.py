@@ -237,7 +237,7 @@ def inn_fittings(h):
     h.loft("candle", [(1.1, 0.04, 0.04), (1.28, 0.035, 0.035)], "paper", 6, (4.3, 2.95, 0))
     h.loft("flame", [(1.29, 0.02, 0.02), (1.33, 0.032, 0.032), (1.4, 0.0, 0.0)], "window", 6, (4.3, 2.95, 0))
     # Low stools before the bar.
-    for x in (2.4, 3.6, 4.8, 6.0):
+    for x in (2.6, 4.2, 5.8):
         h.disc("stool", (x, bar_y - 0.95, 0.46), 0.22, 0.07, "wood", 10)
         for leg in range(3):
             a = leg * math.tau / 3 + 0.5

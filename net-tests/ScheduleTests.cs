@@ -153,7 +153,30 @@ public class ScheduleTests
         }
 
         var dorran = server.Actor("dorran");
-        Assert.True(dorran.Active && Vector3.Distance(dorran.Position, new Vector3(424.2f, dorran.Position.Y, 55.7f)) < 0.5f, "Dorran stands behind his bar");
+        Assert.True(dorran.Active && Vector3.Distance(dorran.Position, new Vector3(424.2f, dorran.Position.Y, 56.3f)) < 0.5f, "Dorran stands behind his bar");
+    }
+
+    [Fact]
+    public void Dorran_CanBeReachedAcrossHisBar()
+    {
+        // Somewhere on the open floor before the bar lies within talking range of him: the stools once stood too close
+        // together for a player to step between, and he stood too far back to be spoken to.
+        var dorran = Valley.World.Npcs.Single(n => n.Id == "dorran").Position;
+        var reachable = false;
+        for (var x = dorran.X - 2f; x <= dorran.X + 2f && !reachable; x += 0.1f)
+        {
+            for (var z = dorran.Z + 0.5f; z <= dorran.Z + Guild.TalkRange; z += 0.1f)
+            {
+                var spot = new Vector3(x, Valley.World.GroundHeight(x, z) + 0.1f, z);
+                if (Vector2.Distance(new Vector2(x, z), new Vector2(dorran.X, dorran.Z)) < Guild.TalkRange - 0.4f && !Valley.World.OverlapsPlayer(spot))
+                {
+                    reachable = true;
+                    break;
+                }
+            }
+        }
+
+        Assert.True(reachable, "No free spot before the bar is within talking range of Dorran");
     }
 
     [Fact]

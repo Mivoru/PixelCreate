@@ -44,6 +44,31 @@ public class ShopTests
     }
 
     [Fact]
+    public void Dorran_SellsFoodAtTheBentNail_AndOnlyThere()
+    {
+        var network = new SimNetwork(1, 0, 0, 0);
+        var dorran = Valley.World.Npcs.Single(n => n.Id == "dorran");
+        // The spawn spreads a player three metres from this point, which puts them on the floor before the bar.
+        var server = new GameServer(network.Connect(0), Valley.World, new ServerOptions { Seed = 1, SpawnOverride = dorran.Position + new Vector3(1.51f, 0, 0.3f) });
+        var client = new ClientPrediction(network.Connect(1), Valley.World);
+        Run(server, client, network, 10);
+        Assert.True(Vector3.Distance(client.State.Position with { Y = 0 }, dorran.Position with { Y = 0 }) < Guild.TalkRange,
+            $"the test player stands at {client.State.Position}, out of Dorran's reach");
+
+        var stew = ItemDef.Index("hearty_stew");
+        server.GiveGold(1, 20);
+        Run(server, client, network, 12, ShopCommands.Buy(stew));
+        Assert.Equal(1, server.GetBagCount(1, stew));
+        Assert.Equal(20 - ItemDef.All[stew].Price, server.GetGold(1));
+
+        // Wren does not sell stew.
+        var (atWren, wrenClient, wrenNetwork) = AtTheAlchemist();
+        atWren.GiveGold(1, 20);
+        Run(atWren, wrenClient, wrenNetwork, 12, ShopCommands.Buy(stew));
+        Assert.Equal(0, atWren.GetBagCount(1, stew));
+    }
+
+    [Fact]
     public void Potions_HealAndShareACooldown()
     {
         var (server, client, network) = AtTheAlchemist();
