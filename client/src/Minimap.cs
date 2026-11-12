@@ -70,7 +70,7 @@ public sealed partial class Minimap : Control
                 "stall" => ("shop", "Market"),
                 "tavern" => ("inn", "Tavern"),
                 "windmill" => ("mill", "Mill"),
-                "watchtower" => ("tower", ""),
+                "watchtower" or "tower_ruin" => ("tower", ""),
                 "chapel" => ("chapel", "Chapel"),
                 "waystone" => ("waystone", ""),
                 "smithy" => ("smithy", "Smithy"),
