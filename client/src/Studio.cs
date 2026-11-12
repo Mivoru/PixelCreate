@@ -302,7 +302,7 @@ public partial class Studio : Node
         // PIXEL_MONSTERS=auren,archive photographs only the monsters whose ids start with those words.
         var only = (System.Environment.GetEnvironmentVariable("PIXEL_MONSTERS") ?? "").Split(',', System.StringSplitOptions.RemoveEmptyEntries);
         var monsters = EnemyDef.All.Select((def, index) => (def, index))
-            .Where(p => p.def.Kind is "slime" or "goblin" or "orc" or "werewolf" or "sentinel" or "wisp" or "crow" or "vine" or "fish" && (only.Length == 0 || only.Any(o => p.def.Id.StartsWith(o)))).ToList();
+            .Where(p => p.def.Kind is "slime" or "goblin" or "orc" or "werewolf" or "sentinel" or "wisp" or "crow" or "vine" or "fish" or "human" && (only.Length == 0 || only.Any(o => p.def.Id.StartsWith(o)))).ToList();
         foreach (var (def, index) in monsters)
         {
             IEnemyView view = def.Kind == "slime" ? new SlimeView() : def.Kind == "wisp" ? new WispView(def) : def.Kind == "crow" ? new CrowView(def) : def.Kind == "vine" ? new VineView(def) : def.Kind == "fish" ? new FishView(def, def.Size * 0.45f) : new GoblinView(def);
