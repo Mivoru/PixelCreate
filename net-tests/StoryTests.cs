@@ -323,15 +323,16 @@ public class DialogueDataTests
     public void ThePeopleWhoServe_HaveSomethingToSay_AndOnlyThey()
     {
         // The game is not about talk: Mira, the traders, the board and the stone speak; the rest only among themselves.
-        var speakers = new[] { "mira", "hollis", "wren", "dorran", "board", "anchor" };
+        var speakers = new[] { "mira", "hollis", "wren", "dorran", "smith", "board", "anchor" };
         foreach (var id in speakers)
         {
             Assert.True(Story.Dialogues.ContainsKey(id), $"{id} has no dialogue in world/dialogue");
         }
 
         // Waystones speak too, in the sense that their runes offer the trip to other stones.
-        // So do hidden caches: an old chest has only "Open it."
-        Assert.Empty(Story.Dialogues.Keys.Except(speakers).Where(k => !k.StartsWith("waystone_", StringComparison.Ordinal) && !k.StartsWith("cache_", StringComparison.Ordinal)));
+        // So do hidden caches: an old chest has only "Open it." And cooking fires offer their recipes.
+        Assert.Empty(Story.Dialogues.Keys.Except(speakers).Where(k => !k.StartsWith("waystone_", StringComparison.Ordinal) &&
+            !k.StartsWith("cache_", StringComparison.Ordinal) && !k.StartsWith("fire_", StringComparison.Ordinal)));
     }
 
     [Fact]

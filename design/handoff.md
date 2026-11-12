@@ -109,8 +109,13 @@ Neověřeno hraním člověkem: vše výše jen boty, testy (385) a snímky. Sí
    krb, tři stoly, kout s loutnou. Štamgasti sedí ve dvoře od 18 a v 20 jdou dovnitř skutečně dveřmi (při dešti hned),
    Corwin od 20. Čtyři nové rozhovory uvnitř (s hlasy). Interiéry dalších domů zatím ne.
    Dorran prodává chléb, Hearty Stew (8 zl., léčí 50) a Meat Pie (5 zl., léčí 32); ceny jsou odhad, neladěno.
-5. [ ] Systémy: rybaření na molech, sběr bylin a hub (pro Wren), vaření u ohně, řemeslo u Tess z materiálů monster,
+5. [~] Systémy: rybaření na molech, sběr bylin a hub (pro Wren), vaření u ohně, řemeslo u Tess z materiálů monster,
    rank D se zkouškou v Guildě jako cíl po úrovni 9.
+   Hotovo (2026-11-12 večer): vaření u čtyř ohňů (krb v Bent Nail, East Watch, lom, Woodcutters' Camp; `tools/cooking.py`):
+   syrové maso a ryba z tašky se mění na sedm nových jídel (Roast Chicken, Game Skewer, Roast Mutton, Boar Roast,
+   Venison Steak, Seared Steak, Grilled Fillet), léčí zhruba 1,7x víc než syrové (odhad). Tess kove u kovadliny
+   (`tools/forge.py`): osm receptů z materiálů monster a zlata, výsledek je rare kus úrovně hráče (odhad). Tess má
+   nově ženský hlas (Matilda, dřív omylem Roger). Zbývá: rybaření, byliny a houby, rank D.
 6. [ ] Delší dungeon s bossem a skrytou cestou (Archive i Warren jsou dnes jedna síň).
 7. [x] Kvalita: hlídač zaseknutí klienta (zápis, co hra dělala), audit děr ve zbylých interiérech.
    Hlídač hotový (2026-11-12, `FreezeWatch.cs`): když klient 4 s nezačne snímek, zapíše do `client.log` řádek

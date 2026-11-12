@@ -19,13 +19,13 @@ public class ShopTests
         return (server, client, network);
     }
 
-    private static void Run(GameServer server, ClientPrediction client, SimNetwork network, int ticks, Command command = Command.None)
+    private static void Run(GameServer server, ClientPrediction client, SimNetwork network, int ticks, Command command = Command.None, ushort arg = 0)
     {
         for (var i = 0; i < ticks; i++)
         {
             network.Advance(1000.0 / Tuning.TickRate);
             server.Step();
-            client.Step(0, 0, Buttons.None, 0, i == 0 ? command : Command.None);
+            client.Step(0, 0, Buttons.None, 0, i == 0 ? command : Command.None, null, 0, i == 0 ? arg : (ushort)0);
         }
     }
 
@@ -80,14 +80,14 @@ public class ShopTests
         }
 
         server.SetHealth(1, 20);
-        Run(server, client, network, 12, ItemCommands.Eat(potion));
+        Run(server, client, network, 12, Command.UseItem, potion);
         Assert.Equal(20 + ItemDef.All[potion].Heal, server.GetPlayer(1)!.Value.Health);
 
         // A second one straight away does nothing; after the cooldown it heals again.
-        Run(server, client, network, 12, ItemCommands.Eat(potion));
+        Run(server, client, network, 12, Command.UseItem, potion);
         Assert.Equal(2, server.GetBagCount(1, potion));
         Run(server, client, network, GameServer.PotionCooldownTicks);
-        Run(server, client, network, 12, ItemCommands.Eat(potion));
+        Run(server, client, network, 12, Command.UseItem, potion);
         Assert.Equal(1, server.GetBagCount(1, potion));
     }
 }

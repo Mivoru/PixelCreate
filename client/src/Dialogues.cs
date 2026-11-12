@@ -1016,7 +1016,7 @@ public static class NpcLooks
     {
         "receptionist" => Receptionist,
         "villager" => Villager,
-        "villager_b" => VillagerB,
+        "villager_b" or "smith" => VillagerB,
         "merchant" => Merchant,
         "alchemist" => Alchemist,
         "guard" => Guard,
@@ -1093,6 +1093,7 @@ public static class Dialogues
         "innkeeper" => "Innkeeper",
         "barkeep" => "Tavern Keeper",
         "pilgrim" => "Pilgrim",
+        "smith" => "Blacksmith",
         "peddler" => "Peddler",
         "quarryman" or "quarryman_b" => "Quarryman",
         "child" or "child_b" => "Village Child",
@@ -1102,7 +1103,7 @@ public static class Dialogues
         "lost" => "Lightborn",
         "finder_captain" => "Finder Captain",
         "finder" or "finder_gil" or "finder_hanne" or "finder_corb" => "Finder",
-        "object" or "anchor_stone" or "cache" => "",
+        "object" or "anchor_stone" or "cache" or "hearth" => "",
         Waystones.Role => "Auren Waystone",
         _ => "Villager",
     };
@@ -1196,7 +1197,31 @@ public static class Dialogues
         }
     }
 
-    private static void Show(Hud hud, Npc npc, DialogueDef dialogue, DialogueNode node, IStoryContext context, Snapshot? snapshot, bool opening = false)
+    /// <summary>The dialogue node on screen, built again by <see cref="Refresh"/> when the bag or purse changes.</summary>
+    private static System.Action? _rebuild;
+    private static string _rebuildFor = "";
+    private static int _purseSignature;
+
+    /// <summary>
+    /// Builds the options of the open dialogue again when the bag or purse has changed (signature from the caller):
+    /// a choice that cooks, forges or buys goes back to the same node at once, before the server's new bag arrives,
+    /// so its options were worked out from the old bag.
+    /// </summary>
+    public static void Refresh(Hud hud, int signature)
+    {
+        if (signature == _purseSignature)
+        {
+            return;
+        }
+
+        _purseSignature = signature;
+        if (hud.DialogOpen && !hud.SceneDialog && hud.Speaker == _rebuildFor)
+        {
+            _rebuild?.Invoke();
+        }
+    }
+
+    private static void Show(Hud hud, Npc npc, DialogueDef dialogue, DialogueNode node, IStoryContext context, Snapshot? snapshot, bool opening = false, bool refresh = false)
     {
         var choices = new List<DialogChoice>();
         if (node.Shop is { } shop)
@@ -1226,6 +1251,14 @@ public static class Dialogues
                 () => ShowRumor(hud, npc, rumor, () => Show(hud, npc, dialogue, node, context, snapshot, true), context));
             var goodbye = choices.FindLastIndex(c => c.Muted);
             choices.Insert(goodbye < 0 ? choices.Count : goodbye, ask);
+        }
+
+        _rebuild = () => Show(hud, npc, dialogue, node, context, snapshot, opening, refresh: true);
+        _rebuildFor = npc.Id;
+        if (refresh)
+        {
+            hud.ReplaceOptions(choices.ToArray());
+            return;
         }
 
         hud.ShowDialog(npc.Name, Fill(node.Text, context, snapshot), choices.ToArray());

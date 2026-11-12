@@ -14,10 +14,11 @@ namespace PixelCreate.Core;
 /// <param name="Defense">For armour: the defense it gives before rarity and level.</param>
 /// <param name="Health">Extra maximum health it gives before rarity and level.</param>
 /// <param name="Shop">The role of the shopkeeper who sells it, such as alchemist, or empty.</param>
+/// <param name="Gather">Grows in the world: picked where the zone's <c>gathers</c> place it (herbs, mushrooms).</param>
 public sealed record ItemDef(
     string Id, string Name, string Kind, int Tier, string Icon, string Description, int Price = 0, string Slot = "",
     int Crystal = -1, int Heal = 0, string Weapon = "", float Power = 0f, int Defense = 0, int Health = 0, string Shop = "",
-    string Skill = "")
+    string Skill = "", bool Gather = false)
 {
     private static readonly Lazy<IReadOnlyList<ItemDef>> Loaded = new(Load);
     private static readonly Lazy<Dictionary<string, ushort>> Indices = new(() =>

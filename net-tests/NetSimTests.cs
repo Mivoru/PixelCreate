@@ -1120,12 +1120,12 @@ public sealed class GuildTests
         var beef = ItemDef.Index("raw_beef");
         server.HurtForTest(1, 50);
         var hurt = server.GetPlayer(1)!.Value.Health;
-        Run(server, client, network, 12, ItemCommands.Eat(beef));
+        Run(server, client, network, 12, Command.UseItem, arg: beef);
         Assert.Equal(hurt + ItemDef.All[beef].Heal, server.GetPlayer(1)!.Value.Health);
         Assert.Equal(1, server.GetItem(1, "raw_beef"));
 
         // Equipment is not food.
-        Run(server, client, network, 12, ItemCommands.Eat(ItemDef.Index("rusty_dagger")));
+        Run(server, client, network, 12, Command.UseItem, arg: ItemDef.Index("rusty_dagger"));
         Assert.Equal(1, server.GetItem(1, "rusty_dagger"));
     }
 

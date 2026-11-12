@@ -477,6 +477,9 @@ public readonly record struct Aabb(Vector3 Min, Vector3 Max)
     public string? Unless { get; init; }
 }
 
+/// <summary>One spot where a gatherable item grows: <see cref="Index"/> is its place in <see cref="World.Gathers"/>.</summary>
+public readonly record struct GatherSpot(int Index, ushort Item, Vector3 Position);
+
 /// <summary>Static collision geometry: boxes, and terrain or the plane y = 0 as the ground.</summary>
 public sealed class World
 {
@@ -493,6 +496,9 @@ public sealed class World
 
     /// <summary>Where a trial takes place, and where the examiner waits.</summary>
     public Vector3 TrialGround { get; init; }
+
+    /// <summary>Spots where herbs and mushrooms grow (the zone's <c>gathers</c>), each picked and regrown per player.</summary>
+    public IReadOnlyList<GatherSpot> Gathers { get; set; } = Array.Empty<GatherSpot>();
 
     public World(IReadOnlyList<Aabb> boxes, HeightField? terrain = null, Vector3 spawn = default,
                  IReadOnlyList<EnemySpawn>? enemySpawns = null)

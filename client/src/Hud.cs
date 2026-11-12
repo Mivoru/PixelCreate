@@ -312,6 +312,9 @@ public partial class Hud : Control
         Input.MouseMode = Input.MouseModeEnum.Visible;
     }
 
+    /// <summary>Swaps the options of the open conversation without starting its text again.</summary>
+    public void ReplaceOptions(DialogChoice[] options) => _dialogOptions = options;
+
     public void CloseDialog()
     {
         _dialogName = "";

@@ -109,6 +109,9 @@ public sealed class Zone
 
     private sealed record RegionData(string Name, float X, float Z, float Radius);
 
+    /// <summary><c>Count</c> spots of a gatherable item, scattered by the seed in a circle on dry, open ground.</summary>
+    private sealed record GatherData(string Item, float X, float Z, float Radius, int Count);
+
     private sealed record RiverData(float Width, float Depth, float[][] Points);
 
     private sealed record RectData(float X0, float Z0, float X1, float Z1, float Height = 4f, float Bottom = -2f);
@@ -124,7 +127,8 @@ public sealed class Zone
         PropData[] Props, ScatterData[] Scatter, EnemySpawnData[]? Enemies, RegionData[]? Regions,
         RiverData[]? Rivers = null, RectData[]? Platforms = null, RectData[]? Walls = null, PortalData[]? Portals = null,
         NpcData[]? Npcs = null, float[]? Trial = null, float[]? Waterfall = null, float[][]? Clearings = null, LakeData[]? Lakes = null,
-        float[][]? Yards = null, RidgeData[]? Ridges = null, GroundData[]? Grounds = null, PassData[]? Passes = null);
+        float[][]? Yards = null, RidgeData[]? Ridges = null, GroundData[]? Grounds = null, PassData[]? Passes = null,
+        GatherData[]? Gathers = null);
 
     /// <summary>
     /// A pass through the mountains round the zone, towards a neighbouring region: the wall opens along the
@@ -266,6 +270,40 @@ public sealed class Zone
             Npcs = (data.Npcs ?? Array.Empty<NpcData>()).Select(n => new Npc(n.Id, n.Name, n.Role, Place(n.X, n.Z), n.Yaw)).ToArray(),
         };
         Waterfall = data.Waterfall is { } w ? new Vector3(w[0], terrain.At(w[0], w[1]), w[1]) : null;
+        World.Gathers = PlaceGathers(data);
+    }
+
+    /// <summary>
+    /// The spots of every gatherable item: random points of each circle (from the seed, so server and client agree)
+    /// on dry ground that is not too steep, off roads and clear of anything solid, at least two metres apart.
+    /// </summary>
+    private GatherSpot[] PlaceGathers(ZoneData data)
+    {
+        var spots = new List<GatherSpot>();
+        var random = new Random(data.Seed ^ 0x6a7e);
+        foreach (var gather in data.Gathers ?? Array.Empty<GatherData>())
+        {
+            var item = ItemDef.Index(gather.Item);
+            var placed = 0;
+            for (var attempt = 0; attempt < gather.Count * 40 && placed < gather.Count; attempt++)
+            {
+                var angle = random.NextDouble() * Math.Tau;
+                var reach = Math.Sqrt(random.NextDouble()) * gather.Radius;
+                var x = gather.X + (float)(Math.Cos(angle) * reach);
+                var z = gather.Z + (float)(Math.Sin(angle) * reach);
+                var at = new Vector3(x, World.GroundHeight(x, z), z);
+                if (IsWater(x, z) || NearWater(x, z) || PathDistance(x, z) < 1.5f || TooSteep(World.Terrain!, x, z) || World.OverlapsPlayer(at + Vector3.UnitY * 0.05f) ||
+                    spots.Any(s => Vector3.DistanceSquared(s.Position, at) < 4f))
+                {
+                    continue;
+                }
+
+                spots.Add(new GatherSpot(spots.Count, item, at));
+                placed++;
+            }
+        }
+
+        return spots.ToArray();
     }
 
     /// <summary>

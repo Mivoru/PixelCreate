@@ -18,7 +18,7 @@ RPG with a pixel art look, built code-first. Since 2026-11-10 it is **not a stor
 environment, world building, monsters, fighting, mechanics and movement, with levelling by killing monsters and
 simple jobs. Keep: the intro film, the look creator, the capture by the finders and the goblin ambush, then the road
 to Hearthmere and Mira, who signs the player up. No companions, no story quest chains, no dialogue trees: only the
-people who serve (Mira, Hollis, Wren, Dorran at the tavern bar, the job board, the Anchor Stone) can be spoken to; everyone else only talks in
+people who serve (Mira, Hollis, Wren, Dorran at the tavern bar, Tess at her forge, the job board, the Anchor Stone) can be spoken to; everyone else only talks in
 passing or among themselves. The direction, what was learned and what comes next: `design/direction.md`. The world plan (regions, towns, dungeons, travel, styles, build order): `design/world-plan.md`, data in `design/world/layout.json`, maps by `python tools/world_map.py` into `design/maps/`. The MMORPG goal is dropped; co-op for 2 to 4 players may come later. Do not tune difficulty
 or balance yet (the measured numbers: `design/balance.md`, written by `PIXEL_BALANCE=1 dotnet test --filter BalanceReport`). Start a session with `design/handoff.md`. Godot 4.7 with C#; the server does not use Godot.
 The story documents in `design/` (story, factions, stages 1 to 4, repair plan R4) describe the dropped direction.
@@ -139,6 +139,18 @@ Rules:
 - Hidden caches: NPCs of role `cache` (an "Old Chest", no figure, a `storage_chest` prop on the same spot) with a
   `note`, `found` and `reward` in the zone file; `python tools/caches.py` writes their dialogue (open once: reward and
   flag `cache.<id>`, then empty). Nine sit at the abandoned places, the watchtower, the quarry and Moonfell.
+- Cooking fires: NPCs of role `hearth` (no figure, a floating "<name>: cook" sign) on a `camp_fire` prop or the Bent
+  Nail's hearth; `python tools/cooking.py` writes their dialogue from its `RECIPES` (one option per raw item, shown
+  only while the bag holds it: take one raw, give one cooked, stay at the fire). Four fires: the Bent Nail, East Watch,
+  the quarry, the Woodcutters' Camp. Cooked heal values are guesses. The test kit carries two raw beef and a venison;
+  `PIXEL_BOT=cook` (with `PIXEL_TEST=1` and `PIXEL_SPAWN` near a fire) cooks them. `net-tests/CookingTests.cs`.
+- Forging: Tess (role `smith`, at her anvil from six) forges gear from monster materials and gold. `python
+  tools/forge.py` writes `world/dialogue/smith.json` from its `RECIPES`: each recipe is a "Forge the ..." option shown
+  while bag and purse hold enough (take, pay, server action `forge:<item>`, `GameServer.ForgePrefix`: a rare piece of
+  the player's level into the gear list, or on the ground when it is full) and a "(Not enough yet.)" twin otherwise.
+  Recipes and prices are guesses. An open dialogue rebuilds its options when the bag or purse changes
+  (`Dialogues.Refresh`), since a choice that returns to the same node is shown before the new bag arrives.
+  `net-tests/ForgeTests.cs`.
 - Test a far area: set `PIXEL_SPAWN=x,z` before starting the server.
 - Enemy abilities and crystal drops are data in `world/enemies.json`; new effects go in `GameServer.Fire`.
 - Group AI (`EnemyTactics.cs`): fighters keep apart (`AllySpacing`), and a close blow needs a turn from the server

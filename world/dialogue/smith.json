@@ -1,0 +1,638 @@
+{
+  "npc": "smith",
+  "entries": [
+    {
+      "node": "forge"
+    }
+  ],
+  "nodes": {
+    "forge": {
+      "text": "Bring me what the monsters leave behind and coin for the coal, and I'll make you something better than the junk goblins carry.",
+      "face": "neutral",
+      "options": [
+        {
+          "text": "Forge the Twin Daggers (4 Wolf Fang, 2 Iron Scrap, 40 gold).",
+          "when": {
+            "all": [
+              {
+                "item": {
+                  "id": "wolf_fang",
+                  "count": 4
+                }
+              },
+              {
+                "item": {
+                  "id": "iron_scrap",
+                  "count": 2
+                }
+              },
+              {
+                "gold": {
+                  "min": 40
+                }
+              }
+            ]
+          },
+          "effects": [
+            {
+              "take": {
+                "item": "wolf_fang",
+                "count": 4
+              }
+            },
+            {
+              "take": {
+                "item": "iron_scrap",
+                "count": 2
+              }
+            },
+            {
+              "gold": -40
+            },
+            {
+              "action": "forge:twin_daggers"
+            }
+          ],
+          "next": "forged"
+        },
+        {
+          "text": "Twin Daggers: 4 Wolf Fang, 2 Iron Scrap, 40 gold. (Not enough yet.)",
+          "when": {
+            "not": {
+              "all": [
+                {
+                  "item": {
+                    "id": "wolf_fang",
+                    "count": 4
+                  }
+                },
+                {
+                  "item": {
+                    "id": "iron_scrap",
+                    "count": 2
+                  }
+                },
+                {
+                  "gold": {
+                    "min": 40
+                  }
+                }
+              ]
+            }
+          },
+          "next": "short"
+        },
+        {
+          "text": "Forge the Hunter's Longbow (2 Vine Fiber, 1 Antler, 2 Hawk Feather, 50 gold).",
+          "when": {
+            "all": [
+              {
+                "item": {
+                  "id": "vine_fiber",
+                  "count": 2
+                }
+              },
+              {
+                "item": {
+                  "id": "antler",
+                  "count": 1
+                }
+              },
+              {
+                "item": {
+                  "id": "hawk_feather",
+                  "count": 2
+                }
+              },
+              {
+                "gold": {
+                  "min": 50
+                }
+              }
+            ]
+          },
+          "effects": [
+            {
+              "take": {
+                "item": "vine_fiber",
+                "count": 2
+              }
+            },
+            {
+              "take": {
+                "item": "antler",
+                "count": 1
+              }
+            },
+            {
+              "take": {
+                "item": "hawk_feather",
+                "count": 2
+              }
+            },
+            {
+              "gold": -50
+            },
+            {
+              "action": "forge:hunters_longbow"
+            }
+          ],
+          "next": "forged"
+        },
+        {
+          "text": "Hunter's Longbow: 2 Vine Fiber, 1 Antler, 2 Hawk Feather, 50 gold. (Not enough yet.)",
+          "when": {
+            "not": {
+              "all": [
+                {
+                  "item": {
+                    "id": "vine_fiber",
+                    "count": 2
+                  }
+                },
+                {
+                  "item": {
+                    "id": "antler",
+                    "count": 1
+                  }
+                },
+                {
+                  "item": {
+                    "id": "hawk_feather",
+                    "count": 2
+                  }
+                },
+                {
+                  "gold": {
+                    "min": 50
+                  }
+                }
+              ]
+            }
+          },
+          "next": "short"
+        },
+        {
+          "text": "Forge the Spiked Club (2 Boar Tusk, 3 Iron Scrap, 30 gold).",
+          "when": {
+            "all": [
+              {
+                "item": {
+                  "id": "boar_tusk",
+                  "count": 2
+                }
+              },
+              {
+                "item": {
+                  "id": "iron_scrap",
+                  "count": 3
+                }
+              },
+              {
+                "gold": {
+                  "min": 30
+                }
+              }
+            ]
+          },
+          "effects": [
+            {
+              "take": {
+                "item": "boar_tusk",
+                "count": 2
+              }
+            },
+            {
+              "take": {
+                "item": "iron_scrap",
+                "count": 3
+              }
+            },
+            {
+              "gold": -30
+            },
+            {
+              "action": "forge:spiked_club"
+            }
+          ],
+          "next": "forged"
+        },
+        {
+          "text": "Spiked Club: 2 Boar Tusk, 3 Iron Scrap, 30 gold. (Not enough yet.)",
+          "when": {
+            "not": {
+              "all": [
+                {
+                  "item": {
+                    "id": "boar_tusk",
+                    "count": 2
+                  }
+                },
+                {
+                  "item": {
+                    "id": "iron_scrap",
+                    "count": 3
+                  }
+                },
+                {
+                  "gold": {
+                    "min": 30
+                  }
+                }
+              ]
+            }
+          },
+          "next": "short"
+        },
+        {
+          "text": "Forge the Bone Staff (1 Slime Core, 3 Crow's Eye, 1 Wisp Ember, 60 gold).",
+          "when": {
+            "all": [
+              {
+                "item": {
+                  "id": "slime_core",
+                  "count": 1
+                }
+              },
+              {
+                "item": {
+                  "id": "crow_eye",
+                  "count": 3
+                }
+              },
+              {
+                "item": {
+                  "id": "wisp_ember",
+                  "count": 1
+                }
+              },
+              {
+                "gold": {
+                  "min": 60
+                }
+              }
+            ]
+          },
+          "effects": [
+            {
+              "take": {
+                "item": "slime_core",
+                "count": 1
+              }
+            },
+            {
+              "take": {
+                "item": "crow_eye",
+                "count": 3
+              }
+            },
+            {
+              "take": {
+                "item": "wisp_ember",
+                "count": 1
+              }
+            },
+            {
+              "gold": -60
+            },
+            {
+              "action": "forge:bone_staff"
+            }
+          ],
+          "next": "forged"
+        },
+        {
+          "text": "Bone Staff: 1 Slime Core, 3 Crow's Eye, 1 Wisp Ember, 60 gold. (Not enough yet.)",
+          "when": {
+            "not": {
+              "all": [
+                {
+                  "item": {
+                    "id": "slime_core",
+                    "count": 1
+                  }
+                },
+                {
+                  "item": {
+                    "id": "crow_eye",
+                    "count": 3
+                  }
+                },
+                {
+                  "item": {
+                    "id": "wisp_ember",
+                    "count": 1
+                  }
+                },
+                {
+                  "gold": {
+                    "min": 60
+                  }
+                }
+              ]
+            }
+          },
+          "next": "short"
+        },
+        {
+          "text": "Forge the Dented Iron Helm (6 Iron Scrap, 2 Leather Scrap, 40 gold).",
+          "when": {
+            "all": [
+              {
+                "item": {
+                  "id": "iron_scrap",
+                  "count": 6
+                }
+              },
+              {
+                "item": {
+                  "id": "leather_scrap",
+                  "count": 2
+                }
+              },
+              {
+                "gold": {
+                  "min": 40
+                }
+              }
+            ]
+          },
+          "effects": [
+            {
+              "take": {
+                "item": "iron_scrap",
+                "count": 6
+              }
+            },
+            {
+              "take": {
+                "item": "leather_scrap",
+                "count": 2
+              }
+            },
+            {
+              "gold": -40
+            },
+            {
+              "action": "forge:iron_helm"
+            }
+          ],
+          "next": "forged"
+        },
+        {
+          "text": "Dented Iron Helm: 6 Iron Scrap, 2 Leather Scrap, 40 gold. (Not enough yet.)",
+          "when": {
+            "not": {
+              "all": [
+                {
+                  "item": {
+                    "id": "iron_scrap",
+                    "count": 6
+                  }
+                },
+                {
+                  "item": {
+                    "id": "leather_scrap",
+                    "count": 2
+                  }
+                },
+                {
+                  "gold": {
+                    "min": 40
+                  }
+                }
+              ]
+            }
+          },
+          "next": "short"
+        },
+        {
+          "text": "Forge the Leather Jerkin (3 Deer Hide, 2 Leather Scrap, 30 gold).",
+          "when": {
+            "all": [
+              {
+                "item": {
+                  "id": "deer_hide",
+                  "count": 3
+                }
+              },
+              {
+                "item": {
+                  "id": "leather_scrap",
+                  "count": 2
+                }
+              },
+              {
+                "gold": {
+                  "min": 30
+                }
+              }
+            ]
+          },
+          "effects": [
+            {
+              "take": {
+                "item": "deer_hide",
+                "count": 3
+              }
+            },
+            {
+              "take": {
+                "item": "leather_scrap",
+                "count": 2
+              }
+            },
+            {
+              "gold": -30
+            },
+            {
+              "action": "forge:leather_jerkin"
+            }
+          ],
+          "next": "forged"
+        },
+        {
+          "text": "Leather Jerkin: 3 Deer Hide, 2 Leather Scrap, 30 gold. (Not enough yet.)",
+          "when": {
+            "not": {
+              "all": [
+                {
+                  "item": {
+                    "id": "deer_hide",
+                    "count": 3
+                  }
+                },
+                {
+                  "item": {
+                    "id": "leather_scrap",
+                    "count": 2
+                  }
+                },
+                {
+                  "gold": {
+                    "min": 30
+                  }
+                }
+              ]
+            }
+          },
+          "next": "short"
+        },
+        {
+          "text": "Forge the Boarhide Boots (3 Boar Hide, 20 gold).",
+          "when": {
+            "all": [
+              {
+                "item": {
+                  "id": "boar_hide",
+                  "count": 3
+                }
+              },
+              {
+                "gold": {
+                  "min": 20
+                }
+              }
+            ]
+          },
+          "effects": [
+            {
+              "take": {
+                "item": "boar_hide",
+                "count": 3
+              }
+            },
+            {
+              "gold": -20
+            },
+            {
+              "action": "forge:boar_boots"
+            }
+          ],
+          "next": "forged"
+        },
+        {
+          "text": "Boarhide Boots: 3 Boar Hide, 20 gold. (Not enough yet.)",
+          "when": {
+            "not": {
+              "all": [
+                {
+                  "item": {
+                    "id": "boar_hide",
+                    "count": 3
+                  }
+                },
+                {
+                  "gold": {
+                    "min": 20
+                  }
+                }
+              ]
+            }
+          },
+          "next": "short"
+        },
+        {
+          "text": "Forge the Chain Leggings (8 Iron Scrap, 1 Stone Scute, 60 gold).",
+          "when": {
+            "all": [
+              {
+                "item": {
+                  "id": "iron_scrap",
+                  "count": 8
+                }
+              },
+              {
+                "item": {
+                  "id": "stone_scute",
+                  "count": 1
+                }
+              },
+              {
+                "gold": {
+                  "min": 60
+                }
+              }
+            ]
+          },
+          "effects": [
+            {
+              "take": {
+                "item": "iron_scrap",
+                "count": 8
+              }
+            },
+            {
+              "take": {
+                "item": "stone_scute",
+                "count": 1
+              }
+            },
+            {
+              "gold": -60
+            },
+            {
+              "action": "forge:chain_leggings"
+            }
+          ],
+          "next": "forged"
+        },
+        {
+          "text": "Chain Leggings: 8 Iron Scrap, 1 Stone Scute, 60 gold. (Not enough yet.)",
+          "when": {
+            "not": {
+              "all": [
+                {
+                  "item": {
+                    "id": "iron_scrap",
+                    "count": 8
+                  }
+                },
+                {
+                  "item": {
+                    "id": "stone_scute",
+                    "count": 1
+                  }
+                },
+                {
+                  "gold": {
+                    "min": 60
+                  }
+                }
+              ]
+            }
+          },
+          "next": "short"
+        },
+        {
+          "text": "Goodbye."
+        }
+      ]
+    },
+    "forged": {
+      "text": "There. Mind the edge, it's still warm. Anything else?",
+      "face": "smile",
+      "options": [
+        {
+          "text": "Show me the rest.",
+          "next": "forge"
+        },
+        {
+          "text": "Goodbye."
+        }
+      ]
+    },
+    "short": {
+      "text": "Not with that. Come back when your bag and your purse are heavier.",
+      "options": [
+        {
+          "text": "Show me the rest.",
+          "next": "forge"
+        },
+        {
+          "text": "Goodbye."
+        }
+      ]
+    }
+  }
+}

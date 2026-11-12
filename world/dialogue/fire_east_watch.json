@@ -1,0 +1,202 @@
+{
+  "npc": "fire_east_watch",
+  "entries": [
+    {
+      "node": "fire"
+    }
+  ],
+  "nodes": {
+    "fire": {
+      "text": "The fire burns low and steady. A spit and a blackened pan wait over the embers. Raw meat or fish from the bag cooks here, one piece at a time.",
+      "options": [
+        {
+          "text": "Turn a chicken on the spit.",
+          "when": {
+            "item": {
+              "id": "raw_chicken"
+            }
+          },
+          "effects": [
+            {
+              "take": {
+                "item": "raw_chicken",
+                "count": 1
+              }
+            },
+            {
+              "give": {
+                "item": "roast_chicken",
+                "count": 1
+              }
+            }
+          ],
+          "next": "fire"
+        },
+        {
+          "text": "Skewer the hare meat.",
+          "when": {
+            "item": {
+              "id": "hare_meat"
+            }
+          },
+          "effects": [
+            {
+              "take": {
+                "item": "hare_meat",
+                "count": 1
+              }
+            },
+            {
+              "give": {
+                "item": "game_skewer",
+                "count": 1
+              }
+            }
+          ],
+          "next": "fire"
+        },
+        {
+          "text": "Skewer the goat meat.",
+          "when": {
+            "item": {
+              "id": "goat_meat"
+            }
+          },
+          "effects": [
+            {
+              "take": {
+                "item": "goat_meat",
+                "count": 1
+              }
+            },
+            {
+              "give": {
+                "item": "game_skewer",
+                "count": 1
+              }
+            }
+          ],
+          "next": "fire"
+        },
+        {
+          "text": "Roast the mutton.",
+          "when": {
+            "item": {
+              "id": "mutton"
+            }
+          },
+          "effects": [
+            {
+              "take": {
+                "item": "mutton",
+                "count": 1
+              }
+            },
+            {
+              "give": {
+                "item": "roast_mutton",
+                "count": 1
+              }
+            }
+          ],
+          "next": "fire"
+        },
+        {
+          "text": "Roast the boar meat.",
+          "when": {
+            "item": {
+              "id": "boar_meat"
+            }
+          },
+          "effects": [
+            {
+              "take": {
+                "item": "boar_meat",
+                "count": 1
+              }
+            },
+            {
+              "give": {
+                "item": "boar_roast",
+                "count": 1
+              }
+            }
+          ],
+          "next": "fire"
+        },
+        {
+          "text": "Sear the venison.",
+          "when": {
+            "item": {
+              "id": "venison"
+            }
+          },
+          "effects": [
+            {
+              "take": {
+                "item": "venison",
+                "count": 1
+              }
+            },
+            {
+              "give": {
+                "item": "venison_steak",
+                "count": 1
+              }
+            }
+          ],
+          "next": "fire"
+        },
+        {
+          "text": "Sear the beef.",
+          "when": {
+            "item": {
+              "id": "raw_beef"
+            }
+          },
+          "effects": [
+            {
+              "take": {
+                "item": "raw_beef",
+                "count": 1
+              }
+            },
+            {
+              "give": {
+                "item": "seared_steak",
+                "count": 1
+              }
+            }
+          ],
+          "next": "fire"
+        },
+        {
+          "text": "Grill the mirefin fillet on a hot stone.",
+          "when": {
+            "item": {
+              "id": "mirefin_fillet"
+            }
+          },
+          "effects": [
+            {
+              "take": {
+                "item": "mirefin_fillet",
+                "count": 1
+              }
+            },
+            {
+              "give": {
+                "item": "grilled_fillet",
+                "count": 1
+              }
+            }
+          ],
+          "next": "fire"
+        },
+        {
+          "text": "Leave the fire."
+        }
+      ]
+    }
+  }
+}

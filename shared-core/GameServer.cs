@@ -73,6 +73,8 @@ public sealed class ServerStats
 
     /// <summary>Pieces of gear dropped, by rarity.</summary>
     public readonly long[] GearDropped = new long[4];
+    public long GearForged;
+    public long Gathered;
 }
 
 public enum ProjectileKind : byte
@@ -272,6 +274,9 @@ public sealed partial class GameServer : IEnemyEvents
     /// <summary>How many pieces of gear a player can carry, worn ones included.</summary>
     public const int GearSlots = 24;
 
+    /// <summary>The story action that has Tess forge an item: forge:&lt;item id&gt; (tools/forge.py writes her recipes).</summary>
+    public const string ForgePrefix = "forge:";
+
     /// <summary>Bleeding lasts this long and deals this share of the blow that caused it, spread over its length.</summary>
     private const int BleedTicks = 180;
     private const float BleedShare = 0.6f;
@@ -372,6 +377,9 @@ public sealed partial class GameServer : IEnemyEvents
 
         /// <summary>Gear carried, by place; a place is empty when null. Worn pieces stay in the list.</summary>
         public readonly GearPiece?[] Gear = new GearPiece?[GearSlots];
+
+        /// <summary>Gather spots this player picked, with the tick each grows back.</summary>
+        public readonly Dictionary<int, uint> RegrowAt = new();
         public readonly HashSet<int> Worn = new();
         public readonly HashSet<int> GearChanged = new();
         public int GearCursor;
@@ -450,7 +458,17 @@ public sealed partial class GameServer : IEnemyEvents
         public required int Owner;
         public Vector3 Position;
         public int Life = CrystalLifeTicks;
+
+        /// <summary>The gather spot this herb or mushroom grows on, or -1 for a drop.</summary>
+        public int Spot = -1;
     }
+
+    /// <summary>A picked herb or mushroom grows back after this long (ten minutes).</summary>
+    public const uint GatherRegrowTicks = Tuning.TickRate * 600;
+
+    /// <summary>Herbs and mushrooms show to a player within this distance, and go when they are farther than <see cref="GatherDrop"/>.</summary>
+    private const float GatherReach = 32f;
+    private const float GatherDrop = 44f;
 
     private readonly ITransport _transport;
     private readonly World _world;
@@ -686,7 +704,7 @@ public sealed partial class GameServer : IEnemyEvents
 
     public int CrystalsOnGround => _loot.Count(l => ItemDef.All[l.Item].IsCrystal);
 
-    public int LootOnGround => _loot.Count;
+    public int LootOnGround => _loot.Count(l => l.Spot < 0);
 
     /// <summary>For tests: wounds a player without an enemy.</summary>
     public void HurtForTest(int id, short damage) => _players[id].State.Health -= damage;
@@ -755,6 +773,11 @@ public sealed partial class GameServer : IEnemyEvents
         foreach (var player in _players.Values.OrderBy(p => p.Id))
         {
             StepPlayer(player);
+        }
+
+        if (Tick % 20 == 0)
+        {
+            StepGathers();
         }
 
         StepLoot();
@@ -913,6 +936,10 @@ public sealed partial class GameServer : IEnemyEvents
                     player.Gear[i + 1] = GearPiece.Roll(ItemDef.Index(kit[i]), (Rarity)(i % 4), 5, _random);
                     player.GearChanged.Add(i + 1);
                 }
+
+                // And a little raw meat, so a fire's recipes show at once.
+                AddItem(player, ItemDef.Index("raw_beef"), 2);
+                AddItem(player, ItemDef.Index("venison"), 1);
             }
         }
 
@@ -1101,7 +1128,8 @@ public sealed partial class GameServer : IEnemyEvents
 
         if (def.IsFood || def.IsPotion)
         {
-            Obey(player, ItemCommands.Eat(item));
+            // Not through the eat command range: it reaches only the first 64 items, and the potions sit past them.
+            Consume(player, item);
             return;
         }
 
@@ -1110,6 +1138,28 @@ public sealed partial class GameServer : IEnemyEvents
             AddItem(player, item, -1);
             Stats.SkillsLearned++;
             FillSkillSlot(player, skill);
+        }
+    }
+
+    /// <summary>Eats a food or drinks a potion from the bag; potions share a cooldown.</summary>
+    private void Consume(Player player, ushort item)
+    {
+        var def = ItemDef.All[item];
+        if (player.Bag.GetValueOrDefault(item) <= 0 || player.State.Health <= 0 || def.IsPotion && Tick < player.PotionReady || !def.IsFood && !def.IsPotion)
+        {
+            return;
+        }
+
+        AddItem(player, item, -1);
+        player.State.Health = (short)Math.Min(player.State.Health + def.Heal, MaxHealth(player));
+        if (def.IsPotion)
+        {
+            player.PotionReady = Tick + PotionCooldownTicks;
+            Stats.PotionsDrunk++;
+        }
+        else
+        {
+            Stats.MealsEaten++;
         }
     }
 
@@ -1457,18 +1507,8 @@ public sealed partial class GameServer : IEnemyEvents
                 }
 
                 break;
-            case var eat when ItemCommands.TryEat(eat, out var food) && ItemDef.All[food].IsFood &&
-                              player.Bag.GetValueOrDefault(food) > 0 && player.State.Health > 0:
-                AddItem(player, food, -1);
-                player.State.Health = (short)Math.Min(player.State.Health + ItemDef.All[food].Heal, MaxHealth(player));
-                Stats.MealsEaten++;
-                break;
-            case var drink when ItemCommands.TryEat(drink, out var potion) && ItemDef.All[potion].IsPotion &&
-                                player.Bag.GetValueOrDefault(potion) > 0 && player.State.Health > 0 && Tick >= player.PotionReady:
-                AddItem(player, potion, -1);
-                player.State.Health = (short)Math.Min(player.State.Health + ItemDef.All[potion].Heal, MaxHealth(player));
-                player.PotionReady = Tick + PotionCooldownTicks;
-                Stats.PotionsDrunk++;
+            case var eat when ItemCommands.TryEat(eat, out var food):
+                Consume(player, food);
                 break;
             case var buy when ShopCommands.TryBuy(buy, out var ware) && Near(player, ItemDef.All[ware].Shop) && player.Gold >= ItemDef.All[ware].Price:
                 player.Gold -= ItemDef.All[ware].Price;
@@ -1667,6 +1707,31 @@ public sealed partial class GameServer : IEnemyEvents
                 _world.Npcs.FirstOrDefault(n => n.Id == to) is { Role: Waystones.Role } stone)
             {
                 Move(player, Waystones.Arrival(stone));
+            }
+
+            return;
+        }
+
+        if (action.StartsWith(ForgePrefix, StringComparison.Ordinal))
+        {
+            // Tess forges a piece from the materials the option took: a rare of the player's level, into the gear
+            // list, or on the ground at the player's feet while the list is full.
+            if (Near(player, "smith") && ItemDef.TryIndex(action[ForgePrefix.Length..], out var item) && ItemDef.All[item].IsEquipment)
+            {
+                var piece = GearPiece.Roll(item, Rarity.Rare, (byte)Math.Clamp((int)player.Level, 1, 255), _random);
+                var free = Array.IndexOf(player.Gear, null);
+                if (free >= 0)
+                {
+                    player.Gear[free] = piece;
+                    player.GearChanged.Add(free);
+                }
+                else
+                {
+                    var spot = player.State.Position with { Y = _world.GroundHeight(player.State.Position.X, player.State.Position.Z) };
+                    _loot.Add(new Loot { Id = _nextId++, Item = item, Owner = player.Id, Position = spot, Life = int.MaxValue / 2, Gear = piece });
+                }
+
+                Stats.GearForged++;
             }
 
             return;
@@ -3049,6 +3114,36 @@ public sealed partial class GameServer : IEnemyEvents
         return loot;
     }
 
+    /// <summary>
+    /// Herbs and mushrooms are loot of their own spot, made for each player near a spot where nothing is picked
+    /// and taken away again when the player has gone; walking over one picks it, as with any drop.
+    /// </summary>
+    private void StepGathers()
+    {
+        if (_world.Gathers.Count == 0)
+        {
+            return;
+        }
+
+        _loot.RemoveAll(l => l.Spot >= 0 && (!_players.TryGetValue(l.Owner, out var owner) ||
+            Vector3.DistanceSquared(owner.State.Position, l.Position) > GatherDrop * GatherDrop));
+        foreach (var player in _players.Values)
+        {
+            var near = player.State.Position;
+            foreach (var spot in _world.Gathers)
+            {
+                if (Vector3.DistanceSquared(spot.Position, near) > GatherReach * GatherReach ||
+                    player.RegrowAt.TryGetValue(spot.Index, out var regrow) && regrow > Tick ||
+                    _loot.Any(l => l.Spot == spot.Index && l.Owner == player.Id))
+                {
+                    continue;
+                }
+
+                _loot.Add(new Loot { Id = _nextId++, Item = spot.Item, Owner = player.Id, Position = spot.Position, Life = int.MaxValue / 2, Spot = spot.Index });
+            }
+        }
+    }
+
     private void StepLoot()
     {
         foreach (var loot in _loot)
@@ -3088,6 +3183,11 @@ public sealed partial class GameServer : IEnemyEvents
             {
                 AddItem(owner, loot.Item, 1);
                 Stats.ItemsLooted++;
+                if (loot.Spot >= 0)
+                {
+                    owner.RegrowAt[loot.Spot] = Tick + GatherRegrowTicks;
+                    Stats.Gathered++;
+                }
             }
 
             loot.Life = 0;
@@ -4598,8 +4698,9 @@ public sealed partial class GameServer : IEnemyEvents
             var shots = _projectiles
                 .OrderBy(s => Vector3.Distance(s.Position, origin)).Take(MaxProjectilesPerSnapshot)
                 .Select(s => new ProjectileView(s.Id, s.Kind, s.Position)).ToArray();
+            // Real drops first, then the herbs and mushrooms growing nearest.
             var drops = _loot.Where(l => l.Owner == player.Id)
-                .OrderBy(l => Vector3.Distance(l.Position, origin)).Take(MaxDropsPerSnapshot)
+                .OrderBy(l => l.Spot >= 0).ThenBy(l => Vector3.Distance(l.Position, origin)).Take(MaxDropsPerSnapshot)
                 .Select(l => new LootView(l.Id, l.Item, l.Position, l.Gear is { } piece ? (byte)piece.Rarity : LootView.NoRarity)).ToArray();
             var snapshot = new Snapshot
             {

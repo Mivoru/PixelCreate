@@ -276,11 +276,12 @@ public partial class GameClient : Node
                     _propViews.Add(actor.Id, node);
                 }
             }
-            else if (actor.Role is "storage" or "anchor_stone" or "quest_board" or Waystones.Role)
+            else if (actor.Role is "storage" or "anchor_stone" or "quest_board" or "hearth" or Waystones.Role)
             {
                 // Things you can use, like the Guild chest and the job board, carry a floating sign so players see them.
-                var height = actor.Role == "quest_board" ? 2.7f : actor.Role == Waystones.Role ? 3.7f : 1.25f;
-                _hud.Signs.Add((ToGodot(actor.Home) + Vector3.Up * height, actor.Role == "quest_board" ? "Quest Board: jobs" : actor.Name));
+                var height = actor.Role == "quest_board" ? 2.7f : actor.Role == Waystones.Role ? 3.7f : actor.Role == "hearth" ? 1.6f : 1.25f;
+                var sign = actor.Role switch { "quest_board" => "Quest Board: jobs", "hearth" => $"{actor.Name}: cook", _ => actor.Name };
+                _hud.Signs.Add((ToGodot(actor.Home) + Vector3.Up * height, sign));
             }
         }
 
@@ -1251,10 +1252,23 @@ public partial class GameClient : Node
         _hud.Prompt = door && (nearest is null || doorAt < best) ? "[E] Use door"
             : nearest is { Role: "storage" or "cache" } chest ? $"[E] Open the {chest.Name}"
             : nearest is { Role: Waystones.Role } stone ? $"[E] Touch the {stone.Name}"
+            : nearest is { Role: "hearth" } fire ? $"[E] Cook at the {fire.Name}"
             : nearest is { } target ? $"[E] Talk to {target.Name}" : "";
         if (_hud.DialogOpen && nearest is null && !_hud.SceneDialog)
         {
             _hud.CloseDialog();
+        }
+
+        if (_hud.DialogOpen)
+        {
+            // A fire, the forge or a shop changed the bag: the options on screen must follow it.
+            var purse = _client.Latest?.Gold ?? 0;
+            foreach (var (item, count) in _hud.Items.Counts)
+            {
+                purse = unchecked(purse * 31 + item * 977 + count);
+            }
+
+            Dialogues.Refresh(_hud, purse);
         }
 
         var snapshot = _client.Latest;
@@ -1827,6 +1841,11 @@ public partial class GameClient : Node
             return TavernBot();
         }
 
+        if (mode == "cook")
+        {
+            return CookBot();
+        }
+
         if (mode == "tutorial")
         {
             return TutorialBot();
@@ -2160,7 +2179,8 @@ public partial class GameClient : Node
         if (_hud.Items.Counts.FirstOrDefault(p => p.Value > 0 && ItemDef.All[p.Key].IsFood) is { Value: > 0 } food &&
             _client.State.Health < snapshot.MaxHealth && _botWait++ % 120 == 0)
         {
-            _pendingCommand = ItemCommands.Eat((ushort)food.Key);
+            // UseItem reaches every item; the old eat range stops at item 64.
+            (_pendingCommand, _pendingArg) = (Command.UseItem, (ushort)food.Key);
         }
 
         if (snapshot.Drops.Length > 0)
@@ -2528,6 +2548,58 @@ public partial class GameClient : Node
 
         BotStage("inside the Bent Nail");
         return walk;
+    }
+
+    /// <summary>
+    /// PIXEL_BOT=cook (with PIXEL_TEST=1, whose kit carries raw meat, and PIXEL_SPAWN near a fire): walks to the
+    /// nearest cooking fire, opens it and cooks every recipe it offers until only "Leave the fire." is left.
+    /// </summary>
+    private (sbyte X, sbyte Z, Buttons Buttons) CookBot()
+    {
+        var position = ToGodot(_client.State.Position);
+        var fire = _actors.Where(a => a.Role == "hearth").OrderBy(a => ToGodot(a.Home).DistanceTo(position)).First();
+        var spot = ToGodot(fire.Home);
+        if (_botStage == "done")
+        {
+            return (0, 0, Buttons.None);
+        }
+
+        if (new Vector2(position.X - spot.X, position.Z - spot.Z).Length() > 2.4f)
+        {
+            BotStage($"walk to {fire.Id}");
+            return BotGo(spot, 2.2f, Buttons.None);
+        }
+
+        BotStage("at the fire");
+        _yaw = Mathf.Atan2(position.X - spot.X, position.Z - spot.Z);
+        if (!_hud.DialogOpen)
+        {
+            if (_client.Tick % 30 == 0)
+            {
+                Interact();
+            }
+
+            _botWait = 0;
+        }
+        else if (++_botWait > BotDialogTicks)
+        {
+            var recipe = _hud.DialogLabels.FirstOrDefault(l => !l.StartsWith("Leave", StringComparison.Ordinal));
+            GD.Print($"BOT fire offers: {string.Join(" | ", _hud.DialogLabels)}");
+            if (recipe is null)
+            {
+                (_pendingCommand, _pendingArg) = _hud.ChooseLabel("Leave the fire.");
+                BotStage("done");
+            }
+            else
+            {
+                (_pendingCommand, _pendingArg) = _hud.ChooseLabel(recipe);
+                GD.Print($"BOT cooked: {recipe}");
+            }
+
+            _botWait = 0;
+        }
+
+        return (0, 0, Buttons.None);
     }
 
     private void BotStage(string stage)

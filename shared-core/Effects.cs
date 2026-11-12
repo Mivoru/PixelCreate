@@ -28,7 +28,7 @@ public abstract class Effect
 
     /// <summary>Whether a name is a server action: one of <see cref="Actions"/>, or scene:&lt;id&gt; to start a scene.</summary>
     public static bool IsAction(string name) => Actions.Contains(name) || name.StartsWith("scene:", StringComparison.Ordinal) ||
-        name.StartsWith(Waystones.TravelPrefix, StringComparison.Ordinal);
+        name.StartsWith(Waystones.TravelPrefix, StringComparison.Ordinal) || name.StartsWith(GameServer.ForgePrefix, StringComparison.Ordinal);
 
     public abstract void Apply(IStoryActions actions);
 
