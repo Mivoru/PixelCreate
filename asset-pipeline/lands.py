@@ -792,6 +792,37 @@ def tower_ruin(h):
         h.blob(f"moss{i}", (math.cos(a) * radius * 1.03, math.sin(a) * radius * 1.03, rng.uniform(0.3, 2.0)), 0.3, "moss", 400 + i, 0.4, 1)
 
 
+def stone_blocks(h):
+    """Dressed blocks cut from the quarry, stacked two high on timber skids, with a few chips and a mallet."""
+    rng = random.Random(421)
+    for row in range(2):
+        for k in range(3 - row):
+            x = -1.1 + k * 1.1 + row * 0.55
+            h.box(f"block{row}{k}", (x, 0, 0.35 + row * 0.62), (1.0, 0.9, 0.58), "stone_old" if (row + k) % 2 else "rock")
+    for y in (-0.35, 0.35):
+        h.timber(f"skid{y}", (-1.8, y, 0.05), (1.8, y, 0.05), 0.12, "wood_dark")
+    for i in range(6):
+        h.blob(f"chip{i}", (rng.uniform(-1.8, 1.8), rng.uniform(-1.0, -0.6), 0.04), rng.uniform(0.06, 0.12), "rock", 430 + i, 0.6, 1)
+    h.box("mallet_head", (1.5, -0.8, 0.08), (0.22, 0.12, 0.12), "wood_dark")
+    h.timber("mallet_handle", (1.5, -0.8, 0.08), (1.2, -1.2, 0.06), 0.035, "wood")
+
+
+def quarry_crane(h):
+    """A wooden quarry crane: a mast on a braced foot, a long jib, a treadwheel-less winch, and a rope
+    hanging from the jib's end with a block of stone in a sling."""
+    h.timber("mast", (0, 0, 0), (0, 0, 5.2), 0.24, "wood_dark")
+    for a in (0.0, 2.1, 4.2):
+        h.timber(f"brace{a}", (math.cos(a) * 1.4, math.sin(a) * 1.4, 0), (0, 0, 2.0), 0.14, "wood_dark")
+    h.timber("jib", (-0.6, 0, 4.4), (3.4, 0, 5.6), 0.18, "wood")
+    h.timber("stay", (0, 0, 5.2), (3.4, 0, 5.6), 0.05, "sack")
+    h.box("winch", (-0.5, 0.4, 1.0), (0.5, 0.5, 0.5), "wood")
+    h.timber("winch_handle", (-0.5, 0.7, 1.0), (-0.5, 1.0, 1.3), 0.05, "wood_dark")
+    h.timber("rope", (3.3, 0, 5.55), (3.3, 0, 1.6), 0.03, "sack")
+    h.box("hung_block", (3.3, 0, 1.3), (0.8, 0.7, 0.5), "stone_old")
+    h.timber("sling_a", (3.0, 0, 1.6), (3.3, 0, 1.9), 0.025, "sack")
+    h.timber("sling_b", (3.6, 0, 1.6), (3.3, 0, 1.9), 0.025, "sack")
+
+
 def sawhorse(h):
     """A sawbuck: two crossed frames of poles holding a log, a long two-man saw resting in a half-made cut."""
     for x in (-0.9, 0.9):
@@ -807,6 +838,8 @@ def sawhorse(h):
 
 BUILDERS = {
     "chopping_block": chopping_block,
+    "stone_blocks": stone_blocks,
+    "quarry_crane": quarry_crane,
     "tower_ruin": tower_ruin,
     "rowboat": rowboat,
     "fish_rack": fish_rack,

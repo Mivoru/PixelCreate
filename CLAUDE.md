@@ -462,6 +462,8 @@ Rules:
   Bandits (Bandit Hollow in the south woods west of the Last Lantern; kind `human`, looks from `NpcLooks.Enemy`,
   human voices in `GoblinView`): cutthroats (flankers with a sword), archers and the rare Red Hand Garrow. Marta's
   job "Bandits on Mirror Way" sends the player there from level 5.
+  Greystone Quarry north-east of the Old Ruins (three `cliff` blocks as the cut face, `stone_blocks`, `quarry_crane`,
+  a track from the woodcutters' track): Bors swings a pick at the face, Wilm dresses blocks and works the crane.
   War drum (`net-tests/WarDrumTests.cs`): camps with a `drum` point (every Ironjaw camp) answer it. A fighter that
   notices a player within 45 m of the drum runs to it instead (`Enemy.RunsToDrum`, one at a time via
   `ClaimDrum`), beats it for `Enemy.DrumTicks` (`EnemyAction.Drum`), and then every camp of that drum within 60 m

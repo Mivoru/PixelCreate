@@ -105,6 +105,7 @@
   { "name": "place_shepherds_croft", "eye": [-145, 5, -12], "at": [-140, 1, 6] },
   { "name": "place_last_lantern", "eye": [112, 5, 216], "at": [97, 2, 204] },
   { "name": "place_bandit_hollow", "eye": [10, 5, 190], "at": [-4, 1, 203] },
+  { "name": "place_quarry", "eye": [158, 6, 74], "at": [147, 3, 54] },
   { "name": "place_woodcutters", "eye": [203, 5, 63], "at": [216, 2, 76] },
   { "name": "rim_corner", "eye": [120, 40, -120], "at": [300, 20, -300] },
   { "name": "hills_north", "eye": [60, 14, -170], "at": [26, 4, -130] },

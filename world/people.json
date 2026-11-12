@@ -1787,5 +1787,74 @@
         "text": "Marta waters the ale. Don't tell her I said so."
       }
     ]
+  },
+  "bors": {
+    "voice": {
+      "id": "nPczCjzI2devNBz1zQrb",
+      "name": "Brian",
+      "stability": 0.6,
+      "similarity_boost": 0.75,
+      "style": 0.2
+    },
+    "moods": [],
+    "barks": [
+      {
+        "when": {
+          "time": {
+            "from": 360,
+            "to": 1140
+          }
+        },
+        "text": "Greystone. Best in the valley. The Guild hall's walls came out of this hill."
+      },
+      {
+        "when": {
+          "time": {
+            "from": 360,
+            "to": 1140
+          }
+        },
+        "text": "Hear that ring? Good stone rings. Bad stone thuds."
+      },
+      {
+        "when": {
+          "time": {
+            "from": 1140,
+            "to": 1260
+          }
+        },
+        "text": "My back's older than this quarry, and this quarry is old."
+      }
+    ]
+  },
+  "wilm": {
+    "voice": {
+      "id": "CwhRBWXzGAHq8TQ4Fs17",
+      "name": "Roger",
+      "stability": 0.5,
+      "similarity_boost": 0.75,
+      "style": 0.3
+    },
+    "moods": [],
+    "barks": [
+      {
+        "when": {
+          "time": {
+            "from": 360,
+            "to": 1140
+          }
+        },
+        "text": "Steady with that rope! Steady!"
+      },
+      {
+        "when": {
+          "time": {
+            "from": 360,
+            "to": 1140
+          }
+        },
+        "text": "Goblins pinched a cart of blocks last month. What does a goblin want with a block?"
+      }
+    ]
   }
 }

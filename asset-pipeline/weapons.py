@@ -324,6 +324,14 @@ def shepherd_crook(k):
     k.tube(hook, [0.018] * len(hook), [0.018] * len(hook), "wpn_wood_pale", sides=7)
 
 
+def pickaxe(k):
+    """A quarryman's pick: a stout ash haft and a curved iron head, pointed on one side and chisel-edged on the other."""
+    k.tube([(0, -0.3, 0), (0, 0.72, 0)], [0.024, 0.02], [0.028, 0.024], "wpn_wood", sides=8)
+    k.wrap(-0.28, -0.1, 0.027, "wpn_leather", "wpn_wood_dark", 5)
+    k.tube([(-0.32, 0.6, 0), (-0.15, 0.69, 0), (0, 0.72, 0), (0.15, 0.69, 0), (0.32, 0.6, 0)],
+           [0.008, 0.03, 0.04, 0.03, 0.012], [0.008, 0.03, 0.04, 0.03, 0.03], "wpn_iron", sides=6)
+
+
 def sentinel_blade(k):
     """An Auren sentinel's greatsword: a broad, straight blade of grey marble longer than a man's arm,
     a rune channel glowing down its middle, a bronze guard like spread wings and a long bronze-bound grip."""
@@ -344,6 +352,7 @@ BUILDERS = {
     "orc_spear": orc_spear,
     "orc_battle_axe": orc_battle_axe,
     "wood_axe": wood_axe,
+    "pickaxe": pickaxe,
     "fishing_rod": fishing_rod,
     "shepherd_crook": shepherd_crook,
     "twin_daggers": twin_daggers,

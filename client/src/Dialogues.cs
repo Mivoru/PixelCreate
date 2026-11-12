@@ -834,6 +834,53 @@ public static class NpcLooks
             },
         };
 
+    /// <summary>Bors: a broad, grizzled quarryman, dusted grey with stone, pick in hand.</summary>
+    private static readonly RigLook Quarryman = new("quarryman", new Color("d0a080"), 1.07f, "axe")
+    {
+        Hair = "shaved",
+        Cloak = false,
+        Mood = "neutral",
+        Item = "pickaxe",
+        WorkEvery = 1.9f,
+        WorkHeavy = true,
+        Extras = new[] { "beard_short", "apron" },
+        Eyes = new Color("4a4a3a"),
+        Brows = new Color("8a8a8a"),
+        FaceStyle = new FaceStyle(2, 0, 2, "cheek"),
+        Palette = new Dictionary<string, Color>
+        {
+            ["anime_hair"] = new("8a8a8a"),
+            ["anime_shirt"] = new("9a9488"),
+            ["anime_trousers"] = new("4a4440"),
+            ["anime_dark"] = new("2a2622"),
+            ["anime_apron"] = new("6a5a48"),
+            ["anime_glove"] = new("5a4a3a"),
+        },
+    };
+
+    /// <summary>Wilm: Bors's lean partner in a red cap, chiselling the blocks into shape.</summary>
+    private static readonly RigLook QuarrymanB = new("quarryman_b", new Color("e0b490"), 0.98f, "axe")
+    {
+        Hair = "short",
+        Cloak = false,
+        Mood = "neutral",
+        Item = "pickaxe",
+        WorkEvery = 1.2f,
+        Extras = new[] { "headband" },
+        Eyes = new Color("3a5a6a"),
+        Brows = new Color("4a3a2a"),
+        FaceStyle = new FaceStyle(1, 1, 1),
+        Palette = new Dictionary<string, Color>
+        {
+            ["anime_hair"] = new("5a3a2a"),
+            ["anime_shirt"] = new("b8aa90"),
+            ["anime_trousers"] = new("5a4a3a"),
+            ["anime_dark"] = new("2a2218"),
+            ["anime_accent"] = new("b84040"),
+            ["anime_glove"] = new("e0b490"),
+        },
+    };
+
     /// <summary>The look of a human enemy by its id, or null when it has none of its own.</summary>
     public static RigLook? Enemy(string id) => id switch
     {
@@ -851,7 +898,7 @@ public static class NpcLooks
         ("nell", Captive), ("haruto", Lost), ("vosk", FinderCaptain), ("gil", FinderGil), ("hanne", FinderHanne), ("corb", FinderCorb),
         ("corwin", BranchMaster), ("tam", Apprentice), ("edwin", PartySword), ("moss", PartyBow), ("fen", PartyHealer),
         ("rook", PartyShield), ("osric", Miller), ("anwen", MillerDaughter), ("hamm", FarmElder), ("maddy", FarmGirl),
-        ("tobias", Farmhand), ("oswin", Woodcutter), ("jory", WoodcutterB), ("tobb", Fisher), ("brin", Shepherd), ("marta", Innkeeper), ("aldous", Pilgrim), ("fennick", Peddler),
+        ("tobias", Farmhand), ("oswin", Woodcutter), ("jory", WoodcutterB), ("tobb", Fisher), ("brin", Shepherd), ("marta", Innkeeper), ("aldous", Pilgrim), ("fennick", Peddler), ("bors", Quarryman), ("wilm", QuarrymanB),
     };
 
     public static RigLook? For(string role) => role switch
@@ -892,6 +939,8 @@ public static class NpcLooks
         "innkeeper" => Innkeeper,
         "pilgrim" => Pilgrim,
         "peddler" => Peddler,
+        "quarryman" => Quarryman,
+        "quarryman_b" => QuarrymanB,
         _ => null,
     };
 }
@@ -927,6 +976,7 @@ public static class Dialogues
         "innkeeper" => "Innkeeper",
         "pilgrim" => "Pilgrim",
         "peddler" => "Peddler",
+        "quarryman" or "quarryman_b" => "Quarryman",
         "captive" => "Bonded Girl",
         "lost" => "Lightborn",
         "finder_captain" => "Finder Captain",
