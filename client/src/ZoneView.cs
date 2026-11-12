@@ -120,6 +120,19 @@ public static class ZoneView
             }
         }
 
+        // Lantern posts glow after dark: a warm light under each, off by day (Ambient switches them).
+        Ambient.Lamps.Clear();
+        foreach (var post in zone.Props.Where(p => p.Model == "lantern_post"))
+        {
+            var glow = new OmniLight3D
+            {
+                Position = new Vector3(post.Position.X, post.Position.Y + 2.4f, post.Position.Z),
+                LightColor = new Color("ffb860"), LightEnergy = 3.5f, OmniRange = 10f, OmniAttenuation = 0.7f, Visible = false,
+            };
+            root.AddChild(glow);
+            Ambient.Lamps.Add(glow);
+        }
+
         SplitLayers(root);
         return root;
     }

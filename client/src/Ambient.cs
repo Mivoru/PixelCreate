@@ -1,3 +1,4 @@
+using System.Linq;
 using System;
 using System.Collections.Generic;
 using Godot;
@@ -41,6 +42,9 @@ public partial class Ambient : Node3D
     private CpuParticles3D _leaves = null!;
     private CpuParticles3D _fireflies = null!;
     private CpuParticles3D _rain = null!;
+
+    /// <summary>The lights of the lantern posts, lit only after dark.</summary>
+    public static readonly List<OmniLight3D> Lamps = new();
 
     /// <summary>How hard it rains, 0 to 1; the game sets it from the clock every frame.</summary>
     public static float Rain { get; set; }
@@ -216,6 +220,11 @@ public partial class Ambient : Node3D
             // Inside the Guild and the arena there is no meadow to fly over.
             var outside = around.X < _zone.Size / 2f;
             var night = Night > 0.5f;
+            foreach (var lamp in Lamps)
+            {
+                lamp.Visible = night && outside;
+            }
+
             _butterflies.Emitting = outside && !night;
             _pollen.Emitting = outside && !night;
             _leaves.Emitting = outside;
