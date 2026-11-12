@@ -206,6 +206,11 @@
     { "id": "waystone_mirror_way", "name": "Mirror Way Waystone", "role": "waystone", "x": 105, "z": 244 }
   ],
   "hills": [
+    {"x": -170, "z": -188, "radius": 30, "height": 6},
+    {"x": -122, "z": -182, "radius": 24, "height": 5},
+    {"x": 146, "z": 124, "radius": 20, "height": 4.5},
+    {"x": -222, "z": 32, "radius": 26, "height": 5.5},
+    {"x": 188, "z": 104, "radius": 20, "height": 4},
     {"x": -22, "z": 170, "radius": 32, "height": 14},
     {"x": -50, "z": 152, "radius": 22, "height": 9},
     {"x": 10, "z": 154, "radius": 22, "height": 9},
