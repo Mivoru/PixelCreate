@@ -49,7 +49,7 @@ rozdělí na tři (pravou prozradí stín). Podrobnosti a co nebylo ověřeno: `
 Vrány na novém bojišti Crowfield na okraji Moonfell, nálety, rozprášení hejna, vzácný Gallows Rook s řadou pěti
 vran. Podrobnosti: `design/monster-audit.md`, poslední oddíl. Autor zatím nic nehrál (2026-11-11).
 
-## Noc 2026-11-11 až 12:00 (prodlouženo): seznam z hraní autora (pracovat samostatně)
+## Noc 2026-11-11 až 15:00 (prodlouženo): seznam z hraní autora (pracovat samostatně)
 
 Autor si zahrál a chce samostatnou práci do 6:00. Zaškrtávat, co je hotové:
 

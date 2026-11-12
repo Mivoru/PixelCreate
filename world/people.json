@@ -1943,5 +1943,44 @@
         "text": "Elda gave me a bun. I'm not sharing."
       }
     ]
+  },
+  "greta": {
+    "voice": {
+      "id": "Xb7hH8MSUJpSbSDYk0k2",
+      "name": "Alice",
+      "stability": 0.6,
+      "similarity_boost": 0.75,
+      "style": 0.25
+    },
+    "moods": [],
+    "barks": [
+      {
+        "when": {
+          "time": {
+            "from": 360,
+            "to": 1020
+          }
+        },
+        "text": "Turnips don't weed themselves. More's the pity."
+      },
+      {
+        "when": {
+          "time": {
+            "from": 360,
+            "to": 1020
+          }
+        },
+        "text": "Slugs again. If the Guild paid for slugs I'd be rich."
+      },
+      {
+        "when": {
+          "time": {
+            "from": 1020,
+            "to": 1200
+          }
+        },
+        "text": "Sit a while, love. The road will still be there."
+      }
+    ]
   }
 }
