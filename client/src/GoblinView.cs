@@ -103,7 +103,7 @@ public sealed class GoblinView : IEnemyView
             _ => "7fb04a",
         });
         var clothes = new Color(cloth);
-        var look = def.Id == Guild.ExaminerId ? NpcLooks.Examiner : new RigLook(kind, skin, def.Size, def.Weapon)
+        var look = def.Id == Guild.ExaminerId ? NpcLooks.Examiner : NpcLooks.Enemy(def.Id) ?? new RigLook(kind, skin, def.Size, def.Weapon)
         {
             Item = def.Kind == "sentinel" ? "sentinel_blade" : null,
             Palette = new System.Collections.Generic.Dictionary<string, Color>
@@ -288,7 +288,7 @@ public sealed class GoblinView : IEnemyView
         };
     }
 
-    private bool Female => _def.Id is "orc_spearwoman" or "orc_huntress" or "orc_spearcaller";
+    private bool Female => _def.Id is "orc_spearwoman" or "orc_huntress" or "orc_spearcaller" or "bandit_archer" || _def.Id == Guild.ExaminerId;
 
     private void PlaySounds(in EnemyView enemy, Vector3 position, Sfx sfx)
     {
@@ -345,14 +345,22 @@ public sealed class GoblinView : IEnemyView
                 }
                 else
                 {
-                    var voice = _def.Kind == "werewolf" ? "werewolf" : _def.Kind == "orc" ? (Female ? "orc_f" : "orc") : "goblin";
-                    sfx.Play(enemy.Action == EnemyAction.Dead ? $"{voice}_die" : $"{voice}_hit", position + Vector3.Up);
+                    if (_def.Kind == "human")
+                    {
+                        // People cry out like people.
+                        sfx.Play(enemy.Action == EnemyAction.Dead ? (Female ? "woman_death" : "man_death") : "hurt", position + Vector3.Up);
+                    }
+                    else
+                    {
+                        var voice = _def.Kind == "werewolf" ? "werewolf" : _def.Kind == "orc" ? (Female ? "orc_f" : "orc") : "goblin";
+                        sfx.Play(enemy.Action == EnemyAction.Dead ? $"{voice}_die" : $"{voice}_hit", position + Vector3.Up);
+                    }
                 }
             }
 
             if (enemy.Fighting && !_lastFighting)
             {
-                sfx.Play(_def.Kind == "sentinel" ? "shockwave" : _def.Kind == "werewolf" ? "werewolf_roar" : _def.Kind == "orc" ? (Female ? "orc_f_alert" : "orc_alert") : "goblin_alert", position + Vector3.Up);
+                sfx.Play(_def.Kind == "human" ? (Female ? "woman_shout" : "man_shout") : _def.Kind == "sentinel" ? "shockwave" : _def.Kind == "werewolf" ? "werewolf_roar" : _def.Kind == "orc" ? (Female ? "orc_f_alert" : "orc_alert") : "goblin_alert", position + Vector3.Up);
             }
 
             if (enemy.Action != _lastAction && enemy.Action == EnemyAction.Strike && _def.Abilities is { } list)
@@ -371,7 +379,7 @@ public sealed class GoblinView : IEnemyView
                     "pounce" => "werewolf_swipe",
                     "superJump" => "earth_crack",
                     "runeWave" => "swing_heavy",
-                    "melee" or "dashStrike" => _def.Kind == "werewolf" ? "werewolf_swipe" : _def.Kind == "orc" ? "orc_swing" : _def.Kind == "sentinel" ? "swing_heavy" : "goblin_swing",
+                    "melee" or "dashStrike" => _def.Kind == "werewolf" ? "werewolf_swipe" : _def.Kind == "orc" ? "orc_swing" : _def.Kind == "sentinel" ? "swing_heavy" : _def.Kind == "human" ? "swing_light" : "goblin_swing",
                     _ => null,
                 };
                 if (sound is not null)
@@ -380,7 +388,7 @@ public sealed class GoblinView : IEnemyView
                 }
 
                 // Goblins scream as they strike, not only when struck.
-                if (_def.Kind is not ("orc" or "werewolf" or "animal" or "slime" or "sentinel") && System.Random.Shared.NextDouble() < 0.5)
+                if (_def.Kind is not ("orc" or "werewolf" or "animal" or "slime" or "sentinel" or "human") && System.Random.Shared.NextDouble() < 0.5)
                 {
                     sfx.Play(System.Random.Shared.NextDouble() < 0.7 ? "goblin_shriek" : "goblin_cackle", position + Vector3.Up);
                 }

@@ -113,6 +113,41 @@
     "loot": [{"item": "goblin_tooth", "chance": 0.6, "min": 1, "max": 1}, {"item": "leather_scrap", "chance": 0.6, "min": 1, "max": 2}, {"item": "tattered_cloth", "chance": 0.4, "min": 1, "max": 1}]
   },
   {
+    "id": "bandit_cutthroat", "behavior": "flanker", "name": "Bandit Cutthroat", "kind": "human", "weapon": "sword", "defense": 4,
+    "minLevel": 5, "maxLevel": 7, "health": 120, "healthPerLevel": 18, "speed": 5.0, "size": 1.0, "aggroRange": 12, "preferredRange": 1.8, "tagHeight": 2.2,
+    "abilities": [
+      { "effect": "melee", "range": 2.3, "windupTicks": 18, "recoverTicks": 16, "cooldownTicks": 36, "damage": 12, "radius": 1.6 },
+      { "effect": "dashStrike", "range": 8, "minRange": 3, "windupTicks": 24, "recoverTicks": 22, "cooldownTicks": 220, "damage": 18, "radius": 1.8, "telegraph": "line" }
+    ],
+    "drops": [{ "rarity": 0, "chance": 1 }, { "rarity": 1, "chance": 0.08 }],
+    "gear": { "chance": 0.08, "rarity": [55, 30, 12, 3], "items": ["hannes_shortsword", "leather_jerkin", "archer_hood", "patched_trousers"] },
+    "loot": [{"item": "leather_scrap", "chance": 0.7, "min": 1, "max": 2}, {"item": "stolen_coin_purse", "chance": 0.35, "min": 1, "max": 1}, {"item": "bread", "chance": 0.3, "min": 1, "max": 1}]
+  },
+  {
+    "id": "bandit_archer", "behavior": "ranged", "name": "Bandit Archer", "kind": "human", "weapon": "bow",
+    "minLevel": 5, "maxLevel": 7, "health": 90, "healthPerLevel": 14, "speed": 4.2, "size": 1.0, "aggroRange": 16, "preferredRange": 11, "tagHeight": 2.2,
+    "abilities": [
+      { "effect": "arrow", "range": 16, "windupTicks": 44, "recoverTicks": 26, "cooldownTicks": 120, "damage": 13 },
+      { "effect": "powershot", "range": 24, "windupTicks": 64, "recoverTicks": 40, "cooldownTicks": 420, "damage": 26, "telegraph": "line" }
+    ],
+    "drops": [{ "rarity": 0, "chance": 1 }, { "rarity": 1, "chance": 0.08 }],
+    "gear": { "chance": 0.08, "rarity": [55, 30, 12, 3], "items": ["hunters_longbow", "archer_hood", "leather_jerkin"] },
+    "loot": [{"item": "crude_arrow", "chance": 0.8, "min": 3, "max": 6}, {"item": "stolen_coin_purse", "chance": 0.3, "min": 1, "max": 1}]
+  },
+  {
+    "id": "bandit_chief", "behavior": "brute", "name": "Red Hand Garrow", "kind": "human", "weapon": "longsword", "rare": true, "defense": 10,
+    "minLevel": 9, "maxLevel": 9, "health": 480, "healthPerLevel": 30, "speed": 4.8, "size": 1.08, "aggroRange": 14, "preferredRange": 2.0, "tagHeight": 2.4,
+    "enrageAt": 0.3, "enrageRecover": 0.6,
+    "abilities": [
+      { "effect": "melee", "range": 2.6, "windupTicks": 20, "recoverTicks": 18, "cooldownTicks": 40, "damage": 20, "radius": 1.9 },
+      { "effect": "combo", "range": 2.6, "windupTicks": 26, "recoverTicks": 36, "cooldownTicks": 240, "damage": 16, "radius": 1.9 },
+      { "effect": "dashStrike", "range": 9, "minRange": 3, "windupTicks": 26, "recoverTicks": 26, "cooldownTicks": 200, "damage": 26, "radius": 2.0, "telegraph": "line" }
+    ],
+    "drops": [{ "rarity": 1, "chance": 1 }, { "rarity": 2, "chance": 0.3 }],
+    "gear": { "chance": 0.5, "rarity": [20, 45, 28, 7], "items": ["hannes_shortsword", "iron_helm", "chain_leggings", "leather_jerkin"] },
+    "loot": [{"item": "stolen_coin_purse", "chance": 1, "min": 2, "max": 3}, {"item": "red_hand_token", "chance": 1, "min": 1, "max": 1}]
+  },
+  {
     "id": "guild_examiner", "name": "Examiner Rhea", "kind": "human", "weapon": "sword", "behavior": "duelist", "defense": 4,
     "minLevel": 5, "maxLevel": 5, "health": 340, "healthPerLevel": 0, "speed": 5.4, "size": 1.0,
     "aggroRange": 40, "preferredRange": 2,

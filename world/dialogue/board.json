@@ -252,6 +252,21 @@
      }
     },
     {
+     "text": "Bandits on Mirror Way (Marta): kill 3 bandits in Bandit Hollow. 200 gold",
+     "effects": [
+      {
+       "quest": {
+        "start": "bandit_hollow"
+       }
+      }
+     ],
+     "when": {
+      "level": {
+       "min": 5
+      }
+     }
+    },
+    {
      "text": "Leave"
     }
    ]

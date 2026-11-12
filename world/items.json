@@ -38,6 +38,8 @@
   { "id": "heartseed", "name": "Heartseed", "kind": "material", "tier": 2, "price": 85, "icon": "heartseed", "description": "The Stranglethorn's seed, as big as a fist. Something inside still beats." },
   { "id": "fin_spine", "name": "Fin Spine", "kind": "material", "tier": 1, "price": 15, "icon": "fin_spine", "description": "A long barbed spine from a mirefin's back. Sharp enough to sew leather." },
   { "id": "gulper_pearl", "name": "Gulper Pearl", "kind": "material", "tier": 2, "price": 95, "icon": "gulper_pearl", "description": "A lumpy grey pearl from the Old Gulper's gullet. It clouds when it rains." },
+  { "id": "stolen_coin_purse", "name": "Stolen Coin Purse", "kind": "material", "tier": 1, "price": 30, "icon": "stolen_coin_purse", "description": "Somebody's savings, cut from somebody's belt. Hollis buys them and asks no questions." },
+  { "id": "red_hand_token", "name": "Red Hand Token", "kind": "material", "tier": 2, "price": 90, "icon": "red_hand_token", "description": "A wooden disc painted with a red palm: Garrow's mark. The Guild pays well to see one." },
   { "id": "crow_eye", "name": "Crow's Eye", "kind": "material", "tier": 0, "price": 6, "icon": "crow_eye", "description": "Black and glossy. Hedge witches pay for them by the dozen." },
   { "id": "black_quill", "name": "Black Quill", "kind": "material", "tier": 2, "price": 60, "icon": "black_quill", "description": "A long pinion from the Gallows Rook, black with a sheen of green." },
 

@@ -771,7 +771,7 @@ ICONS = {
     "boar_hide": ("hide", "boarhide"), "wolf_pelt": ("hide", "wolf"), "wolf_fang": ("tusk", "ivory"), "orc_tusk": ("tusk", "antler"), "feather": ("feather", "white"),
     "auren_marble": ("shard", "bone"), "rune_core": ("gem", "blue"),
     "wisp_ember": ("blob", "wisp"), "barrow_glass": ("shard", "wisp"),
-    "crow_eye": ("gem", "crow"), "stone_scute": ("shard", "stone"), "vine_fiber": ("rag", "slime"), "fin_spine": ("tusk", "water"), "gulper_pearl": ("gem", "stone"), "heartseed": ("egg", "potion"), "elder_moss": ("blob", "rag"), "war_horn": ("horn", "horn"), "black_quill": ("feather", "crow"),
+    "crow_eye": ("gem", "crow"), "stone_scute": ("shard", "stone"), "vine_fiber": ("rag", "slime"), "stolen_coin_purse": ("rag", "leather"), "red_hand_token": ("ring", "potion"), "fin_spine": ("tusk", "water"), "gulper_pearl": ("gem", "stone"), "heartseed": ("egg", "potion"), "elder_moss": ("blob", "rag"), "war_horn": ("horn", "horn"), "black_quill": ("feather", "crow"),
     "raw_beef": ("steak", "meat"), "goat_meat": ("steak", "goat"), "venison": ("steak", "venison"),
     "mutton": ("steak", "mutton"), "boar_meat": ("steak", "boar"), "raw_chicken": ("drumstick", "chicken"),
     "egg": ("egg", "egg"), "hare_meat": ("drumstick", "venison"), "mirefin_fillet": ("steak", "water"), "bread": ("loaf", "bread"), "bond": ("scroll", "paper"),

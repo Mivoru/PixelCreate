@@ -499,5 +499,38 @@
         "route": false
       }
     ]
+  },
+  {
+    "id": "bandit_hollow",
+    "name": "Bandits on Mirror Way",
+    "kind": "job",
+    "giver": "board",
+    "repeatable": true,
+    "brief": "kill 3 bandits in Bandit Hollow",
+    "gold": 200,
+    "xp": 260,
+    "poster": "Marta, innkeeper",
+    "place": "Bandit Hollow in the woods west of the Last Lantern",
+    "journal": "Marta's notice: travellers on Mirror Way are robbed in the woods west of her inn, and the last one came in with an arrow in his pack. Red Hand Garrow's crew camp in a hollow there.",
+    "steps": [
+      {
+        "text": "Kill bandits in Bandit Hollow, in the woods west of the Last Lantern on Mirror Way.",
+        "goal": {
+          "kill": "bandit_*",
+          "count": 3
+        },
+        "at": [
+          -4,
+          202
+        ]
+      },
+      {
+        "text": "Return to the Guild and report to Mira.",
+        "goal": {
+          "talk": "mira"
+        },
+        "route": false
+      }
+    ]
   }
 ]

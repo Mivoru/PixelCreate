@@ -810,6 +810,39 @@ public static class NpcLooks
         },
     };
 
+    /// <summary>A bandit of the south woods: a hooded cutthroat in drab, patched leathers.</summary>
+    private static RigLook Bandit(string weapon, Color hood, Color coat, Color skin, string hair, bool feminine = false) =>
+        new("bandit", skin, feminine ? 0.96f : 1f, weapon)
+        {
+            Hair = hair,
+            Feminine = feminine,
+            Cloak = true,
+            Mood = "angry",
+            Extras = new[] { "vest" },
+            Eyes = new Color("3a3a2a"),
+            Brows = new Color("2a2218"),
+            FaceStyle = new FaceStyle(2, 0, 2, feminine ? "none" : "cheek", !feminine),
+            Palette = new Dictionary<string, Color>
+            {
+                ["anime_hair"] = new("3a2a1e"),
+                ["anime_shirt"] = coat,
+                ["anime_trousers"] = new("3a3428"),
+                ["anime_dark"] = new("22201a"),
+                ["anime_vest"] = new("5a4630"),
+                ["anime_cloak"] = hood,
+                ["anime_glove"] = new("3a2a1e"),
+            },
+        };
+
+    /// <summary>The look of a human enemy by its id, or null when it has none of its own.</summary>
+    public static RigLook? Enemy(string id) => id switch
+    {
+        "bandit_cutthroat" => Bandit("sword", new Color("4a4a3a"), new Color("6a5a40"), new Color("d8a888"), "undercut"),
+        "bandit_archer" => Bandit("bow", new Color("3a4a3a"), new Color("5a6a4a"), new Color("e8c0a0"), "lina", true),
+        "bandit_chief" => Bandit("sword", new Color("8a2a2a"), new Color("4a3a2a"), new Color("c89070"), "topknot") with { Scale = 1.08f, Item = "orc_longsword" },
+        _ => null,
+    };
+
     /// <summary>Every person with a name, for the photo studio.</summary>
     public static readonly (string Name, RigLook Look)[] All =
     {
