@@ -186,7 +186,9 @@ Rules:
   wakes the player at six the next morning (Mira offers the Guild bunk room then). Faction plans run every game hour.
   Act I lasts 70 days. The clock stands still while every player reads a dialogue or the menu (`Buttons.Reading`).
   The client lights the world by the hour (`PixelStage.SetTime`: dusk, dawn, a dark blue night with the moon);
-  `PIXEL_TIME=21` starts a new game at that hour and `PIXEL_OFF=daytime` keeps it day. The journal (L,
+  `PIXEL_TIME=21` starts a new game at that hour and `PIXEL_OFF=daytime` keeps it day. Rain (`GameTime.Rain`, from the day
+  and hour alone, so every player sees the same) greys the sky and fog (`PixelStage.Rain`) and falls round the camera
+  (`Ambient.Rain`); `PIXEL_RAIN=1` forces it. Fireflies drift after dark. The journal (L,
   `PIXEL_BOT=journal`) lists active quests and the notes of flags the player has.
 - Saves (`SaveGame.cs`): the server writes `%LOCALAPPDATA%/PixelCreate/saves/<slot>.json` each morning and on
   `Command.Quit` (the client sends it when quitting or closing the window), keeping `<slot>.bak.json`. `PIXEL_SLOT`

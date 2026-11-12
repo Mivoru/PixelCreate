@@ -40,6 +40,10 @@ public partial class Ambient : Node3D
     private CpuParticles3D _pollen = null!;
     private CpuParticles3D _leaves = null!;
     private CpuParticles3D _fireflies = null!;
+    private CpuParticles3D _rain = null!;
+
+    /// <summary>How hard it rains, 0 to 1; the game sets it from the clock every frame.</summary>
+    public static float Rain { get; set; }
     private float _time;
 
     /// <summary>How dark it is, from 0 by day to 1 at night; the game sets it from the clock every frame.</summary>
@@ -77,6 +81,16 @@ public partial class Ambient : Node3D
             ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
         };
         _fireflies.Emitting = false;
+        // Rain: thin pale streaks falling fast round the camera.
+        _rain = new CpuParticles3D
+        {
+            Amount = 1500, Lifetime = 0.9f, Preprocess = 1f, LocalCoords = false, Emitting = false,
+            EmissionShape = CpuParticles3D.EmissionShapeEnum.Box, EmissionBoxExtents = new Vector3(18, 1, 18),
+            Direction = Vector3.Down, Spread = 4f, InitialVelocityMin = 16f, InitialVelocityMax = 20f, Gravity = new Vector3(0.6f, -9f, 0.2f),
+            Mesh = new BoxMesh { Size = new Vector3(0.02f, 0.7f, 0.02f) },
+            MaterialOverride = new StandardMaterial3D { AlbedoColor = new Color("c8d4e4"), ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded },
+        };
+        AddChild(_rain);
         foreach (var prop in _zone.Props)
         {
             if (Chimneys.TryGetValue(prop.Model, out var top))
@@ -206,7 +220,10 @@ public partial class Ambient : Node3D
             _pollen.Emitting = outside && !night;
             _leaves.Emitting = outside;
             _fireflies.GlobalPosition = around + new Vector3(0, -1.6f, 0);
-            _fireflies.Emitting = outside && night;
+            _fireflies.Emitting = outside && night && Rain < 0.2f;
+            _rain.GlobalPosition = around + Vector3.Up * 12f;
+            _rain.Emitting = outside && Rain > 0.05f;
+            _butterflies.Emitting &= Rain < 0.2f;
         }
     }
 }

@@ -50,6 +50,34 @@ public readonly record struct GameTime(int Day, int Minute) : IComparable<GameTi
     /// <summary>Minutes since the first midnight, for comparing and adding.</summary>
     public long Total => (long)(Day - 1) * MinutesPerDay + Minute;
 
+    /// <summary>
+    /// How hard it rains, from 0 (dry) to 1: worked out from the day and hour alone, so every player sees the same
+    /// weather. About one day in three has a shower of a few hours, which comes on and clears over an hour.
+    /// </summary>
+    public float Rain
+    {
+        get
+        {
+            var seed = (uint)Day * 2654435761u;
+            if (seed % 3u != 0u)
+            {
+                return 0f;
+            }
+
+            var start = 7f + seed / 7u % 11u;
+            var length = 2f + seed / 77u % 4u;
+            var hour = Minute / 60f;
+            var into = hour - start;
+            if (into < 0f || into > length)
+            {
+                return 0f;
+            }
+
+            var ramp = MathF.Min(1f, MathF.Min(into, length - into));
+            return MathF.Min(1f, ramp) * (0.6f + seed / 777u % 5u * 0.1f);
+        }
+    }
+
     /// <summary>The dark hours, from eight in the evening to six in the morning, when night creatures are out.</summary>
     public bool IsDark => Minute >= SleepFromMinute || Minute < DayStartMinute;
 

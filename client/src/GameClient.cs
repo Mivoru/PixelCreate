@@ -503,6 +503,10 @@ public partial class GameClient : Node
             _stage.SetTime(now.Minute);
             var hour = now.Minute / 60f;
             Ambient.Night = hour >= 20.5f || hour < 5.5f ? 1f : 0f;
+            var rain = OS.GetEnvironment("PIXEL_RAIN") is { Length: > 0 } forced ? float.Parse(forced, System.Globalization.CultureInfo.InvariantCulture)
+                : new GameTime(now.Day, now.Minute).Rain;
+            Ambient.Rain = rain;
+            _stage.Rain = rain;
         }
 
         _stage.Underground = shown.X > ArchiveX ? 1f : 0f;

@@ -113,6 +113,15 @@ public sealed class PixelStage
         _sun.LightColor = new Color("fff0d8").Lerp(new Color("a8b8e8"), g).Lerp(new Color("ffb070"), _dusk * (1f - _night));
         _sun.LightEnergy = Mathf.Lerp(1.2f, 0.5f, g) * Mathf.Lerp(1f, 0.35f, _night);
         _environment.AmbientLightEnergy *= Mathf.Lerp(1f, 0.62f, _night);
+        if (Rain > 0f && Underground <= 0f)
+        {
+            // Rain: an overcast grey sky, weaker sun, fog closing in.
+            _sun.LightEnergy *= 1f - 0.55f * Rain;
+            _environment.AmbientLightColor = _environment.AmbientLightColor.Lerp(new Color("8a96a8"), Rain * 0.6f);
+            _environment.FogLightColor = _environment.FogLightColor.Lerp(new Color("7a8494"), Rain * 0.7f);
+            _environment.FogDensity = Mathf.Lerp(_environment.FogDensity, 0.012f, Rain);
+        }
+
         if (Underground > 0f)
         {
             // Below ground the sun barely reaches: dim light, a dark blue haze, the runes do the rest.
@@ -131,6 +140,13 @@ public sealed class PixelStage
             sky.SetShaderParameter("horizon_color", horizon);
             sky.SetShaderParameter("cloud_color", new Color(1f, 0.99f, 0.96f).Lerp(new Color(0.3f, 0.33f, 0.45f), _night));
             sky.SetShaderParameter("cloud_shade", new Color(0.72f, 0.8f, 0.9f).Lerp(new Color(0.18f, 0.2f, 0.3f), _night));
+            if (Rain > 0f)
+            {
+                var grey = new Color(0.5f, 0.54f, 0.6f).Lerp(new Color(0.1f, 0.11f, 0.15f), _night);
+                sky.SetShaderParameter("top_color", top.Lerp(grey, Rain * 0.8f));
+                sky.SetShaderParameter("horizon_color", horizon.Lerp(grey.Lightened(0.15f), Rain * 0.8f));
+                sky.SetShaderParameter("cloud_color", new Color(1f, 0.99f, 0.96f).Lerp(new Color(0.3f, 0.33f, 0.45f), _night).Lerp(grey, Rain * 0.7f));
+            }
         }
 
         var moon = Mathf.Max(g, _night);
@@ -140,6 +156,9 @@ public sealed class PixelStage
 
     /// <summary>0 in the open, 1 deep underground (the Sunken Archive). Takes effect at the next <see cref="SetGloom"/>.</summary>
     public float Underground;
+
+    /// <summary>How hard it rains, 0 to 1: the sky greys, the sun weakens and the fog closes in. Takes effect at the next <see cref="SetGloom"/>.</summary>
+    public float Rain;
 
     private float _night;
     private float _dusk;
