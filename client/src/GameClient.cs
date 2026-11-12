@@ -964,6 +964,41 @@ public partial class GameClient : Node
         }
     }
 
+    private float _howlWait = 20f;
+
+    /// <summary>
+    /// After dark, howls carry from the wild places: werewolves from Moonfell, wolves from Greyfang. Heard from far
+    /// off, from the direction of the place, never from inside the village walls of an interior.
+    /// </summary>
+    private void NightCalls(float delta)
+    {
+        _howlWait -= delta;
+        if (_howlWait > 0f || Ambient.Night < 0.5f)
+        {
+            return;
+        }
+
+        _howlWait = 25f + Random.Shared.NextSingle() * 35f;
+        var me = ToGodot(_client.State.Position);
+        if (me.X > ZoneView.InteriorX)
+        {
+            return;
+        }
+
+        foreach (var (place, sound) in new[] { (new Vector3(-205, 0, 205), "werewolf_howl"), (new Vector3(225, 0, 210), "wolf_howl") })
+        {
+            var distance = new Vector2(place.X - me.X, place.Z - me.Z).Length();
+            if (distance < 220f && Random.Shared.NextSingle() < 0.7f)
+            {
+                // From the direction of the place, but near enough to be heard: the sound is placed on the line to it.
+                var toward = (place - me) with { Y = 0 };
+                var at = me + toward.Normalized() * Mathf.Min(distance, 40f) + Vector3.Up * 2f;
+                _sfx.Play(sound, at, distance < 80f ? -4f : -12f);
+                return;
+            }
+        }
+    }
+
     /// <summary>The chat playing now: which one, the next line to say and when.</summary>
     private Chat? _chat;
     private int _chatLine;
@@ -1135,6 +1170,7 @@ public partial class GameClient : Node
 
         UpdateActors(delta);
         Overhear(delta);
+        NightCalls(delta);
         UpdateScene();
         UpdateSpeaker();
         Npc? nearest = null;
