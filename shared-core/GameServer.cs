@@ -44,6 +44,9 @@ public sealed class ServerStats
 
     /// <summary>Times a player stepped in a goblin trapper's snare, and goblins a warchief's horn called.</summary>
     public long Snared;
+
+    /// <summary>Times a vine caught a player.</summary>
+    public long VineLashes;
     public long HornCalls;
 
     /// <summary>War drums that sounded all the way through.</summary>
@@ -3421,6 +3424,17 @@ public sealed partial class GameServer : IEnemyEvents
             case "wispSplit":
                 SplitLantern(enemy, target);
                 break;
+            case "vineWhip":
+                Lash(enemy, direction, ability, 0);
+                break;
+            case "vineGrab":
+                // The Stranglethorn's three vines lash out in a fan; whoever one catches is held and dragged in.
+                foreach (var angle in new[] { -VineFan, 0f, VineFan })
+                {
+                    Lash(enemy, Vector3.Transform(direction, Matrix4x4.CreateRotationY(angle)), ability, VineHold);
+                }
+
+                break;
             case "shellSpin":
                 // A spinning shell batters whoever it runs into.
                 Area(enemy.Position, ability.Radius, ability.Damage, enemy);
@@ -3618,6 +3632,41 @@ public sealed partial class GameServer : IEnemyEvents
             decoy.TargetId = target?.Id ?? lantern.TargetId;
             decoy.ActionTicks = 20;
             _summons.Add(decoy);
+        }
+    }
+
+    /// <summary>Half the width of a vine's lash, in metres.</summary>
+    public const float VineHalfWidth = 0.7f;
+
+    /// <summary>How hard a vine drags whoever it catches back towards the plant, in metres a second.</summary>
+    public const float VinePull = 11f;
+
+    /// <summary>How long the Stranglethorn's grab holds the player (as slow), and how far apart its three vines fly.</summary>
+    public const byte VineHold = Tuning.TickRate * 3 / 2;
+    private const float VineFan = 0.42f;
+
+    /// <summary>
+    /// A vine lashes out along a line from the plant: every player across it is hurt and yanked back towards
+    /// the plant, into reach of its jaws; a grab also holds them a moment.
+    /// </summary>
+    private void Lash(Enemy plant, Vector3 direction, Ability ability, byte hold)
+    {
+        var way = direction with { Y = 0 };
+        way = way == Vector3.Zero ? Facing(plant) : Vector3.Normalize(way);
+        foreach (var player in _players.Values)
+        {
+            var offset = (player.State.Position - plant.Position) with { Y = 0 };
+            var along = Vector3.Dot(offset, way);
+            var across = MathF.Abs(offset.X * way.Z - offset.Z * way.X);
+            if (along < 0.5f || along > ability.Range || across > VineHalfWidth || !Hurt(player, ability.Damage, hold, plant, heavy: true))
+            {
+                continue;
+            }
+
+            Stats.VineLashes++;
+            var back = -offset;
+            back = back == Vector3.Zero ? -way : Vector3.Normalize(back);
+            player.State.Velocity += back * VinePull * MathF.Min(1f, along / 4f) + Vector3.UnitY * 2f;
         }
     }
 

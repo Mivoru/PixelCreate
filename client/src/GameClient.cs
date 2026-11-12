@@ -2549,6 +2549,7 @@ public partial class GameClient : Node
                     "animal" or "wolf" => new AnimalView(def, enemy.Id),
                     "wisp" => new WispView(def),
                     "crow" => new CrowView(def),
+                    "vine" => new VineView(def),
                     _ => new GoblinView(def),
                 };
                 _enemies.Add(enemy.Id, slime);
@@ -2625,7 +2626,7 @@ public partial class GameClient : Node
                 var heavy = _client.State.Attack == AttackKind.Heavy;
                 _sfx.Play(heavy ? "hit_heavy" : "hit", position + Vector3.Up, -3f);
                 _hud.AddFloating(slime.DamageTaken.ToString(), position + Vector3.Up * 1.6f, heavy ? new Color("feae34") : Colors.White);
-                var blood = def.Kind is "goblin" or "animal" or "wolf" or "orc" or "werewolf" ? "a22633" : def.Kind == "sentinel" ? "c8c8d0" : def.Kind == "wisp" ? "2ce8f5" : def.Kind == "crow" ? "262b44" : def.Rare ? "f6757a" : "63c74d";
+                var blood = def.Kind is "goblin" or "animal" or "wolf" or "orc" or "werewolf" ? "a22633" : def.Kind == "sentinel" ? "c8c8d0" : def.Kind == "wisp" ? "2ce8f5" : def.Kind == "crow" ? "262b44" : def.Kind == "vine" ? "63c74d" : def.Rare ? "f6757a" : "63c74d";
                 _fx.Burst(position + Vector3.Up * 0.6f, new Color(blood), heavy ? 22 : 12, 6f, 0.5f, 0.09f);
                 // A blow on a guardian's armoured front rings off it in sparks; one on its back cracks the stone.
                 if (def.FrontGuard < 1f)

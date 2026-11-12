@@ -49,7 +49,7 @@ rozdělí na tři (pravou prozradí stín). Podrobnosti a co nebylo ověřeno: `
 Vrány na novém bojišti Crowfield na okraji Moonfell, nálety, rozprášení hejna, vzácný Gallows Rook s řadou pěti
 vran. Podrobnosti: `design/monster-audit.md`, poslední oddíl. Autor zatím nic nehrál (2026-11-11).
 
-## Noc 2026-11-11 až 6:00: seznam z hraní autora (pracovat samostatně)
+## Noc 2026-11-11 až 12:00 (prodlouženo): seznam z hraní autora (pracovat samostatně)
 
 Autor si zahrál a chce samostatnou práci do 6:00. Zaškrtávat, co je hotové:
 
@@ -83,7 +83,7 @@ v `asset-pipeline/`, studio záběr (`PIXEL_MONSTERS=...`), dokumentace, commit 
    válečného bubnu), rána štítem, která odhodí. **Goblin Trapper** (Old Ruins): klade viditelné nášlapné
    sítě, které hráče na 1 s zpomalí (zpomalení musí jít přes `PlayerState`, aby ho klient předpověděl).
 4. ~~**Stoneback**~~ hotovo 2026-11-11 v noci (severní předhůří). Původně: (předhůří a sedla) s **Mossback Elder** (roztočí se v krunýři a klouže).
-5. **Vinelasher** (Emerald Jungle, nehýbe se) se **Stranglethorn** a **Mirefin** (Mirror Lake, ve vodě)
+5. ~~**Vinelasher**~~ hotovo 2026-11-12 (Mirefin zbývá). Původně: **Vinelasher** (Emerald Jungle, nehýbe se) se **Stranglethorn** a **Mirefin** (Mirror Lake, ve vodě)
    s **Old Gulper**. Oba potřebují nový druh pohybu, proto až na konci.
 6. Vegetace a domy zblízka (kontrola každé budovy zblízka), břehy pod mosty.
 7. Volitelně knihy dovedností ze vzácných: Rune Ward, Wisp Bolt, Vine Pull.

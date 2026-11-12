@@ -386,6 +386,27 @@
     "loot": [{"item": "stone_scute", "chance": 1, "min": 3, "max": 5}, {"item": "elder_moss", "chance": 1, "min": 1, "max": 1}]
   },
   {
+    "id": "vinelasher", "behavior": "rooted", "name": "Vinelasher", "kind": "vine", "statue": true,
+    "minLevel": 5, "maxLevel": 7, "health": 110, "healthPerLevel": 16, "speed": 0, "size": 1.1, "aggroRange": 8, "preferredRange": 2, "tagHeight": 2.0,
+    "abilities": [
+      { "effect": "melee", "range": 2.4, "windupTicks": 20, "recoverTicks": 18, "cooldownTicks": 46, "damage": 15, "radius": 1.6 },
+      { "effect": "vineWhip", "range": 6.5, "minRange": 2, "windupTicks": 34, "recoverTicks": 26, "cooldownTicks": 130, "damage": 9, "telegraph": "line" }
+    ],
+    "drops": [{ "rarity": 0, "chance": 1 }, { "rarity": 1, "chance": 0.05 }],
+    "loot": [{"item": "vine_fiber", "chance": 0.9, "min": 1, "max": 3}]
+  },
+  {
+    "id": "stranglethorn", "behavior": "rooted", "name": "Stranglethorn", "kind": "vine", "statue": true, "rare": true,
+    "minLevel": 8, "maxLevel": 8, "health": 380, "healthPerLevel": 30, "speed": 0, "size": 1.45, "aggroRange": 10, "preferredRange": 2.4, "tagHeight": 2.6,
+    "abilities": [
+      { "effect": "melee", "range": 2.8, "windupTicks": 20, "recoverTicks": 18, "cooldownTicks": 44, "damage": 22, "radius": 1.9 },
+      { "effect": "vineWhip", "range": 7, "minRange": 2, "windupTicks": 30, "recoverTicks": 24, "cooldownTicks": 120, "damage": 12, "telegraph": "line" },
+      { "effect": "vineGrab", "range": 7.5, "minRange": 2, "windupTicks": 44, "recoverTicks": 30, "cooldownTicks": 320, "damage": 12, "telegraph": "line" }
+    ],
+    "drops": [{ "rarity": 1, "chance": 1 }, { "rarity": 2, "chance": 0.2 }],
+    "loot": [{"item": "vine_fiber", "chance": 1, "min": 3, "max": 5}, {"item": "heartseed", "chance": 1, "min": 1, "max": 1}]
+  },
+  {
     "id": "auren_sentinel", "behavior": "brute", "name": "Auren Sentinel", "kind": "sentinel", "weapon": "longsword", "defense": 12,
     "statue": true, "frontGuard": 0.3, "backBonus": 1.5,
     "minLevel": 7, "maxLevel": 9, "health": 300, "healthPerLevel": 36, "speed": 2.6, "size": 1.25, "aggroRange": 6, "preferredRange": 3, "tagHeight": 2.9,

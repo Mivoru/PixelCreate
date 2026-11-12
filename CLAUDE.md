@@ -450,6 +450,10 @@ Rules:
   lunges (`dashStrike`); the rare Mossback Elder's `shellSpin` slides at the player, glancing off what stops it
   (`Enemy.Glanced`), then stands dizzy. The client tucks head, legs and tail in (`AnimalView.TuckIntoShell`).
   `net-tests/StonebackTests.cs`.
+  Vinelashers (Emerald Jungle; kind `vine`, behaviour `rooted`, `statue`, `VineView`) never move: they bite up close
+  and `vineWhip` a player within reach, yanking them in (`GameServer.Lash`, `GameServer.VinePull`); the rare
+  Stranglethorn's `vineGrab` throws three vines in a fan that also hold (`GameServer.VineHold` of slow).
+  `net-tests/VineTests.cs`.
   War drum (`net-tests/WarDrumTests.cs`): camps with a `drum` point (every Ironjaw camp) answer it. A fighter that
   notices a player within 45 m of the drum runs to it instead (`Enemy.RunsToDrum`, one at a time via
   `ClaimDrum`), beats it for `Enemy.DrumTicks` (`EnemyAction.Drum`), and then every camp of that drum within 60 m
