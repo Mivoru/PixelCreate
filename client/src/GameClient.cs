@@ -1420,6 +1420,7 @@ public partial class GameClient : Node
         {
             _sfx.Play("hurt", chest);
             _player.Face?.Flash("pain", 0.45f);
+            Kick(Mathf.Clamp((_last.Health - now.Health) / 25f, 0.35f, 1f));
             _hud.AddFloating($"-{_last.Health - now.Health}", chest + Vector3.Up, new Color("e43b44"));
         }
         else if (now.Health > _last.Health + 3 && _last.Health > 0)
@@ -2715,6 +2716,7 @@ public partial class GameClient : Node
             ShowTelegraph(enemy, def, position);
             if (slime.DamageTaken > 0)
             {
+                Kick(_client.State.Attack is AttackKind.Heavy or AttackKind.ClubSpin or AttackKind.GroundPound ? 0.8f : 0.45f);
                 var heavy = _client.State.Attack == AttackKind.Heavy;
                 _sfx.Play(heavy ? "hit_heavy" : "hit", position + Vector3.Up, -3f);
                 _hud.AddFloating(slime.DamageTaken.ToString(), position + Vector3.Up * 1.6f, heavy ? new Color("feae34") : Colors.White);
@@ -3486,9 +3488,26 @@ public partial class GameClient : Node
         var lift = CameraLift(target, position);
         _cameraLift = jumped ? lift : Mathf.Lerp(_cameraLift, lift, 1f - Mathf.Exp(-(lift > _cameraLift ? 10f : 4f) * delta));
         position.Y += _cameraLift;
-        _stage.Camera.LookAtFromPosition(position, target);
         NoteCameraJerk(position, target, jumped);
+        // A landed blow kicks the camera a little, decaying fast: the hit is felt, not only seen.
+        _kick = Mathf.MoveToward(_kick, 0f, delta * 6f);
+        if (_kick > 0f && !PixelStage.Off("shake"))
+        {
+            var t = (float)Time.GetTicksMsec() / 1000f;
+            var amount = _kick * _kick * 0.12f;
+            var wobble = new Vector3(Mathf.Sin(t * 61f), Mathf.Sin(t * 53f + 1.3f), 0) * amount;
+            position += _stage.Camera.GlobalBasis * wobble;
+            target += _stage.Camera.GlobalBasis * wobble * 0.5f;
+        }
+
+        _stage.Camera.LookAtFromPosition(position, target);
     }
+
+    /// <summary>How hard the camera shakes now, from 0 to 1: a blow that lands sets it, heavy ones more.</summary>
+    private float _kick;
+
+    /// <summary>Shakes the camera a little, as a landed blow or a hit taken.</summary>
+    private void Kick(float amount) => _kick = Mathf.Max(_kick, Mathf.Clamp(amount, 0f, 1f));
 
     private Vector3? _lastCameraOffset;
 

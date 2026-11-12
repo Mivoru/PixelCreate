@@ -379,7 +379,8 @@ Rules:
   village) measured 7 to 9 ms, and the reason for the change was never pinned down. Measure before
   trusting either number. On 2026-11-08 an idle bot measured 7 to 10 ms everywhere: village 9.6, Greyfang 8.8,
   the Ironjaw Warcamp 8.6 (2351 draws, the most), Moonfell 7.0. Spawn a measuring bot outside enemy aggro range:
-  inside a camp it dies at once and the rest of the run measures the village. `PIXEL_OFF=fog,ssao,glow,shadow,batches,grass` switches features off.
+  inside a camp it dies at once and the rest of the run measures the village. `PIXEL_OFF=fog,ssao,glow,shadow,batches,grass,shake` switches features off (shake: the camera kick on
+  landed blows and hits taken, `GameClient.Kick`).
 - Check after a change: `powershell -ExecutionPolicy Bypass -File scripts/check.ps1` runs the tests and the Guild
   story live, and lists script exceptions from the live run: one exception a frame freezes the HUD and the player
   without crashing. Add `-Jobs monsters,world` (studio jobs whose looks changed) for pictures; a server or AI
