@@ -132,6 +132,41 @@
      ]
     },
     {
+     "text": "Sage for the Cauldron (Wren): bring 6 Meadow Sage from the meadows. 40 gold",
+     "effects": [
+      {
+       "quest": {
+        "start": "sage_for_wren"
+       }
+      }
+     ]
+    },
+    {
+     "text": "Fish for the Bent Nail (Dorran): bring 4 Lake Perch from the Mirror Lake piers. 55 gold",
+     "effects": [
+      {
+       "quest": {
+        "start": "fish_for_the_nail"
+       }
+      }
+     ]
+    },
+    {
+     "text": "Glowcaps for the Guild (Mira): bring 4 Glowcaps from the old woods. 70 gold",
+     "effects": [
+      {
+       "quest": {
+        "start": "glowcaps_for_the_guild"
+       }
+      }
+     ],
+     "when": {
+      "level": {
+       "min": 3
+      }
+     }
+    },
+    {
      "text": "Raiders at the Fold (Brin): kill 3 goblins at the Westwood camp. 120 gold",
      "effects": [
       {

@@ -164,6 +164,15 @@ Rules:
   "Line out..." while it waits and "The line went slack" on a step away. The lake's mirefins (and the Old Gulper)
   attack players on the piers, so tests freeze enemies. `PIXEL_BOT=fish` (PIXEL_SPAWN near a pier) fishes three.
   `net-tests/FishingTests.cs`.
+- Why gather, fish, cook and forge (design/dungeon-archive.md, part 5): cooked food (`"buff": "wellFed"` in items.json)
+  makes the player Well Fed (`GameServer.WellFedHealthShare` more maximum health and a slow regeneration for
+  `WellFedTicks`); the Draught of Warding (Wren: glowcap, moonpetal, fin spine) makes them Warded (blows land at
+  `WardedDamageTaken` for `WardedTicks`). Both end on death and ride in `Snapshot.WellFedSeconds`/`WardedSeconds`
+  for the HUD pills under the status card. A bite has `DrownedKeyChance` of bringing up the Drowned Auren Key (only
+  while the player has none and the archive vault is unopened). Tess forges the Seal of the Keeper from the Keeper's
+  heart, moonpetals and rune cores. Repeatable gather jobs: sage for Wren, perch for the Bent Nail, glowcaps for the
+  Guild; `Navigation` leads a bring step for an item nobody drops to where it grows or to a fishing spot.
+  `net-tests/BuffTests.cs`.
 - `Command.UseItem` eats and drinks through `GameServer.Consume`: the old eat command range (`ItemCommands.Eat`)
   reaches only the first 64 items.
 - Test a far area: set `PIXEL_SPAWN=x,z` before starting the server.

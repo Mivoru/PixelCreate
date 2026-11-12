@@ -237,6 +237,30 @@
   },
   {
    "when": {
+    "quest": {
+     "sage_for_wren": "ready"
+    }
+   },
+   "node": "turn_in_sage_for_wren"
+  },
+  {
+   "when": {
+    "quest": {
+     "fish_for_the_nail": "ready"
+    }
+   },
+   "node": "turn_in_fish_for_the_nail"
+  },
+  {
+   "when": {
+    "quest": {
+     "glowcaps_for_the_guild": "ready"
+    }
+   },
+   "node": "turn_in_glowcaps_for_the_guild"
+  },
+  {
+   "when": {
     "all": [
      {
       "rank": {
@@ -1212,6 +1236,87 @@
        "setFlag": "trial_d.offered"
       }
      ]
+    }
+   ]
+  },
+  "turn_in_sage_for_wren": {
+   "text": "Well done! Here is your pay for Sage for the Cauldron: 40 gold.",
+   "face": "smile",
+   "options": [
+    {
+     "text": "Hand in the job",
+     "effects": [
+      {
+       "quest": {
+        "complete": "sage_for_wren"
+       }
+      }
+     ]
+    },
+    {
+     "text": "Sell all crystals ({crystalWorth} gold)",
+     "effects": [
+      {
+       "action": "sellCrystals"
+      }
+     ]
+    },
+    {
+     "text": "Goodbye"
+    }
+   ]
+  },
+  "turn_in_fish_for_the_nail": {
+   "text": "Well done! Here is your pay for Fish for the Bent Nail: 55 gold.",
+   "face": "smile",
+   "options": [
+    {
+     "text": "Hand in the job",
+     "effects": [
+      {
+       "quest": {
+        "complete": "fish_for_the_nail"
+       }
+      }
+     ]
+    },
+    {
+     "text": "Sell all crystals ({crystalWorth} gold)",
+     "effects": [
+      {
+       "action": "sellCrystals"
+      }
+     ]
+    },
+    {
+     "text": "Goodbye"
+    }
+   ]
+  },
+  "turn_in_glowcaps_for_the_guild": {
+   "text": "Well done! Here is your pay for Glowcaps for the Guild: 70 gold.",
+   "face": "smile",
+   "options": [
+    {
+     "text": "Hand in the job",
+     "effects": [
+      {
+       "quest": {
+        "complete": "glowcaps_for_the_guild"
+       }
+      }
+     ]
+    },
+    {
+     "text": "Sell all crystals ({crystalWorth} gold)",
+     "effects": [
+      {
+       "action": "sellCrystals"
+      }
+     ]
+    },
+    {
+     "text": "Goodbye"
     }
    ]
   }

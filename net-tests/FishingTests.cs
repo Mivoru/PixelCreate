@@ -8,7 +8,7 @@ namespace PixelCreate.NetTests;
 public class FishingTests
 {
     private static readonly Zone Valley = Zone.Load("meadow-valley");
-    private static readonly string[] Catch = { "river_perch", "silver_trout", "mirefin_fillet" };
+    private static readonly string[] Catch = { "river_perch", "silver_trout", "mirefin_fillet", "drowned_key" };
 
     private static void Run(GameServer server, ClientPrediction client, SimNetwork network, int ticks, Command command = Command.None, ushort arg = 0)
     {

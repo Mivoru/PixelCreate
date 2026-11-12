@@ -336,6 +336,78 @@
     ]
   },
   {
+    "id": "sage_for_wren",
+    "name": "Sage for the Cauldron",
+    "kind": "job",
+    "giver": "board",
+    "repeatable": true,
+    "brief": "bring 6 Meadow Sage",
+    "gold": 40,
+    "xp": 70,
+    "journal": "Wren's notice: she brews her red draughts from meadow sage, and the Guild drinks them faster than she can pick it. It grows in the meadows round Hearthmere.",
+    "steps": [
+      {
+        "text": "Pick Meadow Sage in the meadows round Hearthmere and bring it to Mira.",
+        "goal": {
+          "bring": {
+            "id": "meadow_sage",
+            "count": 6
+          }
+        }
+      }
+    ],
+    "poster": "Wren, alchemist",
+    "place": "the meadows round Hearthmere"
+  },
+  {
+    "id": "fish_for_the_nail",
+    "name": "Fish for the Bent Nail",
+    "kind": "job",
+    "giver": "board",
+    "repeatable": true,
+    "brief": "bring 4 Lake Perch",
+    "gold": 55,
+    "xp": 90,
+    "journal": "Dorran's notice: Friday is fish night at the Bent Nail, and Tobb's catch never stretches far enough. Perch bite off the piers on Mirror Lake.",
+    "steps": [
+      {
+        "text": "Catch Lake Perch off the piers on Mirror Lake and bring them to Mira.",
+        "goal": {
+          "bring": {
+            "id": "river_perch",
+            "count": 4
+          }
+        }
+      }
+    ],
+    "poster": "Dorran, the Bent Nail",
+    "place": "the piers on Mirror Lake"
+  },
+  {
+    "id": "glowcaps_for_the_guild",
+    "name": "Glowcaps for the Guild",
+    "kind": "job",
+    "giver": "board",
+    "repeatable": true,
+    "brief": "bring 4 Glowcaps",
+    "gold": 70,
+    "xp": 110,
+    "journal": "Mira's notice: the Guild's healer wants glowcaps for her salves. They grow in the shade of old trees in the Whispering Woods, Westwood and Greyfang.",
+    "steps": [
+      {
+        "text": "Find Glowcaps in the Whispering Woods and bring them to Mira.",
+        "goal": {
+          "bring": {
+            "id": "glowcap",
+            "count": 4
+          }
+        }
+      }
+    ],
+    "poster": "Mira, Guild receptionist",
+    "place": "the Whispering Woods"
+  },
+  {
     "id": "fold_raiders",
     "name": "Raiders at the Fold",
     "kind": "job",

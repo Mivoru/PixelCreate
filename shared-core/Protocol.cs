@@ -82,6 +82,10 @@ public sealed class Snapshot
 
     /// <summary>Health the staff's Arcane Barrier still soaks up.</summary>
     public short Barrier;
+
+    /// <summary>Seconds left of Well Fed (cooked food) and of Warded (the warding draught), 0 when off.</summary>
+    public ushort WellFedSeconds;
+    public ushort WardedSeconds;
     public GuildRank Rank;
     public int Gold;
 
@@ -217,6 +221,8 @@ public static class Protocol
         writer.Write(snapshot.Parries);
         writer.Write(snapshot.Ripostes);
         writer.Write(snapshot.Barrier);
+        writer.Write(snapshot.WellFedSeconds);
+        writer.Write(snapshot.WardedSeconds);
         writer.Write(snapshot.Attributes, 0, Core.Attributes.Count);
         writer.Write(snapshot.UnspentPoints);
         writer.Write(snapshot.KnownSkills);
@@ -369,6 +375,8 @@ public static class Protocol
         snapshot.Parries = reader.ReadByte();
         snapshot.Ripostes = reader.ReadByte();
         snapshot.Barrier = reader.ReadInt16();
+        snapshot.WellFedSeconds = reader.ReadUInt16();
+        snapshot.WardedSeconds = reader.ReadUInt16();
         snapshot.Attributes = reader.ReadBytes(Core.Attributes.Count);
         snapshot.UnspentPoints = reader.ReadByte();
         snapshot.KnownSkills = reader.ReadUInt32();

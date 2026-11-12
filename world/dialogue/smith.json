@@ -605,6 +605,96 @@
           "next": "short"
         },
         {
+          "text": "Forge the Seal of the Keeper (1 Keeper's Heart, 3 Moonpetal, 2 Rune Core, 150 gold).",
+          "when": {
+            "all": [
+              {
+                "item": {
+                  "id": "keeper_heart",
+                  "count": 1
+                }
+              },
+              {
+                "item": {
+                  "id": "moonpetal",
+                  "count": 3
+                }
+              },
+              {
+                "item": {
+                  "id": "rune_core",
+                  "count": 2
+                }
+              },
+              {
+                "gold": {
+                  "min": 150
+                }
+              }
+            ]
+          },
+          "effects": [
+            {
+              "take": {
+                "item": "keeper_heart",
+                "count": 1
+              }
+            },
+            {
+              "take": {
+                "item": "moonpetal",
+                "count": 3
+              }
+            },
+            {
+              "take": {
+                "item": "rune_core",
+                "count": 2
+              }
+            },
+            {
+              "gold": -150
+            },
+            {
+              "action": "forge:seal_of_the_keeper"
+            }
+          ],
+          "next": "forged"
+        },
+        {
+          "text": "Seal of the Keeper: 1 Keeper's Heart, 3 Moonpetal, 2 Rune Core, 150 gold. (Not enough yet.)",
+          "when": {
+            "not": {
+              "all": [
+                {
+                  "item": {
+                    "id": "keeper_heart",
+                    "count": 1
+                  }
+                },
+                {
+                  "item": {
+                    "id": "moonpetal",
+                    "count": 3
+                  }
+                },
+                {
+                  "item": {
+                    "id": "rune_core",
+                    "count": 2
+                  }
+                },
+                {
+                  "gold": {
+                    "min": 150
+                  }
+                }
+              ]
+            }
+          },
+          "next": "short"
+        },
+        {
           "text": "Goodbye."
         }
       ]

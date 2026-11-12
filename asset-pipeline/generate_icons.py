@@ -837,7 +837,8 @@ ICONS = {
     "rusty_dagger": ("dagger", "iron"), "spiked_club": ("club", "wood"), "goblin_shortbow": ("bow", "wood"),
     "hunters_longbow": ("longbow", "leather"), "bone_staff": ("staff", "wood"), "archer_hood": ("hood", "rag"),
     "shaman_mask": ("mask", "bone"), "hide_vest": ("vest", "leather"), "boar_boots": ("boots", "boarhide"),
-    "jelly_ring": ("ring", "slime"),
+    "jelly_ring": ("ring", "slime"), "seal_of_the_keeper": ("ring", "gold"),
+    "warding_draught": ("potion", "blue"), "keeper_heart": ("gem", "wisp"), "drowned_key": ("key", "stone"),
     "wooden_sword": ("sword", "wood"), "goblin_cap": ("hood", "leather"), "iron_helm": ("helm", "iron"), "leather_jerkin": ("vest", "deerhide"),
     "patched_trousers": ("trousers", "rag"), "chain_leggings": ("trousers", "iron"), "twin_daggers": ("twin_daggers", "iron"),
 }
@@ -845,6 +846,27 @@ ICONS = {
 
 def rgba(hex_color):
     return tuple(int(hex_color[i:i + 2], 16) for i in (0, 2, 4)) + (255,)
+
+
+SHAPES.update({
+    "key": """
+................
+................
+..........222...
+.........23332..
+........2341132.
+........2311432.
+........2343332.
+.......2133322..
+......212222....
+.....212........
+....212.........
+...21212........
+..2121.1........
+..121...........
+...1............
+................""",
+})
 
 
 SHAPES.update({

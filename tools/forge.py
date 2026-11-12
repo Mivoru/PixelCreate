@@ -22,6 +22,7 @@ RECIPES = [
     ("leather_jerkin", {"deer_hide": 3, "leather_scrap": 2}, 30),
     ("boar_boots", {"boar_hide": 3}, 20),
     ("chain_leggings", {"iron_scrap": 8, "stone_scute": 1}, 60),
+    ("seal_of_the_keeper", {"keeper_heart": 1, "moonpetal": 3, "rune_core": 2}, 150),
 ]
 
 

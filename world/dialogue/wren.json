@@ -151,6 +151,99 @@
           "next": "short"
         },
         {
+          "text": "Brew a Draught of Warding (1 Glowcap, 1 Moonpetal, 1 Fin Spine, 12 gold).",
+          "when": {
+            "all": [
+              {
+                "item": {
+                  "id": "glowcap",
+                  "count": 1
+                }
+              },
+              {
+                "item": {
+                  "id": "moonpetal",
+                  "count": 1
+                }
+              },
+              {
+                "item": {
+                  "id": "fin_spine",
+                  "count": 1
+                }
+              },
+              {
+                "gold": {
+                  "min": 12
+                }
+              }
+            ]
+          },
+          "effects": [
+            {
+              "take": {
+                "item": "glowcap",
+                "count": 1
+              }
+            },
+            {
+              "take": {
+                "item": "moonpetal",
+                "count": 1
+              }
+            },
+            {
+              "take": {
+                "item": "fin_spine",
+                "count": 1
+              }
+            },
+            {
+              "gold": -12
+            },
+            {
+              "give": {
+                "item": "warding_draught",
+                "count": 1
+              }
+            }
+          ],
+          "next": "brewed"
+        },
+        {
+          "text": "Brew a Draught of Warding: 1 Glowcap, 1 Moonpetal, 1 Fin Spine, 12 gold. (Not enough yet.)",
+          "when": {
+            "not": {
+              "all": [
+                {
+                  "item": {
+                    "id": "glowcap",
+                    "count": 1
+                  }
+                },
+                {
+                  "item": {
+                    "id": "moonpetal",
+                    "count": 1
+                  }
+                },
+                {
+                  "item": {
+                    "id": "fin_spine",
+                    "count": 1
+                  }
+                },
+                {
+                  "gold": {
+                    "min": 12
+                  }
+                }
+              ]
+            }
+          },
+          "next": "short"
+        },
+        {
           "text": "Goodbye"
         }
       ]
@@ -284,6 +377,99 @@
                 {
                   "gold": {
                     "min": 10
+                  }
+                }
+              ]
+            }
+          },
+          "next": "short"
+        },
+        {
+          "text": "Brew a Draught of Warding (1 Glowcap, 1 Moonpetal, 1 Fin Spine, 12 gold).",
+          "when": {
+            "all": [
+              {
+                "item": {
+                  "id": "glowcap",
+                  "count": 1
+                }
+              },
+              {
+                "item": {
+                  "id": "moonpetal",
+                  "count": 1
+                }
+              },
+              {
+                "item": {
+                  "id": "fin_spine",
+                  "count": 1
+                }
+              },
+              {
+                "gold": {
+                  "min": 12
+                }
+              }
+            ]
+          },
+          "effects": [
+            {
+              "take": {
+                "item": "glowcap",
+                "count": 1
+              }
+            },
+            {
+              "take": {
+                "item": "moonpetal",
+                "count": 1
+              }
+            },
+            {
+              "take": {
+                "item": "fin_spine",
+                "count": 1
+              }
+            },
+            {
+              "gold": -12
+            },
+            {
+              "give": {
+                "item": "warding_draught",
+                "count": 1
+              }
+            }
+          ],
+          "next": "brewed"
+        },
+        {
+          "text": "Brew a Draught of Warding: 1 Glowcap, 1 Moonpetal, 1 Fin Spine, 12 gold. (Not enough yet.)",
+          "when": {
+            "not": {
+              "all": [
+                {
+                  "item": {
+                    "id": "glowcap",
+                    "count": 1
+                  }
+                },
+                {
+                  "item": {
+                    "id": "moonpetal",
+                    "count": 1
+                  }
+                },
+                {
+                  "item": {
+                    "id": "fin_spine",
+                    "count": 1
+                  }
+                },
+                {
+                  "gold": {
+                    "min": 12
                   }
                 }
               ]

@@ -1472,10 +1472,30 @@ public partial class Hud : Control
             Label(label, rect.Position + new Vector2(42, 22), 15, Accent, _bold);
         }
 
+        // Buffs from cooked food and the warding draught, then a slow, in a row under the card.
+        var x = 28f;
+        foreach (var (name, seconds, tint, ink) in new[]
+                 {
+                     ("Well Fed", Snapshot?.WellFedSeconds ?? 0, new Color(0.42f, 0.27f, 0.08f, 0.82f), new Color("feae34")),
+                     ("Warded", Snapshot?.WardedSeconds ?? 0, new Color(0.08f, 0.24f, 0.42f, 0.82f), new Color("8fe8ff")),
+                 })
+        {
+            if (seconds == 0)
+            {
+                continue;
+            }
+
+            var text = $"{name}  {seconds / 60}:{seconds % 60:00}";
+            var pill = new Rect2(x, 148, Width(text, 16, _bold) + 32, 34);
+            Card(pill, 17, tint);
+            Label(text, pill.Position + new Vector2(16, 23), 16, ink, _bold);
+            x = pill.End.X + 8;
+        }
+
         if (Player.SlowTicks > 0)
         {
             var label = $"Slowed  {Player.SlowTicks / 60f:F1}s";
-            var rect = new Rect2(28, 148, Width(label, 16, _bold) + 32, 34);
+            var rect = new Rect2(x, 148, Width(label, 16, _bold) + 32, 34);
             Card(rect, 17, new Color(0.2f, 0.35f, 0.1f, 0.8f));
             Label(label, rect.Position + new Vector2(16, 23), 16, new Color("c8f59a"), _bold);
         }

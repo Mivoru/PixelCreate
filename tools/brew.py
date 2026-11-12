@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parent.parent
 BREWS = [
     ("minor_healing_potion", {"meadow_sage": 3}, 4),
     ("healing_potion", {"glowcap": 2, "moonpetal": 1}, 10),
+    ("warding_draught", {"glowcap": 1, "moonpetal": 1, "fin_spine": 1}, 12),
 ]
 
 HERBS = ("Bring me sage from the meadows, glowcaps from the deep woods or moonpetal from the old stones, "

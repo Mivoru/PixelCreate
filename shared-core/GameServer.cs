@@ -379,6 +379,14 @@ public sealed partial class GameServer : IEnemyEvents
         /// <summary>Gear carried, by place; a place is empty when null. Worn pieces stay in the list.</summary>
         public readonly GearPiece?[] Gear = new GearPiece?[GearSlots];
 
+        /// <summary>Ticks when Well Fed (cooked food) and Warded (the warding draught) end, and the regeneration carried over.</summary>
+        public uint WellFedUntil;
+        public uint WardedUntil;
+        public float FedCarry;
+
+        /// <summary>Well Fed this tick: set in the player's step, read by <see cref="MaxHealth"/>.</summary>
+        public bool WellFed;
+
         /// <summary>When a cast line at a fishing spot bites (0: no line out), and where the player stood to cast.</summary>
         public uint BiteAt;
         public Vector3 CastFrom;
@@ -1075,6 +1083,7 @@ public sealed partial class GameServer : IEnemyEvents
             Obey(player, request.Command, request.Arg);
         }
 
+        StepBuffs(player);
         var maxHealth = MaxHealth(player);
         StepBarrier(player, maxHealth);
         StepTrialRounds(player);
@@ -1105,7 +1114,10 @@ public sealed partial class GameServer : IEnemyEvents
             // During the prologue a scene's checkpoint stands in, so a lost fight starts again where it was.
             var wake = _story.Has("anchor.bound") && _actorById.TryGetValue("anchor", out var anchor) ? anchor.Position + new Vector3(0, 0, 1.6f)
                 : _checkpoint is { } checkpoint ? checkpoint with { Y = _world.GroundHeight(checkpoint.X, checkpoint.Z) } : _world.Spawn;
-            player.State = PlayerState.Spawn(wake, maxHealth);
+            // Death ends Well Fed and Warded.
+            player.WellFedUntil = player.WardedUntil = 0;
+            player.WellFed = false;
+            player.State = PlayerState.Spawn(wake, MaxHealth(player));
             // Worn gear survives death, so the weapon it picks does too; so do the attributes.
             player.State.Weapon = Weapons.Of(player.Stats.Weapon);
             player.State.Endurance = player.Attributes[(int)PlayerAttribute.Endurance];
@@ -1131,8 +1143,39 @@ public sealed partial class GameServer : IEnemyEvents
     }
 
     /// <summary>A player's maximum health: from the level, plus what the worn gear adds.</summary>
-    private static short MaxHealth(Player player) => (short)(Progression.MaxHealth(player.Level) + player.Stats.MaxHealth
-        + player.Attribute(PlayerAttribute.Vitality) * Core.Attributes.HealthPerVitality);
+    private static short MaxHealth(Player player)
+    {
+        var most = Progression.MaxHealth(player.Level) + player.Stats.MaxHealth + player.Attribute(PlayerAttribute.Vitality) * Core.Attributes.HealthPerVitality;
+        return (short)(player.WellFed ? most * (1f + WellFedHealthShare) : most);
+    }
+
+    /// <summary>Well Fed: a share more maximum health and a slow regeneration, for this long after cooked food.</summary>
+    public const float WellFedHealthShare = 0.15f;
+    public const uint WellFedTicks = Tuning.TickRate * 600;
+    public const float WellFedRegenPerSecond = 0.5f;
+
+    /// <summary>Warded: blows land this much weaker, for this long after the warding draught.</summary>
+    public const float WardedDamageTaken = 0.75f;
+    public const uint WardedTicks = Tuning.TickRate * 60;
+
+    /// <summary>Well Fed and Warded run out; Well Fed tops health up slowly while it lasts.</summary>
+    private void StepBuffs(Player player)
+    {
+        player.WellFed = player.WellFedUntil > Tick;
+        var most = MaxHealth(player);
+        if (player.State.Health > most)
+        {
+            player.State.Health = most;
+        }
+
+        if (player.WellFed && player.State.Health > 0 && player.State.Health < most)
+        {
+            player.FedCarry += WellFedRegenPerSecond / Tuning.TickRate;
+            var gain = (int)player.FedCarry;
+            player.FedCarry -= gain;
+            player.State.Health = (short)Math.Min(most, player.State.Health + gain);
+        }
+    }
 
     /// <summary>Eats, drinks or reads an item from the bag, the way its kind is used.</summary>
     private void UseItem(Player player, ushort item)
@@ -1168,6 +1211,17 @@ public sealed partial class GameServer : IEnemyEvents
         }
 
         AddItem(player, item, -1);
+        switch (def.Buff)
+        {
+            case "wellFed":
+                player.WellFedUntil = Tick + WellFedTicks;
+                player.WellFed = true;
+                break;
+            case "warded":
+                player.WardedUntil = Tick + WardedTicks;
+                break;
+        }
+
         player.State.Health = (short)Math.Min(player.State.Health + def.Heal, MaxHealth(player));
         if (def.IsPotion)
         {
@@ -2488,7 +2542,7 @@ public sealed partial class GameServer : IEnemyEvents
         }
 
         // Defense takes a share off every blow; at least one point always gets through.
-        damage = (short)Math.Max(1, MathF.Round(damage * GearStats.DamageTaken(player.Stats.Defense)));
+        damage = (short)Math.Max(1, MathF.Round(damage * GearStats.DamageTaken(player.Stats.Defense) * (player.WardedUntil > Tick ? WardedDamageTaken : 1f)));
         if (player.Barrier > 0)
         {
             // Staff mastery Arcane Barrier: the barrier soaks up what it can first.
@@ -3201,12 +3255,28 @@ public sealed partial class GameServer : IEnemyEvents
                 continue;
             }
 
+            // Now and then the line brings up the Auren key to the archive's hidden vault, while it is still wanted.
+            var key = ItemDef.Index(DrownedKey);
+            if (player.Bag.GetValueOrDefault(key) == 0 && !_story.Has(VaultOpenedFlag) && _random.NextDouble() < DrownedKeyChance)
+            {
+                AddItem(player, key, 1);
+                Stats.FishCaught++;
+                continue;
+            }
+
             var roll = _random.Next(Catch.Sum(c => c.Weight));
             var (item, _) = Catch.First(c => (roll -= c.Weight) < 0);
             AddItem(player, ItemDef.Index(item), 1);
             Stats.FishCaught++;
         }
     }
+
+    /// <summary>The key of the Sunken Archive's hidden vault, fished from Mirror Lake at this chance a bite.</summary>
+    public const string DrownedKey = "drowned_key";
+    public const double DrownedKeyChance = 0.04;
+
+    /// <summary>Set when the vault's locked chest is opened (tools/caches.py); then the lake gives no more keys.</summary>
+    public const string VaultOpenedFlag = "cache.cache_archive_vault";
 
     /// <summary>How far a fisher may step from where they cast before the line is lost.</summary>
     public const float FishStillReach = 1.2f;
@@ -4793,6 +4863,8 @@ public sealed partial class GameServer : IEnemyEvents
                 Parries = player.Parries,
                 Ripostes = player.Ripostes,
                 Barrier = (short)player.Barrier,
+                WellFedSeconds = (ushort)(player.WellFedUntil > Tick ? (player.WellFedUntil - Tick) / Tuning.TickRate + 1 : 0),
+                WardedSeconds = (ushort)(player.WardedUntil > Tick ? (player.WardedUntil - Tick) / Tuning.TickRate + 1 : 0),
                 Rank = player.Rank,
                 Gold = player.Gold,
                 Appearance = player.Appearance,

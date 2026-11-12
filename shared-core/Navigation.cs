@@ -33,6 +33,31 @@ public static class Navigation
     /// player has found empty (<paramref name="cleared"/>, by their place in <see cref="World.EnemySpawns"/>)
     /// are passed over for the next nearest one where the creatures still live.
     /// </summary>
+    /// <summary>
+    /// Where an item nobody drops comes from: the nearest spot where it grows (herbs, mushrooms), or the nearest
+    /// fishing spot for a fish (fishing spots are NPCs of role fishing).
+    /// </summary>
+    private static NavTarget? GatherTarget(World world, System.Numerics.Vector3 from, string id)
+    {
+        if (!ItemDef.TryIndex(id, out var item))
+        {
+            return null;
+        }
+
+        var name = ItemDef.All[item].Name;
+        if (world.Gathers.Where(g => g.Item == item).OrderBy(g => System.Numerics.Vector3.DistanceSquared(g.Position, from)).Cast<GatherSpot?>().FirstOrDefault() is { } spot)
+        {
+            return new NavTarget(spot.Position, name);
+        }
+
+        return FishedItems.Contains(id) && world.Npcs.Where(n => n.Role == "fishing").OrderBy(n => System.Numerics.Vector3.DistanceSquared(n.Position, from)).FirstOrDefault() is { } pier
+            ? new NavTarget(pier.Position, name)
+            : null;
+    }
+
+    /// <summary>Items that come up on a fishing line.</summary>
+    public static readonly string[] FishedItems = { "river_perch", "silver_trout", "mirefin_fillet", "drowned_key" };
+
     public static NavTarget? QuestTarget(IStoryContext context, World world, Func<int, bool>? cleared = null)
     {
         if (Tracked(context) is not { } tracked || !tracked.Step.Route)
@@ -55,9 +80,12 @@ public static class Navigation
                 // Everything is in the bag: the objective says to return to the Guild; no way is drawn.
                 return null;
             case "bring":
-                return NearestCampArea(world, context.Position, def => def.Loot?.Any(l => l.Item == goal.Target) == true, cleared) is { } source
-                    ? new NavTarget(source.Center, ItemDef.TryIndex(goal.Target, out var item) ? ItemDef.All[item].Name : goal.Target, source.Radius, source.Index)
-                    : null;
+                if (NearestCampArea(world, context.Position, def => def.Loot?.Any(l => l.Item == goal.Target) == true, cleared) is { } source)
+                {
+                    return new NavTarget(source.Center, ItemDef.TryIndex(goal.Target, out var item) ? ItemDef.All[item].Name : goal.Target, source.Radius, source.Index);
+                }
+
+                return GatherTarget(world, context.Position, goal.Target);
             case "kill":
                 return NearestCampArea(world, context.Position, def => goal.MatchesKill(def.Id), cleared) is { } camp
                     ? new NavTarget(camp.Center, quest.Name, camp.Radius, camp.Index)
