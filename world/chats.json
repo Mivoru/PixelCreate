@@ -358,5 +358,117 @@
         "Half? Tell the other half to stop using them as crowbars."
       ]
     ]
+  },
+  {
+    "between": [
+      "osric",
+      "anwen"
+    ],
+    "when": {
+      "time": {
+        "from": 420,
+        "to": 1020
+      }
+    },
+    "lines": [
+      [
+        "osric",
+        "Mind the stones, girl. They'll take a finger as soon as flour."
+      ],
+      [
+        "anwen",
+        "I've minded the stones since I was six, Father."
+      ],
+      [
+        "osric",
+        "And you've ten fingers still. Keep it so."
+      ]
+    ]
+  },
+  {
+    "between": [
+      "marta",
+      "fennick"
+    ],
+    "when": {
+      "time": {
+        "from": 660,
+        "to": 1140
+      }
+    },
+    "lines": [
+      [
+        "fennick",
+        "Marta, my love. A bowl of stew on credit?"
+      ],
+      [
+        "marta",
+        "Your credit's longer than the south road, Fennick."
+      ],
+      [
+        "fennick",
+        "Then I'll walk it. After the stew."
+      ]
+    ]
+  },
+  {
+    "between": [
+      "pip",
+      "tobias"
+    ],
+    "when": {
+      "time": {
+        "from": 360,
+        "to": 780
+      }
+    },
+    "lines": [
+      [
+        "pip",
+        "Tobias, did you shut the far gate?"
+      ],
+      [
+        "tobias",
+        "Hm."
+      ],
+      [
+        "pip",
+        "Is that a yes hm or a no hm?"
+      ],
+      [
+        "tobias",
+        "...Hm."
+      ]
+    ]
+  },
+  {
+    "between": [
+      "wren",
+      "fen"
+    ],
+    "when": {
+      "time": {
+        "from": 420,
+        "to": 540
+      }
+    },
+    "lines": [
+      [
+        "fen",
+        "Two bundles of feverleaf, please. And the red, if you'll trust me for it."
+      ],
+      [
+        "wren",
+        "I'll trust you for the leaf. The red is for paying customers and the dying."
+      ],
+      [
+        "fen",
+        "Rook might be dying by tonight."
+      ],
+      [
+        "wren",
+        "Then bring Rook."
+      ]
+    ]
   }
 ]
