@@ -459,6 +459,9 @@ Rules:
   shore and `pounce` only at one within `Enemy.ShoreReach` of the edge, surfacing in the wind-up, then lie stranded
   (`Stagger`, `Enemy.StrandedTicks`) and wriggle back. The rare Old Gulper's `waterJet` throws the player back
   (`Lash` with a negative pull). `net-tests/FishTests.cs`.
+  Bandits (Bandit Hollow in the south woods west of the Last Lantern; kind `human`, looks from `NpcLooks.Enemy`,
+  human voices in `GoblinView`): cutthroats (flankers with a sword), archers and the rare Red Hand Garrow. Marta's
+  job "Bandits on Mirror Way" sends the player there from level 5.
   War drum (`net-tests/WarDrumTests.cs`): camps with a `drum` point (every Ironjaw camp) answer it. A fighter that
   notices a player within 45 m of the drum runs to it instead (`Enemy.RunsToDrum`, one at a time via
   `ClaimDrum`), beats it for `Enemy.DrumTicks` (`EnemyAction.Drum`), and then every camp of that drum within 60 m
