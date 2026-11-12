@@ -18,7 +18,7 @@ $env:PIXEL_FRAIL = "1"
 $env:PIXEL_SPAWN = "420,4"
 $env:PIXEL_BOT = "guild"
 $run = powershell -ExecutionPolicy Bypass -File (Join-Path $root "scripts\play.ps1") -Capture ($live -replace "\\", "/") -CaptureFrames 24 2>&1 | ForEach-Object { "$_" }
-$run | Select-String "^BOT|^STATS"
+$run | Select-String "^BOT|^STATS|^FREEZE"
 $errors = $run | Select-String "^ERROR: System\.|Exception:" | Group-Object | Select-Object -First 5
 if ($errors) { Write-Host "SCRIPT ERRORS IN THE LIVE RUN:"; $errors | ForEach-Object { Write-Host "  $($_.Count)x $($_.Name)" } }
 Remove-Item Env:PIXEL_TEST, Env:PIXEL_FRAIL, Env:PIXEL_SPAWN, Env:PIXEL_BOT

@@ -103,12 +103,18 @@ Neověřeno hraním člověkem: vše výše jen boty, testy (385) a snímky. Sí
    déšť, řeka).
    Hotovo: 17 zvuků monster a 5 smyček prostředí (den, noc, déšť, řeka, jeskyně). Napojeno a běží bez chyb, ale bot
    hraje s tichým ovladačem: poslechnout musí autor (hlasitost smyček, jestli neruší, jestli je slyšet šev).
-4. [ ] Interiér hospody: vejít dovnitř, večer tam sedí hosté (Brightwater Four, Corwin, Bram) a běží rozhovory;
+4. [x] Interiér hospody: vejít dovnitř, večer tam sedí hosté (Brightwater Four, Corwin, Bram) a běží rozhovory;
    rozvrhy přes `via`. Případně interiéry dalších domů.
+   Hotovo (2026-11-12): hospoda The Bent Nail má sál za dveřmi (420, 60): výčep s hospodským Dorranem (nový, s hlasem),
+   krb, tři stoly, kout s loutnou. Štamgasti sedí ve dvoře od 18 a v 20 jdou dovnitř skutečně dveřmi (při dešti hned),
+   Corwin od 20. Čtyři nové rozhovory uvnitř (s hlasy). Interiéry dalších domů zatím ne.
 5. [ ] Systémy: rybaření na molech, sběr bylin a hub (pro Wren), vaření u ohně, řemeslo u Tess z materiálů monster,
    rank D se zkouškou v Guildě jako cíl po úrovni 9.
 6. [ ] Delší dungeon s bossem a skrytou cestou (Archive i Warren jsou dnes jedna síň).
 7. [ ] Kvalita: hlídač zaseknutí klienta (zápis, co hra dělala), audit děr ve zbylých interiérech.
+   Hlídač hotový (2026-11-12, `FreezeWatch.cs`): když klient 4 s nezačne snímek, zapíše do `client.log` řádek
+   `FREEZE ... last mark: <část snímku>` a po rozjetí `FREEZE over`. Příčinu zaseknutí v Guildě to samo neopraví,
+   jen ukáže, kde visí. Audit děr v interiérech zbývá.
 
 ### Co si zahrát jako první (2026-11-12)
 

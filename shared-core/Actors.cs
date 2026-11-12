@@ -179,6 +179,15 @@ public sealed class Actor
 
         var to = target - Position;
         to.Y = 0;
+        if (Path.Count > 0 && Schedules.Inside(target) != Schedules.Inside(Position))
+        {
+            // A door: the next point is its other side, indoors off the map or back outside.
+            Position = target;
+            Path.Dequeue();
+            Arrive();
+            return;
+        }
+
         if (to.Length() <= step)
         {
             Position = target with { Y = world.GroundHeight(target.X, target.Z) };

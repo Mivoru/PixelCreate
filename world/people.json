@@ -2042,5 +2042,50 @@
         "text": "Six days out here and not one orc. I'm almost disappointed."
       }
     ]
+  },
+  "dorran": {
+    "voice": {
+      "id": "JBFqnCBsd6RMkjVDRZzb",
+      "name": "George",
+      "stability": 0.5,
+      "similarity_boost": 0.75,
+      "style": 0.3
+    },
+    "moods": [],
+    "barks": [
+      {
+        "when": {
+          "time": {
+            "from": 360,
+            "to": 1080
+          }
+        },
+        "text": "Too early for the good stuff. There's porridge, or there's water."
+      },
+      {
+        "when": {
+          "time": {
+            "from": 1080,
+            "to": 1440
+          }
+        },
+        "text": "Sit where you like. Not on the bar."
+      },
+      {
+        "when": {
+          "time": {
+            "from": 1080,
+            "to": 1440
+          }
+        },
+        "text": "Mind the Four. They'll tell you about the bog wight whether you ask or not."
+      },
+      {
+        "text": "Every nail in this place is straight but the one over the bar. That one stays."
+      },
+      {
+        "text": "Mud on the boots stays by the door, adventurer."
+      }
+    ]
   }
 }

@@ -535,6 +535,14 @@ public static class ZoneView
         // A real fire burns in the guild hearth.
         root.AddChild(BuildCampFlames(new Vector3(430.55f, 0.15f, 3f)));
 
+        // The Bent Nail's common room: two candle wheels, the lamp over the bar, the one by the door, and its hearth.
+        foreach (var (x, y, z, energy, range) in new[] { (417f, 3.2f, 61f, 2.0f, 11f), (423f, 3.2f, 61f, 2.0f, 11f), (427.3f, 2.4f, 56.6f, 1.2f, 6f), (420f, 2.9f, 65.6f, 0.9f, 5f) })
+        {
+            root.AddChild(new OmniLight3D { Position = new Vector3(x, y, z), LightColor = new Color("ffc27a"), LightEnergy = energy, OmniRange = range });
+        }
+
+        root.AddChild(BuildCampFlames(new Vector3(412.5f, 0.12f, 61f)));
+
         // The Sunken Archive glows only where its runes still burn.
         foreach (var (x, z) in new[] { (543f, -6f), (551f, 6f), (569f, -6f), (577f, 6f), (560f, -15f), (580f, -7f) })
         {

@@ -271,6 +271,13 @@ Rules:
   tending her flock with a crook. The Old Watchtower (`tower_ruin`) in the Northern Wilds is a goblin lookout.
   The Last Lantern, an inn on Mirror Way before the south pass: Marta keeps it, Aldous the pilgrim walks to the
   Pilgrim Shrine each morning and back, Fennick the peddler hangs about his cart. All the new people have voices.
+  The Bent Nail (Hearthmere's tavern) has a common room off the map at (420, 60), behind the tavern door (portal at
+  17.4, -2): `asset-pipeline/interiors.py` builds `inn_shell` (floor, ceiling, beams, non-solid), `inn_walls_ns`,
+  `inn_walls_ew` and `inn_fittings` (hearth, bar); a closed ring of walls measured as one model fills solid, room and
+  all (`collision.py` fills enclosed cells), hence the split. Dorran keeps the bar. The regulars sit in the yard from
+  six and go in at eight, or at once in the rain (rain blocks), Corwin from eight. Walks into and out of an interior
+  go through its door (`Schedules.Door`, `Schedules.Way`; `Actor.Step` steps across the gap); someone at home who is
+  due indoors is simply there.
   The tavern yard (three tables east of the tavern door, footpath from the south road) fills from six: Corwin keeps
   his bench all day, the Brightwater Four (Edwin, Moss, Fen, Rook) have the south table. Mornings the Four meet by
   the Guild door, Osric and Anwen are at the mill, Hamm, Maddy and Tobias on Harrow Farm, Tam by Hollis's counter.
@@ -390,7 +397,9 @@ Rules:
   landed blows and hits taken, `GameClient.Kick`).
 - Check after a change: `powershell -ExecutionPolicy Bypass -File scripts/check.ps1` runs the tests and the Guild
   story live, and lists script exceptions from the live run: one exception a frame freezes the HUD and the player
-  without crashing. Add `-Jobs monsters,world` (studio jobs whose looks changed) for pictures; a server or AI
+  without crashing. `FreezeWatch` (client) writes `FREEZE ... last mark: <part of the frame>` to the client's output when no
+  frame begins for 4 s, and `FREEZE over` when it moves on; check.ps1 prints those lines. `PIXEL_FREEZE_TEST=1` sleeps
+  the main thread once to prove it. Add `-Jobs monsters,world` (studio jobs whose looks changed) for pictures; a server or AI
   change needs none. `-Jobs all` photographs everything and takes about ten minutes, so use it only when asked.
 - Photo studio: `scripts/studio.ps1 -Jobs people,animals,monsters,motion,attacks,models,world,hitboxes,map` needs no server and writes
   labelled contact sheets to `export/previews/studio/sheets`. Read them after every visual change. World shots

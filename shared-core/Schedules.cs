@@ -106,6 +106,16 @@ public static class Schedules
     /// </summary>
     public static List<Vector3> Way(RoadMap roads, World world, Vector3 from, IReadOnlyList<Vector3> leaving, IReadOnlyList<Vector3> arriving, Vector3 goal)
     {
+        if (Door(world, from, goal) is { } door)
+        {
+            // Into an interior off the map or out of one: to the door, through it (the actor steps across the gap
+            // in one tick, Actor.Step) and on from its other side.
+            var through = Way(roads, world, from, leaving, Array.Empty<Vector3>(), door.From);
+            through.Add(door.To with { Y = world.GroundHeight(door.To.X, door.To.Z) });
+            through.AddRange(Way(roads, world, door.To, Array.Empty<Vector3>(), arriving, goal));
+            return through;
+        }
+
         Vector3 Ground(Vector3 point) => point with { Y = world.GroundHeight(point.X, point.Z) };
         var way = new List<Vector3>();
         for (var i = leaving.Count - 1; i >= 0; i--)
@@ -126,6 +136,39 @@ public static class Schedules
 
         return way;
     }
+
+    /// <summary>Whether a point lies in an interior off the map (the Guild hall, the tavern's common room).</summary>
+    public static bool Inside(Vector3 point) => point.X >= Guild.InteriorX;
+
+    /// <summary>
+    /// The door a walk from one point to another goes through, when one lies indoors off the map and the other
+    /// outside: the door of the room the inside end lies in. Null for a walk on one side.
+    /// </summary>
+    public static Portal? Door(World world, Vector3 from, Vector3 goal)
+    {
+        if (Inside(from) == Inside(goal))
+        {
+            return null;
+        }
+
+        // The interiors are rooms of their own: the door is the one of the room the inside end is in, its nearest.
+        var inside = Inside(from) ? from : goal;
+        return world.Portals.Where(p => Inside(p.From) == Inside(from) && Inside(p.To) == Inside(goal))
+            .OrderBy(p => Flat(inside, Inside(from) ? p.From : p.To)).Cast<Portal?>().FirstOrDefault();
+    }
+
+    /// <summary>How far a walk is on foot, through a door when it needs one; endless when no door leads there.</summary>
+    public static float WalkDistance(World world, Vector3 from, Vector3 goal)
+    {
+        if (Inside(from) == Inside(goal))
+        {
+            return Flat(from, goal);
+        }
+
+        return Door(world, from, goal) is { } door ? Flat(from, door.From) + Flat(door.To, goal) : float.MaxValue;
+    }
+
+    private static float Flat(Vector3 a, Vector3 b) => Vector2.Distance(new Vector2(a.X, a.Z), new Vector2(b.X, b.Z));
 
     /// <summary>Every condition reference in the schedules, for the tests that check names against the data.</summary>
     public static IEnumerable<(string Kind, string Name, string Where)> References() =>

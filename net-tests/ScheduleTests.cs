@@ -126,12 +126,58 @@ public class ScheduleTests
     [Fact]
     public void InTheEvening_TheYardFills()
     {
-        var server = Start(21);
-        foreach (var id in new[] { "elder", "smith", "garrick", "kai" })
+        var server = Start(19);
+        foreach (var id in new[] { "elder", "smith", "kai" })
         {
             var who = server.Actor(id);
-            Assert.True(who.Active && who.Pose == ActorPose.Sit && who.Position.X is > 20f and < 26f, $"{id} is not in the tavern yard at nine");
+            Assert.True(who.Active && who.Pose == ActorPose.Sit && who.Position.X is > 20f and < 26f, $"{id} is not in the tavern yard at seven");
         }
+    }
+
+    [Fact]
+    public void LaterInTheEvening_TheRegularsSitInTheBentNail_AndDorranKeepsTheBar()
+    {
+        var server = Start(21);
+        foreach (var id in new[] { "elder", "kai", "edwin", "moss", "fen", "rook", "corwin" })
+        {
+            var who = server.Actor(id);
+            Assert.True(who.Active && who.Pose == ActorPose.Sit && who.Position.X is > 412f and < 428f && who.Position.Z is > 54f and < 66f,
+                $"{id} is not in the tavern's common room at nine but at {who.Position}");
+        }
+
+        // Garrick and Tess keep the yard after Bram and the others have gone in.
+        foreach (var id in new[] { "garrick", "smith" })
+        {
+            var who = server.Actor(id);
+            Assert.True(who.Active && who.Position.X is > 20f and < 26f, $"{id} is not in the tavern yard at nine");
+        }
+
+        var dorran = server.Actor("dorran");
+        Assert.True(dorran.Active && Vector3.Distance(dorran.Position, new Vector3(424.2f, dorran.Position.Y, 55.7f)) < 0.5f, "Dorran stands behind his bar");
+    }
+
+    [Fact]
+    public void AtEight_TheFourGoIntoTheTavernByItsDoor_AndSitDown()
+    {
+        var server = Start(19);
+        var edwin = server.Actor("edwin");
+        Assert.True(edwin.Position.X < 30f, "Edwin starts the evening in the yard");
+        server.Calendar.Now = new GameTime(3, 19 * 60 + 59);
+        var byTheDoor = false;
+        for (var tick = 0; tick < 26 * Tuning.TickRate * 2 && !(edwin.Pose == ActorPose.Sit && edwin.Path.Count == 0 && edwin.Position.X > 400f); tick++)
+        {
+            server.Step();
+            byTheDoor |= Vector3.Distance(edwin.Position with { Y = 0 }, new Vector3(17.4f, 0, -2f)) < 0.8f;
+            if (edwin.Position.X > 400f)
+            {
+                Assert.False(Valley.World.OverlapsPlayer(edwin.Position with { Y = edwin.Position.Y + 0.1f }) && edwin.Path.Count > 1,
+                    $"Edwin walks through something in the common room at {edwin.Position.X:F1}, {edwin.Position.Z:F1}");
+            }
+        }
+
+        Assert.True(byTheDoor, "Edwin went in without passing the tavern door");
+        Assert.Equal(ActorPose.Sit, edwin.Pose);
+        Assert.True(Vector3.Distance(edwin.Position with { Y = 0 }, new Vector3(415.45f, 0, 60.6f)) < 0.3f, $"Edwin sits at {edwin.Position}, not on his bench");
     }
 
     [Fact]
@@ -154,11 +200,11 @@ public class ScheduleTests
     [Fact]
     public void InTheEvening_TheBrightwaterFourShareATable_AndCorwinKeepsHis()
     {
-        var server = Start(21);
+        var server = Start(19);
         foreach (var id in new[] { "edwin", "moss", "fen", "rook", "corwin" })
         {
             var who = server.Actor(id);
-            Assert.True(who.Active && who.Pose == ActorPose.Sit && who.Position.X is > 20f and < 26f, $"{id} is not in the tavern yard at nine");
+            Assert.True(who.Active && who.Pose == ActorPose.Sit && who.Position.X is > 20f and < 26f, $"{id} is not in the tavern yard at seven");
         }
 
         // Two people never share a seat.
@@ -191,9 +237,12 @@ public class ScheduleTests
                 var to = day[i];
                 var start = to.Via is { } door && from.Home is not null ? door : from.Home ?? from.At!.Value;
                 var goal = to.Home ?? to.At!.Value;
-                if (Vector3.Distance(start, goal) is < 0.5f or > 150f || Math.Abs(start.X) > 300f)
+                var inHall = Schedules.Inside(start) && Schedules.Inside(goal) && Math.Abs(start.Z) < 15f;
+                var fromIndoors = from.Home is not null && Schedules.Door(world, start, goal) is not null;
+                if (Vector3.Distance(start, goal) < 0.5f || Schedules.WalkDistance(world, start, goal) > 150f || inHall || fromIndoors)
                 {
-                    // Nowhere to go, a jump between the hall and the village, or a walk inside the hall (no roads, open floor).
+                    // Nowhere to go, a jump between the Guild hall and the village (they come out by its door), a walk
+                    // inside the hall (open floor), or someone at home who is simply in an interior when due there.
                     continue;
                 }
 
@@ -211,6 +260,13 @@ public class ScheduleTests
                     var stop = last ? Vector2.Lerp(at, next, to.Pose == ActorPose.Sit ? 1f - seat : 0f) : next;
                     var rise = first && (from.Pose == ActorPose.Sit || Solid(start)) ? Vector2.Lerp(at, next, from.Pose == ActorPose.Sit ? seat : 1f) : at;
                     first = false;
+                    if (Schedules.Inside(new Vector3(at.X, 0, at.Y)) != Schedules.Inside(point))
+                    {
+                        // Through a door: from one side to the other in a step.
+                        at = next;
+                        continue;
+                    }
+
                     if (!RoadMap.Clear(rise, stop, world))
                     {
                         blocked.Add($"{id} at {to.FromHour}:00 between {at.X:F1}, {at.Y:F1} and {next.X:F1}, {next.Y:F1}");

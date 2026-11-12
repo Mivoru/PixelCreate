@@ -741,6 +741,29 @@ public static class NpcLooks
         },
     };
 
+    /// <summary>Dorran: the barrel-chested keeper of the Bent Nail, Hearthmere's tavern; bald, a full grizzled beard, apron on.</summary>
+    private static readonly RigLook Barkeep = new("barkeep", new Color("e0a888"), 1.08f, "none")
+    {
+        Hair = "shaved",
+        Cloak = false,
+        Mood = "happy",
+        Rest = "clasped",
+        Extras = new[] { "beard", "apron" },
+        Eyes = new Color("4a3a2a"),
+        Brows = new Color("7a6a5a"),
+        FaceWidth = 1.1f,
+        FaceStyle = new FaceStyle(2, 0, 2, "cheek"),
+        Palette = new Dictionary<string, Color>
+        {
+            ["anime_hair"] = new("8a7c6c"),
+            ["anime_shirt"] = new("d8ccb0"),
+            ["anime_trousers"] = new("4a3a30"),
+            ["anime_dark"] = new("2a2018"),
+            ["anime_vest"] = new("7a3a2a"),
+            ["anime_glove"] = new("e0a888"),
+        },
+    };
+
     /// <summary>Marta: the round, brisk innkeeper of the Last Lantern, hair up in a bun, sleeves rolled, apron on.</summary>
     private static readonly RigLook Innkeeper = new("innkeeper", new Color("e8b090"), 0.98f, "none")
     {
@@ -986,7 +1009,7 @@ public static class NpcLooks
         ("nell", Captive), ("haruto", Lost), ("vosk", FinderCaptain), ("gil", FinderGil), ("hanne", FinderHanne), ("corb", FinderCorb),
         ("corwin", BranchMaster), ("tam", Apprentice), ("edwin", PartySword), ("moss", PartyBow), ("fen", PartyHealer),
         ("rook", PartyShield), ("osric", Miller), ("anwen", MillerDaughter), ("hamm", FarmElder), ("maddy", FarmGirl),
-        ("tobias", Farmhand), ("oswin", Woodcutter), ("jory", WoodcutterB), ("tobb", Fisher), ("brin", Shepherd), ("marta", Innkeeper), ("aldous", Pilgrim), ("fennick", Peddler), ("bors", Quarryman), ("wilm", QuarrymanB), ("ollie", Child), ("bea", ChildB), ("greta", Gardener), ("dunn", Sentry), ("pell", SentryB),
+        ("tobias", Farmhand), ("oswin", Woodcutter), ("jory", WoodcutterB), ("tobb", Fisher), ("brin", Shepherd), ("marta", Innkeeper), ("dorran", Barkeep), ("aldous", Pilgrim), ("fennick", Peddler), ("bors", Quarryman), ("wilm", QuarrymanB), ("ollie", Child), ("bea", ChildB), ("greta", Gardener), ("dunn", Sentry), ("pell", SentryB),
     };
 
     public static RigLook? For(string role) => role switch
@@ -1025,6 +1048,7 @@ public static class NpcLooks
         "fisher" => Fisher,
         "shepherd" => Shepherd,
         "innkeeper" => Innkeeper,
+        "barkeep" => Barkeep,
         "pilgrim" => Pilgrim,
         "peddler" => Peddler,
         "quarryman" => Quarryman,
@@ -1067,6 +1091,7 @@ public static class Dialogues
         "fisher" => "Fisherman",
         "shepherd" => "Shepherd",
         "innkeeper" => "Innkeeper",
+        "barkeep" => "Tavern Keeper",
         "pilgrim" => "Pilgrim",
         "peddler" => "Peddler",
         "quarryman" or "quarryman_b" => "Quarryman",

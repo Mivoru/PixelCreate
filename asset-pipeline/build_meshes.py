@@ -20,6 +20,7 @@ import goblins  # noqa: E402
 import weapons  # noqa: E402
 import lands  # noqa: E402
 import dungeons  # noqa: E402
+import interiors  # noqa: E402
 import orcs  # noqa: E402
 import werewolves  # noqa: E402
 import sentinels  # noqa: E402
@@ -45,6 +46,7 @@ COLORS.update(goblins.COLORS)
 COLORS.update(weapons.COLORS)
 COLORS.update(lands.COLORS)
 COLORS.update(dungeons.COLORS)
+COLORS.update(interiors.COLORS)
 COLORS.update(orcs.COLORS)
 COLORS.update(werewolves.COLORS)
 COLORS.update(sentinels.COLORS)
@@ -2161,6 +2163,8 @@ MODELS.update(lands.models(types.SimpleNamespace(box=box, timber=timber, blob=bl
                                                   add_object=add_object, smooth=smooth, mesh_from=mesh_from, bpy=bpy)))
 MODELS.update(dungeons.models(types.SimpleNamespace(box=box, timber=timber, blob=blob, cylinder=cylinder, loft=loft, tube=tube,
                                                      add_object=add_object, smooth=smooth, mesh_from=mesh_from, bpy=bpy)))
+MODELS.update(interiors.models(types.SimpleNamespace(box=box, timber=timber, blob=blob, cylinder=cylinder, loft=loft, tube=tube,
+                                                      disc=disc, disc_y=disc_y)))
 for beast in beasts.NAMES:
     MODELS["beast_" + beast] = (lambda kind: lambda: beasts.build(kind, add_object, smooth))(beast)
 

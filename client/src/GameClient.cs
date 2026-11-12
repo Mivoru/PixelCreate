@@ -59,6 +59,11 @@ public partial class GameClient : Node
     private const float GuildInteriorX = 400f;
     private const float ArenaX = 450f;
     private const float ArchiveX = 530f;
+
+    /// <summary>Whether a point lies in the Guild hall (the tavern's common room is off the map beside it, at z 60).</summary>
+    private bool _freezeTested;
+
+    private static bool InGuildHall(Vector3 point) => point.X > GuildInteriorX && point.X < ArenaX && Mathf.Abs(point.Z) < 15f;
     private const float MinPitch = -1.1f;
     private const float MaxPitch = 0.35f;
 
@@ -413,6 +418,7 @@ public partial class GameClient : Node
 
     public override void _Process(double delta)
     {
+        FreezeWatch.Beat("frame start");
         // Frame times are measured away from the frames that save a picture, which stall on purpose.
         if (_captureDir is not null && _sinceCapture++ > 20)
         {
@@ -446,6 +452,15 @@ public partial class GameClient : Node
             }
         }
 
+        if (_client.Tick >= 100 && !_freezeTested && OS.GetEnvironment("PIXEL_FREEZE_TEST") == "1")
+        {
+            // Proves the freeze watch: the main thread sleeps six seconds once, and client.log must say where.
+            _freezeTested = true;
+            FreezeWatch.Mark("PIXEL_FREEZE_TEST sleep");
+            System.Threading.Thread.Sleep(6000);
+        }
+
+        FreezeWatch.Mark("network poll");
         _transport.Poll();
         if (!_transport.IsConnected)
         {
@@ -479,6 +494,7 @@ public partial class GameClient : Node
             }
 
             var (aim, aimYaw, aimPitch) = ShotAim();
+            FreezeWatch.Mark("simulation step");
             _client.Step(x, z, buttons, aim, _pendingCommand, aimYaw, aimPitch, _pendingArg);
             _pendingCommand = Command.None;
             _pendingArg = 0;
@@ -508,14 +524,21 @@ public partial class GameClient : Node
             _attackLag = Mathf.Max(0f, _attackLag - d * Tuning.TickRate);
         }
 
+        FreezeWatch.Mark("draw player");
         DrawPlayer(shown, stopped ? d * 0.05f : d);
+        FreezeWatch.Mark("draw snapshot (enemies, shots, drops)");
         DrawSnapshot(d);
         FollowLock(d);
+        FreezeWatch.Mark("player events");
         PlayerEvents(shown, d);
+        FreezeWatch.Mark("people, scenes, dialogue");
         UpdateNpcs(shown, d);
+        FreezeWatch.Mark("effects");
         _fx.Update(d);
         UpdateAim(d);
+        FreezeWatch.Mark("camera");
         PlaceCamera(shown, d);
+        FreezeWatch.Mark("lighting and ambience");
         // Cursed ground darkens the world as the player walks into it, and lifts as they leave.
         var (_, blight, _) = _zone.GroundAt(shown.X, shown.Z);
         _gloom = Mathf.MoveToward(_gloom, blight, d * 0.6f);
@@ -544,6 +567,7 @@ public partial class GameClient : Node
         _hud.WorldScale = _stage.PixelScale;
         _hud.Player = _client.State;
         _hud.Snapshot = _client.Latest;
+        FreezeWatch.Mark("end of the game's frame (HUD, rendering or the engine)");
     }
 
     private byte[] _lookShown = Appearance.NotChosen;
@@ -1291,7 +1315,7 @@ public partial class GameClient : Node
 
         if (snapshot.Rank == GuildRank.Newcomer)
         {
-            return shown.X > GuildInteriorX && shown.X < ArenaX ? "Talk to Mira at the counter" : "Find the Adventurers Guild in the west";
+            return InGuildHall(shown) ? "Talk to Mira at the counter" : "Find the Adventurers Guild in the west";
         }
 
         if (snapshot.Rank == GuildRank.InTrial)
@@ -1321,7 +1345,7 @@ public partial class GameClient : Node
             return "Leave through the gate";
         }
 
-        return shown.X > GuildInteriorX ? "Take a job from the Quest Board" : "Hunt, or return to the Guild for a job";
+        return InGuildHall(shown) ? "Take a job from the Quest Board" : "Hunt, or return to the Guild for a job";
     }
 
     /// <summary>E talks to whoever is close, or goes through a door.</summary>

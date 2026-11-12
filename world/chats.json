@@ -318,8 +318,8 @@
     ],
     "when": {
       "time": {
-        "from": 1200,
-        "to": 1380
+        "from": 1080,
+        "to": 1200
       }
     },
     "lines": [
@@ -345,7 +345,7 @@
     "when": {
       "time": {
         "from": 1140,
-        "to": 1320
+        "to": 1200
       }
     },
     "lines": [
@@ -502,6 +502,126 @@
       [
         "pell",
         "Not while I was looking."
+      ]
+    ]
+  },
+  {
+    "between": [
+      "dorran",
+      "elder"
+    ],
+    "when": {
+      "time": {
+        "from": 1200,
+        "to": 1380
+      }
+    },
+    "lines": [
+      [
+        "dorran",
+        "Usual, Bram?"
+      ],
+      [
+        "elder",
+        "The usual was better when your father poured it."
+      ],
+      [
+        "dorran",
+        "My father watered it."
+      ],
+      [
+        "elder",
+        "That's what I said."
+      ]
+    ]
+  },
+  {
+    "between": [
+      "dorran",
+      "corwin"
+    ],
+    "when": {
+      "time": {
+        "from": 1200,
+        "to": 1440
+      }
+    },
+    "lines": [
+      [
+        "corwin",
+        "Another, Dorran."
+      ],
+      [
+        "dorran",
+        "That's four. Your leg's been telling me since the second."
+      ],
+      [
+        "corwin",
+        "My leg drinks for free. I pay for the rest of me."
+      ],
+      [
+        "dorran",
+        "Then the rest of you can have water."
+      ]
+    ]
+  },
+  {
+    "between": [
+      "kai",
+      "elder"
+    ],
+    "when": {
+      "time": {
+        "from": 1200,
+        "to": 1320
+      }
+    },
+    "lines": [
+      [
+        "elder",
+        "Where did the Guild send you today, lad?"
+      ],
+      [
+        "kai",
+        "Past the quarry. Goblins in the old mine again."
+      ],
+      [
+        "elder",
+        "Again. They breed down there like mice in a granary."
+      ],
+      [
+        "kai",
+        "Mice don't throw spears, Bram."
+      ]
+    ]
+  },
+  {
+    "between": [
+      "edwin",
+      "dorran"
+    ],
+    "when": {
+      "time": {
+        "from": 1200,
+        "to": 1320
+      }
+    },
+    "lines": [
+      [
+        "edwin",
+        "Dorran! A round for the Four, on the Guild's coin!"
+      ],
+      [
+        "dorran",
+        "The Guild's coin hasn't come in yet. Neither has yours."
+      ],
+      [
+        "edwin",
+        "Then on credit. We're heroes."
+      ],
+      [
+        "dorran",
+        "Heroes pay first. Ask Corwin."
       ]
     ]
   }

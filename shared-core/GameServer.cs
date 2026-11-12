@@ -2148,7 +2148,9 @@ public sealed partial class GameServer : IEnemyEvents
             }
 
             // Someone indoors may turn up anywhere; anyone else walks, unless time jumped or the way is absurd.
-            if (atOnce || Vector3.Distance(actor.Position, spot.At) > 150f)
+            // Someone indoors at home who is due in an interior off the map is simply there; nobody sees them go.
+            if (atOnce || Schedules.WalkDistance(_world, actor.Position, spot.At) > 150f ||
+                (!actor.Active && Schedules.Door(_world, actor.Position, spot.At) is not null))
             {
                 actor.Spot = spot;
                 actor.Rest();
