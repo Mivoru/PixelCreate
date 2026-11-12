@@ -61,6 +61,7 @@
   { "id": "book_air_slash", "name": "Book of Air Slash", "kind": "skillbook", "tier": 2, "price": 0, "skill": "air_slash", "icon": "skillbook_wind", "description": "Reading it teaches the skill Air Slash for good." },
   { "id": "book_wisp_bolt", "name": "Book of Wisp Bolt", "kind": "skillbook", "tier": 2, "price": 0, "skill": "wisp_bolt", "icon": "skillbook_wisp", "description": "Reading it teaches the skill Wisp Bolt for good." },
   { "id": "book_vine_pull", "name": "Book of Vine Pull", "kind": "skillbook", "tier": 2, "price": 0, "skill": "vine_pull", "icon": "skillbook_vine", "description": "Reading it teaches the skill Vine Pull for good." },
+  { "id": "book_rune_ward", "name": "Book of Rune Ward", "kind": "skillbook", "tier": 2, "price": 0, "skill": "rune_ward", "icon": "skillbook_rune", "description": "Reading it teaches the skill Rune Ward for good." },
   { "id": "book_earth_crack", "name": "Book of Earth Crack", "kind": "skillbook", "tier": 2, "price": 0, "skill": "earth_crack", "icon": "skillbook_earth", "description": "Reading it teaches the skill Earth Crack for good." },
   { "id": "book_summon_spears", "name": "Book of Summon Spears", "kind": "skillbook", "tier": 2, "price": 0, "skill": "summon_spears", "icon": "skillbook_spear", "description": "Reading it teaches the skill Summon Spears for good." },
   { "id": "book_fang_slash", "name": "Book of Fang Slash", "kind": "skillbook", "tier": 2, "price": 0, "skill": "fang_slash", "icon": "skillbook_blood", "description": "Reading it teaches the skill Fang Slash for good." },

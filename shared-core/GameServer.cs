@@ -337,6 +337,9 @@ public sealed partial class GameServer : IEnemyEvents
 
         /// <summary>Health the Arcane Barrier soaks up, and the part of a point it has refilled.</summary>
         public int Barrier;
+
+        /// <summary>Ticks left of a Rune Ward: while they last the barrier holds whatever the ward gave, staff or not.</summary>
+        public int WardTicks;
         public float BarrierCarry;
         public GuildRank Rank;
         public int Gold;
@@ -674,6 +677,9 @@ public sealed partial class GameServer : IEnemyEvents
     public int ProjectileCount => _projectiles.Count;
 
     public int FireWallCount => _walls.Count;
+
+    /// <summary>A player's barrier now, for tests.</summary>
+    public int BarrierOf(int id) => _players[id].Barrier;
 
     /// <summary>The hazards on the ground now, for tests.</summary>
     public IReadOnlyList<FireWallHazard> FireWalls => _walls;
@@ -1191,6 +1197,12 @@ public sealed partial class GameServer : IEnemyEvents
                     PlayerSlash(player, ProjectileKind.FangSlash, origin + across * (claw * FangSlashSpacing), flat, index, skill.Radius);
                 }
 
+                break;
+            case "runeWard":
+                // Rune Ward: a barrier of the skill's strength, raised by Intelligence, for eight seconds.
+                var ward = skill.Damage * Progression.DamageScale(player.Level) * (1f + player.Attribute(PlayerAttribute.Intelligence) * Core.Attributes.DamagePctPerPoint / 100f);
+                player.Barrier = Math.Max(player.Barrier, (int)ward);
+                player.WardTicks = RuneWardTicks;
                 break;
             case "wispBolt":
                 // The player's wisp bolt: slow, and it turns after the nearest enemy (Home, below).
@@ -2642,6 +2654,15 @@ public sealed partial class GameServer : IEnemyEvents
     /// <summary>Staff mastery Arcane Barrier: while a staff is in hand, the barrier refills once the player is left alone a while.</summary>
     private void StepBarrier(Player player, short maxHealth)
     {
+        // A Rune Ward holds while it lasts and fades when it runs out.
+        if (player.WardTicks > 0)
+        {
+            if (--player.WardTicks > 0)
+            {
+                return;
+            }
+        }
+
         var most = Mastery.Has(player.Stats.Weapon, player.MasteryTaken, "arcane_barrier") ? (int)(maxHealth * Tuning.BarrierShare) : 0;
         if (player.Barrier >= most)
         {
@@ -3690,6 +3711,9 @@ public sealed partial class GameServer : IEnemyEvents
         tip.Life = (int)(range / 30f * Tuning.TickRate) + 1;
         tip.Shooter = -2;
     }
+
+    /// <summary>How long a Rune Ward lasts.</summary>
+    public const int RuneWardTicks = Tuning.TickRate * 8;
 
     /// <summary>How far the player's Vine Pull reaches, in metres.</summary>
     public const float VinePullReach = 8f;

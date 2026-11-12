@@ -172,6 +172,17 @@ public class SkillTests
     }
 
     [Fact]
+    public void RuneWard_SoaksBlows_ThenFades()
+    {
+        var (server, client, network) = Start(new Vector3(0, 0, -30));
+        var skill = Learn(server, client, network, "rune_ward");
+        Run(server, client, network, 3, Command.CastSkill, skill);
+        Assert.True(server.BarrierOf(1) > 0, "the ward raised no barrier");
+        Run(server, client, network, GameServer.RuneWardTicks + 10);
+        Assert.Equal(0, server.BarrierOf(1));
+    }
+
+    [Fact]
     public void Books_DropOnlyFromTheirTeachers()
     {
         var fireball = SkillDef.All[SkillDef.Index("fireball")];

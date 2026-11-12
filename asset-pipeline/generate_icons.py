@@ -776,7 +776,7 @@ ICONS = {
     "mutton": ("steak", "mutton"), "boar_meat": ("steak", "boar"), "raw_chicken": ("drumstick", "chicken"),
     "egg": ("egg", "egg"), "hare_meat": ("drumstick", "venison"), "mirefin_fillet": ("steak", "water"), "bread": ("loaf", "bread"), "bond": ("scroll", "paper"),
     "skillbook_fire": ("book", "fire"), "skillbook_wind": ("book", "blue"), "skillbook_earth": ("book", "leather"),
-    "skillbook_spear": ("book", "iron"), "skillbook_wisp": ("book", "wisp"), "skillbook_vine": ("book", "slime"), "skillbook_blood": ("book", "potion"),
+    "skillbook_spear": ("book", "iron"), "skillbook_wisp": ("book", "wisp"), "skillbook_rune": ("book", "stone"), "skillbook_vine": ("book", "slime"), "skillbook_blood": ("book", "potion"),
     "minor_healing_potion": ("potion", "potion"), "healing_potion": ("big_potion", "potion"),
     "rusty_dagger": ("dagger", "iron"), "spiked_club": ("club", "wood"), "goblin_shortbow": ("bow", "wood"),
     "hunters_longbow": ("longbow", "leather"), "bone_staff": ("staff", "wood"), "archer_hood": ("hood", "rag"),
