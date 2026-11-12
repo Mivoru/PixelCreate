@@ -46,6 +46,10 @@ public partial class Ambient : Node3D
     /// <summary>The lights of the lantern posts, lit only after dark.</summary>
     public static readonly List<OmniLight3D> Lamps = new();
 
+    /// <summary>Materials of window panes and lamps, which glow after dark.</summary>
+    public static readonly List<ShaderMaterial> Glowing = new();
+    private float _glow;
+
     /// <summary>How hard it rains, 0 to 1; the game sets it from the clock every frame.</summary>
     public static float Rain { get; set; }
     private float _time;
@@ -223,6 +227,16 @@ public partial class Ambient : Node3D
             foreach (var lamp in Lamps)
             {
                 lamp.Visible = night && outside;
+            }
+
+            var glow = Mathf.MoveToward(_glow, night ? 1f : 0f, (float)delta * 0.5f);
+            if (!Mathf.IsEqualApprox(glow, _glow))
+            {
+                _glow = glow;
+                foreach (var material in Glowing)
+                {
+                    material.SetShaderParameter("glow", glow);
+                }
             }
 
             _butterflies.Emitting = outside && !night;

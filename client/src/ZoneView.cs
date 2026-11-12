@@ -73,6 +73,7 @@ public static class ZoneView
     public static Node3D Build(Zone zone)
     {
         var root = new Node3D { Name = zone.Name };
+        Ambient.Glowing.Clear();
         root.AddChild(BuildTerrain(zone));
         if (!PixelStage.Off("grass"))
         {
@@ -596,6 +597,12 @@ public static class ZoneView
         var look = Surfaces.GetValueOrDefault(original.ResourceName, ("plaster", 1.2f, 0f));
         var material = new ShaderMaterial { Shader = shader };
         material.SetShaderParameter("tint", original.AlbedoColor);
+        // Window panes and lamps glow after dark (Ambient sets the strength).
+        if (original.ResourceName is "pane" or "window")
+        {
+            material.SetShaderParameter("glow_some", original.ResourceName == "pane" ? 1f : 0f);
+            Ambient.Glowing.Add(material);
+        }
         material.SetShaderParameter("detail", GD.Load<Texture2D>($"res://assets/textures/{look.Item1}.png"));
         material.SetShaderParameter("detail_scale", look.Item2);
         material.SetShaderParameter("sway", look.Item3);
