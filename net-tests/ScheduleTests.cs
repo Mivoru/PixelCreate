@@ -63,6 +63,20 @@ public class ScheduleTests
     }
 
     [Fact]
+    public void InARainyHour_ThoseWhoWorkOutside_GoIndoors()
+    {
+        // Find the first rainy hour of the first days and look where Lina, the merchant, is.
+        var (day, hour) = Enumerable.Range(1, 30).SelectMany(d => Enumerable.Range(8, 10).Select(h => (d, h)))
+            .First(p => Schedules.RainyHour(p.d, p.h));
+        var story = new NoStory();
+        story.World.Time = new GameTime(day, hour * 60);
+        Assert.NotNull(Schedules.Now("lina", story, hour)!.Home);
+        story.World.Time = new GameTime(1, 10 * 60);
+        Assert.False(Schedules.RainyHour(1, 10), "the first day of a game stays dry");
+        Assert.NotNull(Schedules.Now("lina", story, 10)!.At);
+    }
+
+    [Fact]
     public void BlocksOfADay_FollowTheClock()
     {
         var story = new NoStory();

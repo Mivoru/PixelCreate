@@ -19,6 +19,9 @@ public sealed record ScheduleBlock(int FromHour, Vector3? At, float Yaw, Vector3
 
     /// <summary>What kind of place this is, when that matters: at the "tavern" people pass on what they have heard.</summary>
     public string Place { get; init; } = "";
+
+    /// <summary>A block for rainy hours: it holds only while it rains, and then wins over the dry day's blocks.</summary>
+    public bool Rain { get; init; }
 }
 
 /// <summary>Where someone rests now: the place, the facing, the pose, and whether they are in the world at all.</summary>
@@ -41,10 +44,28 @@ public static class Schedules
             return null;
         }
 
+        // In a rainy hour the rain blocks come first: people who work outside take shelter. Rain is judged at the
+        // middle of the hour, so server and client agree on where everyone rests for the whole hour.
         ScheduleBlock? best = null;
+        if (RainyHour(context.World.Time.Day, hour))
+        {
+            foreach (var block in blocks)
+            {
+                if (block.Rain && block.FromHour <= hour && (best is null || block.FromHour > best.FromHour) && block.When.Holds(context))
+                {
+                    best = block;
+                }
+            }
+
+            if (best is not null)
+            {
+                return best;
+            }
+        }
+
         foreach (var block in blocks)
         {
-            if (block.FromHour <= hour && (best is null || block.FromHour > best.FromHour) && block.When.Holds(context))
+            if (!block.Rain && block.FromHour <= hour && (best is null || block.FromHour > best.FromHour) && block.When.Holds(context))
             {
                 best = block;
             }
@@ -57,7 +78,7 @@ public static class Schedules
 
         foreach (var block in blocks)
         {
-            if ((best is null || block.FromHour > best.FromHour) && block.When.Holds(context))
+            if (!block.Rain && (best is null || block.FromHour > best.FromHour) && block.When.Holds(context))
             {
                 best = block;
             }
@@ -145,8 +166,12 @@ public static class Schedules
             By = b.TryGetProperty("by", out var by)
                 ? by.EnumerateArray().Select(p => new Vector3(p[0].GetSingle(), 0, p[1].GetSingle())).ToArray() : Array.Empty<Vector3>(),
             Place = b.TryGetProperty("place", out var place) ? place.GetString()! : "",
+            Rain = b.TryGetProperty("rain", out var rain) && rain.GetBoolean(),
         };
     }
+
+    /// <summary>Whether it rains hard enough in an hour (judged at its middle) for people to take shelter.</summary>
+    public static bool RainyHour(int day, int hour) => new GameTime(day, Math.Clamp(hour, 0, 23) * 60 + 30).Rain > 0.3f;
 }
 
 /// <summary>
