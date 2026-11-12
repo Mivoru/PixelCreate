@@ -1514,7 +1514,9 @@ public partial class GameClient : Node
             _lastXp = snapshot.Xp;
             _sfx.Play("level_up", chest);
             _fx.LevelUp(shown);
-            _hud.ShowBanner($"Level Up!  Lv {snapshot.Level}  +{Attributes.PointsPerLevel} attribute points", new Color("fee761"));
+            // From level 3 to 9 each level puts new notices on the Guild board; say so, or nobody looks.
+            var notices = snapshot.Level is >= 3 and <= 9 && _client.Story.Has("guild.registered") ? "  New notices on the Guild board" : "";
+            _hud.ShowBanner($"Level Up!  Lv {snapshot.Level}  +{Attributes.PointsPerLevel} attribute points{notices}", new Color("fee761"));
         }
         else if (snapshot.Xp > _lastXp)
         {
