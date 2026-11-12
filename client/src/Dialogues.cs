@@ -711,7 +711,7 @@ public static class NpcLooks
             ["anime_shirt"] = new("5a6a5a"),
             ["anime_trousers"] = new("3a4a5a"),
             ["anime_dark"] = new("2a2a2a"),
-            ["anime_apron"] = new("8a7a4a"),
+            ["anime_vest"] = new("8a7a4a"),
             ["anime_glove"] = new("c89070"),
         },
     };
@@ -736,7 +736,7 @@ public static class NpcLooks
             ["anime_trousers"] = new("6a5a4a"),
             ["anime_dark"] = new("4a3a2a"),
             ["anime_cloak"] = new("c8b890"),
-            ["anime_apron"] = new("8a6a4a"),
+            ["anime_vest"] = new("8a6a4a"),
             ["anime_glove"] = new("e8b896"),
         },
     };
@@ -760,7 +760,7 @@ public static class NpcLooks
             ["anime_shirt"] = new("c8a888"),
             ["anime_trousers"] = new("6a3a3a"),
             ["anime_dark"] = new("3a2a2a"),
-            ["anime_apron"] = new("f0e8d8"),
+            ["anime_vest"] = new("f0e8d8"),
             ["anime_glove"] = new("e8b090"),
         },
     };
@@ -853,7 +853,7 @@ public static class NpcLooks
             ["anime_shirt"] = new("9a9488"),
             ["anime_trousers"] = new("4a4440"),
             ["anime_dark"] = new("2a2622"),
-            ["anime_apron"] = new("6a5a48"),
+            ["anime_vest"] = new("6a5a48"),
             ["anime_glove"] = new("5a4a3a"),
         },
     };
@@ -881,6 +881,47 @@ public static class NpcLooks
         },
     };
 
+    /// <summary>Ollie: a small scruffy village boy in a too-big tunic, always running somewhere.</summary>
+    private static readonly RigLook Child = new("child", new Color("f0c8a8"), 0.66f, "none")
+    {
+        Hair = "spiky",
+        Cloak = false,
+        Mood = "happy",
+        FaceWidth = 1.1f,
+        Eyes = new Color("3a6a8a"),
+        Brows = new Color("8a5a2a"),
+        FaceStyle = new FaceStyle(0, 2, 0),
+        Palette = new Dictionary<string, Color>
+        {
+            ["anime_hair"] = new("b87a3a"),
+            ["anime_shirt"] = new("6a8ab0"),
+            ["anime_trousers"] = new("6a5a3a"),
+            ["anime_dark"] = new("4a3a2a"),
+            ["anime_glove"] = new("f0c8a8"),
+        },
+    };
+
+    /// <summary>Bea: a quick little girl with pigtails and a red dress, the fastest runner in Hearthmere.</summary>
+    private static readonly RigLook ChildB = new("child_b", new Color("e8b896"), 0.63f, "none")
+    {
+        Hair = "tess",
+        Feminine = true,
+        Cloak = false,
+        Mood = "happy",
+        FaceWidth = 1.1f,
+        Eyes = new Color("5a3a2a"),
+        Brows = new Color("3a2218"),
+        FaceStyle = new FaceStyle(0, 2, 0),
+        Palette = new Dictionary<string, Color>
+        {
+            ["anime_hair"] = new("3a2218"),
+            ["anime_shirt"] = new("c84848"),
+            ["anime_trousers"] = new("a83a3a"),
+            ["anime_dark"] = new("4a2a2a"),
+            ["anime_glove"] = new("e8b896"),
+        },
+    };
+
     /// <summary>The look of a human enemy by its id, or null when it has none of its own.</summary>
     public static RigLook? Enemy(string id) => id switch
     {
@@ -898,7 +939,7 @@ public static class NpcLooks
         ("nell", Captive), ("haruto", Lost), ("vosk", FinderCaptain), ("gil", FinderGil), ("hanne", FinderHanne), ("corb", FinderCorb),
         ("corwin", BranchMaster), ("tam", Apprentice), ("edwin", PartySword), ("moss", PartyBow), ("fen", PartyHealer),
         ("rook", PartyShield), ("osric", Miller), ("anwen", MillerDaughter), ("hamm", FarmElder), ("maddy", FarmGirl),
-        ("tobias", Farmhand), ("oswin", Woodcutter), ("jory", WoodcutterB), ("tobb", Fisher), ("brin", Shepherd), ("marta", Innkeeper), ("aldous", Pilgrim), ("fennick", Peddler), ("bors", Quarryman), ("wilm", QuarrymanB),
+        ("tobias", Farmhand), ("oswin", Woodcutter), ("jory", WoodcutterB), ("tobb", Fisher), ("brin", Shepherd), ("marta", Innkeeper), ("aldous", Pilgrim), ("fennick", Peddler), ("bors", Quarryman), ("wilm", QuarrymanB), ("ollie", Child), ("bea", ChildB),
     };
 
     public static RigLook? For(string role) => role switch
@@ -941,6 +982,8 @@ public static class NpcLooks
         "peddler" => Peddler,
         "quarryman" => Quarryman,
         "quarryman_b" => QuarrymanB,
+        "child" => Child,
+        "child_b" => ChildB,
         _ => null,
     };
 }
@@ -977,6 +1020,7 @@ public static class Dialogues
         "pilgrim" => "Pilgrim",
         "peddler" => "Peddler",
         "quarryman" or "quarryman_b" => "Quarryman",
+        "child" or "child_b" => "Village Child",
         "captive" => "Bonded Girl",
         "lost" => "Lightborn",
         "finder_captain" => "Finder Captain",

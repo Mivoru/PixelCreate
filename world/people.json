@@ -404,6 +404,15 @@
           }
         },
         "text": "Nights are long at this gate."
+      },
+      {
+        "when": {
+          "time": {
+            "from": 360,
+            "to": 1200
+          }
+        },
+        "text": "Ollie! Off the well! I won't tell you twice."
       }
     ],
     "voice": {
@@ -1854,6 +1863,84 @@
           }
         },
         "text": "Goblins pinched a cart of blocks last month. What does a goblin want with a block?"
+      }
+    ]
+  },
+  "ollie": {
+    "voice": {
+      "id": "TX3LPaxmHKxFdv7VOQHJ",
+      "name": "Liam",
+      "stability": 0.35,
+      "similarity_boost": 0.75,
+      "style": 0.6
+    },
+    "moods": [],
+    "barks": [
+      {
+        "when": {
+          "time": {
+            "from": 420,
+            "to": 1140
+          }
+        },
+        "text": "Are you a real adventurer? Have you killed a dragon? A big slime?"
+      },
+      {
+        "when": {
+          "time": {
+            "from": 420,
+            "to": 1140
+          }
+        },
+        "text": "Bea! Bea, you're it!"
+      },
+      {
+        "when": {
+          "time": {
+            "from": 420,
+            "to": 1140
+          }
+        },
+        "text": "When I'm big I'm going to be a guard like Garrick. With a spear."
+      }
+    ]
+  },
+  "bea": {
+    "voice": {
+      "id": "FGY2WhTYpPnrIDTdsKH5",
+      "name": "Laura",
+      "stability": 0.35,
+      "similarity_boost": 0.75,
+      "style": 0.6
+    },
+    "moods": [],
+    "barks": [
+      {
+        "when": {
+          "time": {
+            "from": 420,
+            "to": 1140
+          }
+        },
+        "text": "Can't catch me!"
+      },
+      {
+        "when": {
+          "time": {
+            "from": 420,
+            "to": 1140
+          }
+        },
+        "text": "Mum says the lights at the stones are dead people. Ollie cried."
+      },
+      {
+        "when": {
+          "time": {
+            "from": 420,
+            "to": 1140
+          }
+        },
+        "text": "Elda gave me a bun. I'm not sharing."
       }
     ]
   }
