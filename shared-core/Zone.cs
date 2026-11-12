@@ -99,7 +99,7 @@ public sealed class Zone
     /// </summary>
     private sealed record ScatterData(
         string Model, int Count, float[] Area, float MinScale, float MaxScale, float Spacing, bool Blob = false, float Clusters = 0f,
-        float Waterside = 0f, float MinHeight = -100f, bool InWater = false, float MaxHeight = 1000f, bool Steep = false,
+        float Waterside = 0f, float MinHeight = -100f, bool InWater = false, float MaxHeight = 1000f, bool Steep = false, bool Bank = false,
         float Dry = 0f, bool Edge = false);
 
     private sealed record EnemySpawnData(
@@ -817,7 +817,7 @@ public sealed class Zone
             var tree = scatter.Model.Contains("tree") || scatter.Model is "pine" or "pine_b" or "birch" or "willow" or "blossom" or "apple";
             // Cheap tests first; the distance to every placed prop is the slow one.
             if (OutsideShape(scatter, x, z) || InClearing(data, x, z) || (terrain.At(x, z) < -0.3f && !scatter.InWater) ||
-                !MatchesGround(scatter, terrain, x, z) || (TooSteep(terrain, x, z) && !scatter.Steep) || (NearWater(x, z) && !scatter.InWater) ||
+                !MatchesGround(scatter, terrain, x, z) || (TooSteep(terrain, x, z) && !scatter.Steep) || (NearWater(x, z) && !scatter.InWater && !(scatter.Bank && terrain.At(x, z) > 0.2f)) ||
                 PathDistance(x, z) < (tree ? 3.2f : 1.5f) ||
                 props.Any(p => Near(p, x, z, scatter.Spacing, tree && Footprint(p.Model) > 1.2f ? 3f : 0f)))
             {

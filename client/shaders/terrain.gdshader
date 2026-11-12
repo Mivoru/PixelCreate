@@ -50,6 +50,22 @@ void fragment() {
 		float strata = sin(world_position.y * 0.8 + large * 7.0);
 		color *= 0.88 + 0.16 * strata;
 		color *= mix(vec3(0.94, 0.97, 1.04), vec3(1.07, 1.0, 0.9), smoothstep(-0.4, 0.6, sin(world_position.y * 0.23 + large * 3.0)));
+		// Low banks cut by the streams are earth and pebbles, not mountain rock: brown, layered finely,
+		// with moss where the slope eases and roots of grass hanging over the top edge.
+		float low = 1.0 - smoothstep(3.0, 6.5, world_position.y);
+		if (low > 0.01) {
+			vec3 earth = texture(dirt_tex, side * 1.6).rgb * vec3(0.56, 0.46, 0.36);
+			// Fine layers of darker and lighter earth, broken up so they do not run like ruled lines.
+			float layer = sin(world_position.y * 4.2 + large * 11.0 + grain * 3.0);
+			earth *= 0.78 + 0.3 * smoothstep(-0.6, 0.6, layer);
+			// Stones bedded in the bank: lighter grey with a dark rim.
+			float stone = texture(rock_tex, side * 2.3 + 0.4).g + grain * 0.3;
+			earth = mix(earth, vec3(0.6, 0.6, 0.62), smoothstep(0.82, 0.86, stone));
+			earth = mix(earth, earth * 0.55, smoothstep(0.76, 0.8, stone) - smoothstep(0.82, 0.86, stone));
+			float moss = smoothstep(0.35, 0.65, world_normal.y + (grain - 0.5) * 0.5);
+			earth = mix(earth, vec3(0.26, 0.38, 0.17), moss * 0.75);
+			color = mix(color, earth, low * 0.85);
+		}
 	}
 	// Snow settles on the ledges and only covers the tops: steep faces stay bare rock. High ledges
 	// are flat enough to count as grass, so this runs on any ground.
