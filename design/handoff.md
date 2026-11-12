@@ -83,6 +83,8 @@ Autor si zahrál a chce samostatnou práci do 6:00. Zaškrtávat, co je hotové:
 - Dopoledne 2026-11-12: oprava odevzdávání jobů (u Miry šlo odevzdat jen prvních pět, `tools/turnins.py` + test),
   otřes kamery při zásahu (`PIXEL_OFF=shake`), jižní okraj Hearthmere (2 chalupy, zahrada, Greta), Greystone Mine
   pod lomem (nora u stěny, skřeti, stoneback, truhla, job od Borse), nářadí se při sezení odkládá.
+- Odpoledne: noční světla luceren a svítící okna, lidé se rozhlížejí a přešlapují, další rozhovory (mlynář s dcerou,
+  Marta a Fennick, Pip a Tobias, Fen a Wren). Kontrola, prolog i nejtěžší místo (10,6 ms) v pořádku.
 
 Neověřeno hraním člověkem: vše výše jen boty, testy (385) a snímky. Síla monster a odměny nenastaveny (pravidlo
 „neladit obtížnost“), jen hrubě odhadnuté; ryby u mola byly pro level 1 smrtelné, ztlumil jsem je.

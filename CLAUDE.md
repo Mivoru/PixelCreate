@@ -195,7 +195,8 @@ Rules:
   and hour alone, so every player sees the same) greys the sky and fog (`PixelStage.Rain`) and falls round the camera
   (`Ambient.Rain`); `PIXEL_RAIN=1` forces it. A schedule block with `"rain": true` holds only in a rainy
   hour (`Schedules.RainyHour`, judged at the middle of the hour so server and client agree) and then wins: the people
-  who work outside go indoors. Fireflies drift after dark. The journal (L,
+  who work outside go indoors. Fireflies drift after dark, lantern posts light (`Ambient.Lamps`) and window
+  panes and lamp boxes glow (`prop.gdshader` `glow`, `Ambient.Glowing`, about two houses of three). The journal (L,
   `PIXEL_BOT=journal`) lists active quests and the notes of flags the player has.
 - Saves (`SaveGame.cs`): the server writes `%LOCALAPPDATA%/PixelCreate/saves/<slot>.json` each morning and on
   `Command.Quit` (the client sends it when quitting or closing the window), keeping `<slot>.bak.json`. `PIXEL_SLOT`
