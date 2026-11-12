@@ -1,70 +1,362 @@
 [
   {
-    "between": ["oswin", "jory"], "when": { "time": { "from": 720, "to": 780 } },
+    "between": [
+      "oswin",
+      "jory"
+    ],
+    "when": {
+      "time": {
+        "from": 720,
+        "to": 780
+      }
+    },
     "lines": [
-      ["jory", "Uncle. Is it true a thornback can knock down an oak?"],
-      ["oswin", "A young one, maybe. An old one knocks down the man behind it."],
-      ["jory", "I'd step aside. Like the Guild folk do."],
-      ["oswin", "You'd trip over your own axe. Eat your bread."]
+      [
+        "jory",
+        "Uncle. Is it true a thornback can knock down an oak?"
+      ],
+      [
+        "oswin",
+        "A young one, maybe. An old one knocks down the man behind it."
+      ],
+      [
+        "jory",
+        "I'd step aside. Like the Guild folk do."
+      ],
+      [
+        "oswin",
+        "You'd trip over your own axe. Eat your bread."
+      ]
     ]
   },
   {
-    "between": ["oswin", "jory"], "when": { "time": { "from": 1140, "to": 1320 } },
+    "between": [
+      "oswin",
+      "jory"
+    ],
+    "when": {
+      "time": {
+        "from": 1140,
+        "to": 1320
+      }
+    },
     "lines": [
-      ["oswin", "Forty cords by the frost. We're at twenty-two."],
-      ["jory", "Twenty-three. I split one more while you were snoring at noon."],
-      ["oswin", "I was resting my eyes."]
+      [
+        "oswin",
+        "Forty cords by the frost. We're at twenty-two."
+      ],
+      [
+        "jory",
+        "Twenty-three. I split one more while you were snoring at noon."
+      ],
+      [
+        "oswin",
+        "I was resting my eyes."
+      ]
     ]
   },
   {
-    "between": ["bors", "wilm"], "when": { "time": { "from": 720, "to": 780 } },
+    "between": [
+      "bors",
+      "wilm"
+    ],
+    "when": {
+      "time": {
+        "from": 720,
+        "to": 780
+      }
+    },
     "lines": [
-      ["wilm", "Corwin wants twelve more blocks for the Guild wall by the new moon."],
-      ["bors", "Corwin can come up here and cut them himself."],
-      ["wilm", "He'd want them square, too."],
-      ["bors", "They are square. It's the wall that's crooked."]
+      [
+        "wilm",
+        "Corwin wants twelve more blocks for the Guild wall by the new moon."
+      ],
+      [
+        "bors",
+        "Corwin can come up here and cut them himself."
+      ],
+      [
+        "wilm",
+        "He'd want them square, too."
+      ],
+      [
+        "bors",
+        "They are square. It's the wall that's crooked."
+      ]
     ]
   },
   {
-    "between": ["bors", "wilm"], "when": { "time": { "from": 1140, "to": 1260 } },
+    "between": [
+      "bors",
+      "wilm"
+    ],
+    "when": {
+      "time": {
+        "from": 1140,
+        "to": 1260
+      }
+    },
     "lines": [
-      ["bors", "Heard the crane creak today. Grease it tomorrow."],
-      ["wilm", "That wasn't the crane. That was your knees."]
+      [
+        "bors",
+        "Heard the crane creak today. Grease it tomorrow."
+      ],
+      [
+        "wilm",
+        "That wasn't the crane. That was your knees."
+      ]
     ]
   },
   {
-    "between": ["aldous", "fennick"], "when": { "time": { "from": 1200, "to": 1380 } },
+    "between": [
+      "aldous",
+      "fennick"
+    ],
+    "when": {
+      "time": {
+        "from": 1200,
+        "to": 1380
+      }
+    },
     "lines": [
-      ["fennick", "Forty years walking to shrines, old man. What do you pray for?"],
-      ["aldous", "Good roads. And for peddlers to sell something useful."],
-      ["fennick", "I sell lucky spoons!"],
-      ["aldous", "And has one ever been lucky?"],
-      ["fennick", "For me. I sold it."]
+      [
+        "fennick",
+        "Forty years walking to shrines, old man. What do you pray for?"
+      ],
+      [
+        "aldous",
+        "Good roads. And for peddlers to sell something useful."
+      ],
+      [
+        "fennick",
+        "I sell lucky spoons!"
+      ],
+      [
+        "aldous",
+        "And has one ever been lucky?"
+      ],
+      [
+        "fennick",
+        "For me. I sold it."
+      ]
     ]
   },
   {
-    "between": ["marta", "aldous"], "when": { "time": { "from": 360, "to": 540 } },
+    "between": [
+      "marta",
+      "aldous"
+    ],
+    "when": {
+      "time": {
+        "from": 360,
+        "to": 540
+      }
+    },
     "lines": [
-      ["marta", "Off to the shrine again? Take some bread, you'll fall over on the road."],
-      ["aldous", "The shrine provides, Marta."],
-      ["marta", "The shrine has never once made you breakfast."]
+      [
+        "marta",
+        "Off to the shrine again? Take some bread, you'll fall over on the road."
+      ],
+      [
+        "aldous",
+        "The shrine provides, Marta."
+      ],
+      [
+        "marta",
+        "The shrine has never once made you breakfast."
+      ]
     ]
   },
   {
-    "between": ["ollie", "bea"], "when": { "time": { "from": 420, "to": 1140 } },
+    "between": [
+      "ollie",
+      "bea"
+    ],
+    "when": {
+      "time": {
+        "from": 420,
+        "to": 1140
+      }
+    },
     "lines": [
-      ["ollie", "I'm the adventurer, you be the goblin."],
-      ["bea", "I was the goblin yesterday! You be the goblin."],
-      ["ollie", "Fine. Rrrargh!"],
-      ["bea", "Goblins don't say rrrargh. They go hee-hee-hee."]
+      [
+        "ollie",
+        "I'm the adventurer, you be the goblin."
+      ],
+      [
+        "bea",
+        "I was the goblin yesterday! You be the goblin."
+      ],
+      [
+        "ollie",
+        "Fine. Rrrargh!"
+      ],
+      [
+        "bea",
+        "Goblins don't say rrrargh. They go hee-hee-hee."
+      ]
     ]
   },
   {
-    "between": ["hamm", "maddy"], "when": { "time": { "from": 360, "to": 720 } },
+    "between": [
+      "hamm",
+      "maddy"
+    ],
+    "when": {
+      "time": {
+        "from": 360,
+        "to": 720
+      }
+    },
     "lines": [
-      ["hamm", "Fence first, then the cows."],
-      ["maddy", "The cows don't care about the fence, uncle."],
-      ["hamm", "That's what the fence is for."]
+      [
+        "hamm",
+        "Fence first, then the cows."
+      ],
+      [
+        "maddy",
+        "The cows don't care about the fence, uncle."
+      ],
+      [
+        "hamm",
+        "That's what the fence is for."
+      ]
+    ]
+  },
+  {
+    "between": [
+      "edwin",
+      "moss",
+      "rook"
+    ],
+    "when": {
+      "time": {
+        "from": 1140,
+        "to": 1320
+      }
+    },
+    "lines": [
+      [
+        "rook",
+        "And then the slime hit the shield. BANG."
+      ],
+      [
+        "moss",
+        "It was a small slime, Rook."
+      ],
+      [
+        "rook",
+        "It was a big slime."
+      ],
+      [
+        "edwin",
+        "It was a medium slime. To Brightwater."
+      ]
+    ]
+  },
+  {
+    "between": [
+      "fen",
+      "edwin"
+    ],
+    "when": {
+      "time": {
+        "from": 1140,
+        "to": 1320
+      }
+    },
+    "lines": [
+      [
+        "fen",
+        "Wren wants twelve silver for feverleaf now. Twelve!"
+      ],
+      [
+        "edwin",
+        "Then we take the wolf job. Wolves pay."
+      ],
+      [
+        "fen",
+        "Wolves bite, Edwin."
+      ],
+      [
+        "edwin",
+        "So do prices."
+      ]
+    ]
+  },
+  {
+    "between": [
+      "edwin",
+      "moss",
+      "fen"
+    ],
+    "when": {
+      "time": {
+        "from": 420,
+        "to": 540
+      }
+    },
+    "lines": [
+      [
+        "edwin",
+        "Board first. Something with goblins, they pay best."
+      ],
+      [
+        "moss",
+        "Something without goblins. My knee still remembers the last ones."
+      ],
+      [
+        "fen",
+        "Something near enough to be back for supper."
+      ]
+    ]
+  },
+  {
+    "between": [
+      "elder",
+      "garrick"
+    ],
+    "when": {
+      "time": {
+        "from": 1200,
+        "to": 1380
+      }
+    },
+    "lines": [
+      [
+        "elder",
+        "Lights at the stones again last night, Garrick."
+      ],
+      [
+        "garrick",
+        "I saw. I stayed this side of the river."
+      ],
+      [
+        "elder",
+        "Wise man. My father went to look, once. He came back quieter."
+      ]
+    ]
+  },
+  {
+    "between": [
+      "smith",
+      "corwin"
+    ],
+    "when": {
+      "time": {
+        "from": 1140,
+        "to": 1320
+      }
+    },
+    "lines": [
+      [
+        "corwin",
+        "Your blades are holding up, Tess. Half my adventurers are still alive."
+      ],
+      [
+        "smith",
+        "Half? Tell the other half to stop using them as crowbars."
+      ]
     ]
   }
 ]
