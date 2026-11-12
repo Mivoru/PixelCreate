@@ -487,6 +487,14 @@ Rules:
   A new monster can often be data: a kind picks the view (`animal` and `wolf` use
   `AnimalView`), abilities pick the attacks. Rare variants and goblin and orc proposals: `design/monster-audit.md`.
   No light blow has a wind-up under 16 ticks.
+- Combat feel (client only, nothing in the simulation waits): a landed blow holds the swing and the enemy figures
+  still for `GameClient.HeavyHitStop` (heavy, spin, ground pound) or `LightHitStop`, then the swing plays twice as
+  fast until it has caught up (`ShownAttackTick`); `PIXEL_OFF=hitstop` turns it off. An enemy open to blows (a
+  stagger, a wisp dimmed by its stone, a crow pecking after its dive, a thornback winded after its charge: `Strike`
+  or `Splat` right after a `Leap` for `flock` and `charger`) says "Open!" once and pulses a green ring
+  (`GameClient.ShowOpening`). Tab locks the camera on the hostile enemy nearest the middle of the view
+  (`ToggleLock`, within 22 m; let go at 30 m, on death or a second Tab); the camera leans to it while the mouse still
+  aims, and four gold arrowheads mark it (`Hud.DrawLockMark`). The bag is on I only. `PIXEL_LOCK=1` makes a bot lock on.
 - Hair and cloth are `ClothChain` grids; the toon shader bends meshes along them. Rig looks live in `Dialogues.cs`.
 - The server waits for a late input instead of skipping it. Catching up spends only ticks missed while stalled,
   so no client can run faster than real time: extra inputs are thrown away.

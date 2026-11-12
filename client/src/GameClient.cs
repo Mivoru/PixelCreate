@@ -347,7 +347,11 @@ public partial class GameClient : Node
             {
                 _hud.ToggleMap();
             }
-            else if (key.Keycode == Key.I || key.Keycode == Key.Tab)
+            else if (key.Keycode == Key.Tab && !_hud.DialogOpen && !_hud.WindowOpen && !_hud.MenuOpen)
+            {
+                ToggleLock();
+            }
+            else if (key.Keycode == Key.I)
             {
                 _hud.ToggleInventory();
             }
@@ -488,8 +492,23 @@ public partial class GameClient : Node
 
         var d = (float)delta;
         var shown = _shownBefore.Lerp(_shownNow, (float)(_clock / tickLength));
-        DrawPlayer(shown, d);
+        // Hit stop: for a few hundredths of a second after a landed blow the swing and the struck figures hold
+        // still, then the swing plays twice as fast until it has caught up. Only the view waits; the simulation
+        // and the netcode never do.
+        var stopped = _hitStop > 0f;
+        if (stopped)
+        {
+            _hitStop -= d;
+            _attackLag += d * Tuning.TickRate;
+        }
+        else if (_attackLag > 0f)
+        {
+            _attackLag = Mathf.Max(0f, _attackLag - d * Tuning.TickRate);
+        }
+
+        DrawPlayer(shown, stopped ? d * 0.05f : d);
         DrawSnapshot(d);
+        FollowLock(d);
         PlayerEvents(shown, d);
         UpdateNpcs(shown, d);
         _fx.Update(d);
@@ -2604,7 +2623,7 @@ public partial class GameClient : Node
             : state.BlockTicks > 0 ? WeaponMove.Guard : state.SlideTicks > 0 ? WeaponMove.Slide : WeaponMove.None;
         SlideEffects(state, shown);
         _player.Animate(new MotionState(flat.Length(), state.Grounded, state.Velocity.Y,
-            state.DashTicks > 0, state.Attack, state.AttackTick, bow, Tuning.Drawn(state.DrawTicks), _shotPitch), delta);
+            state.DashTicks > 0, state.Attack, ShownAttackTick(state), bow, Tuning.Drawn(state.DrawTicks), _shotPitch), delta);
     }
 
     /// <summary>A slide kicks up dust from under the feet, with a scrape when it starts.</summary>
@@ -2698,10 +2717,12 @@ public partial class GameClient : Node
             // A respawn is a jump across the map, not a move.
             var position = _enemyShown.TryGetValue(enemy.Id, out var shownAt) && shownAt.DistanceTo(target) <= 6f ? shownAt.Lerp(target, blend) : target;
             _enemyShown[enemy.Id] = position;
-            slime.Update(enemy, position, delta, _sfx);
+            slime.Update(enemy, position, _hitStop > 0f ? delta * 0.05f : delta, _sfx);
+            var announced = false;
             if (slime is GoblinView { Staggered: true })
             {
                 _hud.AddFloating("Staggered!", position + Vector3.Up * (def.TagHeight > 0 ? def.TagHeight : 2f), new Color("feae34"));
+                announced = true;
             }
 
             // A thornback paws up dirt before it charges, and reels in a cloud of it when it rams a trunk.
@@ -2712,6 +2733,7 @@ public partial class GameClient : Node
 
             if (slime is AnimalView { Stunned: true })
             {
+                announced = true;
                 _sfx.Play("club_thud", position + Vector3.Up);
                 _hud.AddFloating("Stunned!", position + Vector3.Up * (def.TagHeight > 0 ? def.TagHeight : 2f), new Color("feae34"));
                 _fx.Burst(position + Vector3.Up * 0.6f, new Color("b86f50"), 26, 6f, 0.6f, 0.12f, -8f, 80f);
@@ -2751,11 +2773,18 @@ public partial class GameClient : Node
                 _fx.Burst(ground + Vector3.Up * 0.2f, new Color("b86f50"), 28, 5f, 0.8f, 0.1f, -6f, 85f);
             }
 
+            ShowOpening(enemy, def, position, announced, delta);
             _hud.EnemyPositions[enemy.Id] = position;
             ShowTelegraph(enemy, def, position);
             if (slime.DamageTaken > 0)
             {
-                Kick(_client.State.Attack is AttackKind.Heavy or AttackKind.ClubSpin or AttackKind.GroundPound ? 0.8f : 0.45f);
+                var weighty = _client.State.Attack is AttackKind.Heavy or AttackKind.ClubSpin or AttackKind.GroundPound;
+                Kick(weighty ? 0.8f : 0.45f);
+                if (!PixelStage.Off("hitstop"))
+                {
+                    _hitStop = Mathf.Max(_hitStop, weighty ? HeavyHitStop : LightHitStop);
+                }
+
                 var heavy = _client.State.Attack == AttackKind.Heavy;
                 _sfx.Play(heavy ? "hit_heavy" : "hit", position + Vector3.Up, -3f);
                 _hud.AddFloating(slime.DamageTaken.ToString(), position + Vector3.Up * 1.6f, heavy ? new Color("feae34") : Colors.White);
@@ -3544,6 +3573,166 @@ public partial class GameClient : Node
 
     /// <summary>How hard the camera shakes now, from 0 to 1: a blow that lands sets it, heavy ones more.</summary>
     private float _kick;
+
+    /// <summary>How long the view holds still after a heavy blow lands, and after a light one (seconds).</summary>
+    private const float HeavyHitStop = 0.08f;
+    private const float LightHitStop = 0.035f;
+    private float _hitStop;
+
+    /// <summary>Ticks the shown swing runs behind the simulated one since the last hit stop.</summary>
+    private float _attackLag;
+    private AttackKind _lagAttack;
+
+    /// <summary>The attack tick the rig shows: the simulated one less what a hit stop held back.</summary>
+    private byte ShownAttackTick(in PlayerState state)
+    {
+        if (state.Attack != _lagAttack || state.AttackTick < _attackLag)
+        {
+            _lagAttack = state.Attack;
+            _attackLag = 0f;
+        }
+
+        return (byte)Math.Max(0, state.AttackTick - (int)_attackLag);
+    }
+
+    private readonly HashSet<int> _openShown = new();
+    private readonly HashSet<int> _leapt = new();
+    private readonly Dictionary<int, float> _openRing = new();
+
+    /// <summary>
+    /// An enemy that is open to blows for a moment (reeling, a thornback winded after its charge, a crow pecking
+    /// after its dive, a stranded fish, a wisp put out by its stone) says "Open!" once and pulses a green ring
+    /// round its feet while it lasts, so the player learns when to strike.
+    /// </summary>
+    private void ShowOpening(EnemyView enemy, EnemyDef def, Vector3 position, bool announced, float delta)
+    {
+        // A crow's dive and a thornback's charge are leaps; the peck or the winded stand after one is the opening,
+        // not the recovery after every small blow.
+        if (enemy.Action == EnemyAction.Leap)
+        {
+            _leapt.Add(enemy.Id);
+        }
+        else if (enemy.Action is not (EnemyAction.Strike or EnemyAction.Splat))
+        {
+            _leapt.Remove(enemy.Id);
+        }
+
+        var open = enemy.Action is EnemyAction.Stagger or EnemyAction.Dim
+            || (enemy.Action is EnemyAction.Strike or EnemyAction.Splat && def.Behavior is "flock" or "charger" && _leapt.Contains(enemy.Id));
+        if (!open)
+        {
+            _openShown.Remove(enemy.Id);
+            return;
+        }
+
+        if (_openShown.Add(enemy.Id) && !announced)
+        {
+            _hud.AddFloating("Open!", position + Vector3.Up * (def.TagHeight > 0 ? def.TagHeight : 2f), new Color("63c74d"));
+        }
+
+        var wait = _openRing.GetValueOrDefault(enemy.Id) - delta;
+        if (wait <= 0f)
+        {
+            wait = 0.35f;
+            _fx.Ring(position + Vector3.Up * 0.06f, new Color("63c74d"), Mathf.Max(0.8f, def.Size * 1.6f), 0.4f);
+        }
+
+        _openRing[enemy.Id] = wait;
+    }
+
+    private const float LockRange = 22f;
+    private const float LockKeep = 30f;
+    private int _lockedEnemy = -1;
+
+    /// <summary>
+    /// Tab locks the camera on the enemy nearest the middle of the view, or lets go. The lock holds until the
+    /// enemy dies or gets away; the mouse still aims, the camera only leans back to the target.
+    /// </summary>
+    private void ToggleLock()
+    {
+        if (_lockedEnemy >= 0 || _client.Latest is not { } snapshot)
+        {
+            _lockedEnemy = -1;
+            _hud.LockedEnemy = -1;
+            return;
+        }
+
+        var look = new Vector3(-Mathf.Sin(_yaw), 0, -Mathf.Cos(_yaw));
+        var best = float.MaxValue;
+        foreach (var enemy in snapshot.Enemies)
+        {
+            var def = EnemyDef.All[enemy.Type];
+            if (enemy.Action == EnemyAction.Dead || (def.Temper != "hostile" && !enemy.Fighting) || !_enemyShown.TryGetValue(enemy.Id, out var at))
+            {
+                continue;
+            }
+
+            var to = new Vector3(at.X - _shownNow.X, 0, at.Z - _shownNow.Z);
+            var distance = to.Length();
+            var facing = distance > 0.01f ? look.Dot(to / distance) : 1f;
+            if (distance > LockRange || (facing < 0.2f && distance > 4f))
+            {
+                continue;
+            }
+
+            var score = distance * (2.2f - facing);
+            if (score < best)
+            {
+                best = score;
+                _lockedEnemy = enemy.Id;
+            }
+        }
+
+        _hud.LockedEnemy = _lockedEnemy;
+        if (_captureDir is not null && _lockedEnemy >= 0)
+        {
+            GD.Print($"LOCK {_lockedEnemy}");
+        }
+    }
+
+    private void FollowLock(float delta)
+    {
+        if (_lockedEnemy < 0 && _captureDir is not null && OS.GetEnvironment("PIXEL_LOCK") == "1" && _client.Tick > 160)
+        {
+            // A bot run with PIXEL_LOCK=1 locks on whenever something is near, to see the lock at work.
+            ToggleLock();
+        }
+
+        if (_lockedEnemy < 0)
+        {
+            return;
+        }
+
+        var found = false;
+        var at = Vector3.Zero;
+        foreach (var enemy in _client.Latest?.Enemies ?? Array.Empty<EnemyView>())
+        {
+            if (enemy.Id == _lockedEnemy && enemy.Action != EnemyAction.Dead && _enemyShown.TryGetValue(enemy.Id, out at))
+            {
+                found = true;
+                break;
+            }
+        }
+
+        if (!found || at.DistanceTo(_shownNow) > LockKeep)
+        {
+            _lockedEnemy = -1;
+            _hud.LockedEnemy = -1;
+            return;
+        }
+
+        if (_hud.WindowOpen || _hud.DialogOpen || _hud.MenuOpen || _sceneCamera is not null)
+        {
+            return;
+        }
+
+        var dx = at.X - _shownNow.X;
+        var dz = at.Z - _shownNow.Z;
+        if (dx * dx + dz * dz > 1f)
+        {
+            _yaw = Mathf.LerpAngle(_yaw, Mathf.Atan2(-dx, -dz), 1f - Mathf.Exp(-7f * delta));
+        }
+    }
 
     /// <summary>Shakes the camera a little, as a landed blow or a hit taken.</summary>
     private void Kick(float amount) => _kick = Mathf.Max(_kick, Mathf.Clamp(amount, 0f, 1f));

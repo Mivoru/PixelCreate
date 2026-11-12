@@ -94,8 +94,11 @@ Neověřeno hraním člověkem: vše výše jen boty, testy (385) a snímky. Sí
 1. [x] Měření balancu: doba zabití každého monstra, poškození od něj, XP za level a čas na level. Výstup
    `design/balance.md` (`PIXEL_BALANCE=1 dotnet test --filter BalanceReport`), ladit až podle poznámek autora z hraní.
    Nápadné: Goblin Brute 15 ran a Stoneback 17 při startovním meči, od levelu 9 přes 30 zabití na level.
-2. [ ] Pocit z boje: krátký hit stop u těžkých ran, znamení „otevřený“ u nepřátel, kteří jsou chvíli zranitelní
+2. [x] Pocit z boje: krátký hit stop u těžkých ran, znamení „otevřený“ u nepřátel, kteří jsou chvíli zranitelní
    (vrána po náletu, omráčený Thornback, želva po výpadu, ryba na břehu), zámek na cíl (Tab).
+   Hotovo: hit stop 0,08 s / 0,035 s jen v obraze, „Open!“ se zeleným kruhem, Tab zámek se zlatými šipkami (taška
+   je teď jen na I). Viděno v záběrech bota (Open! u Thornbacka, zámek na slizech); hit stop očima ve hře ne, jen
+   kódem: autor ať řekne, jestli je moc nebo málo.
 3. [ ] Zvuky z ElevenLabs (autor souhlasil): vlastní zvuky nových monster a okolí (ptáci ve dne, cvrčci v noci,
    déšť, řeka).
 4. [ ] Interiér hospody: vejít dovnitř, večer tam sedí hosté (Brightwater Four, Corwin, Bram) a běží rozhovory;

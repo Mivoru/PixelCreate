@@ -148,6 +148,9 @@ public partial class Hud : Control
     /// <summary>World positions shown this frame, by enemy id, so tags follow the drawn enemies.</summary>
     public Dictionary<int, Vector3> EnemyPositions { get; } = new();
 
+    /// <summary>The enemy the camera is locked on (Tab), or -1.</summary>
+    public int LockedEnemy { get; set; } = -1;
+
     public override void _Ready()
     {
         var file = GD.Load<FontFile>("res://assets/ui/Nunito.ttf");
@@ -2080,6 +2083,31 @@ public partial class Hud : Control
         return lines;
     }
 
+    /// <summary>Four gold arrowheads pointing in at the enemy the camera is locked on, breathing slowly.</summary>
+    private void DrawLockMark(Vector3 middle)
+    {
+        if (Camera!.IsPositionBehind(middle))
+        {
+            return;
+        }
+
+        var point = ToHud(middle);
+        if (!float.IsFinite(point.X) || !float.IsFinite(point.Y))
+        {
+            return;
+        }
+
+        var gap = 34f + 5f * Mathf.Sin(Time.GetTicksMsec() / 170f);
+        foreach (var dir in new[] { Vector2.Up, Vector2.Down, Vector2.Left, Vector2.Right })
+        {
+            var side = new Vector2(-dir.Y, dir.X);
+            var tip = point + dir * gap;
+            var back = point + dir * (gap + 22f);
+            DrawColoredPolygon(new[] { tip - dir * 3f, back + dir * 2f + side * 14f, back + dir * 2f - side * 14f }, new Color(0.06f, 0.05f, 0.09f, 0.85f));
+            DrawColoredPolygon(new[] { tip, back + side * 11f, back - side * 11f }, new Color("feae34"));
+        }
+    }
+
     private void DrawNametags()
     {
         if (Snapshot is null || Camera is null)
@@ -2105,6 +2133,10 @@ public partial class Hud : Control
             }
 
             DrawTag(ToHud(head), enemy, def);
+            if (enemy.Id == LockedEnemy)
+            {
+                DrawLockMark(position + Vector3.Up * Mathf.Max(0.5f, def.Size));
+            }
         }
 
         foreach (var (at, text, alpha) in Barks)
