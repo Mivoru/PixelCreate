@@ -1,0 +1,70 @@
+[
+  {
+    "between": ["oswin", "jory"], "when": { "time": { "from": 720, "to": 780 } },
+    "lines": [
+      ["jory", "Uncle. Is it true a thornback can knock down an oak?"],
+      ["oswin", "A young one, maybe. An old one knocks down the man behind it."],
+      ["jory", "I'd step aside. Like the Guild folk do."],
+      ["oswin", "You'd trip over your own axe. Eat your bread."]
+    ]
+  },
+  {
+    "between": ["oswin", "jory"], "when": { "time": { "from": 1140, "to": 1320 } },
+    "lines": [
+      ["oswin", "Forty cords by the frost. We're at twenty-two."],
+      ["jory", "Twenty-three. I split one more while you were snoring at noon."],
+      ["oswin", "I was resting my eyes."]
+    ]
+  },
+  {
+    "between": ["bors", "wilm"], "when": { "time": { "from": 720, "to": 780 } },
+    "lines": [
+      ["wilm", "Corwin wants twelve more blocks for the Guild wall by the new moon."],
+      ["bors", "Corwin can come up here and cut them himself."],
+      ["wilm", "He'd want them square, too."],
+      ["bors", "They are square. It's the wall that's crooked."]
+    ]
+  },
+  {
+    "between": ["bors", "wilm"], "when": { "time": { "from": 1140, "to": 1260 } },
+    "lines": [
+      ["bors", "Heard the crane creak today. Grease it tomorrow."],
+      ["wilm", "That wasn't the crane. That was your knees."]
+    ]
+  },
+  {
+    "between": ["aldous", "fennick"], "when": { "time": { "from": 1200, "to": 1380 } },
+    "lines": [
+      ["fennick", "Forty years walking to shrines, old man. What do you pray for?"],
+      ["aldous", "Good roads. And for peddlers to sell something useful."],
+      ["fennick", "I sell lucky spoons!"],
+      ["aldous", "And has one ever been lucky?"],
+      ["fennick", "For me. I sold it."]
+    ]
+  },
+  {
+    "between": ["marta", "aldous"], "when": { "time": { "from": 360, "to": 540 } },
+    "lines": [
+      ["marta", "Off to the shrine again? Take some bread, you'll fall over on the road."],
+      ["aldous", "The shrine provides, Marta."],
+      ["marta", "The shrine has never once made you breakfast."]
+    ]
+  },
+  {
+    "between": ["ollie", "bea"], "when": { "time": { "from": 420, "to": 1140 } },
+    "lines": [
+      ["ollie", "I'm the adventurer, you be the goblin."],
+      ["bea", "I was the goblin yesterday! You be the goblin."],
+      ["ollie", "Fine. Rrrargh!"],
+      ["bea", "Goblins don't say rrrargh. They go hee-hee-hee."]
+    ]
+  },
+  {
+    "between": ["hamm", "maddy"], "when": { "time": { "from": 360, "to": 720 } },
+    "lines": [
+      ["hamm", "Fence first, then the cows."],
+      ["maddy", "The cows don't care about the fence, uncle."],
+      ["hamm", "That's what the fence is for."]
+    ]
+  }
+]

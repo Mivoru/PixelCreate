@@ -269,6 +269,9 @@ Rules:
   The tavern yard (three tables east of the tavern door, footpath from the south road) fills from six: Corwin keeps
   his bench all day, the Brightwater Four (Edwin, Moss, Fen, Rook) have the south table. Mornings the Four meet by
   the Guild door, Osric and Anwen are at the mill, Hamm, Maddy and Tobias on Harrow Farm, Tam by Hollis's counter.
+- Chats (`world/chats.json`, `Chats.cs`, `GameClient.Overhear`): little exchanges between two people at rest near
+  each other (within 12 m), played line by line as barks with voices when the player stands within 13 m and the
+  `when` holds; not repeated for four minutes. `generate_voices.py` records chat lines too. `net-tests/ChatTests.cs`.
 - People (`world/people.json`, `People.cs`): `barks` are lines said in passing, drawn over the speaker's head
   (`Hud.Barks`, `GameClient.Temper`), and `moods` the face they wear. The rest of the file (tones, judgements, bonds,
   `about`) belonged to the dropped story and is unused. Only people with a file in `world/dialogue` get a "Talk to"

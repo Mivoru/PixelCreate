@@ -45,6 +45,9 @@ def lines_of(npc, person):
         lines += [node["text"] for node in nodes.values()]
     # "about" lines are no longer asked for (the game is not a story game since 2026-11-10).
     lines += [bark["text"] for bark in person.get("barks", [])]
+    chats = ROOT / "world" / "chats.json"
+    if chats.exists():
+        lines += [text for chat in json.loads(chats.read_text(encoding="utf-8")) for speaker, text in chat["lines"] if speaker == npc]
     lines += person.get("fight", [])
     if person.get("death"):
         lines.append(person["death"])

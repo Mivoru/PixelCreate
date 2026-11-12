@@ -19,6 +19,7 @@
     <EmbeddedResource Include="..\world\rumors.json" LogicalName="rumors" />
     <EmbeddedResource Include="..\world\schedules.json" LogicalName="schedules" />
     <EmbeddedResource Include="..\world\people.json" LogicalName="people" />
+    <EmbeddedResource Include="..\world\chats.json" LogicalName="chats" />
     <EmbeddedResource Include="..\world\journal.json" LogicalName="journal" />
     <EmbeddedResource Include="..\world\faces.json" LogicalName="faces" />
     <EmbeddedResource Include="..\world\appearance.json" LogicalName="appearance" />

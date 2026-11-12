@@ -964,6 +964,82 @@ public partial class GameClient : Node
         }
     }
 
+    /// <summary>The chat playing now: which one, the next line to say and when.</summary>
+    private Chat? _chat;
+    private int _chatLine;
+    private float _chatWait = 12f;
+    private readonly Dictionary<Chat, float> _chatHeard = new();
+
+    /// <summary>Seconds between the lines of a chat, and the least time before a chat is heard again.</summary>
+    private const float ChatGap = 3.6f;
+    private const float ChatRest = 240f;
+
+    /// <summary>
+    /// People near each other and at rest now and then talk among themselves, line by line, when the player is near
+    /// enough to overhear. A chat is not repeated for a few minutes.
+    /// </summary>
+    private void Overhear(float delta)
+    {
+        _chatWait -= delta;
+        if (_chatWait > 0f || _hud.DialogOpen || _client.Latest?.Scene != Snapshot.NoScene)
+        {
+            return;
+        }
+
+        var me = ToGodot(_client.State.Position);
+        if (_chat is { } chat)
+        {
+            if (_chatLine >= chat.Lines.Length)
+            {
+                _chatHeard[chat] = Time.GetTicksMsec() / 1000f;
+                _chat = null;
+                _chatWait = 20f;
+                return;
+            }
+
+            var (speaker, text) = chat.Lines[_chatLine++];
+            var who = _actors.FirstOrDefault(a => a.Id == speaker);
+            if (who is null || !_actorPresent[who.Index])
+            {
+                _chat = null;
+                return;
+            }
+
+            _barks.Add((who.Index, text, ChatGap + 0.4f));
+            _voices.SayAt(speaker, text, _actorAt[who.Index] + Vector3.Up * 1.5f);
+            _chatWait = ChatGap;
+            return;
+        }
+
+        _chatWait = 4f;
+        var story = _restStory ??= new ClientStory(_client, _hud.Items);
+        var now = Time.GetTicksMsec() / 1000f;
+        foreach (var candidate in Chats.All)
+        {
+            if (_chatHeard.TryGetValue(candidate, out var heard) && now - heard < ChatRest || !candidate.When.Holds(story))
+            {
+                continue;
+            }
+
+            var people = candidate.Between.Select(id => _actors.FirstOrDefault(a => a.Id == id)).ToArray();
+            if (people.Any(p => p is null || !_actorPresent[p.Index] || _actorWalking[p.Index]))
+            {
+                continue;
+            }
+
+            var first = _actorAt[people[0]!.Index];
+            var together = people.All(p => _actorAt[p!.Index].DistanceTo(first) < 12f);
+            var near = people.All(p => _actorAt[p!.Index].DistanceTo(me) < 13f);
+            if (together && near)
+            {
+                _chat = candidate;
+                _chatLine = 0;
+                _chatWait = 0.5f;
+                return;
+            }
+        }
+    }
+
     /// <summary>Where someone the server does not send is: resting by their day, which both sides work out alike.</summary>
     private (bool Active, Vector3 Target, float Yaw, ActorPose Pose) Resting(Actor actor)
     {
@@ -1058,6 +1134,7 @@ public partial class GameClient : Node
         }
 
         UpdateActors(delta);
+        Overhear(delta);
         UpdateScene();
         UpdateSpeaker();
         Npc? nearest = null;
